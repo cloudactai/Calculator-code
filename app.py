@@ -29,6 +29,8 @@ SCHEDULE_I_PATH = os.path.join(THIS_DIR, "schedule_i.json")
 with open(SCHEDULE_I_PATH, "r") as f:
     SCHEDULE_I = json.load(f)
 
+app = Flask(__name__)
+CORS(app)
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
 
