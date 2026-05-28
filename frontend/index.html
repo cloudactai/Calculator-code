@@ -379,6 +379,15 @@ async function sendMessage(text) {
   document.getElementById("send-btn").disabled = true;
   showTyping();
 
+  let warmupTimer = setTimeout(() => {
+    const typingRow = document.getElementById("typing-row");
+    if (typingRow) {
+      const bubble = typingRow.querySelector(".bubble");
+      bubble.textContent = "Warming up the server — first message can take ~30 seconds on a cold start…";
+      bubble.classList.remove("typing-bubble");
+    }
+  }, 6000);
+
   try {
     const res = await fetch(apiUrl.endsWith("/chat") ? apiUrl : apiUrl + "/chat", {
       method: "POST",
@@ -401,6 +410,7 @@ async function sendMessage(text) {
     // Remove the user message we optimistically appended
     messages.pop();
   } finally {
+    clearTimeout(warmupTimer);
     isLoading = false;
     document.getElementById("send-btn").disabled = false;
     document.getElementById("msg-input").focus();
