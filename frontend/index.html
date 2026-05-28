@@ -227,13 +227,61 @@
     font-size: .82rem;
     cursor: pointer;
   }
+  /* ── Markdown inside assistant bubbles ── */
+  .msg-row.assistant .bubble p { margin: 0 0 8px; }
+  .msg-row.assistant .bubble p:last-child { margin-bottom: 0; }
+  .msg-row.assistant .bubble ul,
+  .msg-row.assistant .bubble ol { margin: 4px 0 8px; padding-left: 20px; }
+  .msg-row.assistant .bubble li { margin-bottom: 3px; }
+  .msg-row.assistant .bubble strong { font-weight: 700; }
+  .msg-row.assistant .bubble code {
+    background: #eef3ff;
+    border-radius: 3px;
+    padding: 1px 5px;
+    font-size: .85em;
+    font-family: monospace;
+  }
+
+  /* ── Mobile ── */
+  @media (max-width: 600px) {
+    .bubble { max-width: 88%; }
+    .msg-row { padding: 0 12px; }
+    header { padding: 11px 16px; font-size: .9rem; }
+    #input-bar { padding: 10px 12px; padding-bottom: max(10px, env(safe-area-inset-bottom)); }
+    #chat-window { padding: 14px 0; gap: 12px; }
+    #send-btn { padding: 10px 14px; }
+  }
 </style>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/marked/9.1.6/marked.min.js"></script>
 </head>
 <body>
 
 <header>
   CloudAct &nbsp;·&nbsp; <span>Child Support Assistant</span>
-  <button class="reset-btn" onclick="resetChat()">New conversation</button>
+  <button class="reset-btn" onclick="resetChat()">New conversation</button>/* ── Markdown inside assistant bubbles ── */
+  .msg-row.assistant .bubble p { margin: 0 0 8px; }
+  .msg-row.assistant .bubble p:last-child { margin-bottom: 0; }
+  .msg-row.assistant .bubble ul,
+  .msg-row.assistant .bubble ol { margin: 4px 0 8px; padding-left: 20px; }
+  .msg-row.assistant .bubble li { margin-bottom: 3px; }
+  .msg-row.assistant .bubble strong { font-weight: 700; }
+  .msg-row.assistant .bubble code {
+    background: #eef3ff;
+    border-radius: 3px;
+    padding: 1px 5px;
+    font-size: .85em;
+    font-family: monospace;
+  }
+
+  /* ── Mobile ── */
+  @media (max-width: 600px) {
+    .bubble { max-width: 88%; }
+    .msg-row { padding: 0 12px; }
+    header { padding: 11px 16px; font-size: .9rem; }
+    #input-bar { padding: 10px 12px; padding-bottom: max(10px, env(safe-area-inset-bottom)); }
+    #chat-window { padding: 14px 0; gap: 12px; }
+    #send-btn { padding: 10px 14px; }
+  }
 </header>
 
 <div id="config-banner">
@@ -333,7 +381,11 @@ function appendBubble(role, text) {
   row.className = `msg-row ${role}`;
   const bubble = document.createElement("div");
   bubble.className = "bubble";
-  bubble.textContent = text;
+  if (role === "assistant" && typeof marked !== "undefined") {
+    bubble.innerHTML = marked.parse(text);
+  } else {
+    bubble.textContent = text;
+  }
   row.appendChild(bubble);
   win.appendChild(row);
   scrollToBottom();
