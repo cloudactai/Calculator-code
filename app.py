@@ -12,6 +12,7 @@ import os
 import sys
 from datetime import date
 from flask import Flask, request, jsonify, render_template_string
+from flask_cors import CORS
 import anthropic
 #comment
 # ── Make sure child_support.py is importable ─────────────────────────────────
@@ -29,7 +30,7 @@ with open(SCHEDULE_I_PATH, "r") as f:
     SCHEDULE_I = json.load(f)
 
 app = Flask(__name__)
-
+CORS(app)
 # ── HTML template ─────────────────────────────────────────────────────────────
 HTML = """
 <!DOCTYPE html>
