@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>CloudAct · Spousal Support Calculator</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    background: #f4f5f7;
+    color: #1a1a2e;
+    margin: 0; padding: 0;
+  }
+  header {
+    background: #1a1a2e;
+    color: #fff;
+    padding: 18px 32px;
+    font-size: 1.1rem;
+    font-weight: 600;
+    letter-spacing: .3px;
+  }
+  header span { color: #6c8fdb; }
+  .container {
+    max-width: 860px;
+    margin: 32px auto;
+    padding: 0 16px 80px;
+  }
+  .card {
+    background: #fff;
+    border-radius: 10px;
+    box-shadow: 0 1px 4px rgba(0,0,0,.1);
+    padding: 24px 28px;
+    margin-bottom: 20px;
+  }
+  h2 {
+    font-size: .8rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1.2px;
+    color: #6c8fdb;
+    margin: 0 0 18px;
+  }
+  .row { display: flex; gap: 16px; flex-wrap: wrap; }
+  .field { flex: 1; min-width: 180px; display: flex; flex-direction: column; gap: 6px; }
+  label { font-size: .82rem; font-weight: 600; color: #555; }
+  input {
+    border: 1.5px solid #d8dde6;
+    border-radius: 7px;
+    padding: 9px 12px;
+    font-size: .92rem;
+    outline: none;
+    width: 100%;
+    transition: border-color .15s;
+  }
+  input:focus { border-color: #6c8fdb; }
+
+  #calc-btn {
+    width: 100%;
+    padding: 14px;
+    background: #1a1a2e;
+    color: #fff;
+    border: none;
+    border-radius: 10px;
+    font-size: 1rem;
+    font-weight: 700;
+    cursor: pointer;
+    letter-spacing: .5px;
+    transition: background .15s;
+  }
+  #calc-btn:hover { background: #2c2c4e; }
+  #calc-btn:disabled { background: #aaa; cursor: not-allowed; }
+
+  /* ── Results ── */
+  #result-card { display: none; }
+
+  .range-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 20px;
+    font-size: .9rem;
+  }
+  .range-table th {
+    text-align: left;
+    font-size: .75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: #888;
+    padding: 0 12px 10px 0;
+  }
+  .range-table th.scenario { color: #6c8fdb; }
+  .range-table td {
+    padding: 10px 12px 10px 0;
+    border-top: 1px solid #f0f2f5;
+    color: #1a1a2e;
+    font-weight: 500;
+  }
+  .range-table tr:first-child td { border-top: none; }
+  .scenario-label {
+    font-size: .72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .8px;
+    padding: 3px 9px;
+    border-radius: 20px;
+    display: inline-block;
+  }
+  .low  { background: #e8f5e9; color: #2e7d32; }
+  .med  { background: #fff8e1; color: #f57f17; }
+  .high { background: #fce4ec; color: #c62828; }
+
+  .verdict {
+    background: #eef3ff;
+    border-left: 4px solid #6c8fdb;
+    border-radius: 0 8px 8px 0;
+    padding: 14px 18px;
+    margin-top: 4px;
+    font-size: .95rem;
+    line-height: 1.6;
+  }
+  .verdict strong { display: block; font-size: 1rem; margin-bottom: 6px; }
+
+  .meta-row {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-bottom: 20px;
+  }
+  .meta-item {
+    flex: 1;
+    min-width: 140px;
+    background: #f4f5f7;
+    border-radius: 8px;
+    padding: 12px 16px;
+  }
+  .meta-item .label {
+    font-size: .72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: #888;
+    margin-bottom: 4px;
+  }
+  .meta-item .value {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: #1a1a2e;
+  }
+
+  #error-msg {
+    display: none;
+    background: #fdecea;
+    border-left: 4px solid #e05;
+    border-radius: 0 8px 8px 0;
+    padding: 12px 16px;
+    color: #c0392b;
+    font-size: .88rem;
+    margin-top: 12px;
+  }
+
+  .disclaimer {
+    font-size: .78rem;
+    color: #999;
+    text-align: center;
+    margin-top: 24px;
+    line-height: 1.6;
+  }
+
+  @media (max-width: 600px) {
+    header { padding: 14px 16px; font-size: 1rem; }
+    .container { margin: 16px auto; }
+    .card { padding: 18px 16px; }
+  }
+</style>
+</head>
+<body>
+
+<header>CloudAct &nbsp;·&nbsp; <span>Spousal Support Calculator</span></header>
+
+<div class="container">
+
+  <div class="card">
+    <h2>Party 1</h2>
+    <div class="row">
+      <div class="field">
+        <label>Name (optional)</label>
+        <input type="text" id="p1-name" placeholder="e.g. Alex"/>
+      </div>
+      <div class="field">
+        <label>Gross Annual Income ($)</label>
+        <input type="number" id="p1-income" placeholder="e.g. 120000" min="0" step="1"/>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Party 2</h2>
+    <div class="row">
+      <div class="field">
+        <label>Name (optional)</label>
+        <input type="text" id="p2-name" placeholder="e.g. Jordan"/>
+      </div>
+      <div class="field">
+        <label>Gross Annual Income ($)</label>
+        <input type="number" id="p2-income" placeholder="e.g. 40000" min="0" step="1"/>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Relationship</h2>
+    <div class="row">
+      <div class="field">
+        <label>Years of Marriage / Cohabitation</label>
+        <input type="number" id="years" placeholder="e.g. 10" min="0" step="0.5"/>
+      </div>
+      <div class="field">
+        <label>Recipient's Current Age</label>
+        <input type="number" id="recipient-age" placeholder="e.g. 45" min="18" step="1"/>
+      </div>
+    </div>
+    <p style="font-size:.8rem;color:#888;margin:14px 0 0;">
+      The recipient is the lower-income spouse. Age is used to determine duration under the Rule of 65.
+    </p>
+  </div>
+
+  <button id="calc-btn" onclick="calculate()">Calculate Spousal Support</button>
+  <div id="error-msg"></div>
+
+  <div class="card" id="result-card">
+    <h2>Result</h2>
+
+    <div class="meta-row" id="meta-row"></div>
+
+    <table class="range-table">
+      <thead>
+        <tr>
+          <th class="scenario">Scenario</th>
+          <th>% Applied</th>
+          <th>Monthly</th>
+          <th>Annual</th>
+        </tr>
+      </thead>
+      <tbody id="range-body"></tbody>
+    </table>
+
+    <div class="verdict" id="verdict"></div>
+  </div>
+
+  <p class="disclaimer">
+    This calculator is based on the Spousal Support Advisory Guidelines (SSAG) without-child formula.<br/>
+    Results are estimates only and do not constitute legal advice. Consult a family law lawyer.
+  </p>
+
+</div>
+
+<script>
+const BACKEND = "https://calculator-code-x2b=-.onrender.com";
+// const BACKEND = "http://localhost:5050";
+
+function fmt(n) {
+  return new Intl.NumberFormat("en-CA", {
+    style: "currency", currency: "CAD", maximumFractionDigits: 2
+  }).format(n);
+}
+
+function showError(msg) {
+  const el = document.getElementById("error-msg");
+  el.textContent = msg;
+  el.style.display = "block";
+  document.getElementById("result-card").style.display = "none";
+}
+
+async function calculate() {
+  const btn = document.getElementById("calc-btn");
+  document.getElementById("error-msg").style.display = "none";
+
+  const p1Income = parseFloat(document.getElementById("p1-income").value);
+  const p2Income = parseFloat(document.getElementById("p2-income").value);
+  const p1Name   = document.getElementById("p1-name").value.trim() || "Party 1";
+  const p2Name   = document.getElementById("p2-name").value.trim() || "Party 2";
+  const years    = parseFloat(document.getElementById("years").value);
+  const age      = parseFloat(document.getElementById("recipient-age").value);
+
+  if (isNaN(p1Income) || isNaN(p2Income)) {
+    showError("Please enter gross annual incomes for both parties."); return;
+  }
+  if (p1Income === p2Income) {
+    showError("Incomes are equal — no spousal support would be payable."); return;
+  }
+  if (isNaN(years) || years <= 0) {
+    showError("Please enter a valid number of years."); return;
+  }
+  if (isNaN(age) || age < 18) {
+    showError("Please enter the recipient's age (minimum 18)."); return;
+  }
+
+  btn.disabled = true;
+  btn.textContent = "Calculating…";
+
+  try {
+    const res = await fetch(`${BACKEND}/spousal-calculate`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        party1_name:   p1Name,
+        party2_name:   p2Name,
+        party1_income: p1Income,
+        party2_income: p2Income,
+        years,
+        recipient_age: age,
+      }),
+    });
+
+    const data = await res.json();
+    if (data.error) { showError(data.error); return; }
+    showResults(data);
+
+  } catch (err) {
+    showError("Could not reach the server. Is it running?");
+  } finally {
+    btn.disabled = false;
+    btn.textContent = "Calculate Spousal Support";
+  }
+}
+
+function showResults(d) {
+  document.getElementById("result-card").style.display = "block";
+
+  // Meta row
+  document.getElementById("meta-row").innerHTML = `
+    <div class="meta-item">
+      <div class="label">Payor</div>
+      <div class="value">${d.payor}</div>
+    </div>
+    <div class="meta-item">
+      <div class="label">Recipient</div>
+      <div class="value">${d.recipient}</div>
+    </div>
+    <div class="meta-item">
+      <div class="label">Gross Income Difference</div>
+      <div class="value">${fmt(d.gross_income_diff)}/yr</div>
+    </div>
+    <div class="meta-item">
+      <div class="label">Duration</div>
+      <div class="value">${d.duration_label}</div>
+    </div>
+  `;
+
+  // Range table
+  const rows = [
+    { label: "Low",    cls: "low",  pct: d.pct_low,  mo: d.monthly_low,  yr: d.annual_low  },
+    { label: "Medium", cls: "med",  pct: d.pct_med,  mo: d.monthly_med,  yr: d.annual_med  },
+    { label: "High",   cls: "high", pct: d.pct_high, mo: d.monthly_high, yr: d.annual_high },
+  ];
+  document.getElementById("range-body").innerHTML = rows.map(r => `
+    <tr>
+      <td><span class="scenario-label ${r.cls}">${r.label}</span></td>
+      <td>${r.pct}%</td>
+      <td>${fmt(r.mo)}/mo</td>
+      <td>${fmt(r.yr)}/yr</td>
+    </tr>
+  `).join("");
+
+  // Verdict
+  document.getElementById("verdict").innerHTML = `
+    <strong>${d.payor} pays ${d.recipient}</strong>
+    Between ${fmt(d.monthly_low)}/month (low) and ${fmt(d.monthly_high)}/month (high),
+    with a midpoint of ${fmt(d.monthly_med)}/month —
+    for ${d.duration_label.toLowerCase()}.
+  `;
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,953 @@
+"""
+tax.py
+------
+Self-contained Ontario income-tax + benefits calculator.
+
+Year-variable constants (bracket tables, indexed amounts, etc.) are stored in
+tax_constants.json and loaded at import time.  To update for a new tax year:
+
+    1. Add a new top-level key (e.g. "2026") to tax_constants.json.
+    2. Copy the "2025" block, then change every value that was updated by CRA /
+       Ontario for that year.  The key names and JSON structure must stay the
+       same — only the values change.
+
+Public API
+----------
+    result = calculate_taxes(inp)            # TaxInput dataclass
+    result = calculate_taxes_from_input(inp) # alias
+
+Notes on Excel parity (2025):
+    - Ontario tax reduction IS applied inside provincial_tax
+      (max(2*(base+dep) - on_tax, 0) subtracted before LIFT).
+    - Ontario LIFT credit IS applied inside provincial_tax.
+    - CWB IS subtracted from total_taxes.
+    - CCB / GST / OCB / OSTC all use taxable income (line 23600 net
+      income) as their base, matching the Excel reference cell F23/G23.
+"""
+
+from __future__ import annotations
+import json
+import os
+from dataclasses import dataclass
+from datetime import date
+
+
+# ===========================================================================
+# LOAD YEAR-VARIABLE CONSTANTS FROM JSON
+# ===========================================================================
+
+_CONSTANTS_PATH = os.path.join(os.path.dirname(__file__), "tax_constants.json")
+with open(_CONSTANTS_PATH) as _f:
+    _ALL_YEAR_CONSTANTS: dict = json.load(_f)
+
+
+def get_year_constants(year: int) -> dict:
+    """
+    Return the constants dict for *year*.
+    Falls back to the most recent available year if *year* is not found.
+    """
+    key = str(year)
+    if key in _ALL_YEAR_CONSTANTS:
+        return _ALL_YEAR_CONSTANTS[key]
+    # Fall back to the highest available year
+    best = max(_ALL_YEAR_CONSTANTS.keys())
+    return _ALL_YEAR_CONSTANTS[best]
+
+
+# ===========================================================================
+# SECTION B — FIXED / STRUCTURAL  (only change if Parliament amends the Act)
+# ===========================================================================
+
+# --------------------------------------------------------------------------
+# B1. CPP RATES AND FIXED PARAMETERS
+# --------------------------------------------------------------------------
+BASE_CPP_RATE                   = 0.0495   # 4.95%; CPP Act Schedule 2
+BASE_CPP_EXEMPTION              = 3_500.00  # basic yearly exemption; fixed by regulation
+ENHANCED_CPP_RATE               = 0.01     # 1%; CPP Act
+CPP2_RATE                       = 0.04     # 4%; CPP Act Schedule 2
+SELF_EMPLOYED_ENH_CPP_RATE      = 0.119    # 2 × (4.95% + 1%) = 11.9%
+CPP2_SELF_EMPLOYED_RATE         = 0.08     # 2 × 4% = 8%
+
+# --------------------------------------------------------------------------
+# B2. ONTARIO PROVINCIAL CREDIT RATE AND AGE-AMOUNT PHASE-OUT RATES
+# --------------------------------------------------------------------------
+ON_CREDIT_RATE                  = 0.0505   # lowest Ontario bracket rate
+AGE_AMOUNT_RATE                 = 0.15     # federal age-amount phase-out rate; fixed in ITA
+ON_AGE_AMOUNT_RATE              = 0.15     # Ontario age-amount phase-out rate; fixed in Taxation Act
+ON_LIFT_REDUCTION_RATE          = 0.05     # LIFT phase-out rate; fixed in ON428
+ON_LIFT_RATE                    = 0.0505   # = ON_CREDIT_RATE; kept separate for clarity
+
+# --------------------------------------------------------------------------
+# B3. ONTARIO SURTAX RATES
+# --------------------------------------------------------------------------
+ON_SURTAX_RATE_1                = 0.20     # 20%; Taxation Act (unchanged since 2003)
+ON_SURTAX_RATE_2                = 0.36     # 36%; Taxation Act (unchanged since 2003)
+
+# --------------------------------------------------------------------------
+# B4. CWB RATES
+# --------------------------------------------------------------------------
+CWB_RATE                        = 0.21     # phase-in rate; ITA Schedule 6
+CWB_INCOME_FLOOR                = 3_000.00  # minimum earned income; fixed in ITA
+CWB_REDUCTION_RATE              = 0.15     # phase-out rate; ITA Schedule 6
+CWB_DISAB_BASE_PERCENT          = 0.27     # disability supplement phase-in rate
+CWB_DISAB_RED_RATE_SINGLE       = 0.15     # disability phase-out rate (single)
+CWB_DISAB_RED_RATE_FAMILY       = 0.15     # disability phase-out rate (family)
+
+# --------------------------------------------------------------------------
+# B5. CCB PHASE-OUT RATES  (ITA s.122.61; unchanged since CCB launch 2016)
+# --------------------------------------------------------------------------
+CCB_RATE_1_PHASE1               = 0.070
+CCB_RATE_2_PHASE1               = 0.135
+CCB_RATE_3_PHASE1               = 0.190
+CCB_RATE_4_PHASE1               = 0.230
+CCB_RATE_1_PHASE2               = 0.032
+CCB_RATE_2_PHASE2               = 0.057
+CCB_RATE_3_PHASE2               = 0.080
+CCB_RATE_4_PHASE2               = 0.095
+
+# --------------------------------------------------------------------------
+# B6. GST/HST CLAWBACK RATE  (fixed at 5% in ITA s.122.5)
+# --------------------------------------------------------------------------
+GST_CLAWBACK_RATE               = 0.05
+
+# --------------------------------------------------------------------------
+# B7. OCB AND OSTC REDUCTION RATES  (fixed in Ontario regulations)
+# --------------------------------------------------------------------------
+OCB_REDUCTION_RATE              = 0.08
+OSTC_REDUCTION_RATE             = 0.04
+
+
+# ===========================================================================
+# DATA CLASSES
+# ===========================================================================
+
+@dataclass
+class ChildInfo:
+    date_of_birth: str        # "YYYY-MM-DD"
+    custody_arrangement: str  # "Party 1" | "Party 2" | "Shared"
+    child_has_disability: str # "Yes" | "No"
+
+
+@dataclass
+class TaxInput:
+    """
+    Personal and income inputs for one party.
+    Year-variable constants are loaded from tax_constants.json.
+    """
+    party_num: int
+    province: str               # "ON"
+    age: int
+    eligible_for_disability: str  # "Yes" | "No"
+
+    employed_income: float
+    self_employed_income: float
+    other_income: float
+
+    support_received: float
+    deductible_support_paid: float
+
+    child_care_expenses: float
+    other_deductions: float
+
+    children: list[ChildInfo]
+    type_of_splitting: str
+    child_counts: dict          # {party1, party2, shared}
+
+    child_support_amounts: dict # {party1, party2}
+    both_incomes: dict          # {party1, party2}
+
+    year: int = 2025
+
+
+# ===========================================================================
+# HELPERS
+# ===========================================================================
+
+def _find_bracket(brackets: list[dict], income: float) -> dict:
+    for row in brackets:
+        if row["From"] <= income <= row["To"]:
+            return row
+    raise ValueError(f"No bracket for income={income:,.2f}")
+
+
+def _child_age(dob: str, year: int) -> int:
+    """Age in years as of Jan 1 of tax year."""
+    return year - int(dob[:4])
+
+
+def _party_children(
+    children: list[ChildInfo],
+    party_num: int,
+    children_live_with: int,
+) -> list[ChildInfo]:
+    """Children that belong to this party for credit/benefit purposes."""
+    if children_live_with == party_num:
+        return children
+    if children_live_with == 4:
+        tag = f"Party {party_num}"
+        return [c for c in children if c.custody_arrangement == tag]
+    return []
+
+
+# ===========================================================================
+# INCOME
+# ===========================================================================
+
+def calculate_taxable_income(
+    employed_income: float,
+    self_employed_income: float,
+    other_income: float,
+    support_received: float,
+    deductible_support_paid: float,
+    child_care_expenses: float,
+    other_deductions: float,
+    year: int = 2025,
+) -> float:
+    """
+    Taxable income = gross + support_received − deductions.
+    Deductions: support paid + enhanced CPP + child care (capped) + other.
+    """
+    gross = employed_income + self_employed_income + other_income
+    enhanced = _enhanced_cpp_deduction(employed_income, self_employed_income, year)
+    child_care_cap = _child_care_deduction(employed_income, child_care_expenses)
+    total_deductions = (
+        deductible_support_paid + enhanced + child_care_cap + other_deductions
+    )
+    return gross + support_received - total_deductions
+
+
+# ===========================================================================
+# CPP / EI  (internal)
+# ===========================================================================
+
+def _base_cpp(employed_income: float, self_employed_income: float, c: dict) -> float:
+    return max(
+        min(
+            (employed_income + self_employed_income - BASE_CPP_EXEMPTION) * BASE_CPP_RATE,
+            c["BASE_CPP_LIMIT"],
+        ),
+        0.0,
+    )
+
+
+def _ei(employed_income: float, c: dict) -> float:
+    return min(employed_income * c["EI_RATE"], c["EI_LIMIT"])
+
+
+def _enhanced_cpp_deduction(
+    employed_income: float,
+    self_employed_income: float,
+    year: int = 2025,
+) -> float:
+    """Enhanced CPP1 + CPP2 deduction."""
+    c = get_year_constants(year)
+    if employed_income > 0:
+        if employed_income <= c["CPP2_PEN_EARNING"]:
+            cpp2 = 0.0
+        elif employed_income > c["CPP2_MAX_PEN_EARNING"]:
+            cpp2 = c["CPP2_MAX_AMT"]
+        else:
+            cpp2 = (employed_income - c["CPP2_PEN_EARNING"]) * CPP2_RATE
+        enhanced = max(
+            min(
+                (employed_income - BASE_CPP_EXEMPTION) * ENHANCED_CPP_RATE,
+                c["ENHANCED_CPP_LIMIT"],
+            ),
+            0.0,
+        )
+        return enhanced + cpp2
+
+    if self_employed_income > 0:
+        if self_employed_income <= c["CPP2_PEN_EARNING"]:
+            cpp2 = 0.0
+        elif self_employed_income > c["CPP2_MAX_PEN_EARNING"]:
+            cpp2 = c["CPP2_SELF_EMPLOYED_MAX"]
+        else:
+            cpp2 = (self_employed_income - c["CPP2_PEN_EARNING"]) * CPP2_SELF_EMPLOYED_RATE
+        se_base = (
+            min(self_employed_income, c["SELF_EMPLOYED_ENH_CPP_THRESHOLD"]) - BASE_CPP_EXEMPTION
+        ) * SELF_EMPLOYED_ENH_CPP_RATE
+        base_cpp = _base_cpp(employed_income, self_employed_income, c)
+        return se_base - base_cpp + cpp2
+
+    return 0.0
+
+
+def _child_care_deduction(employed_income: float, child_care_expenses: float) -> float:
+    if child_care_expenses > 0:
+        return min(employed_income * (2 / 3), child_care_expenses)
+    return 0.0
+
+
+def calculate_cpp_ei_deductions(
+    employed_income: float,
+    self_employed_income: float,
+    year: int = 2025,
+) -> float:
+    """Total CPP + EI payroll deductions (cash outflows)."""
+    c = get_year_constants(year)
+    if employed_income > 0 or self_employed_income > 0:
+        return (
+            _ei(employed_income, c)
+            + _base_cpp(employed_income, self_employed_income, c)
+            + _enhanced_cpp_deduction(employed_income, self_employed_income, year)
+        )
+    return 0.0
+
+
+# ===========================================================================
+# FEDERAL TAX
+# ===========================================================================
+
+def _bpa_federal(taxable_income: float, c: dict) -> float:
+    if taxable_income <= c["BPA_FED_THRESHOLD_LOW"]:
+        return c["BASIC_PERSONAL_AMOUNT_FED"]
+    if taxable_income > c["BPA_FED_THRESHOLD_HIGH"]:
+        return c["BASIC_PERSONAL_AMOUNT_FED_MIN"]
+    phase_in = (
+        max(c["BPA_FED_THRESHOLD_HIGH"] - taxable_income, 0.0) / c["BPA_FED_PHASE_RANGE"]
+    )
+    return c["BASIC_PERSONAL_AMOUNT_FED_MIN"] + phase_in * (
+        c["BASIC_PERSONAL_AMOUNT_FED"] - c["BASIC_PERSONAL_AMOUNT_FED_MIN"]
+    )
+
+
+def _age_amount_federal(age: int, taxable_income: float, c: dict) -> float:
+    if age >= 65:
+        return max(
+            c["AGE_AMOUNT_BASE"]
+            - max(taxable_income - c["AGE_AMOUNT_LOWER_THRESHOLD"], 0) * AGE_AMOUNT_RATE,
+            0.0,
+        )
+    return 0.0
+
+
+def _canada_employment_amount(employed_income: float, c: dict) -> float:
+    return (
+        min(c["CANADA_EMPLOYMENT_AMOUNT_LIMIT"], employed_income)
+        if employed_income > 0 else 0.0
+    )
+
+
+def _eligible_dependent_federal(
+    party_num: int, children_live_with: int, bpa_fed: float
+) -> float:
+    if (
+        (party_num == 1 and children_live_with == 1)
+        or (party_num == 2 and children_live_with == 2)
+        or children_live_with == 4
+    ):
+        return bpa_fed
+    return 0.0
+
+
+def _total_federal_credits(
+    total_income: float,
+    taxable_income: float,
+    employed_income: float,
+    self_employed_income: float,
+    age: int,
+    party_num: int,
+    children_live_with: int,
+    has_disability: bool,
+    c: dict,
+    year: int,
+) -> float:
+    bpa = _bpa_federal(taxable_income, c)
+    print(
+        f"bpa: {bpa} \nage amount: {_age_amount_federal(age, taxable_income, c)}\n"
+        f" eligible dep {_eligible_dependent_federal(party_num, children_live_with, bpa)}"
+    )
+    print(
+        f"bascpp: {_base_cpp(employed_income, self_employed_income, c)}\n"
+        f" ei:{_ei(employed_income, c)}\n"
+        f" canada employment amount {_canada_employment_amount(employed_income, c)}"
+    )
+    print(f"disability: {(c['DISABILITY_AMOUNT_FED'] if has_disability else 0.0)}")
+    return (
+        bpa
+        + _age_amount_federal(age, taxable_income, c)
+        + _eligible_dependent_federal(party_num, children_live_with, bpa)
+        + _base_cpp(employed_income, self_employed_income, c)
+        + _ei(employed_income, c)
+        + _canada_employment_amount(employed_income, c)
+        + (c["DISABILITY_AMOUNT_FED"] if has_disability else 0.0)
+    )
+
+
+def calculate_federal_tax(
+    taxable_income: float,
+    total_income: float,
+    employed_income: float,
+    self_employed_income: float,
+    age: int,
+    party_num: int,
+    children_live_with: int,
+    has_disability: bool,
+    c: dict,
+    year: int,
+) -> float:
+    """Federal tax after non-refundable credits."""
+    row = _find_bracket(c["FEDERAL_BRACKETS"], taxable_income)
+    credits = _total_federal_credits(
+        total_income, taxable_income, employed_income, self_employed_income,
+        age, party_num, children_live_with, has_disability, c, year,
+    )
+    tax = (
+        row["Basic"]
+        + (taxable_income - row["Income_over"]) * row["Rate"]
+        - credits * c["FEDERAL_CREDIT_RATE"]
+    )
+    return max(tax, 0.0)
+
+
+# ===========================================================================
+# ONTARIO PROVINCIAL TAX
+# ===========================================================================
+
+def _eligible_dependent_ontario(party_num: int, children_live_with: int, c: dict) -> float:
+    if (
+        (party_num == 1 and children_live_with == 1)
+        or (party_num == 2 and children_live_with == 2)
+        or children_live_with == 4
+    ):
+        return c["AMOUNT_FOR_ELIGIBLE_DEPENDENT_ON"]
+    return 0.0
+
+
+def _age_amount_ontario(age: int, taxable_income: float, c: dict) -> float:
+    if age >= 65:
+        return max(
+            c["ON_AGE_AMOUNT_BASE"]
+            - max(taxable_income - c["ON_AGE_AMOUNT_THRESHOLD"], 0) * ON_AGE_AMOUNT_RATE,
+            0.0,
+        )
+    return 0.0
+
+
+def _total_ontario_credits(
+    taxable_income: float,
+    employed_income: float,
+    self_employed_income: float,
+    age: int,
+    party_num: int,
+    children_live_with: int,
+    has_disability: bool,
+    c: dict,
+) -> float:
+    return (
+        c["BASIC_PERSONAL_AMOUNT_ON"]
+        + _eligible_dependent_ontario(party_num, children_live_with, c)
+        + _age_amount_ontario(age, taxable_income, c)
+        + _base_cpp(employed_income, self_employed_income, c)
+        + _ei(employed_income, c)
+        + (c["DISABILITY_AMOUNT_ON"] if has_disability else 0.0)
+    )
+
+
+def _on_surtax(ontario_tax: float, c: dict) -> float:
+    tier1 = max((ontario_tax - c["ON_SURTAX_THRESHOLD_1"]) * ON_SURTAX_RATE_1, 0.0)
+    tier2 = max((ontario_tax - c["ON_SURTAX_THRESHOLD_2"]) * ON_SURTAX_RATE_2, 0.0)
+    return tier1 + tier2
+
+
+def _on_lift(employed_income: float, taxable_income: float, c: dict) -> float:
+    return round(
+        max(
+            max(min(employed_income * ON_LIFT_RATE, c["ON_LIFT_MAX"]), 0.0)
+            - max(taxable_income - c["ON_LIFT_INDIVIDUAL_THRESHOLD"], 0.0) * ON_LIFT_REDUCTION_RATE,
+            0.0,
+        ),
+        4,
+    )
+
+
+def _on_health_premium(taxable_income: float, c: dict) -> float:
+    row = _find_bracket(c["ON_HEALTH"], taxable_income)
+    return row["Basic"] + (taxable_income - row["Income_over"]) * row["Rate"]
+
+
+def calculate_ontario_tax(
+    taxable_income: float,
+    employed_income: float,
+    self_employed_income: float,
+    age: int,
+    party_num: int,
+    children_live_with: int,
+    num_children: int,
+    has_disability: bool,
+    c: dict,
+) -> float:
+    """
+    Ontario tax pipeline — matches Excel "Screen 2 -WithoutSplexp (2)" 2025:
+      1. Basic ON tax = bracket_tax − credits × 5.05%  (Line 61)
+      2. + surtax                                       (Line 68)
+      3. − Ontario tax reduction  max(2*(base+dep) − tax, 0)   (Line 80)
+         → capped at 0 before next step                 (Line 81/83)
+      4. − LIFT credit                                  (Line 85/86)
+         → capped at 0 before next step
+      5. + health premium                               (Line 89)
+    """
+    prov_row = _find_bracket(c["ON_BRACKETS"], taxable_income)
+    credits  = _total_ontario_credits(
+        taxable_income, employed_income, self_employed_income,
+        age, party_num, children_live_with, has_disability, c,
+    )
+
+    # Step 1 — basic ON tax after credits (Line 61)
+    on_basic = max(
+        prov_row["Basic"]
+        + (taxable_income - prov_row["Income_over"]) * prov_row["Rate"]
+        - credits * ON_CREDIT_RATE,
+        0.0,
+    )
+
+    # Step 2 — surtax on basic ON tax (Line 68)
+    on_with_surtax = on_basic + _on_surtax(on_basic, c)
+
+    # Step 3 — Ontario tax reduction (Line 80 → 81)
+    dep_add        = c["ON_TAX_REDUCTION_DEP"] if num_children > 0 else 0.0
+    tax_reduction  = max((c["ON_TAX_REDUCTION_BASE"] + dep_add) * 2 - on_with_surtax, 0.0)
+    after_reduction = max(on_with_surtax - tax_reduction, 0.0)
+
+    # Step 4 — LIFT credit (Line 85 → 86)
+    lift       = _on_lift(employed_income, taxable_income, c)
+    after_lift = max(after_reduction - lift, 0.0)
+
+    # Step 5 — health premium (Line 89)
+    return after_lift + _on_health_premium(taxable_income, c)
+
+
+# ===========================================================================
+# CHILD DIRECTION
+# ===========================================================================
+
+def which_party_children_live_with(
+    child_counts: dict,
+    child_support_amounts: dict,
+    both_incomes: dict,
+    party_num: int,
+) -> int:
+    """
+    0=no children, 1=with party1, 2=with party2, 4=split.
+    """
+    p1     = child_counts.get("party1", 0)
+    p2     = child_counts.get("party2", 0)
+    shared = child_counts.get("shared", 0)
+    total  = p1 + p2 + shared
+
+    if total == 0:
+        return 0
+
+    # HYBRID
+    if (p1 > 0 or p2 > 0) and shared > 0:
+        return 1 if p1 >= p2 else 2
+
+    # SHARED — all shared, use support then income as tiebreaker
+    if total == shared:
+        cs1 = child_support_amounts.get("party1", 0)
+        cs2 = child_support_amounts.get("party2", 0)
+        if cs1 > cs2: return 2
+        if cs2 > cs1: return 1
+        inc1 = both_incomes.get("party1", 0)
+        inc2 = both_incomes.get("party2", 0)
+        if inc1 > inc2: return 2
+        if inc2 > inc1: return 1
+        return 0
+
+    # SEPARATED / SPLIT
+    if p1 > 0 and party_num == 1: return 1
+    if p2 > 0 and party_num == 2: return 2
+    if p1 > 0 and p2 > 0:        return 4
+    return 0
+
+
+# ===========================================================================
+# CANADA WORKERS BENEFIT
+# ===========================================================================
+
+def calculate_cwb(
+    total_income: float,
+    taxable_income: float,
+    num_children_with_party: int,
+    has_disability: bool,
+    c: dict,
+) -> float:
+    """CWB refundable credit."""
+    if num_children_with_party > 0:
+        cwb_max   = c["CWB_FAMILY_MAX"]
+        threshold = c["CWB_FAMILY_THRESHOLD"]
+    else:
+        cwb_max   = c["CWB_SINGLE_MAX"]
+        threshold = c["CWB_SINGLE_THRESHOLD"]
+
+    basic     = min((total_income - CWB_INCOME_FLOOR) * CWB_RATE, cwb_max)
+    reduction = max((taxable_income - threshold) * CWB_REDUCTION_RATE, 0.0)
+    cwb       = max(basic - reduction, 0.0)
+
+    if has_disability:
+        disab_base = min(
+            (total_income - c["CWB_DISAB_BASE_THRESHOLD"]) * CWB_DISAB_BASE_PERCENT,
+            c["CWB_DISAB_BASE_MAX"],
+        )
+        if num_children_with_party == 0:
+            disab_red = max(
+                (taxable_income - c["CWB_DISAB_RED_THRESHOLD_SINGLE"]) * CWB_DISAB_RED_RATE_SINGLE,
+                0.0,
+            )
+        else:
+            disab_red = max(
+                (taxable_income - c["CWB_DISAB_RED_THRESHOLD_FAMILY"]) * CWB_DISAB_RED_RATE_FAMILY,
+                0.0,
+            )
+        if disab_base - disab_red > 0:
+            cwb += disab_base - disab_red
+
+    return max(cwb, 0.0)
+
+
+# ===========================================================================
+# BENEFITS
+# ===========================================================================
+
+def calculate_ccb(
+    gross_income: float,
+    party_children: list[ChildInfo],
+    year: int,
+    c: dict,
+) -> float:
+    """
+    Canada Child Benefit (annual).
+    """
+    if not party_children:
+        return 0.0
+
+    n = len(party_children)
+    base = sum(
+        c["CCB_CHILD_UNDER_6"] if _child_age(ch.date_of_birth, year) < 6 else c["CCB_CHILD_6_17"]
+        for ch in party_children
+        if _child_age(ch.date_of_birth, year) <= 17
+    )
+
+    if base == 0 or gross_income <= c["CCB_LOWER_THRESHOLD"]:
+        return base
+
+    if n == 1:
+        rate1, rate2 = CCB_RATE_1_PHASE1, CCB_RATE_1_PHASE2
+    elif n == 2:
+        rate1, rate2 = CCB_RATE_2_PHASE1, CCB_RATE_2_PHASE2
+    elif n == 3:
+        rate1, rate2 = CCB_RATE_3_PHASE1, CCB_RATE_3_PHASE2
+    else:
+        rate1, rate2 = CCB_RATE_4_PHASE1, CCB_RATE_4_PHASE2
+
+    phase1_income = min(gross_income, c["CCB_UPPER_THRESHOLD"]) - c["CCB_LOWER_THRESHOLD"]
+    reduction = max(phase1_income, 0.0) * rate1
+
+    if gross_income > c["CCB_UPPER_THRESHOLD"]:
+        reduction += (gross_income - c["CCB_UPPER_THRESHOLD"]) * rate2
+
+    return max(base - reduction, 0.0)
+
+
+def calculate_gst_hst(
+    taxable_income: float,
+    party_children: list[ChildInfo],
+    year: int,
+    c: dict,
+) -> float:
+    """GST/HST benefit."""
+    num_children = len([ch for ch in party_children if _child_age(ch.date_of_birth, year) <= 18])
+    if num_children == 0:
+        credit = c["GST_BASE_CREDIT"]
+    elif num_children == 1:
+        credit = c["GST_BASE_CREDIT"] + c["GST_ELIGIBLE_DEP"]
+    else:
+        credit = c["GST_BASE_CREDIT"] + c["GST_ELIGIBLE_DEP"] + c["GST_OTHER_DEP"] * (num_children - 1)
+
+    clawback = max(taxable_income - c["GST_UPPER_THRESHOLD"], 0.0) * GST_CLAWBACK_RATE
+    return max(credit - clawback, 0.0)
+
+
+def calculate_ocb(
+    taxable_income: float,
+    party_children: list[ChildInfo],
+    year: int,
+    c: dict,
+) -> float:
+    """Ontario Child Benefit (annual)."""
+    num_children = len([ch for ch in party_children if _child_age(ch.date_of_birth, year) <= 17])
+    if num_children == 0:
+        return 0.0
+
+    reduction = max(taxable_income - c["OCB_THRESHOLD"], 0.0) * OCB_REDUCTION_RATE
+    return max((c["OCB_BASE"] - reduction) * num_children, 0.0)
+
+
+def calculate_ostc(
+    taxable_income: float,
+    party_children: list[ChildInfo],
+    year: int,
+    c: dict,
+) -> float:
+    """Ontario Sales Tax Credit."""
+    num_children = len([ch for ch in party_children if _child_age(ch.date_of_birth, year) < 19])
+    credit    = c["OSTC_BASE"] + c["OSTC_CHILD_UNDER_19"] * num_children
+    threshold = c["OSTC_FAMILY_THRESHOLD"] if num_children > 0 else c["OSTC_SINGLE_THRESHOLD"]
+    reduction = max(taxable_income - threshold, 0.0) * OSTC_REDUCTION_RATE
+    return max(credit - reduction, 0.0)
+
+
+def calculate_cai(
+    party_children: list[ChildInfo],
+    year: int,
+    c: dict,
+) -> float:
+    """Climate Action Incentive (Ontario)."""
+    base = c["CAI_INDIVIDUAL"]
+    if party_children:
+        base += c["CAI_FIRST_CHILD_SINGLE_PARENT"]
+        base += c["CAI_PER_ADDITIONAL_CHILD"] * max(len(party_children) - 1, 0)
+    return base
+
+
+# ===========================================================================
+# ONTARIO CHILD-CARE CREDIT ADJUSTMENT
+# ===========================================================================
+
+def _on_care_credit(taxable_income: float, child_care_capped: float, year: int, c: dict) -> float:
+    if child_care_capped <= 0:
+        return 0.0
+    income_over = child_care_capped + taxable_income
+    row = _find_bracket(c["ON_CARE_RATES"], income_over)
+    top_up = 0.20 if year == 2021 else 0.0
+    return child_care_capped * row["Rate"] * (1 + top_up)
+
+
+# ===========================================================================
+# MAIN CALCULATION
+# ===========================================================================
+
+def calculate_taxes(inp: TaxInput) -> dict:
+    """
+    Full tax + benefit calculation for one party.
+    Year-variable constants are loaded from tax_constants.json.
+    """
+
+    # Load the right year's constants once
+    c = get_year_constants(inp.year)
+
+    # ── 1. Taxable income ────────────────────────────────────────────────────
+    taxable_income = calculate_taxable_income(
+        employed_income         = inp.employed_income,
+        self_employed_income    = inp.self_employed_income,
+        other_income            = inp.other_income,
+        support_received        = inp.support_received,
+        deductible_support_paid = inp.deductible_support_paid,
+        child_care_expenses     = inp.child_care_expenses,
+        other_deductions        = inp.other_deductions,
+        year                    = inp.year,
+    )
+
+    total_income = inp.employed_income + inp.self_employed_income + inp.other_income
+
+    # ── 2. Child direction ───────────────────────────────────────────────────
+    children_live_with = which_party_children_live_with(
+        child_counts          = inp.child_counts,
+        child_support_amounts = inp.child_support_amounts,
+        both_incomes          = inp.both_incomes,
+        party_num             = inp.party_num,
+    )
+    party_children = _party_children(inp.children, inp.party_num, children_live_with)
+    num_children   = len(inp.children)
+    has_disability = inp.eligible_for_disability == "Yes"
+
+    # ── 3. Federal credits breakdown ─────────────────────────────────────────
+    bpa_fed      = _bpa_federal(taxable_income, c)
+    age_amt_fed  = _age_amount_federal(inp.age, taxable_income, c)
+    elig_dep_fed = _eligible_dependent_federal(inp.party_num, children_live_with, bpa_fed)
+    cpp_contrib  = _base_cpp(inp.employed_income, inp.self_employed_income, c)
+    ei_prem      = _ei(inp.employed_income, c)
+    ca_emp_amt   = _canada_employment_amount(inp.employed_income, c)
+    disab_fed    = c["DISABILITY_AMOUNT_FED"] if has_disability else 0.0
+    total_fed_credits = _total_federal_credits(
+        total_income, taxable_income,
+        inp.employed_income, inp.self_employed_income,
+        inp.age, inp.party_num, children_live_with, has_disability, c, inp.year,
+    )
+
+    # ── 4. Provincial credits breakdown ──────────────────────────────────────
+    elig_dep_prov     = _eligible_dependent_ontario(inp.party_num, children_live_with, c)
+    age_amt_prov      = _age_amount_ontario(inp.age, taxable_income, c)
+    disab_prov        = c["DISABILITY_AMOUNT_ON"] if has_disability else 0.0
+    total_prov_credits = _total_ontario_credits(
+        taxable_income, inp.employed_income, inp.self_employed_income,
+        inp.age, inp.party_num, children_live_with, has_disability, c,
+    )
+
+    # ── 5. Federal tax ───────────────────────────────────────────────────────
+    federal_tax = calculate_federal_tax(
+        taxable_income       = taxable_income,
+        total_income         = total_income,
+        employed_income      = inp.employed_income,
+        self_employed_income = inp.self_employed_income,
+        age                  = inp.age,
+        party_num            = inp.party_num,
+        children_live_with   = children_live_with,
+        has_disability       = has_disability,
+        c                    = c,
+        year                 = inp.year,
+    )
+
+    # ── 6. Ontario provincial tax ────────────────────────────────────────────
+    prov_row_for_report = _find_bracket(c["ON_BRACKETS"], taxable_income)
+    provincial_tax = calculate_ontario_tax(
+        taxable_income       = taxable_income,
+        employed_income      = inp.employed_income,
+        self_employed_income = inp.self_employed_income,
+        age                  = inp.age,
+        party_num            = inp.party_num,
+        children_live_with   = children_live_with,
+        num_children         = len(party_children),
+        has_disability       = has_disability,
+        c                    = c,
+    )
+
+    # ── 7. CPP/EI payroll deductions ─────────────────────────────────────────
+    cpp_ei = calculate_cpp_ei_deductions(inp.employed_income, inp.self_employed_income, inp.year)
+
+    # ── 8. Canada Workers Benefit ────────────────────────────────────────────
+    num_children_with = inp.child_counts.get(f"party{inp.party_num}", 0)
+    cwb = calculate_cwb(
+        total_income            = total_income,
+        taxable_income          = taxable_income,
+        num_children_with_party = num_children_with,
+        has_disability          = has_disability,
+        c                       = c,
+    )
+
+    # ── 9. Ontario child-care credit adjustment ───────────────────────────────
+    capped_child_care = _child_care_deduction(inp.employed_income, inp.child_care_expenses)
+    prov_credits_adj  = _on_care_credit(taxable_income, capped_child_care, inp.year, c)
+
+    # ── 9b. Ontario tax reduction & LIFT — re-derive for reporting ───────────
+    prov_row_on  = _find_bracket(c["ON_BRACKETS"], taxable_income)
+    on_credits_v = _total_ontario_credits(
+        taxable_income, inp.employed_income, inp.self_employed_income,
+        inp.age, inp.party_num, children_live_with, has_disability, c,
+    )
+    _on_basic_v  = max(
+        prov_row_on["Basic"]
+        + (taxable_income - prov_row_on["Income_over"]) * prov_row_on["Rate"]
+        - on_credits_v * ON_CREDIT_RATE,
+        0.0,
+    )
+    _on_ws_v     = _on_basic_v + _on_surtax(_on_basic_v, c)
+    dep_add_v    = c["ON_TAX_REDUCTION_DEP"] if len(party_children) > 0 else 0.0
+    on_tax_reduction_amt = max((c["ON_TAX_REDUCTION_BASE"] + dep_add_v) * 2 - _on_ws_v, 0.0)
+    on_lift_amt          = _on_lift(inp.employed_income, taxable_income, c)
+
+    # ── 10. Total taxes ───────────────────────────────────────────────────────
+    total_taxes = round(
+        federal_tax + provincial_tax + cpp_ei - prov_credits_adj - cwb,
+        4,
+    )
+
+    # ── 11. Benefits ──────────────────────────────────────────────────────────
+    ccb  = calculate_ccb(taxable_income, party_children, inp.year, c)
+    gst  = calculate_gst_hst(taxable_income, party_children, inp.year, c)
+    ocb  = calculate_ocb(taxable_income, party_children, inp.year, c)
+    ostc = calculate_ostc(taxable_income, party_children, inp.year, c)
+    cai  = calculate_cai(party_children, inp.year, c)
+
+    total_benefits = ccb + gst + ocb + ostc + cai
+
+    # ── 12. Net income ────────────────────────────────────────────────────────
+    net_income_after_tax = taxable_income - total_taxes + total_benefits
+
+    # ── Intermediate values for reporting ────────────────────────────────────
+    fed_row  = _find_bracket(c["FEDERAL_BRACKETS"], taxable_income)
+    on_basic = max(
+        prov_row_for_report["Basic"]
+        + (taxable_income - prov_row_for_report["Income_over"]) * prov_row_for_report["Rate"]
+        - total_prov_credits * ON_CREDIT_RATE,
+        0.0,
+    )
+    enhanced_cpp_amt = _enhanced_cpp_deduction(inp.employed_income, inp.self_employed_income, inp.year)
+
+    return {
+        # Income
+        "gross_income":                   total_income,
+        "taxable_income":                 taxable_income,
+
+        # Federal credits
+        "basic_personal_amount_fed":      bpa_fed,
+        "age_amount_fed":                 age_amt_fed,
+        "eligible_dependent_credit_fed":  elig_dep_fed,
+        "cpp_base":                       cpp_contrib,
+        "ei":                             ei_prem,
+        "canada_employment_credit":       ca_emp_amt,
+        "disability_credit_fed":          disab_fed,
+        "cpp_ei_credit":                  cpp_contrib + ei_prem,
+        "total_federal_credits":          total_fed_credits,
+
+        # Provincial credits
+        "basic_personal_amount_prov":     c["BASIC_PERSONAL_AMOUNT_ON"],
+        "eligible_dependent_credit_prov": elig_dep_prov,
+        "age_amount_prov":                age_amt_prov,
+        "disability_credit_prov":         disab_prov,
+        "total_provincial_credits":       total_prov_credits,
+
+        # Tax before credits (raw bracket tax)
+        "federal_tax_before_credits": (
+            fed_row["Basic"]
+            + (taxable_income - fed_row["Income_over"]) * fed_row["Rate"]
+        ),
+        "provincial_tax_before_credits": (
+            prov_row_for_report["Basic"]
+            + (taxable_income - prov_row_for_report["Income_over"]) * prov_row_for_report["Rate"]
+        ),
+
+        # Tax after credits
+        "federal_tax":            federal_tax,
+        "provincial_tax":         provincial_tax,
+        "ontario_health_premium": _on_health_premium(taxable_income, c),
+        "ontario_surtax":         _on_surtax(on_basic, c),
+
+        # CPP / EI
+        "cpp_enhanced":           enhanced_cpp_amt,
+        "cpp2": (
+            enhanced_cpp_amt
+            - max(
+                min(
+                    (inp.employed_income - BASE_CPP_EXEMPTION) * ENHANCED_CPP_RATE,
+                    c["ENHANCED_CPP_LIMIT"],
+                ),
+                0.0,
+            )
+            if inp.employed_income > 0 else 0.0
+        ),
+        "cpp_ei_deductions":      cpp_ei,
+
+        # Benefits
+        "canada_workers_benefit": cwb,
+        "canada_child_benefit":   ccb,
+        "gst_hst_benefit":        gst,
+        "ontario_child_benefit":  ocb,
+        "ontario_sales_tax_credit": ostc,
+        "climate_action_incentive": cai,
+        "total_benefits":         total_benefits,
+
+        # Reporting fields
+        "ontario_tax_reduction":  on_tax_reduction_amt,
+        "ontario_lift_credit":    on_lift_amt,
+
+        # Summary
+        "total_taxes":            total_taxes,
+        "net_income_after_tax":   net_income_after_tax,
+    }
+
+
+def calculate_taxes_from_input(inp: TaxInput) -> dict:
+    """Alias."""
+    return calculate_taxes(inp)

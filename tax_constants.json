@@ -1,0 +1,142 @@
+{
+  "2025": {
+    "_comment": "Section A — UPDATE EVERY YEAR. Sources noted inline. Section B structural rates remain in tax.py.",
+
+    "A1_FEDERAL_CREDIT_RATE": "A1. Federal non-refundable credit rate — lowest federal bracket rate. 2025=14.5%, 2024=15%, 2026+=14%. Source: T4127 Table 8.1 col R.",
+    "FEDERAL_CREDIT_RATE": 0.145,
+
+    "A2_BPA_COMMENT": "A2. Federal Basic Personal Amount (BPA). Income-tested; phases from full to min between 4th/5th bracket floors. Source: T4127 Table 8.2.",
+    "BASIC_PERSONAL_AMOUNT_FED": 16129.00,
+    "BASIC_PERSONAL_AMOUNT_FED_MIN": 14538.00,
+    "BPA_FED_THRESHOLD_LOW": 177882.00,
+    "BPA_FED_THRESHOLD_HIGH": 253414.00,
+    "BPA_FED_PHASE_RANGE": 75532.00,
+
+    "A3_PERSONAL_CREDITS_COMMENT": "A3. Federal personal credit amounts. Source: T4127 Table 8.2 / Schedule 1 / CRA indexed-amounts.",
+    "AMOUNT_FOR_ELIGIBLE_DEPENDENT_FED": 16129.00,
+    "AGE_AMOUNT_BASE": 9025.00,
+    "AGE_AMOUNT_LOWER_THRESHOLD": 45522.00,
+    "DISABILITY_AMOUNT_FED": 10138.00,
+    "CANADA_EMPLOYMENT_AMOUNT_LIMIT": 1471.00,
+
+    "A4_ON_CREDITS_COMMENT": "A4. Ontario provincial credit amounts. Source: Excel calculator / ON428.",
+    "BASIC_PERSONAL_AMOUNT_ON": 12747.00,
+    "AMOUNT_FOR_ELIGIBLE_DEPENDENT_ON": 10971.00,
+    "DISABILITY_AMOUNT_ON": 10267.00,
+    "ON_AGE_AMOUNT_BASE": 5461.00,
+    "ON_AGE_AMOUNT_THRESHOLD": 40495.00,
+
+    "A5_CPP_COMMENT": "A5. CPP contribution limits. Source: canada.ca/cpp-contribution-rates-maximums-exemptions.",
+    "BASE_CPP_LIMIT": 3356.10,
+    "ENHANCED_CPP_LIMIT": 678.00,
+    "CPP2_MAX_AMT": 396.00,
+    "CPP2_PEN_EARNING": 71300.00,
+    "CPP2_MAX_PEN_EARNING": 81200.00,
+    "SELF_EMPLOYED_ENH_CPP_THRESHOLD": 71300.00,
+    "CPP2_SELF_EMPLOYED_MAX": 792.00,
+
+    "A6_EI_COMMENT": "A6. EI premium rate and annual maximum. Source: canada.ca/ei-premium-rates-maximums.",
+    "EI_RATE": 0.0164,
+    "EI_LIMIT": 1077.48,
+
+    "A7_FED_BRACKETS_COMMENT": "A7. Federal tax brackets. Source: T4127 Table 8.1. Basic = cumulative tax at bracket floor.",
+    "FEDERAL_BRACKETS": [
+      {"From":       0, "To":   57375, "Income_over":      0, "Rate": 0.1450, "Basic":      0.000},
+      {"From":   57375, "To":  114750, "Income_over":  57375, "Rate": 0.2050, "Basic":   8319.375},
+      {"From":  114750, "To":  177882, "Income_over": 114750, "Rate": 0.2600, "Basic":  20081.250},
+      {"From":  177882, "To":  253414, "Income_over": 177882, "Rate": 0.2900, "Basic":  36495.570},
+      {"From":  253414, "To": 9999999, "Income_over": 253414, "Rate": 0.3300, "Basic":  58399.850}
+    ],
+
+    "A8_ON_BRACKETS_COMMENT": "A8. Ontario provincial tax brackets. Source: Excel calculator / ON428.",
+    "ON_BRACKETS": [
+      {"From":       0, "To":   52886, "Income_over":      0, "Rate": 0.0505, "Basic":      0.000},
+      {"From":   52886, "To":  105775, "Income_over":  52886, "Rate": 0.0915, "Basic":   2670.743},
+      {"From":  105775, "To":  150000, "Income_over": 105775, "Rate": 0.1116, "Basic":   7510.087},
+      {"From":  150000, "To":  220000, "Income_over": 150000, "Rate": 0.1216, "Basic":  12445.597},
+      {"From":  220000, "To": 9999999, "Income_over": 220000, "Rate": 0.1316, "Basic":  20957.597}
+    ],
+
+    "A9_ON_HEALTH_COMMENT": "A9. Ontario Health Premium. Source: ON428. Unchanged since 2004 but verify annually.",
+    "ON_HEALTH": [
+      {"From":       0, "To":   20000, "Income_over":      0, "Rate": 0.00, "Basic":   0},
+      {"From":   20000, "To":   25000, "Income_over":  20000, "Rate": 0.06, "Basic":   0},
+      {"From":   25000, "To":   36000, "Income_over":      0, "Rate": 0.00, "Basic": 300},
+      {"From":   36000, "To":   38500, "Income_over":  36000, "Rate": 0.06, "Basic": 300},
+      {"From":   38500, "To":   48000, "Income_over":      0, "Rate": 0.00, "Basic": 450},
+      {"From":   48000, "To":   48600, "Income_over":  48000, "Rate": 0.25, "Basic": 450},
+      {"From":   48600, "To":   72000, "Income_over":      0, "Rate": 0.00, "Basic": 600},
+      {"From":   72000, "To":   72600, "Income_over":  72000, "Rate": 0.25, "Basic": 600},
+      {"From":   72600, "To":  200000, "Income_over":      0, "Rate": 0.00, "Basic": 750},
+      {"From":  200000, "To":  200600, "Income_over": 200000, "Rate": 0.25, "Basic": 750},
+      {"From":  200600, "To": 9999999, "Income_over":      0, "Rate": 0.00, "Basic": 900}
+    ],
+
+    "A10_ON_CARE_COMMENT": "A10. Ontario child-care credit rates. Source: Excel calculator / ON479.",
+    "ON_CARE_RATES": [
+      {"From":       0, "To":   20000, "Rate": 0.75},
+      {"From":   20000, "To":   25000, "Rate": 0.70},
+      {"From":   25000, "To":   30000, "Rate": 0.65},
+      {"From":   30000, "To":   35000, "Rate": 0.60},
+      {"From":   35000, "To":   40000, "Rate": 0.55},
+      {"From":   40000, "To":   45000, "Rate": 0.50},
+      {"From":   45000, "To":   50000, "Rate": 0.45},
+      {"From":   50000, "To":   55000, "Rate": 0.40},
+      {"From":   55000, "To":   60000, "Rate": 0.37},
+      {"From":   60000, "To":   65000, "Rate": 0.33},
+      {"From":   65000, "To":   70000, "Rate": 0.27},
+      {"From":   70000, "To":  150000, "Rate": 0.20},
+      {"From":  150000, "To": 9999999, "Rate": 0.20}
+    ],
+
+    "A11_ON_SURTAX_COMMENT": "A11. Ontario surtax thresholds. Source: ON428. Indexed annually.",
+    "ON_SURTAX_THRESHOLD_1": 5710.00,
+    "ON_SURTAX_THRESHOLD_2": 7307.00,
+
+    "A12_ON_TAX_REDUCTION_COMMENT": "A12. Ontario tax reduction. Source: Excel calculator / ON428.",
+    "ON_TAX_REDUCTION_BASE": 306.00,
+    "ON_TAX_REDUCTION_DEP": 565.00,
+
+    "A13_ON_LIFT_COMMENT": "A13. Ontario LIFT credit. Source: ON428. Indexed annually.",
+    "ON_LIFT_MAX": 875.00,
+    "ON_LIFT_INDIVIDUAL_THRESHOLD": 32500.00,
+
+    "A14_CWB_COMMENT": "A14. Canada Workers Benefit. Source: Schedule 6 / canada.ca/canada-workers-benefit. Dollar amounts indexed; rates fixed (see Section B in tax.py).",
+    "CWB_SINGLE_MAX": 1690.00,
+    "CWB_FAMILY_MAX": 2583.00,
+    "CWB_SINGLE_THRESHOLD": 25450.00,
+    "CWB_FAMILY_THRESHOLD": 32136.00,
+    "CWB_DISAB_BASE_MAX": 784.00,
+    "CWB_DISAB_BASE_THRESHOLD": 1150.00,
+    "CWB_DISAB_RED_THRESHOLD_SINGLE": 25450.00,
+    "CWB_DISAB_RED_THRESHOLD_FAMILY": 32136.00,
+
+    "A15_CCB_COMMENT": "A15. Canada Child Benefit. Source: canada.ca/canada-child-benefit-overview. Indexed July 1. Phase-out rates fixed in ITA (Section B in tax.py).",
+    "CCB_CHILD_UNDER_6": 7787.00,
+    "CCB_CHILD_6_17": 6570.00,
+    "CCB_LOWER_THRESHOLD": 36503.00,
+    "CCB_UPPER_THRESHOLD": 79087.00,
+
+    "A16_GST_COMMENT": "A16. GST/HST benefit. Source: canada.ca/gst-hst-credit. Indexed quarterly/annually.",
+    "GST_BASE_CREDIT": 519.00,
+    "GST_ELIGIBLE_DEP": 340.00,
+    "GST_OTHER_DEP": 179.00,
+    "GST_LOWER_THRESHOLD": 11039.00,
+    "GST_UPPER_THRESHOLD": 44324.00,
+
+    "A17_OCB_COMMENT": "A17. Ontario Child Benefit. Source: Excel calculator / ontario.ca.",
+    "OCB_BASE": 1680.00,
+    "OCB_THRESHOLD": 25646.00,
+
+    "A18_OSTC_COMMENT": "A18. Ontario Sales Tax Credit. Source: Excel calculator / ontario.ca.",
+    "OSTC_BASE": 366.00,
+    "OSTC_CHILD_UNDER_19": 366.00,
+    "OSTC_FAMILY_THRESHOLD": 34493.00,
+    "OSTC_SINGLE_THRESHOLD": 27585.00,
+
+    "A19_CAI_COMMENT": "A19. Climate Action Incentive — Ontario amounts. Source: Excel calculator.",
+    "CAI_INDIVIDUAL": 560.00,
+    "CAI_FIRST_CHILD_SINGLE_PARENT": 280.00,
+    "CAI_PER_ADDITIONAL_CHILD": 140.00
+  }
+}

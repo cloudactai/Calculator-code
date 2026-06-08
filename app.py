@@ -14,6 +14,7 @@ from datetime import date
 from flask import Flask, request, jsonify, render_template
 from flask_cors import CORS
 import anthropic
+from spousal_support import calculate_spousal_support
 #comment
 # ── Make sure child_support.py is importable ─────────────────────────────────
 THIS_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -371,7 +372,48 @@ def chat():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
+@app.route("/spousal-calculate", methods=["POST"])
+def spousal_calculate():
+    try:
+        data = request.get_json(force=True)
 
+        party1_name   = data.get("party1_name", "Party 1")
+        party2_name   = data.get("party2_name", "Party 2")
+        party1_income = float(data["party1_income"])
+        party2_income = float(data["party2_income"])
+        years         = float(data["years"])
+        recipient_age = float(data["recipient_age"])
+
+        result = calculate_spousal_support(
+            party1_name=party1_name,
+            party2_name=party2_name,
+            party1_income=party1_income,
+            party2_income=party2_income,
+            years=years,
+            recipient_age=recipient_age,
+        )
+
+        return jsonify({
+            "payor":             result.payor,
+            "recipient":         result.recipient,
+            "gross_income_diff": result.gross_income_diff,
+            "pct_low":           result.pct_low,
+            "pct_med":           result.pct_med,
+            "pct_high":          result.pct_high,
+            "monthly_low":       result.monthly_low,
+            "monthly_med":       result.monthly_med,
+            "monthly_high":      result.monthly_high,
+            "annual_low":        result.annual_low,
+            "annual_med":        result.annual_med,
+            "annual_high":       result.annual_high,
+            "duration_label":    result.duration_label,
+        })
+
+    except KeyError as e:
+        return jsonify({"error": f"Missing field: {e}"}), 400
+    except Exception as e:
+        return jsonify({"error": str(e)}), 400
+    
 # ── Entry point ───────────────────────────────────────────────────────────────
 
 if __name__ == "__main__":
