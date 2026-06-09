@@ -1,0 +1,82 @@
+.customBadge {
+  text-align: center;
+  padding: 4px 30px;
+  border-radius: 25px;
+  border: 2px $black solid;
+  gap: 10px;
+  display: inline-flex;
+  text-decoration: none;
+  text-wrap: nowrap;
+  cursor: pointer;
+
+  color: $black;
+  font-size: 16px;
+  font-weight: 600;
+
+  &.customBadge-primary {
+    border-color: $primary;
+  }
+
+  &.customBadge-secondary {
+    border-color: $secondary;
+  }
+
+  &.customBadge-success {
+    border-color: $green;
+  }
+
+  &.customBadge-danger {
+    border-color: $red;
+  }
+
+  &.customBadge-light {
+    border-color: $white;
+  }
+
+  &.customBadge-dark {
+    border-color: $black;
+  }
+}
+
+.statusBadge {
+  text-align: center;
+  padding: 6px 30px;
+  background-color: $blue;
+  border-radius: 8px;
+  gap: 10px;
+  text-decoration: none;
+  text-wrap: nowrap;
+  cursor: pointer;
+
+  color: $black;
+  font-size: 14px;
+  font-weight: 500;
+
+  &.statusBadge-primary {
+    background-color: $primary;
+  }
+
+  &.statusBadge-secondary {
+    background-color: $secondary;
+  }
+
+  &.statusBadge-success {
+    background-color: $green;
+  }
+
+  &.statusBadge-danger {
+    background-color: $red;
+  }
+
+  &.statusBadge-light {
+    background-color: $white;
+  }
+
+  &.statusBadge-dark {
+    background-color: $black;
+  }
+
+  &.statusBadge-disabled {
+    opacity: 50%;
+  }
+}

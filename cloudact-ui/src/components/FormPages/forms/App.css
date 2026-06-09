@@ -1,0 +1,397 @@
+/* App.css */
+
+/* Main container for the PDF viewer */
+.pdf-viewer-container {
+  display: flex;
+}
+
+.toolbar {
+position: sticky;
+top: 0;
+z-index: 1;
+background-color: white;
+padding: 10px;
+border-bottom: 1px solid #e5e7eb;
+box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+/* css for the form mapper starts */
+.mapping-dropdown {
+  font-size: 20px;
+  line-height: 27px;
+  font-weight: 600;
+}
+
+.mapping-dropdown-drop {
+  font-size: 14px;
+  line-height: 22px;
+  font-weight: 500;
+}
+
+.button-container {
+  display: flex;
+  flex-direction: column; 
+  gap: 10px; 
+  align-items: center;
+}
+.button-container .btn {
+  width: 70%; 
+}
+
+.form-dropdowns {
+  margin-bottom: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.form-dropdowns-inline {
+  display: flex;
+  align-items: flex-start;
+  gap: 20px; 
+}
+
+.dropdown-container {
+  flex: 1; 
+}
+
+.mapping-dropdown-heading {
+  font-size: 1rem;
+  font-weight: bold;
+  margin-bottom: 8px;
+  color: #333;
+}
+
+.mapping-dropdown-drop {
+  width: 100%;
+}
+
+.select__control {
+  border: 1px solid #ccc;
+  border-radius: 5px;
+  box-shadow: none;
+}
+
+.select__control:hover {
+  border-color: #888;
+}
+
+.select__menu {
+  z-index: 1050;
+}
+
+/* css for the form mapper ends */
+
+.react-pdf__Page__canvas {
+margin: 20px 0px;
+}
+
+
+.toolbar-dropdown {
+  position: relative;
+  margin-right: 15px;
+}
+
+.toolbar-dropdown-button {
+  display: flex;
+  align-items: center;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 8px;
+}
+
+.page-indicator {
+  display: flex;
+  align-items: center;
+  margin-right: auto;
+}
+
+.page-button {
+  align-items: center;
+  background: #3d424e33;
+  border: 0;
+  color: #3d424e;
+  cursor: pointer;
+  display: flex;
+  height: 29px;
+  justify-content: center;
+  padding: 5px 3px;
+  touch-action: none;
+  transition: all .15s;
+  width: 26px;
+}
+
+.page-button:disabled {
+  opacity: 50%;
+  background: #3d424e33;
+}
+
+.left-border {
+  border-radius: 4px 0 0 4px;
+}
+
+.right-border {
+  border-radius: 0 4px 4px 0;
+}
+
+.page-number {
+  background: #3d424e33;
+  border: none;
+  color: #3d424e;
+  font-size: 0.875rem;
+  font-weight: 400;
+  margin: 0 1px;
+  padding: 4px;
+  text-align: center;
+  transition: all .15s;
+  width: 48px;
+  height: 29px;
+}
+
+.toolbar-buttons {
+  display: flex;
+}
+
+.toolbar-button {
+  margin: 0 5px;
+  padding: 8px 12px;
+  border: none;
+  border-radius: 4px;
+  background-color: #007bff; /* Bootstrap primary color */
+  color: white;
+  cursor: pointer;
+  transition: background-color 0.3s;
+}
+
+.toolbar-button:hover {
+  background-color: #0056b3; /* Darken on hover */
+}
+
+
+/* Page Thumbnails styles */
+.page-thumbnails {
+  width: 150px;
+  margin-right: 10px;
+  overflow-y: scroll;
+  border-right: 1px solid #ccc; /* Add a border for separation */
+  padding-right: 10px;
+}
+
+/* Thumbnails for each page */
+.page-thumbnails div {
+  cursor: pointer;
+  margin-bottom: 5px;
+  text-align: center;
+}
+
+/* PDF viewer styles */
+.pdf-viewer {
+  position: relative;
+  flex-grow: 1; /* Allow the viewer to take the remaining space */
+}
+
+/* Customization panel styles */
+.customization-panel {
+  width: 200px;
+  padding: 10px;
+  background-color: #f0f0f0;
+  border-left: 1px solid #ccc; /* Add a border for separation */
+}
+
+/* Resizable box */
+.react-resizable {
+  position: relative;
+}
+
+/* Resizing handle */
+.resize-handle {
+  width: 10px;
+  height: 10px;
+  background-color: black;
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  cursor: se-resize;
+}
+
+
+.customization-toolbar {
+padding: 10px;
+border-top: 1px solid rgb(204, 204, 204);
+background-color: rgb(248, 248, 248);
+display: flex;
+/* flex-direction: column; */
+}
+
+.customization-form {
+display: flex;
+align-items: center;
+justify-content: space-between;
+}
+
+.toolbox {
+display: flex;
+align-items: center;
+margin-right: 10px;
+}
+
+/* .toolbar-button {
+background: none;
+border: none;
+cursor: pointer;
+padding: 5px;
+} */
+
+.toolbar-button:hover {
+background-color: rgba(0, 0, 0, 0.1);
+border-radius: 5px;
+}
+
+
+
+#pdfContainer {
+flex: 1 1 0%;
+position: relative;
+display: flex;
+justify-content: center;
+overflow: hidden;
+height: 100%;
+}
+
+#pdfViewer {
+display: flex;
+  flex-grow: 1;
+  background-color: #3e3e3e;
+}
+
+.sidebar-container {
+transition: width 0.3s ease;
+}
+
+.sidebar-container.open {
+width: 25%; /* Approx col-md-3 width */
+}
+
+.sidebar-container.closed {
+width: 0;
+overflow: hidden;
+display: none;
+}
+
+.page-content {
+transition: width 0.3s ease;
+}
+
+.col-md-12 .page-content {
+width: 100%;
+}
+
+/* .col-md-9 .page-content {
+width: 75%;
+} */
+
+/* Add this CSS */
+.toolbar-container {
+background: #ffffff;
+border: none;
+box-shadow: 0 2px 4px rgba(0,0,0,0.08);
+}
+
+.toolbar-btn {
+padding: 0.5rem;
+transition: all 0.2s ease;
+border: 1px solid transparent;
+background: transparent;
+}
+
+.nav-btn {
+color: #6c757d;
+border-radius: 4px;
+}
+
+.nav-btn:hover:not(:disabled) {
+background: #f8f9fa;
+color: #495057;
+}
+
+.field-btn {
+color: #3b82f6;
+border: 1px solid #3b82f6;
+}
+
+.field-btn:hover {
+background: #3b82f6;
+color: white;
+}
+
+.align-btn {
+color: #6b7280;
+border: 1px solid #6b7280;
+}
+
+.align-btn:hover {
+background: #6b7280;
+color: white;
+}
+
+.action-btn {
+border: 1px solid;
+}
+
+.delete-btn {
+color: #dc3545;
+border-color: #dc3545;
+}
+
+.delete-btn:hover:not(:disabled) {
+background: #dc3545;
+color: white;
+}
+
+.save-btn {
+color: #198754;
+border-color: #198754;
+}
+
+.save-btn:hover {
+background: #198754;
+color: white;
+}
+
+.pdf-btn {
+color: #6f42c1;
+border-color: #6f42c1;
+}
+
+.pdf-btn:hover {
+background: #6f42c1;
+color: white;
+}
+
+.tooltip-wrapper {
+position: relative;
+}
+
+.custom-tooltip {
+position: absolute;
+bottom: -30px;
+left: 50%;
+transform: translateX(-50%);
+background-color: rgba(0, 0, 0, 0.8);
+color: white;
+padding: 4px 8px;
+border-radius: 4px;
+font-size: 12px;
+white-space: nowrap;
+z-index: 1000;
+display: none;
+}
+
+.tooltip-wrapper:hover .custom-tooltip {
+display: block;
+}
+
+button:disabled {
+opacity: 0.6;
+cursor: not-allowed;
+}

@@ -1,0 +1,30 @@
+$heading-color: #0171c0;
+$sub-heading-color: #d9e1f2;
+
+.calculator{  
+    &__form{
+        background-color: white;
+        // width: 90%;
+        color: black;
+        // height: 400px;
+        .Dropdown-placeholder
+        {
+            width: 400%;
+        }
+    }   
+}
+
+.calculator_reports{
+    .heading-blue
+    {
+        color: $heading-color;
+    }
+
+    .sub-heading{
+        background-color: $sub-heading-color;
+    }
+
+    .heading-border-blue{
+        border-bottom: 3px solid $heading-color;
+    }
+}

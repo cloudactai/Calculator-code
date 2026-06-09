@@ -1,0 +1,38 @@
+.btn{
+    font-size: 14px;
+    font-weight: 600;
+    padding: 0 25px !important;
+    height: 45px;
+    display: flex;
+    align-items: center;
+    box-shadow: none !important;
+    justify-content: center;
+    @include radius(10px);
+    font-weight: 700;
+    >i{
+        margin-left: 5px;
+    }
+    &.btnPrimary{
+        background-color: $secondary;
+        color: $black;
+    }
+    &.btnSecondary{
+        border: #73C3FD solid 1px;
+        background-color: transparent;
+        @include radius(50px);
+        &.icon{
+            width: 45px;
+            padding: 0 !important;
+            i{
+                margin: 0;
+            }
+        }
+    }
+    &.btnDefault{
+        border-color: #73C3FD;
+    }
+    &.blue{
+        background-color: #73C3FD;
+        color: $black;
+    }
+}

@@ -1,0 +1,318 @@
+
+@page {
+    size: A4;
+    margin: 0;
+}
+
+.flr25-page {
+    position: relative;
+    width: 8.5in;
+    height: 11in;
+    margin: 0.4cm auto;
+    background-color: #ffffff;
+    box-shadow: 0 8px 8px rgba(0, 0, 0, 0.15), 0 8px 8px rgba(0, 0, 0, 0.15), 0 8px 8px rgba(0, 0, 0, 0.15), 0 8px 8px rgba(0, 0, 0, 0.15);
+}
+
+@media print {
+    /* div.page {
+        margin: 0;
+        page-break-after: always;
+        box-shadow: none;
+        -webkit-print-color-adjust: exact;
+    } */
+}
+
+.flr25-page-content {
+    padding: 0.4in 0.5in;
+}
+
+.text-center {
+    text-align: center;
+}
+
+.text-right {
+    text-align: right;
+}
+
+.text-left {
+    text-align: left;
+}
+
+.text-justify {
+    text-align: justify;
+}
+
+.text-italic {
+    font-style: italic;
+}
+
+.text-underline {
+    text-decoration: underline;
+}
+
+p, label {
+    margin: 0;
+    padding: 0;
+    color: #000000;
+    font-weight: 500;
+    line-height: 1.25;
+}
+
+/* input[type=text], textarea, select, select option {
+    display: block;
+    width: calc(100% - 8px);
+    outline: none;
+    border: none;
+    font-family: inherit;
+    color: #000000;
+    margin: 0;
+    padding: 2px 4px;
+    font-weight: 500;
+    background-color: #ededed;
+}
+
+select, select option {
+    font-size: 12pt;
+    width: 100%;
+
+} */
+
+textarea {
+    resize: none;
+}
+
+.flr25-custom-checkbox input[type="checkbox"] {
+    display: none;
+}
+
+.flr25-custom-checkbox {
+    position: relative;
+    cursor: pointer;
+    padding-left: 17px;
+}
+
+.flr25-custom-checkbox .checkmark {
+    position: absolute;
+    top: 1.5px;
+    left: 0;
+    height: 12px;
+    width: 12px;
+    background-color: #f1f4ff;
+    border: 1px solid #000000;
+}
+
+.flr25-custom-checkbox input[type="checkbox"]:checked + .checkmark {
+    background-color: #f1f4ff;
+    border: 1px solid #000000;
+}
+
+.flr25-custom-checkbox .checkmark:after {
+    content: "";
+    position: absolute;
+    display: none;
+    left: 4px;
+    top: 1px;
+    width: 2px;
+    height: 6px;
+    border: solid #000;
+    border-width: 0 2px 2px 0;
+    transform: rotate(45deg);
+}
+
+.flr25-custom-checkbox input[type="checkbox"]:checked + .checkmark:after {
+    display: block;
+}
+
+.fw-300 {
+    font-weight: 300;
+}
+
+.fw-400 {
+    font-weight: 400;
+}
+
+.fw-500 {
+    font-weight: 500;
+}
+
+.fw-600 {
+    font-weight: 600;
+}
+
+.fw-700 {
+    font-weight: 700;
+}
+
+.fw-800 {
+    font-weight: 800;
+}
+
+.text-20 {
+    font-size: 20pt;
+}
+
+.text-18 {
+    font-size: 18pt;
+}
+
+.text-17 {
+    font-size: 17pt;
+}
+
+.text-16 {
+    font-size: 16pt;
+}
+
+.text-15 {
+    font-size: 15pt;
+}
+
+.text-14 {
+    font-size: 14pt;
+}
+
+.text-13 {
+    font-size: 13pt;
+}
+
+.text-12 {
+    font-size: 12pt;
+}
+
+.text-11 {
+    font-size: 11pt;
+}
+
+.text-10 {
+    font-size: 10pt;
+}
+
+.text-9 {
+    font-size: 9pt;
+}
+
+.text-8 {
+    font-size: 8pt;
+}
+
+.text-7 {
+    font-size: 7pt;
+}
+
+.text-6 {
+    font-size: 6pt;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+td {
+    padding: 0;
+}
+
+.valign-top {
+    vertical-align: top;
+}
+
+.valign-middle {
+    vertical-align: middle;
+}
+
+.valign-bottom {
+    vertical-align: bottom;
+}
+
+.mt-5 {
+    margin-top: 5px;
+}
+
+.mt-10 {
+    margin-top: 10px;
+}
+
+.mt-15 {
+    margin-top: 15px;
+}
+
+.mt-20 {
+    margin-top: 20px;
+}
+
+.mt-25 {
+    margin-top: 25px;
+}
+
+.mt-30 {
+    margin-top: 30px;
+}
+
+.mx-auto {
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.px-4 {
+    padding-left: 4px !important;
+    padding-right: 4px !important;
+}
+
+.px-10 {
+    padding-left: 10px !important;
+    padding-right: 10px !important;
+}
+
+.py-10 {
+    padding-top: 10px !important;
+    padding-bottom: 10px !important;
+}
+
+.d-inline-block {
+    display: inline-block !important;
+}
+
+.d-flex {
+    display: flex !important;
+}
+
+.border-1 {
+    border: 1px solid #000000;
+}
+
+.border-bottom {
+    border-bottom: 1px solid #000000 !important;
+}
+
+.div-seal {
+    border: 1px solid #000000;
+    border-radius: 50%;
+    width: 90px;
+    height: 90px;
+    margin: 0 auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.tbl-bordered td {
+    border: 1px solid #000000;
+}
+
+hr {
+    border: 0;
+    border-top: 1px solid #000000;
+    margin: 2px 0;
+}
+   
+
+a#clear_form {
+    margin-left: auto;
+}
+
+.flr-page-footer {
+    position: absolute;
+    width: calc(100% - 1in);
+    left: 0.5in;
+    bottom: 0.4in;
+}

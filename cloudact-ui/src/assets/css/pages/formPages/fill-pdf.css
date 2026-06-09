@@ -1,0 +1,143 @@
+.pdf-form table.table-col-5 {
+  width: 100%;
+}
+
+.pdf-form table.table-col-5 thead tr th,
+.pdf-form table.table-col-5 thead tr td,
+.pdf-form table.table-col-5 tbody tr th,
+.pdf-form table.table-col-5 tbody tr td {
+  border: 1px solid rgba(23, 29, 52, 0.6);
+  text-align: center;
+  width: unset;
+  width: 20%;
+}
+
+.pdf-form table.table-col-5 thead tr td:last-child,
+.pdf-form table.table-col-5 tbody tr td:last-child {
+  width: 10%;
+}
+
+.pdf-form table.table-col-5 thead tr td .form-control,
+.pdf-form table.table-col-5 thead tr td .data-group textarea,
+.pdf-form .data-group table.table-col-5 thead tr td textarea,
+.pdf-form table.table-col-5 tbody tr td .form-control,
+.pdf-form table.table-col-5 tbody tr td .data-group textarea,
+.pdf-form .data-group table.table-col-5 tbody tr td textarea {
+  text-align: left;
+  width: 100%;
+  border: unset;
+  padding: 10px;
+}
+
+.amount {
+  text-align: right !important;
+}
+
+.headingSeperator {
+  border-bottom: 1px solid;
+  margin-bottom: 1rem;
+}
+
+
+.pdf-form table.expense-table tbody tr th {
+  padding: 3px 5px;
+  font-size: 13px;
+}
+
+.pdf-form table.expense-table tbody tr td {
+  padding: 3px 5px;
+  font-size: 13px;
+}
+
+.pdf-form table.expense-table thead tr th {
+  padding: 3px 5px;
+  font-size: 13px;
+}
+
+.pdf-form table.expense-table thead tr th:first-child {
+  border: 1px solid rgba(23, 29, 52, 0.6);
+}
+
+.subtotal-border {
+  border-bottom: 2px solid #000;
+}
+
+
+/* 3-Col-Table */
+.pdf-form table.table-col-3 {
+  width: 100%;
+}
+
+.pdf-form table.table-col-3 thead tr th,
+.pdf-form table.table-col-3 thead tr td,
+.pdf-form table.table-col-3 tbody tr th,
+.pdf-form table.table-col-3 tbody tr td {
+  border: 1px solid rgba(23, 29, 52, 0.6);
+  text-align: center;
+  width: unset;
+  width: 20%;
+}
+
+.pdf-form table.table-col-3 thead tr th:last-child,
+.pdf-form table.table-col-3 thead tr td:last-child,
+.pdf-form table.table-col-3 tbody tr th:last-child,
+.pdf-form table.table-col-3 tbody tr td:last-child {
+  width: 10%;
+}
+
+/* 
+.pdf-form table.table-col-3 thead tr th:first-child,
+.pdf-form table.table-col-3 thead tr td:first-child,
+.pdf-form table.table-col-3 tbody tr th:first-child,
+.pdf-form table.table-col-3 tbody tr td:first-child {
+  width: 10%;
+} */
+
+.pdf-form table.table-col-3 thead tr th:first-child,
+.pdf-form table.table-col-3 thead tr td:first-child,
+.pdf-form table.table-col-3 tbody tr th:first-child,
+.pdf-form table.table-col-3 tbody tr td:first-child {
+  width: 10%;
+}
+.number {
+  width: 3% !important
+}
+/* 
+
+.pdf-form table.table-col-3 thead tr td:last-child,
+.pdf-form table.table-col-3 thead tr th:last-child
+.pdf-form table.table-col-3 tbody tr td:last-child
+ {
+  width: 10%;
+} */
+
+.pdf-form table.table-col-3 thead tr td .form-control,
+.pdf-form table.table-col-3 thead tr td .data-group textarea,
+.pdf-form .data-group table.table-col-3 thead tr td textarea,
+.pdf-form table.table-col-3 tbody tr td .form-control,
+.pdf-form table.table-col-3 tbody tr td .data-group textarea,
+.pdf-form .data-group table.table-col-3 tbody tr td textarea {
+  text-align: left;
+  width: 100%;
+  border: unset;
+  padding: 10px;
+}
+
+.text-right {
+  text-align: right !important;
+}
+
+.children_special_table tbody tr td {
+  padding: 3px 5px;
+  font-size: 13px;
+}
+
+.pdf-form select {
+  border: none !important;
+  padding-bottom: 0 !important;
+}
+
+.border-select {
+  border-bottom: 1px solid rgb(255 255 255);
+  padding-bottom: 0 !important;
+}

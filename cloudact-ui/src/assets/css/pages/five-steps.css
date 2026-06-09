@@ -1,0 +1,22 @@
+.five-steps-page .sidebar {
+  background-color: red; }
+
+.five-steps-page .accordion .accordion-item:last-child button:after {
+  transform: unset; }
+
+.five-steps-page .accordion .accordion-item:last-child button:not(.collapsed):after {
+  transform: rotate(180deg); }
+
+.five-steps-page .accordion .progress-bar {
+  background-color: #AAE07F;
+  height: 10px;
+  width: 100%;
+  position: relative; }
+  .five-steps-page .accordion .progress-bar:before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    background-color: black;
+    height: 10px;
+    width: 30%; }

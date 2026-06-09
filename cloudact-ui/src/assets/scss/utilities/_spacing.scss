@@ -1,0 +1,20 @@
+$units: "300px";
+
+@include generate-classes("w", "width", $units);
+
+$gaps: "50px";
+
+@include generate-classes("gap", "gap", $gaps);
+
+$paddings: "10px", "20px", "30px", "40px", "50px", "60px", "70px", "80px",
+  "90px", "100px";
+
+@include generate-classes("pt", "padding-top", $paddings);
+@include generate-classes("pb", "padding-bottom", $paddings);
+@include generate-classes("pl", "padding-left", $paddings);
+@include generate-classes("pr", "padding-right", $paddings);
+
+@include generate-classes("mt", "margin-top", $paddings);
+@include generate-classes("mb", "margin-bottom", $paddings);
+@include generate-classes("ml", "margin-left", $paddings);
+@include generate-classes("mr", "margin-right", $paddings);
