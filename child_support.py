@@ -18,6 +18,7 @@ individually.
 
 from __future__ import annotations
 
+import math
 from dataclasses import dataclass, field
 from typing import Any
 
@@ -609,19 +610,19 @@ def calculate_child_support(
 
         # ⚠ BUG (SOURCE) #3: uses *difference* not gross; party2 is negative.
         child_support_ref = {
-            "party1": +(paid_by_monthly * 12 + override_sum_p1 * 12),
-            "party2": -(paid_by_monthly * 12 + override_sum_p2 * 12),
+            "party1": +(paid_by_monthly + override_sum_p1),
+            "party2": -(paid_by_monthly + override_sum_p2),
         }
 
     else:  # SEPARATED | SPLIT | HYBRID
         notional_amount_ref = {
-            "party1": notional_p1_monthly * 12 if lives_with_p1 == 1 else 0.0,
-            "party2": notional_p2_monthly * 12 if lives_with_p2 == 2 else 0.0,
+            "party1": notional_p1_monthly if lives_with_p1 == 1 else 0.0,
+            "party2": notional_p2_monthly if lives_with_p2 == 2 else 0.0,
         }
 
         gross = {
-            "party1": cs_p1_monthly * 12 + override_sum_p1 * 12,
-            "party2": cs_p2_monthly * 12 + override_sum_p2 * 12,
+            "party1": cs_p1_monthly + override_sum_p1,
+            "party2": cs_p2_monthly + override_sum_p2,
         }
 
         child_support_ref = {
@@ -630,16 +631,22 @@ def calculate_child_support(
         }
 
     # ------------------------------------------------------------------
-    # Step 7: Return
+    # Step 7: Return  (monthly amounts, rounded up to whole dollars)
     # ------------------------------------------------------------------
     return {
-        # Gross annual amounts regardless of direction.
-        "party1": cs_p1_monthly * 12 + override_sum_p1 * 12,
-        "party2": cs_p2_monthly * 12 + override_sum_p2 * 12,
-        # Net payment direction (who pays whom).
-        "child_support_ref": child_support_ref,
-        # Phantom amount used in spousal support iteration.
-        "notional_amount_ref": notional_amount_ref,
+        # Gross monthly amounts regardless of direction.
+        "party1": math.ceil(cs_p1_monthly + override_sum_p1),
+        "party2": math.ceil(cs_p2_monthly + override_sum_p2),
+        # Net payment direction (who pays whom) — monthly.
+        "child_support_ref": {
+            "party1": math.ceil(child_support_ref["party1"]),
+            "party2": math.ceil(child_support_ref["party2"]),
+        },
+        # Phantom amount used in spousal support iteration — monthly.
+        "notional_amount_ref": {
+            "party1": math.ceil(notional_amount_ref["party1"]),
+            "party2": math.ceil(notional_amount_ref["party2"]),
+        },
     }
 
 

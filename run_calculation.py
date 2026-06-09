@@ -9,6 +9,7 @@ Results will be printed to the terminal.
 """
 
 import json
+import math
 from child_support import calculate_child_support
 
 # ---------------------------------------------------------------------------
@@ -51,22 +52,21 @@ def run(label, **kwargs):
         )
 
         print("\nRESULTS")
-        print(f"  Party 1 gross annual CS  : ${result['party1']:>10,.2f}")
-        print(f"  Party 2 gross annual CS  : ${result['party2']:>10,.2f}")
-        print(f"  Party 1 gross monthly CS : ${result['party1']/12:>10,.2f}")
-        print(f"  Party 2 gross monthly CS : ${result['party2']/12:>10,.2f}")
+        print(f"  Party 1 gross monthly CS : ${result['party1']:>10,}")
+        print(f"  Party 2 gross monthly CS : ${result['party2']:>10,}")
+        print(f"  Party 1 gross annual CS  : ${result['party1'] * 12:>10,}")
+        print(f"  Party 2 gross annual CS  : ${result['party2'] * 12:>10,}")
 
         ref = result["child_support_ref"]
-        print(f"\n  child_support_ref party1 : ${ref['party1']:>10,.2f}  (positive = pays)")
-        print(f"  child_support_ref party2 : ${ref['party2']:>10,.2f}  (negative = receives)")
+        print(f"\n  child_support_ref party1 : ${ref['party1']:>10,}/month  (positive = pays)")
+        print(f"  child_support_ref party2 : ${ref['party2']:>10,}/month  (negative = receives)")
 
         notional = result["notional_amount_ref"]
-        print(f"\n  notional party1 (annual) : ${notional['party1']:>10,.2f}")
-        print(f"  notional party2 (annual) : ${notional['party2']:>10,.2f}")
+        print(f"\n  notional party1 (monthly): ${notional['party1']:>10,}")
+        print(f"  notional party2 (monthly): ${notional['party2']:>10,}")
 
         # Net monthly payment and direction
-        net_annual = ref['party1'] - ref['party2']
-        net_monthly = net_annual / 12
+        net_monthly = ref['party1'] - ref['party2']
         if net_monthly > 0:
             payer, payee = "Party 1", "Party 2"
         elif net_monthly < 0:
@@ -77,9 +77,9 @@ def run(label, **kwargs):
 
         print(f"\n  {'─' * 44}")
         if payer:
-            print(f"  NET CHILD SUPPORT : {payer} pays {payee}  ${net_monthly:>8,.2f}/month")
+            print(f"  NET CHILD SUPPORT : {payer} pays {payee}  ${net_monthly:>8,}/month  (${net_monthly * 12:,}/year)")
         else:
-            print(f"  NET CHILD SUPPORT : $0.00/month (amounts offset)")
+            print(f"  NET CHILD SUPPORT : $0/month (amounts offset)")
 
     except ValueError as e:
         print(f"\n  ERROR: {e}")
@@ -93,15 +93,15 @@ def run(label, **kwargs):
 run(
     "SCENARIO 1 — SEPARATED (all children with Party 2)",
 
-    party1_guideline_income = 39000,
-    party2_guideline_income = 65000,
+    party1_guideline_income = 160000,
+    party2_guideline_income = 20000,
     party1_province         = "ON",
     party2_province         = "ON",
 
-    type_of_splitting = "SPLIT",
+    type_of_splitting = "SEPARATED",
 
     child_counts = {
-        "party1": 1,
+        "party1": 0,
         "party2": 1,
         "shared": 0,
         "party1WithAdultChild": 0,
@@ -115,6 +115,6 @@ run(
     # custody_arrangement: "Party 1" | "Party 2" | "Shared"
     children = [
         {"csg_table": "No", "child_support_override": 0, "custody_arrangement": "Party 2"},
-        {"csg_table": "No", "child_support_override": 0, "custody_arrangement": "Party 1"},
+        # {"csg_table": "No", "child_support_override": 0, "custody_arrangement": "Party 1"},
     ],
 )

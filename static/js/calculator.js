@@ -99,7 +99,7 @@ function toggleOverride(idx) {
 // ── Formatting ────────────────────────────────────────────────────────────────
 function fmt(n) {
   return new Intl.NumberFormat('en-CA', {
-    style: 'currency', currency: 'CAD', maximumFractionDigits: 2
+    style: 'currency', currency: 'CAD', maximumFractionDigits: 0
   }).format(n);
 }
 
@@ -193,43 +193,55 @@ function showResults(data, p1Name, p2Name) {
   document.getElementById('error-msg').style.display = 'none';
   document.getElementById('scenario-tag').textContent = data.scenario;
 
-  const p1Annual = data.party1_annual;
-  const p2Annual = data.party2_annual;
-  const p1Ref = data.child_support_ref.party1;
-  const p2Ref = data.child_support_ref.party2;
+  // All values come pre-calculated from the backend — no client-side arithmetic.
+  const p1Monthly = data.party1_monthly;
+  const p2Monthly = data.party2_monthly;
+  const p1Annual  = data.party1_annual;
+  const p2Annual  = data.party2_annual;
+  const p1RefMonthly = data.child_support_ref.party1_monthly;
+  const p2RefMonthly = data.child_support_ref.party2_monthly;
+  const p1RefAnnual  = data.child_support_ref.party1_annual;
+  const p2RefAnnual  = data.child_support_ref.party2_annual;
 
   document.getElementById('result-grid').innerHTML = `
     <div class="result-item">
-      <div class="label">${p1Name} — Gross Annual CS</div>
+      <div class="label">${p1Name} — Gross CS (monthly)</div>
+      <div class="value">${fmt(p1Monthly)}</div>
+    </div>
+    <div class="result-item">
+      <div class="label">${p2Name} — Gross CS (monthly)</div>
+      <div class="value">${fmt(p2Monthly)}</div>
+    </div>
+    <div class="result-item">
+      <div class="label">${p1Name} — Gross CS (annual)</div>
       <div class="value">${fmt(p1Annual)}</div>
     </div>
     <div class="result-item">
-      <div class="label">${p2Name} — Gross Annual CS</div>
+      <div class="label">${p2Name} — Gross CS (annual)</div>
       <div class="value">${fmt(p2Annual)}</div>
     </div>
     <div class="result-item">
-      <div class="label">${p1Name} pays (annual)</div>
-      <div class="value ${p1Ref > 0 ? 'negative' : ''}">${fmt(p1Ref)}</div>
-    </div>
-    <div class="result-item">
-      <div class="label">${p2Name} pays (annual)</div>
-      <div class="value ${p2Ref > 0 ? 'negative' : ''}">${fmt(p2Ref)}</div>
-    </div>
-    <div class="result-item">
       <div class="label">${p1Name} pays (monthly)</div>
-      <div class="value ${p1Ref > 0 ? 'negative' : ''}">${fmt(p1Ref / 12)}</div>
+      <div class="value ${p1RefMonthly > 0 ? 'negative' : ''}">${fmt(p1RefMonthly)}</div>
     </div>
     <div class="result-item">
       <div class="label">${p2Name} pays (monthly)</div>
-      <div class="value ${p2Ref > 0 ? 'negative' : ''}">${fmt(p2Ref / 12)}</div>
+      <div class="value ${p2RefMonthly > 0 ? 'negative' : ''}">${fmt(p2RefMonthly)}</div>
+    </div>
+    <div class="result-item">
+      <div class="label">${p1Name} pays (annual)</div>
+      <div class="value ${p1RefAnnual > 0 ? 'negative' : ''}">${fmt(p1RefAnnual)}</div>
+    </div>
+    <div class="result-item">
+      <div class="label">${p2Name} pays (annual)</div>
+      <div class="value ${p2RefAnnual > 0 ? 'negative' : ''}">${fmt(p2RefAnnual)}</div>
     </div>
   `;
 
   const netPayer = data.net_payer;
-  const netAmount = data.net_monthly;
   const verdictEl = document.getElementById('verdict');
-  if (netPayer && netAmount > 0) {
-    verdictEl.innerHTML = `<strong>Net payment</strong>${netPayer} pays <b>${fmt(netAmount)}/month</b> (${fmt(netAmount * 12)}/year)`;
+  if (netPayer && data.net_monthly > 0) {
+    verdictEl.innerHTML = `<strong>Net payment</strong>${netPayer} pays <b>${fmt(data.net_monthly)}/month</b> (${fmt(data.net_annual)}/year)`;
   } else {
     verdictEl.innerHTML = `<strong>No net payment</strong> — amounts offset or both parties have $0 obligation.`;
   }

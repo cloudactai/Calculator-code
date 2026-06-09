@@ -8,6 +8,7 @@ Then open:  http://localhost:5050
 from dotenv import load_dotenv
 load_dotenv()
 import json
+import math
 import os
 import sys
 from datetime import date
@@ -105,36 +106,41 @@ def calculate():
             schedule_i_data=SCHEDULE_I,
         )
 
-        # Net payer
+        # Net payer — result values are already monthly (child_support.py returns monthly)
         p1_ref = result["child_support_ref"]["party1"]
         p2_ref = result["child_support_ref"]["party2"]
 
         if p1_ref > 0 and p2_ref <= 0:
             net_payer = data.get("party1_name", "Party 1")
-            net_monthly = round(p1_ref / 12, 2)
+            net_monthly = p1_ref
         elif p2_ref > 0 and p1_ref <= 0:
             net_payer = data.get("party2_name", "Party 2")
-            net_monthly = round(p2_ref / 12, 2)
+            net_monthly = p2_ref
         elif p1_ref > p2_ref:
             net_payer = data.get("party1_name", "Party 1")
-            net_monthly = round((p1_ref - p2_ref) / 12, 2)
+            net_monthly = p1_ref - p2_ref
         elif p2_ref > p1_ref:
             net_payer = data.get("party2_name", "Party 2")
-            net_monthly = round((p2_ref - p1_ref) / 12, 2)
+            net_monthly = p2_ref - p1_ref
         else:
             net_payer = None
-            net_monthly = 0.0
+            net_monthly = 0
 
         return jsonify({
-            "scenario":          type_of_splitting,
-            "party1_annual":     round(result["party1"], 2),
-            "party2_annual":     round(result["party2"], 2),
+            "scenario":            type_of_splitting,
+            "party1_monthly":      result["party1"],
+            "party2_monthly":      result["party2"],
+            "party1_annual":       result["party1"] * 12,
+            "party2_annual":       result["party2"] * 12,
             "child_support_ref": {
-                "party1": round(result["child_support_ref"]["party1"], 2),
-                "party2": round(result["child_support_ref"]["party2"], 2),
+                "party1_monthly":  result["child_support_ref"]["party1"],
+                "party2_monthly":  result["child_support_ref"]["party2"],
+                "party1_annual":   result["child_support_ref"]["party1"] * 12,
+                "party2_annual":   result["child_support_ref"]["party2"] * 12,
             },
-            "net_payer":   net_payer,
-            "net_monthly": net_monthly,
+            "net_payer":    net_payer,
+            "net_monthly":  net_monthly,
+            "net_annual":   net_monthly * 12,
         })
 
     except Exception as e:
@@ -285,35 +291,41 @@ def run_calc_tool(tool_input):
         schedule_i_data=SCHEDULE_I,
     )
 
+    # result values are already monthly (child_support.py returns monthly)
     p1_ref = result["child_support_ref"]["party1"]
     p2_ref = result["child_support_ref"]["party2"]
     p1_name = tool_input.get("party1_name", "Party 1")
     p2_name = tool_input.get("party2_name", "Party 2")
 
-    # Figure out who pays whom and how much per month
+    # Figure out who pays whom — p1_ref/p2_ref are already monthly whole dollars
     if p1_ref > 0 and p2_ref <= 0:
-        net_payer, net_monthly = p1_name, round(p1_ref / 12, 2)
+        net_payer, net_monthly = p1_name, p1_ref
     elif p2_ref > 0 and p1_ref <= 0:
-        net_payer, net_monthly = p2_name, round(p2_ref / 12, 2)
+        net_payer, net_monthly = p2_name, p2_ref
     elif p1_ref > p2_ref:
-        net_payer, net_monthly = p1_name, round((p1_ref - p2_ref) / 12, 2)
+        net_payer, net_monthly = p1_name, p1_ref - p2_ref
     elif p2_ref > p1_ref:
-        net_payer, net_monthly = p2_name, round((p2_ref - p1_ref) / 12, 2)
+        net_payer, net_monthly = p2_name, p2_ref - p1_ref
     else:
-        net_payer, net_monthly = None, 0.0
+        net_payer, net_monthly = None, 0
 
     return {
         "scenario":          type_of_splitting,
         "party1_name":       p1_name,
         "party2_name":       p2_name,
-        "party1_annual":     round(result["party1"], 2),
-        "party2_annual":     round(result["party2"], 2),
+        "party1_monthly":    result["party1"],
+        "party1_annual":     result["party1"] * 12,
+        "party2_monthly":    result["party2"],
+        "party2_annual":     result["party2"] * 12,
         "child_support_ref": {
-            "party1": round(p1_ref, 2),
-            "party2": round(p2_ref, 2),
+            "party1_monthly": p1_ref,
+            "party1_annual":  p1_ref * 12,
+            "party2_monthly": p2_ref,
+            "party2_annual":  p2_ref * 12,
         },
         "net_payer":         net_payer,
         "net_monthly":       net_monthly,
+        "net_annual":        net_monthly * 12,
     }
 
 
