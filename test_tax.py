@@ -36,13 +36,13 @@ inp = TaxInput(
     eligible_for_disability="No",    # "Yes" or "No"
 
     # Income
-    employed_income=400000,
+    employed_income=100000,
     self_employed_income=0,
     other_income=0,
 
     # Support
     support_received=0,
-    deductible_support_paid=15417,
+    deductible_support_paid=5000,
 
     # Deductions
     child_care_expenses=0,
