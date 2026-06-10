@@ -1,3 +1,5 @@
+// Must be first: seeds auth cookies (dev only) before the store reads them
+import "./utils/devBypass";
 import React from "react";
 import ReactDOM from "react-dom";
 // import "bootstrap/dist/css/bootstrap.min.css";
