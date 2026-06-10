@@ -3,53 +3,177 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>CloudAct · Child Support Assistant</title>
-<link rel="stylesheet" href="css/chat.css"/>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/marked/9.1.6/marked.min.js"></script>
+<title>CloudAct · Calculators</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    background: #f4f5f7;
+    color: #1a1a2e;
+    margin: 0;
+    min-height: 100vh;
+  }
+  header {
+    background: #1a1a2e;
+    color: #fff;
+    padding: 18px 32px;
+    font-size: 1.05rem;
+    font-weight: 600;
+    letter-spacing: .3px;
+  }
+  header span { color: #6c8fdb; }
+
+  .hero {
+    text-align: center;
+    padding: 56px 24px 32px;
+  }
+  .hero h1 {
+    font-size: 1.9rem;
+    font-weight: 700;
+    margin: 0 0 12px;
+    color: #1a1a2e;
+  }
+  .hero p {
+    font-size: .97rem;
+    color: #666;
+    max-width: 480px;
+    margin: 0 auto;
+    line-height: 1.6;
+  }
+
+  .grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 20px;
+    justify-content: center;
+    max-width: 860px;
+    margin: 36px auto 60px;
+    padding: 0 20px;
+  }
+
+  .card {
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: 0 1px 4px rgba(0,0,0,.09);
+    padding: 28px 28px 24px;
+    width: 260px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    transition: box-shadow .15s, transform .15s;
+    text-decoration: none;
+    color: inherit;
+  }
+  .card:hover {
+    box-shadow: 0 4px 16px rgba(0,0,0,.12);
+    transform: translateY(-2px);
+  }
+
+  .card-icon {
+    width: 44px;
+    height: 44px;
+    border-radius: 10px;
+    background: #eef3ff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 4px;
+  }
+  .card-icon svg { color: #6c8fdb; }
+
+  .badge {
+    display: inline-block;
+    font-size: .7rem;
+    font-weight: 700;
+    letter-spacing: .6px;
+    text-transform: uppercase;
+    padding: 3px 8px;
+    border-radius: 20px;
+    width: fit-content;
+  }
+  .badge-ai   { background: #eef3ff; color: #6c8fdb; }
+  .badge-form { background: #f0faf0; color: #2e7d32; }
+
+  .card h2 {
+    font-size: 1rem;
+    font-weight: 700;
+    margin: 0;
+    color: #1a1a2e;
+  }
+  .card p {
+    font-size: .84rem;
+    color: #666;
+    margin: 0;
+    line-height: 1.55;
+    flex: 1;
+  }
+  .go-arrow {
+    padding-top: 10px;
+    font-size: .82rem;
+    font-weight: 600;
+    color: #6c8fdb;
+  }
+
+  @media (max-width: 600px) {
+    .hero h1 { font-size: 1.5rem; }
+    .card { width: 100%; }
+    header { padding: 14px 16px; }
+  }
+</style>
 </head>
 <body>
 
-<header>
-  CloudAct &nbsp;·&nbsp; <span>Child Support Assistant</span>
-  <button class="reset-btn" onclick="resetChat()">New conversation</button>
-</header>
+<header>CloudAct &nbsp;·&nbsp; <span>Ontario Family Law Calculators</span></header>
 
-<div id="config-banner">
-  Backend URL not set. Enter your Flask server URL:
-  <input type="text" id="api-url-input" placeholder="http://localhost:5050"/>
-  <button onclick="saveApiUrl()">Save</button>
+<div class="hero">
+  <h1>Choose a calculator</h1>
+  <p>AI-assisted and form-based tools for Ontario family law matters.</p>
 </div>
 
-<div id="chat-window">
-  <div id="welcome">
-    <h1>Ontario Child Support Calculator</h1>
-    <p>
-      I'll walk you through a few questions and calculate child support under
-      Ontario's Federal Child Support Guidelines. Everything stays in this
-      session — nothing is stored.
-    </p>
-    <div class="starter-chips">
-      <button class="chip" onclick="sendStarter(this)">I need to calculate child support</button>
-      <button class="chip" onclick="sendStarter(this)">How does shared custody affect support?</button>
-      <button class="chip" onclick="sendStarter(this)">What info do you need from me?</button>
+<div class="grid">
+
+  <a class="card" href="child-support.html">
+    <div class="card-icon">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+        <circle cx="9" cy="7" r="4"/>
+        <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+        <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+      </svg>
     </div>
-  </div>
+    <div class="badge badge-ai">AI Assistant</div>
+    <h2>Child Support</h2>
+    <p>Calculate Ontario child support under the Federal Child Support Guidelines through a guided conversation.</p>
+    <div class="go-arrow">Open &rarr;</div>
+  </a>
+
+  <a class="card" href="tax-chat.html">
+    <div class="card-icon">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="2" y="3" width="20" height="14" rx="2"/>
+        <line x1="8" y1="21" x2="16" y2="21"/>
+        <line x1="12" y1="17" x2="12" y2="21"/>
+      </svg>
+    </div>
+    <div class="badge badge-ai">AI Assistant</div>
+    <h2>Income Tax</h2>
+    <p>Calculate your Ontario federal and provincial income taxes, CPP, EI, and key benefits for 2025.</p>
+    <div class="go-arrow">Open &rarr;</div>
+  </a>
+
+  <a class="card" href="spousal.html">
+    <div class="card-icon">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+      </svg>
+    </div>
+    <div class="badge badge-form">Form Calculator</div>
+    <h2>Spousal Support</h2>
+    <p>Estimate spousal support ranges under the Spousal Support Advisory Guidelines (SSAG) without-child formula.</p>
+    <div class="go-arrow">Open &rarr;</div>
+  </a>
+
 </div>
 
-<div id="input-bar">
-  <textarea id="msg-input" rows="1" placeholder="Type a message…"
-    oninput="autoResize(this)"
-    onkeydown="handleKey(event)"></textarea>
-  <button id="send-btn" onclick="sendMessage()">
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-      <line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/>
-    </svg>
-    Send
-  </button>
-</div>
-
-<div id="toast"></div>
-
-<script src="js/index.js"></script>
 </body>
 </html>
