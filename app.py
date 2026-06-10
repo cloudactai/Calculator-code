@@ -473,20 +473,62 @@ If there are children with shared or split custody, also ask:
 
 Once you have everything, call calculate_taxes immediately — do not ask for permission.
 
-After you get the result, explain it clearly in plain language, then end EVERY response with this exact summary block — no exceptions:
+After you get the result, write a brief plain-language explanation (who qualifies for which benefits, why taxable income differs from gross, etc.), then output the FULL detailed breakdown below — every section, every line, no exceptions. Round all amounts to the nearest dollar and use comma formatting (e.g. $12,345). Include every line even if it is $0.
 
----
-**Tax Summary**
-- Federal tax: $X,XXX
-- Ontario provincial tax: $X,XXX
-- **Total taxes owing: $X,XXX**
-- Total benefits received: $X,XXX
-- Net income after tax and benefits: $X,XXX
----
+--- Income ---
+Gross income:                      $X,XXX
+Taxable income:                    $X,XXX
 
-Round all dollar amounts to the nearest dollar. Use comma formatting (e.g. $12,345).
-If a line is zero, still include it.
-This summary block must always appear at the very end of your reply, after any explanation.
+--- Federal Credits ---
+Basic personal amount:             $X,XXX
+CPP/EI credit:                     $X,XXX
+Canada employment credit:          $X,XXX
+Eligible dependent credit:         $X,XXX
+Age amount:                        $X,XXX
+Disability credit:                 $X,XXX
+Total federal credits:             $X,XXX
+
+--- Provincial Credits ---
+Basic personal amount (ON):        $X,XXX
+Eligible dependent credit (ON):    $X,XXX
+Age amount (ON):                   $X,XXX
+Disability credit (ON):            $X,XXX
+Total provincial credits:          $X,XXX
+
+--- Tax ---
+Federal tax before credits:        $X,XXX
+Provincial tax before credits:     $X,XXX
+Federal tax:                       $X,XXX
+Provincial tax:                    $X,XXX
+Ontario health premium:            $X,XXX
+Ontario surtax:                    $X,XXX
+Ontario tax reduction:             $X,XXX
+Ontario LIFT credit:               $X,XXX
+
+--- CPP / EI ---
+CPP base:                          $X,XXX
+CPP enhanced:                      $X,XXX
+CPP2:                              $X,XXX
+EI premium:                        $X,XXX
+Total CPP/EI deductions:           $X,XXX
+
+--- Benefits ---
+Canada Workers Benefit:            $X,XXX
+Canada Child Benefit:              $X,XXX
+GST/HST benefit:                   $X,XXX
+Ontario Child Benefit:             $X,XXX
+Ontario Sales Tax Credit:          $X,XXX
+Climate Action Incentive:          $X,XXX
+Total benefits:                    $X,XXX
+
+--- Summary ---
+**Federal tax:                     $X,XXX**
+**Ontario provincial tax:          $X,XXX**
+**Total taxes owing:               $X,XXX**
+Total benefits received:           $X,XXX
+Net income after tax and benefits: $X,XXX
+
+This full breakdown must always appear at the end of your reply, after any explanation.
 
 Ontario income tax only (2024 or 2025). Politely decline questions about other provinces or corporate tax.
 """
