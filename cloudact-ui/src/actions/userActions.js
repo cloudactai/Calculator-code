@@ -263,7 +263,13 @@ export const userRegisterAction =
       }
     } catch (error) {
       console.log("error", error);
-      dispatch({ USER_REGISTER_FAIL, payload: "Registration failed" });
+      dispatch({
+        type: USER_REGISTER_FAIL,
+        payload:
+          error?.response?.data?.data?.message ||
+          error?.response?.data?.message ||
+          "Registration failed. Please check your connection and try again.",
+      });
     }
   };
 
