@@ -390,36 +390,36 @@ def spousal_calculate():
     try:
         data = request.get_json(force=True)
 
-        party1_name   = data.get("party1_name", "Party 1")
-        party2_name   = data.get("party2_name", "Party 2")
-        party1_income = float(data["party1_income"])
-        party2_income = float(data["party2_income"])
-        years         = float(data["years"])
-        recipient_age = float(data["recipient_age"])
+        party1_name       = data.get("party1_name", "Party 1")
+        party2_name       = data.get("party2_name", "Party 2")
+        party1_net_income = float(data["party1_net_income"])
+        party2_net_income = float(data["party2_net_income"])
+        years             = float(data["years"])
+        recipient_age     = float(data["recipient_age"])
 
         result = calculate_spousal_support(
             party1_name=party1_name,
             party2_name=party2_name,
-            party1_income=party1_income,
-            party2_income=party2_income,
+            party1_net_income=party1_net_income,
+            party2_net_income=party2_net_income,
             years=years,
             recipient_age=recipient_age,
         )
 
         return jsonify({
-            "payor":             result.payor,
-            "recipient":         result.recipient,
-            "gross_income_diff": result.gross_income_diff,
-            "pct_low":           result.pct_low,
-            "pct_med":           result.pct_med,
-            "pct_high":          result.pct_high,
-            "monthly_low":       result.monthly_low,
-            "monthly_med":       result.monthly_med,
-            "monthly_high":      result.monthly_high,
-            "annual_low":        result.annual_low,
-            "annual_med":        result.annual_med,
-            "annual_high":       result.annual_high,
-            "duration_label":    result.duration_label,
+            "payor":            result.payor,
+            "recipient":        result.recipient,
+            "net_income_diff":  result.net_income_diff,
+            "pct_low":          result.pct_low,
+            "pct_med":          result.pct_med,
+            "pct_high":         result.pct_high,
+            "monthly_low":      result.monthly_low,
+            "monthly_med":      result.monthly_med,
+            "monthly_high":     result.monthly_high,
+            "annual_low":       result.annual_low,
+            "annual_med":       result.annual_med,
+            "annual_high":      result.annual_high,
+            "duration_label":   result.duration_label,
         })
 
     except KeyError as e:
