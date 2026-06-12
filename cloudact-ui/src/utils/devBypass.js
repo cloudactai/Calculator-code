@@ -39,25 +39,29 @@ const DEV_USER = {
 // Routes.jsx gates pages on these flags (state.accessPages.response.auth_*).
 // AuthUser treats undefined as allowed, so missing ones are fine too.
 const ALL_ACCESS = {
+  auth_archive: true,
+  auth_calculator: true,
+  auth_compliance_billing: true,
+  auth_compliance_forms: true,
   auth_dashboard: true,
   auth_five_steps: true,
-  auth_report_history: true,
-  auth_archive: true,
-  auth_tasks: true,
-  auth_compliance_forms: true,
-  auth_compliance_billing: true,
+  auth_forms: true,
+  auth_law_tools: true,
+  auth_matters: true,
   auth_monthly_checklists: true,
+  auth_operational_report: true,
+  auth_report_history: true,
+  auth_reports: true,
+  auth_run_report: true,
+  auth_settings: true,
+  auth_tasks: true,
   auth_trust_deposit_slip: true,
   auth_workflow: true,
-  auth_settings: true,
-  auth_run_report: true,
-  auth_operational_report: true,
-  auth_matters: true,
-  auth_forms: true,
-  auth_calculator: true,
 };
 
-if (BYPASS_ENABLED && !Cookies.get("allUserInfo")) {
+// Re-seed on every page load so flag/shape updates here take effect without
+// manually clearing cookies.
+if (BYPASS_ENABLED) {
   const opts = { path: "/" };
 
   Cookies.set(
