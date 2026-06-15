@@ -27,6 +27,7 @@ export enum AUTH_ROUTES {
 
   SETUP = "/setup",
   SETUPWIZARD = "/setupwizard",
+  SETUPWIZARD_CONNECT = "/setupwizard/connect",
   LOGOUT = "/logout",
   SETTINGS = "/settings",
 

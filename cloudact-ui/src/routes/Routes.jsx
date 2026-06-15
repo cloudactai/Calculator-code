@@ -34,7 +34,8 @@ import ReportsPage from "../pages/reporthistory/ReportsPage";
 import FiveStepsPage from "../pages/fiveSteps/FiveStepsPage";
 import RunReport from "../pages/runReport/RunReport";
 import Setup from "../pages/Setup.jsx";
-import Setupwizard from "../pages/Setupwizard";
+import AddLawFirm from "../components/SetupWizard/AddLawFirm";
+import ConnectClio from "../components/SetupWizard/ConnectClio";
 import SignUser from "../pages/SignUser";
 import TasksId from "../pages/TasksId.page.jsx";
 import TasksPage from "../pages/TasksPage";
@@ -372,17 +373,23 @@ const Routes = () => {
         )}
       </Route>
 
-      <Route path={AUTH_ROUTES.SETUPWIZARD}>
+      {/* Two-step setup wizard (ported from Report-Generation): step 2 first
+          so the exact /setupwizard/connect route is matched before /setupwizard. */}
+      <Route path={AUTH_ROUTES.SETUPWIZARD_CONNECT} exact>
         <AuthUser
           usersAuth={rl_adm}
           sidAccess={accessPagesState?.auth_settings}
         >
-          <Setupwizard
-            isClioConnected={isClioConnected}
-            isQBOConnected={isQBOConnected}
-            changeClioConnected={changeClioConnected}
-            changeQBOConnected={changeQBOConnected}
-          />
+          <ConnectClio />
+        </AuthUser>
+      </Route>
+
+      <Route path={AUTH_ROUTES.SETUPWIZARD} exact>
+        <AuthUser
+          usersAuth={rl_adm}
+          sidAccess={accessPagesState?.auth_settings}
+        >
+          <AddLawFirm />
         </AuthUser>
       </Route>
 
