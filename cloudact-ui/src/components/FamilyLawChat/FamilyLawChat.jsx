@@ -9,15 +9,16 @@ import "./FamilyLawChat.css";
  *
  * Only rendered for signed-in users (gated in App.js on the session cookie).
  *
- * The "calculator" selector in the header has the AI assistant active and two
- * placeholder slots ("Form Calculator", "Quick Calc") reserved for the other
- * two calculators that aren't wired up yet.
+ * The calculator selector in the header has Child Support active (Marc's
+ * working calculator) and two placeholder slots — Spousal Support (in
+ * progress) and a third calculator (TBD) — reserved but not wired up yet.
  */
 
 const CALCULATORS = [
-  { id: "ai", label: "AI Assistant", available: true },
-  { id: "form", label: "Form Calculator", available: false },
-  { id: "quick", label: "Quick Calc", available: false },
+  { id: "child", label: "Child Support", available: true },
+  { id: "spousal", label: "Spousal Support", available: false },
+  // TODO: third calculator name TBD — update label once confirmed.
+  { id: "third", label: "Coming soon", available: false, hideBadge: true },
 ];
 
 const STARTERS = [
@@ -143,7 +144,9 @@ export default function FamilyLawChat() {
                   title={c.available ? c.label : `${c.label} — coming soon`}
                 >
                   {c.label}
-                  {!c.available && <span className="flc-soon">Soon</span>}
+                  {!c.available && !c.hideBadge && (
+                    <span className="flc-soon">Soon</span>
+                  )}
                 </button>
               ))}
             </div>
