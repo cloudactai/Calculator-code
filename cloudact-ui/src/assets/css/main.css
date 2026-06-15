@@ -952,6 +952,12 @@ body .wrapper.mini .mainSide .sideMenu a span.icon {
   width: 100%;
 }
 
+.mainSide .sidebInner .logo .logoImg {
+  max-width: 90px;
+  height: auto;
+  width: 100%;
+}
+
 .mainSide .sidebInner .sideMenu {
   display: flex;
   flex-direction: column;

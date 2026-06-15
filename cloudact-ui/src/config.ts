@@ -29,10 +29,13 @@ export const APIS = {
   prod: process.env.REACT_APP_API_URL_PROD || "https://api.cloudforlawfirms.com/v1",
 };
 
-// Flask calculator/AI backend (Calculator-code app.py). Optional — only used by
-// features that call the Python calculator service.
+// Flask calculator/AI backend (Calculator-code app.py) that powers the Family
+// Law AI chat widget. Defaults to the deployed Render service so the widget
+// works without extra config; override with REACT_APP_CALCULATOR_API_URL to
+// point at a local Flask server (http://localhost:5050) during development.
 export const CALCULATOR_API =
-  process.env.REACT_APP_CALCULATOR_API_URL || "http://localhost:5050";
+  process.env.REACT_APP_CALCULATOR_API_URL ||
+  "https://calculator-code-x2b4.onrender.com";
 
 // Power BI credentials must be supplied via environment variables — never
 // commit real values to source control.

@@ -6,6 +6,7 @@ import { Toaster } from 'react-hot-toast';
 import UnauthorizedModal from './components/UnauthorizedModal'; // Adjust path as needed
 import axios from '../src/utils/axios'; // Import axios to make API calls
 import Cookies from 'js-cookie';
+import FamilyLawChat, { hasSession } from './components/FamilyLawChat/FamilyLawChat';
 import "flatpickr/dist/flatpickr.css";
 
 
@@ -87,6 +88,8 @@ function App() {
       <Router>
         <Routes />
       </Router>
+
+      {hasSession() && <FamilyLawChat />}
 
       <UnauthorizedModal
         show={showUnauthorizedModal}
