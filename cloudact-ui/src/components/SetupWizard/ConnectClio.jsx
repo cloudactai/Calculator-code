@@ -4,6 +4,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { Link, useLocation, useHistory } from "react-router-dom";
 import { apiPath } from "./apiUrls";
+import { SETUP_WIZARD_API } from "../../config";
 import cloudactLogo from "../../assets/images/cloudact-logo.svg";
 import { SignOutIcon, SyncIcon, UserIcon } from "./profileActionIcons";
 import "./connectClio.css";
@@ -22,8 +23,8 @@ export default function ConnectClio() {
         qboConnectedAt: null
     });
 
-    const oauthStatusUrl = apiPath(process.env.REACT_APP_API_BACKEND_URL_OAUTH_STATUS, "/api/oauth/status");
-    const logoutUrl = apiPath(process.env.REACT_APP_API_BACKEND_URL_LOGOUT, "/api/logout");
+    const oauthStatusUrl = apiPath(process.env.REACT_APP_API_BACKEND_URL_OAUTH_STATUS, `${SETUP_WIZARD_API}/api/oauth/status`);
+    const logoutUrl = apiPath(process.env.REACT_APP_API_BACKEND_URL_LOGOUT, `${SETUP_WIZARD_API}/api/logout`);
     const backendOrigin = (() => {
         try {
             return new URL(oauthStatusUrl).origin;

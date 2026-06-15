@@ -37,6 +37,13 @@ export const CALCULATOR_API =
   process.env.REACT_APP_CALCULATOR_API_URL ||
   "https://calculator-code-x2b4.onrender.com";
 
+// Report-Creation Node backend (backend/server.js) that serves the /api/* auth
+// routes used by the two-step setup wizard (Add Law Firm -> Connect Clio/QBO).
+// Override with REACT_APP_SETUP_WIZARD_API_URL.
+export const SETUP_WIZARD_API =
+  process.env.REACT_APP_SETUP_WIZARD_API_URL ||
+  "https://report-creation.onrender.com";
+
 // Power BI credentials must be supplied via environment variables — never
 // commit real values to source control.
 export const POWERBI: POWERBIEnvironment = {

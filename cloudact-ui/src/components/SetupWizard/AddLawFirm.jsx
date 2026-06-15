@@ -4,6 +4,7 @@
 import React, { useState } from "react";
 import { Link, useHistory, useLocation } from "react-router-dom";
 import { apiPath } from "./apiUrls";
+import { SETUP_WIZARD_API } from "../../config";
 import cloudactLogo from "../../assets/images/cloudact-logo.svg";
 import "./addLawFirm.css";
 
@@ -52,7 +53,10 @@ export default function AddLawFirm() {
     try {
       setSaving(true);
       const response = await fetch(
-        apiPath(process.env.REACT_APP_API_BACKEND_URL_LAW_FIRM, "/api/law-firm"),
+        apiPath(
+          process.env.REACT_APP_API_BACKEND_URL_LAW_FIRM,
+          `${SETUP_WIZARD_API}/api/law-firm`
+        ),
         {
           method: "POST",
           credentials: "include",
