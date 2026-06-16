@@ -1,0 +1,82 @@
+export enum AUTH_ROUTES {
+  HOME = "/home",
+  DASHBOARD = "/dashboard",
+  REPORTS = "/reports",
+
+  RUN_REPORT = "/runreport",
+  OPERATIONAL_REPORTS = "/operational_report",
+  CALCULATOR = "/calculator",
+  PROD_CALCULATOR = "/prod_calculator",
+  PROD_MATTER_DASHBOARD = "/prod_matters",
+  PROD_FORMS_CREATE_NEW = "/prod_forms/create-new",
+  API_CALCULATOR = "/api_calculator",
+  ARCHIVE = "/archive",
+
+  SUPPORT_CALCULATOR = "/SupportCalculator",
+  PROD_SUPPORT_CALCULATOR = "/prod_supportCalculator",
+  API_SUPPORT_CALCULATOR = "/Api_supportCalculator",
+  CALCULATOR_REPORTS = "/calculatorreports",
+  PROD_CALCULATOR_REPORTS = "/prod_calculatorreports",
+  PROFILE = "/profile",
+  PROFILE_EDIT = "/profile/edit",
+  TASKS = "/tasks",
+  CREATE_TASKS = "/tasks/create",
+  CREATE_BILLS = "/tasks/bills",
+  CREATE_TASKS_TRUST_DEPOSIT_SLIP = "/tasks/create/trust-deposit-slip",
+  FORM_TASKS_TRUST_DEPOSIT_SLIP = "/trust-deposit-slip/form",
+
+  SETUP = "/setup",
+  SETUPWIZARD = "/setupwizard",
+  SETUPWIZARD_CONNECT = "/setupwizard/connect",
+  LOGOUT = "/logout",
+  SETTINGS = "/settings",
+
+  TASKS_FORM = "/tasks/form",
+  TASK_FORM_ID = "/task/:id",
+  COMPLIANCE_CHECKLIST_TABLE = "/compliance-forms",
+  COMPLIANCE_BILLING = "/compliance-billing",
+  MONTHLY_CHECKLIST_TABLE = "/monthly-checklists",
+  TRUST_DEPOSIT_SLIP = "/trust-deposit-slip",
+
+  COMPLIANCE_FORM = "/compliance/form",
+  OPERATIONAL_DASHBOARD = "/operational-dashboard",
+  YEARLY_CHECKLIST = "/yearly-checklist",
+  QUATERLY_CHECKLIST = "/quaterly-checklist",
+  FREE_CALCULATOR = "/freecalculator",
+  FREE_CALCULATOR_API = "/freecalculator_api",
+
+  REPORT_ISSUE = "/report-issue",
+  IN_PROGRESS = "/inprogress",
+
+  // Matter Routes
+  MATTER_DASHBOARD = "/matters",
+  FIVE_STEPS = "/5-steps/:id",
+  SINGLE_MATTER = "/single-matter/:id",
+  FORMS_CREATE_NEW = "/forms/create-new",
+  FORMS_CREATE_NEW_FILL_INFORMATION = "/forms/create-new/fill-information",
+  FORMS_CREATE_NEW_FILL_PDF = "/forms/create-new/fill-pdf",
+
+  // Super admin
+  SUPERADMINDB = "/superadmin/dashboard",
+  SUPERADMINUSERS = "/superadmin/users",
+  SUPERADMINSUBSCRIBERS = "/superadmin/subscribers",
+  SUPERADMINDATALOAD = "/superadmin/dataload",
+  SUPERADMINDATAPLATFORMISSUES = "/superadmin/platform/issues",
+  SUPERADMINFORMMAPPER = "/superadmin/form-mapper",
+  CREATE_WORKFLOW = "/workflow/create-workflow",
+  WORKFLOWDETAILS = "/workflow/details/:workflowId/:month_year",
+  WORKFLOW_LIST = "/workflow/workflow-list",
+}
+
+export enum UN_AUTH_ROUTES {
+  SIGNIN = "/signIn",
+  CREATE_ACCOUNT = "/createAccount",
+  CONFIRM_ACTIVATE = "/confirm/activate",
+  OAUTH_APPROVAL = "/oauth/approval",
+  CREATE_CLIENT = "/create/client",
+  CREATE_CLIENT_AND_ASSOCIATE = "/create/clientAssociation",
+  ACTIVATE_CLIENT_ACCOUNT = "/activate/client/account",
+  FORGET_PASSWORD = "/forgetpassword",
+  RESET_PASSWORD = "/resetpassword",
+  NEW_PASSWORD_SET = "/newPasswordSet",
+}

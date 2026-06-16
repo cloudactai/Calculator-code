@@ -1,0 +1,996 @@
+
+@import url('https://fonts.googleapis.com/css2?family=Albert+Sans:wght@400;500;600;700;800;900&display=swap');
+
+@page  {
+    size: A4;
+    margin: 0;
+}
+
+#pdfPages {
+    margin: 0;
+    padding: 0;
+    background-color: #ffffff;
+    font-family: 'Albert Sans', sans-serif;
+    font-size: 9pt
+}
+
+#pdfPages div.page {
+    margin: 0 auto;
+    position: relative;
+    width: 8.3in;
+    height:11.7in;
+    background-color: #ffffff;
+    margin-bottom:10px;
+    /* box-shadow: 0 8px 8px rgba(0, 0, 0, 0.15), 0 8px 8px rgba(0, 0, 0, 0.15), 0 8px 8px rgba(0, 0, 0, 0.15), 0 8px 8px rgba(0, 0, 0, 0.15); */
+}
+
+/* @media print {
+    div.page {
+        margin: 0;
+        page-break-after: always;
+        box-shadow: none;
+        -webkit-print-color-adjust: exact;
+    }
+} */
+
+#pdfPages .page-content {
+    padding: 0in 0.3in
+}
+/* 
+#pdfPages .text-center {
+    text-align: center;
+}
+
+#pdfPages .text-right {
+    text-align: right;
+}
+
+#pdfPages .text-left {
+    text-align: left;
+}
+
+#pdfPages .text-justify {
+    text-align: justify;
+}
+
+#pdfPages .text-italic {
+    font-style: italic;
+}
+
+#pdfPages .text-underline {
+    text-decoration: underline;
+}
+
+#pdfPages p {
+    margin: 0;
+    padding: 0;
+    color: #000000;
+    font-weight: 500;
+    font-size: 14px;
+    line-height: 1.1;
+    color: #000000;
+}
+
+#pdfPages * {
+    box-sizing: border-box;
+}
+
+
+
+#pdfPages select, #pdfPages select option {
+    font-size: 12pt;
+    width: 100%;
+
+}
+
+#pdfPages textarea {
+    resize: none;
+}
+
+#pdfPages .fw-300 {
+    font-weight: 300;
+}
+
+#pdfPages .fw-400 {
+    font-weight: 400;
+}
+
+#pdfPages .fw-500 {
+    font-weight: 500;
+}
+
+#pdfPages .fw-600 {
+    font-weight: 600;
+}
+
+#pdfPages .fw-700 {
+    font-weight: 700;
+}
+
+#pdfPages .fw-800 {
+    font-weight: 800;
+}
+
+#pdfPages .text-15 {
+    font-size: 20px;
+}
+
+#pdfPages .text-9 {
+    font-size: 12px;
+}
+
+#pdfPages table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+#pdfPages td {
+    padding: 0;
+}
+
+#pdfPages .valign-top {
+    vertical-align: top;
+}
+
+#pdfPages .valign-middle {
+    vertical-align: middle;
+}
+
+#pdfPages .valign-bottom {
+    vertical-align: bottom;
+}
+
+#pdfPages .mt-1 {
+    margin-top: 1px;
+}
+
+#pdfPages .mt-5 {
+    margin-top: 5px;
+}
+
+#pdfPages .mt-10 {
+    margin-top: 10px;
+}
+
+#pdfPages .mt-15 {
+    margin-top: 15px;
+}
+
+#pdfPages .mt-20 {
+    margin-top: 20px;
+}
+
+#pdfPages .mt-25 {
+    margin-top: 25px;
+}
+
+#pdfPages .mt-30 {
+    margin-top: 30px;
+}
+
+#pdfPages .mt-40 {
+    margin-top: 40px;
+}
+
+#pdfPages .mt-50 {
+    margin-top: 50px;
+}
+
+#pdfPages .mt-60 {
+    margin-top: 60px;
+}
+
+#pdfPages .mt-70 {
+    margin-top: 70px;
+}
+
+#pdfPages .mt-80 {
+    margin-top: 80px;
+}
+
+#pdfPages .mx-auto {
+    margin-left: auto;
+    margin-right: auto;
+}
+
+#pdfPages .px-4 {
+    padding-left: 4px !important;
+    padding-right: 4px !important;
+}
+
+#pdfPages .px-10 {
+    padding-left: 10px !important;
+    padding-right: 10px !important;
+}
+
+#pdfPages .py-10 {
+    padding-top: 10px !important;
+    padding-bottom: 10px !important;
+}
+
+#pdfPages .pr-5 {
+    padding-right: 5px;
+}
+
+#pdfPages .pl-5 {
+    padding-left: 5px;
+}
+
+#pdfPages .d-block {
+    display: block !important;
+}
+
+#pdfPages .d-inline-block {
+    display: inline-block !important;
+}
+
+#pdfPages .tbl-bordered td {
+    border: 1px solid #000000;
+}
+
+#pdfPages hr {
+    border: 0;
+    border-top: 1px solid #000000;
+    margin: 2px 0;
+}
+
+#pdfPages a {
+    display: block;
+    width: 120px;
+    border: 3px solid #000000;
+    color: #001eff;
+    background-color: #72d2fb;
+    font-family: inherit;
+    font-size: 11pt;
+    font-weight: 800;
+    padding: 5px;
+    text-align: center;
+    cursor: pointer;
+}
+
+#pdfPages a#clear_form {
+    margin-left: auto;
+}
+
+#pdfPages .page-header {
+    width: 150px;
+    margin-left: auto;
+    margin-bottom: 15px;
+}
+
+#pdfPages .text-blue {
+    color: #001eff !important;
+}
+
+#pdfPages .stamp {
+    width: 200px;
+    height: 200px;
+    padding: 4px;
+    margin-left: auto;
+    border: 1px solid #b4b4b4;
+}
+
+#pdfPages .stamp p {
+    font-size: 10.5pt;
+    font-weight: 700;
+    text-align: center;
+}
+
+#pdfPages .text-nowarp {
+    white-space: nowrap;
+}
+
+#pdfPages .border-bottom {
+    border-bottom: 1px solid #000000 !important;
+}
+
+#pdfPages .w-225 {
+    width: 225px !important;
+}
+
+#pdfPages .w-250 {
+    width: 250px !important;
+}
+
+ */
+
+
+#pdfPages .border-bottom {
+    border-bottom: 1px solid #000 !important;
+    border: none;
+    border-radius: 0;
+}
+
+#pdfPages .input-nH-nP {
+    height: auto;
+    padding: 0;
+}
+
+#pdfPages .courtBox {
+    border: 1px solid #000;
+    padding: 5px;
+}
+
+#pdfPages input[type=text], #pdfPages textarea, #pdfPages select, #pdfPages select option {
+    font-size: 9pt;
+    height: auto;
+    padding-bottom: 5pt;
+    line-height: 1.7;
+    border-radius: 0;
+    background-color: transparent !important;
+}
+
+#pdfPages input {
+    background-color: transparent !important;
+}
+
+#pdfPages input[type=email], #pdfPages textarea, #pdfPages select, #pdfPages select option {
+    font-size: 9pt;
+    height: auto;
+    padding-bottom: 5pt;
+    line-height: 1.7;
+    border-radius: 0;
+    background-color: transparent !important;
+    
+}
+
+#pdfPages .noBorder {
+    border-radius: 0;
+    border: none;
+}
+
+#pdfPages .mt-22 {
+    margin-top: 17pt;
+}
+
+#pdfPages .title {
+    font-size: 9.5pt;
+    font-weight: bolder;
+    padding: 0;
+}
+
+#pdfPages table {
+    margin-bottom: 5px;
+    border: 1px solid rgba(23, 29, 52, .6);
+}
+
+
+#pdfPages .data-group.inputs {
+    border: 1px solid rgba(23, 29, 52, 0.6);
+  }
+  
+#pdfPages .data-group.inputs .data-input {
+    border-bottom: 1px solid rgba(23, 29, 52, 0.6);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+    padding: 5px;
+  }
+
+#pdfPages .data-group.inputs .data-input:last-child {
+    border-bottom: unset;
+}
+#pdfPages .data-group.inputs .data-input .label {
+    text-wrap: nowrap;
+    padding-left: 4px;
+}
+#pdfPages p {
+    margin-top: 0;
+    margin-bottom: 0rem;
+}
+
+#pdfPages .data-input {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    grid-gap: .5rem;
+    gap: .5rem;
+    /* margin-top: .5rem; */
+}
+#pdfPages .data-input .label {
+    text-wrap: nowrap;
+}
+
+#pdfPages .page-footer {
+    position: absolute;
+    width: calc(100% - 1in);
+    left: 0.5in;
+    bottom: 0.5in;
+    z-index: 1;
+}
+
+#pdfPages .page-footer p {
+    font-size: 9pt;
+}
+
+#pdf-content {
+    padding:20px
+}
+
+#pdfPages .form-group:not(.td) {
+    display: flex;
+    flex-direction: column;
+    margin-bottom: 5px;
+}
+
+#pdfPages .ol-m5 {
+    margin-top: 5px;
+}
+
+#pdfPages .seperator {
+    border-top: var(--bs-border-width) var(--bs-border-style) var(--bs-border-color) !important;
+    border-color: rgba(var(--bs-dark-rgb), var(--bs-border-opacity)) !important;
+    border-width: 2px !important;
+    margin-top: 5px;
+    margin-bottom: 5px;
+}
+#pdfPages .seperator-light {
+    border-top: 1px solid var(--bs-border-color) !important;
+    border-color: rgba(var(--bs-dark-rgb), var(--bs-border-opacity)) !important;
+    border-width: 1px !important;
+    margin-top: 5px;
+    margin-bottom: 5px;
+}
+
+#pdfPages .middle-center {
+    justify-content: center;
+    align-items: center;
+}
+#pdfPages .page-break {
+    page-break-before: always;
+    break-before: page;
+}
+  
+#pdfPages .no-break {
+    page-break-inside: avoid; /* Prevents breaking inside this element */
+  }
+
+#pdfPages table.expense-table tbody tr th {
+    padding: 3px 5px;
+    font-size: 9pt
+  }
+  
+#pdfPages table.expense-table thead tr th {
+    padding: 3px 5px;
+    font-size: 9pt
+  }
+  
+#pdfPages table.expense-table thead tr th:first-child {
+    border: 1px solid rgba(23, 29, 52, 0.6);
+  }
+
+  #pdfPages table.expense-table tbody tr td, #pdfPages table.expense-table tbody tr th, #pdfPages table.expense-table thead tr th {
+    padding: 0px 5px;
+    font-size: 9pt
+}
+
+#pdfPages table.form-131-income tbody tr th,
+#pdfPages table.form-131-income tbody tr td {
+  border: 1px solid rgba(23, 29, 52, 0.6);
+}
+
+#pdfPages table.form-131-income tbody tr th:nth-child(2),
+#pdfPages table.form-131-income tbody tr td:nth-child(2) {
+  width: 300px;
+}
+
+#pdfPages table.form-131-income tbody tr td:nth-child(2) .form-control,
+#pdfPages table.form-131-income tbody tr td:nth-child(2) .data-group textarea,
+#pdfPages .data-group table.form-131-income tbody tr td:nth-child(2) textarea {
+  text-align: end;
+}
+
+#pdfPages table.form-131-income tbody tr td .form-control,
+#pdfPages table.form-131-income tbody tr td .data-group textarea,
+#pdfPages .data-group table.form-131-income tbody tr td textarea {
+  width: 100%;
+  border: unset;
+  padding: unset;
+}
+
+#pdfPages table.form-131-income-inner tbody tr th,
+#pdfPages table.form-131-income-inner tbody tr td {
+  border: 1px solid rgba(23, 29, 52, 0.6);
+}
+
+#pdfPages table.form-131-income-inner tbody tr th:not(:nth-child(2)),
+#pdfPages table.form-131-income-inner tbody tr td:not(:nth-child(2)) {
+  width: 50px;
+}
+
+#pdfPages table.form-131-income-inner tbody tr td:nth-child(3) .form-control,
+#pdfPages table.form-131-income-inner tbody tr td:nth-child(3) .data-group textarea,
+#pdfPages .data-group table.form-131-income-inner tbody tr td:nth-child(3) textarea {
+  text-align: end;
+}
+
+#pdfPages table.form-131-income-inner tbody tr td .form-control,
+#pdfPages table.form-131-income-inner tbody tr td .data-group textarea,
+#pdfPages .data-group table.form-131-income-inner tbody tr td textarea {
+  text-align: left;
+  width: 100%;
+  border: unset;
+  padding: unset;
+}
+
+#pdfPages table.form-131-income-inner tbody tr th,
+#pdfPages table.form-131-income-inner tbody tr td {
+  border: 1px solid rgba(23, 29, 52, 0.6);
+}
+
+#pdfPages table.form-131-income-inner tbody tr th:not(:nth-child(2)),
+#pdfPages table.form-131-income-inner tbody tr td:not(:nth-child(2)) {
+  width: 150px;
+}
+
+#pdfPages table.form-131-income-inner tbody tr td:nth-child(3) .form-control,
+#pdfPages table.form-131-income-inner tbody tr td:nth-child(3) .data-group textarea,
+#pdfPages .data-group table.form-131-income-inner tbody tr td:nth-child(3) textarea {
+  text-align: end;
+}
+
+#pdfPages table.form-131-income-inner tbody tr td .form-control,
+#pdfPages table.form-131-income-inner tbody tr td .data-group textarea,
+#pdfPages .data-group table.form-131-income-inner tbody tr td textarea {
+  text-align: left;
+  width: 100%;
+  border: unset;
+  padding: unset;
+}
+
+#pdfPages table.form-131-expenses {
+  width: 100%;
+}
+
+#pdfPages table.form-131-expenses {
+    width: 100%;
+  }
+  
+#pdfPages table.form-131-expenses tbody tr th,
+#pdfPages table.form-131-expenses tbody tr td {
+    border: 1px solid rgba(23, 29, 52, 0.6);
+  }
+  
+#pdfPages table.form-131-expenses tbody tr th:nth-child(2),
+#pdfPages table.form-131-expenses tbody tr td:nth-child(2) {
+    width: 200px;
+  }
+  
+#pdfPages table.form-131-expenses tbody tr td:nth-child(2) .form-control,
+#pdfPages table.form-131-expenses tbody tr td:nth-child(2) .data-group textarea,
+#pdfPages .data-group table.form-131-expenses tbody tr td:nth-child(2) textarea {
+    text-align: end;
+  }
+  
+#pdfPages table.form-131-expenses tbody tr td .form-control,
+#pdfPages table.form-131-expenses tbody tr td .data-group textarea,
+#pdfPages .data-group table.form-131-expenses tbody tr td textarea {
+    text-align: left;
+    width: 100%;
+    border: unset;
+    padding: unset;
+  }
+  
+
+#pdfPages table .number {
+    font-weight: 700;
+    padding: 0 8px;
+}
+
+#pdfPages table.form-131-4a tbody tr.inputs td textarea, #pdfPages table.form-131-4a thead tr.inputs td textarea {
+    resize: none;
+}
+
+
+#pdfPages .data-group table.form-131-4a tbody tr td textarea, #pdfPages .data-group table.form-131-4a thead tr td textarea, #pdfPages table.form-131-4a tbody tr td .data-group textarea, #pdfPages table.form-131-4a tbody tr td .form-control, #pdfPages table.form-131-4a thead tr td .data-group textarea, #pdfPages table.form-131-4a thead tr td .form-control {
+    text-align: left;
+    width: 100%;
+    border: unset;
+    padding: unset;
+}
+
+#pdfPages table.form-131-4a {
+    width: 100%;
+  }
+  
+#pdfPages table.form-131-4a thead {
+    text-align: center;
+  }
+  
+#pdfPages table.form-131-4a tbody tr th,
+#pdfPages table.form-131-4a tbody tr td,
+#pdfPages table.form-131-4a thead tr th,
+#pdfPages table.form-131-4a thead tr td {
+    border: 1px solid rgba(23, 29, 52, 0.6);
+  }
+  
+#pdfPages table.form-131-4a tbody tr td:nth-child(1),
+#pdfPages table.form-131-4a thead tr td:nth-child(1) {
+    width: 20%;
+  }
+  
+#pdfPages table.form-131-4a tbody tr td:nth-child(3),
+#pdfPages table.form-131-4a tbody tr td:nth-child(4),
+#pdfPages table.form-131-4a tbody tr td:nth-child(5),
+#pdfPages table.form-131-4a thead tr td:nth-child(3),
+#pdfPages table.form-131-4a thead tr td:nth-child(4),
+#pdfPages table.form-131-4a thead tr td:nth-child(5) {
+    width: 15%;
+  }
+  
+#pdfPages table.form-131-4a tbody tr td:nth-child(3) .form-control,
+#pdfPages table.form-131-4a tbody tr td:nth-child(3) .data-group textarea,
+#pdfPages .data-group table.form-131-4a tbody tr td:nth-child(3) textarea,
+#pdfPages table.form-131-4a tbody tr td:nth-child(4) .form-control,
+#pdfPages table.form-131-4a tbody tr td:nth-child(4) .data-group textarea,
+#pdfPages .data-group table.form-131-4a tbody tr td:nth-child(4) textarea,
+#pdfPages table.form-131-4a tbody tr td:nth-child(5) .form-control,
+#pdfPages table.form-131-4a tbody tr td:nth-child(5) .data-group textarea,
+#pdfPages .data-group table.form-131-4a tbody tr td:nth-child(5) textarea,
+#pdfPages table.form-131-4a thead tr td:nth-child(3) .form-control,
+#pdfPages table.form-131-4a thead tr td:nth-child(3) .data-group textarea,
+#pdfPages .data-group table.form-131-4a thead tr td:nth-child(3) textarea,
+#pdfPages table.form-131-4a thead tr td:nth-child(4) .form-control,
+#pdfPages table.form-131-4a thead tr td:nth-child(4) .data-group textarea,
+#pdfPages .data-group table.form-131-4a thead tr td:nth-child(4) textarea,
+#pdfPages table.form-131-4a thead tr td:nth-child(5) .form-control,
+#pdfPages table.form-131-4a thead tr td:nth-child(5) .data-group textarea,
+#pdfPages .data-group table.form-131-4a thead tr td:nth-child(5) textarea {
+    text-align: end;
+  }
+  
+#pdfPages table.form-131-4a tbody tr td .form-control,
+#pdfPages table.form-131-4a tbody tr td .data-group textarea,
+#pdfPages .data-group table.form-131-4a tbody tr td textarea,
+#pdfPages table.form-131-4a thead tr td .form-control,
+#pdfPages table.form-131-4a thead tr td .data-group textarea,
+#pdfPages .data-group table.form-131-4a thead tr td textarea {
+    text-align: left;
+    width: 100%;
+    border: unset;
+    padding: unset;
+  }
+  
+#pdfPages table.form-131-4a tbody tr.inputs td textarea,
+#pdfPages table.form-131-4a thead tr.inputs td textarea {
+    /* height: 200px !important; */
+    resize: none;
+  }
+  #pdfPages table.form-13-debts tbody tr.inputs td textarea, #pdfPages table.form-13-debts thead tr.inputs td textarea {
+    resize: none;
+}
+
+
+#pdfPages .data-group table.form-13-debts tbody tr td textarea, #pdfPages .data-group table.form-13-debts thead tr td textarea, #pdfPages table.form-13-debts tbody tr td .data-group textarea, #pdfPages table.form-13-debts tbody tr td .form-control, #pdfPages table.form-13-debts thead tr td .data-group textarea, #pdfPages table.form-13-debts thead tr td .form-control {
+    text-align: left;
+    width: 100%;
+    border: unset;
+    padding: unset;
+}
+
+#pdfPages table.form-13-debts {
+    width: 100%;
+  }
+  
+#pdfPages table.form-13-debts thead {
+    text-align: center;
+  }
+  
+#pdfPages table.form-13-debts tbody tr th,
+#pdfPages table.form-13-debts tbody tr td,
+#pdfPages table.form-13-debts thead tr th,
+#pdfPages table.form-13-debts thead tr td {
+    border: 1px solid rgba(23, 29, 52, 0.6);
+  }
+  
+#pdfPages table.form-13-debts tbody tr td:nth-child(1)
+#pdfPages table.form-13-debts tbody tr td:nth-child(2),
+#pdfPages table.form-13-debts thead tr td:nth-child(1),
+#pdfPages table.form-13-debts thead tr td:nth-child(2) {
+    width: 20%;
+  }
+  
+#pdfPages table.form-13-debts tbody tr td:nth-child(2),
+#pdfPages table.form-13-debts tbody tr td:nth-child(3),
+#pdfPages table.form-13-debts tbody tr td:nth-child(4),
+#pdfPages table.form-13-debts thead tr td:nth-child(2),
+#pdfPages table.form-13-debts thead tr td:nth-child(3),
+#pdfPages table.form-13-debts thead tr td:nth-child(4) {
+    width: 15%;
+  }
+  
+#pdfPages table.form-13-debts tbody tr td:nth-child(3) .form-control,
+#pdfPages table.form-13-debts tbody tr td:nth-child(3) .data-group textarea,
+#pdfPages .data-group table.form-13-debts tbody tr td:nth-child(3) textarea,
+#pdfPages table.form-13-debts tbody tr td:nth-child(4) .form-control,
+#pdfPages table.form-13-debts tbody tr td:nth-child(4) .data-group textarea,
+#pdfPages .data-group table.form-13-debts tbody tr td:nth-child(4) textarea,
+#pdfPages table.form-13-debts tbody tr td:nth-child(5) .form-control,
+#pdfPages table.form-13-debts tbody tr td:nth-child(5) .data-group textarea,
+#pdfPages .data-group table.form-13-debts tbody tr td:nth-child(5) textarea,
+#pdfPages table.form-13-debts thead tr td:nth-child(3) .form-control,
+#pdfPages table.form-13-debts thead tr td:nth-child(3) .data-group textarea,
+#pdfPages .data-group table.form-13-debts thead tr td:nth-child(3) textarea,
+#pdfPages table.form-13-debts thead tr td:nth-child(4) .form-control,
+#pdfPages table.form-13-debts thead tr td:nth-child(4) .data-group textarea,
+#pdfPages .data-group table.form-13-debts thead tr td:nth-child(4) textarea,
+#pdfPages table.form-13-debts thead tr td:nth-child(5) .form-control,
+#pdfPages table.form-13-debts thead tr td:nth-child(5) .data-group textarea,
+#pdfPages .data-group table.form-13-debts thead tr td:nth-child(5) textarea {
+    text-align: end;
+  }
+  
+#pdfPages table.form-13-debts tbody tr td .form-control,
+#pdfPages table.form-13-debts tbody tr td .data-group textarea,
+#pdfPages .data-group table.form-13-debts tbody tr td textarea,
+#pdfPages table.form-13-debts thead tr td .form-control,
+#pdfPages table.form-13-debts thead tr td .data-group textarea,
+#pdfPages .data-group table.form-13-debts thead tr td textarea {
+    text-align: left;
+    width: 100%;
+    border: unset;
+    padding: unset;
+  }
+  
+#pdfPages table.form-13-debts tbody tr.inputs td textarea,
+#pdfPages table.form-13-debts thead tr.inputs td textarea {
+    /* height: 200px !important; */
+    resize: none;
+  }
+
+  #pdfPages table.form-131-6 {
+    width: 100%;
+  }
+  
+  #pdfPages table.form-131-6 thead {
+    text-align: center;
+  }
+  
+  #pdfPages table.form-131-6 tbody tr th,
+  #pdfPages table.form-131-6 tbody tr td,
+  #pdfPages table.form-131-6 thead tr th,
+  #pdfPages table.form-131-6 thead tr td {
+    border: 1px solid rgba(23, 29, 52, 0.6);
+  }
+  
+  #pdfPages table.form-131-6 tbody tr td:nth-child(2),
+  #pdfPages table.form-131-6 tbody tr td:nth-child(3),
+  #pdfPages table.form-131-6 thead tr td:nth-child(2),
+  #pdfPages table.form-131-6 thead tr td:nth-child(3) {
+    width: 15%;
+  }
+  
+  #pdfPages table.form-131-6 tbody tr td:nth-child(2) .form-control,
+  #pdfPages table.form-131-6 tbody tr td:nth-child(2) .data-group textarea,
+  #pdfPages .data-group table.form-131-6 tbody tr td:nth-child(2) textarea,
+  #pdfPages table.form-131-6 tbody tr td:nth-child(3) .form-control,
+  #pdfPages table.form-131-6 tbody tr td:nth-child(3) .data-group textarea,
+  #pdfPages .data-group table.form-131-6 tbody tr td:nth-child(3) textarea,
+  #pdfPages table.form-131-6 thead tr td:nth-child(2) .form-control,
+  #pdfPages table.form-131-6 thead tr td:nth-child(2) .data-group textarea,
+  #pdfPages .data-group table.form-131-6 thead tr td:nth-child(2) textarea,
+  #pdfPages table.form-131-6 thead tr td:nth-child(3) .form-control,
+  #pdfPages table.form-131-6 thead tr td:nth-child(3) .data-group textarea,
+  #pdfPages .data-group table.form-131-6 thead tr td:nth-child(3) textarea {
+    text-align: end;
+  }
+  
+  #pdfPages table.form-131-6 tbody tr td .form-control,
+  #pdfPages table.form-131-6 tbody tr td .data-group textarea,
+  #pdfPages .data-group table.form-131-6 tbody tr td textarea,
+  #pdfPages table.form-131-6 thead tr td .form-control,
+  #pdfPages table.form-131-6 thead tr td .data-group textarea,
+  #pdfPages .data-group table.form-131-6 thead tr td textarea {
+    text-align: left;
+    width: 100%;
+    border: unset;
+    padding: unset;
+  }
+
+  #pdfPages input:disabled {
+    background-color: none !important;
+  }
+
+
+  #pdfPages table.form-131-7 {
+    width: 100%;
+  }
+  
+  #pdfPages table.form-131-7 thead {
+    text-align: center;
+  }
+  
+  #pdfPages table.form-131-7 tbody tr th,
+  #pdfPages table.form-131-7 tbody tr td,
+  #pdfPages table.form-131-7 thead tr th,
+  #pdfPages table.form-131-7 thead tr td {
+    border: 1px solid rgba(23, 29, 52, 0.6);
+  }
+  
+  #pdfPages table.form-131-7 tbody tr td:nth-child(1),
+  #pdfPages table.form-131-7 thead tr td:nth-child(1) {
+    width: 25%;
+  }
+  
+  #pdfPages table.form-131-7 tbody tr td:nth-child(3),
+  #pdfPages table.form-131-7 thead tr td:nth-child(3) {
+    width: 20%;
+  }
+  
+  #pdfPages table.form-131-7 tbody tr td:nth-child(3) .form-control,
+  #pdfPages table.form-131-7 tbody tr td:nth-child(3) .data-group textarea,
+  #pdfPages .data-group table.form-131-7 tbody tr td:nth-child(3) textarea,
+  #pdfPages table.form-131-7 thead tr td:nth-child(3) .form-control,
+  #pdfPages table.form-131-7 thead tr td:nth-child(3) .data-group textarea,
+  #pdfPages .data-group table.form-131-7 thead tr td:nth-child(3) textarea {
+    text-align: end;
+  }
+  
+  #pdfPages table.form-131-7 tbody tr td .form-control,
+  #pdfPages table.form-131-7 tbody tr td .data-group textarea,
+  #pdfPages .data-group table.form-131-7 tbody tr td textarea,
+  #pdfPages table.form-131-7 thead tr td .form-control,
+  #pdfPages table.form-131-7 thead tr td .data-group textarea,
+  #pdfPages .data-group table.form-131-7 thead tr td textarea {
+    text-align: left;
+    width: 100%;
+    border: unset;
+    padding: unset;
+  }
+  
+  #pdfPages table.form-131-7 tbody tr.inputs td textarea,
+  #pdfPages table.form-131-7 thead tr.inputs td textarea {
+    /* height: 200px !important; */
+    resize: none;
+  }
+
+
+  #pdfPages table.form-131-9 {
+    width: 100%;
+  }
+  
+  #pdfPages table.form-131-9 thead {
+    text-align: center;
+  }
+  
+  #pdfPages table.form-131-9 tbody tr th,
+  #pdfPages table.form-131-9 tbody tr td,
+  #pdfPages table.form-131-9 thead tr th,
+  #pdfPages table.form-131-9 thead tr td {
+    border: 1px solid rgba(23, 29, 52, 0.6);
+  }
+  
+  #pdfPages table.form-131-9 tbody tr td:nth-child(2),
+  #pdfPages table.form-131-9 tbody tr td:nth-child(3),
+  #pdfPages table.form-131-9 thead tr td:nth-child(2),
+  #pdfPages table.form-131-9 thead tr td:nth-child(3) {
+    width: 15%;
+  }
+  
+  #pdfPages table.form-131-9 tbody tr td:nth-child(2) .form-control,
+  #pdfPages table.form-131-9 tbody tr td:nth-child(2) .data-group textarea,
+  #pdfPages .data-group table.form-131-9 tbody tr td:nth-child(2) textarea,
+  #pdfPages table.form-131-9 tbody tr td:nth-child(3) .form-control,
+  #pdfPages table.form-131-9 tbody tr td:nth-child(3) .data-group textarea,
+  #pdfPages .data-group table.form-131-9 tbody tr td:nth-child(3) textarea,
+  #pdfPages table.form-131-9 thead tr td:nth-child(2) .form-control,
+  #pdfPages table.form-131-9 thead tr td:nth-child(2) .data-group textarea,
+  #pdfPages .data-group table.form-131-9 thead tr td:nth-child(2) textarea,
+  #pdfPages table.form-131-9 thead tr td:nth-child(3) .form-control,
+  #pdfPages table.form-131-9 thead tr td:nth-child(3) .data-group textarea,
+  #pdfPages .data-group table.form-131-9 thead tr td:nth-child(3) textarea {
+    text-align: end;
+  }
+  
+  #pdfPages table.form-131-9 tbody tr td .form-control,
+  #pdfPages table.form-131-9 tbody tr td .data-group textarea,
+  #pdfPages .data-group table.form-131-9 tbody tr td textarea,
+  #pdfPages table.form-131-9 thead tr td .form-control,
+  #pdfPages table.form-131-9 thead tr td .data-group textarea,
+  #pdfPages .data-group table.form-131-9 thead tr td textarea {
+    text-align: left;
+    width: 100%;
+    border: unset;
+    padding: unset;
+  }
+
+
+  #pdfPages table.form-131-schedule-a {
+    width: 100%;
+  }
+  
+  #pdfPages table.form-131-schedule-a thead {
+    text-align: center;
+  }
+  
+  #pdfPages table.form-131-schedule-a tbody tr th,
+  #pdfPages table.form-131-schedule-a tbody tr td,
+  #pdfPages table.form-131-schedule-a thead tr th,
+  #pdfPages table.form-131-schedule-a thead tr td {
+    border: 1px solid rgba(23, 29, 52, 0.6);
+  }
+  
+  #pdfPages table.form-131-schedule-a tbody tr td:nth-child(1),
+  #pdfPages table.form-131-schedule-a thead tr td:nth-child(1) {
+    width: 10%;
+  }
+  
+  #pdfPages table.form-131-schedule-a tbody tr td:nth-child(3),
+  #pdfPages table.form-131-schedule-a thead tr td:nth-child(3) {
+    width: 20%;
+  }
+  
+  #pdfPages table.form-131-schedule-a tbody tr td:nth-child(3) .form-control,
+  #pdfPages table.form-131-schedule-a tbody tr td:nth-child(3) .data-group textarea,
+  #pdfPages .data-group table.form-131-schedule-a tbody tr td:nth-child(3) textarea,
+  #pdfPages table.form-131-schedule-a thead tr td:nth-child(3) .form-control,
+  #pdfPages table.form-131-schedule-a thead tr td:nth-child(3) .data-group textarea,
+  #pdfPages .data-group table.form-131-schedule-a thead tr td:nth-child(3) textarea {
+    text-align: end;
+  }
+  
+  #pdfPages table.form-131-schedule-a tbody tr td .form-control,
+  #pdfPages table.form-131-schedule-a tbody tr td .data-group textarea,
+  #pdfPages .data-group table.form-131-schedule-a tbody tr td textarea,
+  #pdfPages table.form-131-schedule-a thead tr td .form-control,
+  #pdfPages table.form-131-schedule-a thead tr td .data-group textarea,
+  #pdfPages .data-group table.form-131-schedule-a thead tr td textarea {
+    text-align: left;
+    width: 100%;
+    border: unset;
+    padding: unset;
+  }
+
+  #pdfPages table.form-131-schedule-b {
+    width: 100%;
+  }
+  
+  #pdfPages table.form-131-schedule-b thead {
+    text-align: center;
+  }
+  
+  #pdfPages table.form-131-schedule-b tbody tr th,
+  #pdfPages table.form-131-schedule-b tbody tr td,
+  #pdfPages table.form-131-schedule-b thead tr th,
+  #pdfPages table.form-131-schedule-b thead tr td {
+    border: 1px solid rgba(23, 29, 52, 0.6);
+  }
+  
+  #pdfPages table.form-131-schedule-b tbody tr td:nth-child(1),
+  #pdfPages table.form-131-schedule-b thead tr td:nth-child(1) {
+    width: 30%;
+  }
+  
+  #pdfPages table.form-131-schedule-b tbody tr td:nth-child(3),
+  #pdfPages table.form-131-schedule-b tbody tr td:nth-child(4),
+  #pdfPages table.form-131-schedule-b thead tr td:nth-child(3),
+  #pdfPages table.form-131-schedule-b thead tr td:nth-child(4) {
+    width: 15%;
+  }
+  
+  #pdfPages table.form-131-schedule-b tbody tr td:nth-child(3) .form-control,
+  #pdfPages table.form-131-schedule-b tbody tr td:nth-child(3) .data-group textarea,
+  #pdfPages .data-group table.form-131-schedule-b tbody tr td:nth-child(3) textarea,
+  #pdfPages table.form-131-schedule-b thead tr td:nth-child(3) .form-control,
+  #pdfPages table.form-131-schedule-b thead tr td:nth-child(3) .data-group textarea,
+  #pdfPages .data-group table.form-131-schedule-b thead tr td:nth-child(3) textarea {
+    text-align: end;
+  }
+  
+  #pdfPages table.form-131-schedule-b tbody tr td .form-control,
+  #pdfPages table.form-131-schedule-b tbody tr td .data-group textarea,
+  #pdfPages .data-group table.form-131-schedule-b tbody tr td textarea,
+  #pdfPages table.form-131-schedule-b thead tr td .form-control,
+  #pdfPages table.form-131-schedule-b thead tr td .data-group textarea,
+  #pdfPages .data-group table.form-131-schedule-b thead tr td textarea {
+    text-align: left;
+    width: 100%;
+    border: unset;
+    padding: unset;
+  }
+
+  #pdfPages .children_special_table tbody tr td {
+    padding: 3px 5px;
+    font-size: 13px;
+  }

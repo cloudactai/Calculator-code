@@ -1,0 +1,225 @@
+.alf-page {
+    position: relative;
+    min-height: 100vh;
+    width: 100%;
+    background: #ffffff;
+    padding: 1rem 1.5rem;
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.alf-logo-link {
+    align-self: flex-start;
+    display: block;
+}
+
+.alf-logo {
+    align-self: flex-start;
+    height: 56px;
+    width: auto;
+}
+
+.alf-footer {
+    position: absolute;
+    bottom: 1rem;
+    left: 1.5rem;
+    margin: 0;
+    font-size: 0.8rem;
+    color: #6B7280;
+}
+
+.alf-heading {
+    margin: 24px 0 24px;
+    font-size: 2.25rem;
+    font-weight: 700;
+    color: #171D34;
+    text-align: center;
+}
+
+.alf-stepper {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin: 0 auto 56px;
+    width: min(100%, 480px);
+}
+
+.alf-step {
+    position: relative;
+    flex: 0 0 auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.alf-step-dot {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: #ffffff;
+    border: 4px solid #307FF4;
+    box-sizing: border-box;
+}
+
+.alf-step-dot.is-current {
+    border-width: 4px;
+}
+
+.alf-step-dot.is-pending {
+    border-width: 2px;
+}
+
+.alf-step-label {
+    position: absolute;
+    top: calc(100% + 12px);
+    left: 50%;
+    transform: translateX(-50%);
+    white-space: nowrap;
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: #171D34;
+}
+
+.alf-step-line {
+    flex: 1;
+    height: 2px;
+    background: #307FF4;
+}
+
+.alf-card-wrap {
+    width: min(100%, 480px);
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+}
+
+.alf-section-title {
+    margin: 8px 0 4px;
+    font-size: 1.75rem;
+    font-weight: 700;
+    color: #171D34;
+    text-align: center;
+}
+
+.alf-subtitle {
+    margin: 0 0 24px;
+    font-size: 0.95rem;
+    color: #171D34;
+    text-align: center;
+}
+
+.alf-field {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 20px;
+}
+
+.alf-field-label {
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: #171D34;
+}
+
+.alf-field-input {
+    width: 100%;
+    padding: 16px 20px;
+    border-radius: 8px;
+    border: 2px solid #73C3FD;
+    font-size: 1rem;
+    color: #171D34;
+    background: #ffffff;
+    box-sizing: border-box;
+    transition: background-color 0.15s ease, border-color 0.15s ease;
+    font-family: inherit;
+}
+
+.alf-field-input::placeholder {
+    color: #171D34;
+    opacity: 0.5;
+}
+
+.alf-field-input:hover,
+.alf-field-input:focus {
+    outline: none;
+    background: rgba(115, 195, 253, 0.2);
+    border-color: #73C3FD;
+}
+
+.alf-helper {
+    margin: 6px 0 0;
+    font-size: 0.85rem;
+    color: #307FF4;
+    line-height: 1.4;
+}
+
+.alf-actions {
+    width: min(100%, 480px);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    margin-top: 28px;
+}
+
+.alf-button {
+    flex: 1;
+    padding: 14px 24px;
+    border-radius: 8px;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    border: 2px solid transparent;
+    transition: background-color 0.15s ease, border-color 0.15s ease;
+    font-family: inherit;
+}
+
+.alf-button.is-back {
+    background: #F5F9FF;
+    color: #171D34;
+    border-color: #73C3FD;
+}
+
+.alf-button.is-back:hover {
+    border-color: #4FAFF7;
+}
+
+.alf-button.is-next {
+    background: #73C3FD;
+    color: #171D34;
+    border-color: #73C3FD;
+}
+
+.alf-button.is-next:hover:not(:disabled) {
+    background: #4FAFF7;
+    border-color: #4FAFF7;
+}
+
+.alf-button:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.auth-error {
+    margin: 4px 0 0;
+    color: #d2462f;
+    font-size: 0.9rem;
+    font-weight: 600;
+}
+
+@media (max-width: 640px) {
+    .alf-logo {
+        position: static;
+        margin-bottom: 12px;
+    }
+
+    .alf-step {
+        width: 110px;
+    }
+
+    .alf-step-label {
+        font-size: 0.85rem;
+    }
+}

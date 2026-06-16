@@ -1,0 +1,5 @@
+.accordion.five-steps-accordion .accordion-item:last-child button:after {
+  transform: unset; }
+
+.accordion.five-steps-accordion .accordion-item:last-child button:not(.collapsed):after {
+  transform: rotate(180deg); }

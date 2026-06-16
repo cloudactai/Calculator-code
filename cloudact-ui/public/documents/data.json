@@ -1,0 +1,1427 @@
+{
+  "matter_data": {
+    "financial_year_expenses": null,
+    "financial_year_income_benefits": null,
+    "valuation_date": null,
+    "matter_id": "CA-2024-00001"
+  },
+  "court_info": {
+    "courtName": "Attawapiskat Courthouse",
+    "courtFileNumber": "987654",
+    "courtOfficeAddress": "Reg Louttit Sportsplex, Attawapiskat, Ontario P0L 1A0"
+  },
+  "applicant": {
+    "fullLegalName": "Matter test client \\",
+    "address": "maxico ",
+    "phoneAndFax": "88888",
+    "email": "wblc@cloudact.ca",
+    "province": "Ontario",
+    "municipality": "Addington Highlands, Township of",
+    "dateOfBirth": "2012-01-31"
+  },
+  "applicantsLawyer": {
+    "fullLegalName": "Vakil number 1",
+    "address": "vakil number 1 , delhi , india",
+    "phoneAndFax": "phone",
+    "email": "vakiltornato@gmail.com"
+  },
+  "respondent": {
+    "fullLegalName": "javascript:void(0)",
+    "address": "maxico ",
+    "phoneAndFax": "123456",
+    "email": "wblc@cloudact.ca",
+    "province": "Ontario",
+    "municipality": "Addington Highlands, Township of",
+    "dateOfBirth": "2024-06-07"
+  },
+  "respondentsLawyer": {
+    "fullLegalName": "",
+    "address": "",
+    "phoneAndFax": "",
+    "email": ""
+  },
+  "theChildren": [
+    {
+      "fullLegalName": "",
+      "age": null,
+      "birthdate": "",
+      "muncipilityAndProvince": "",
+      "nowLivingWith": "",
+      "representedByLawyer": "",
+      "lawyerName": "",
+      "lawyerPhone": "",
+      "lawyerAddress": "",
+      "lawyerEmail": ""
+    },
+    {
+      "fullLegalName": "",
+      "age": null,
+      "birthdate": "",
+      "muncipilityAndProvince": "",
+      "nowLivingWith": "",
+      "representedByLawyer": "",
+      "lawyerName": "",
+      "lawyerPhone": "",
+      "lawyerAddress": "",
+      "lawyerEmail": ""
+    },
+    {
+      "fullLegalName": "",
+      "age": null,
+      "birthdate": "",
+      "muncipilityAndProvince": "",
+      "nowLivingWith": "",
+      "representedByLawyer": "",
+      "lawyerName": "",
+      "lawyerPhone": "",
+      "lawyerAddress": "",
+      "lawyerEmail": ""
+    },
+    {
+      "fullLegalName": "",
+      "age": null,
+      "birthdate": "",
+      "muncipilityAndProvince": "",
+      "nowLivingWith": "",
+      "representedByLawyer": "",
+      "lawyerName": "",
+      "lawyerPhone": "",
+      "lawyerAddress": "",
+      "lawyerEmail": ""
+    },
+    {
+      "fullLegalName": "",
+      "age": null,
+      "birthdate": "",
+      "muncipilityAndProvince": "",
+      "nowLivingWith": "",
+      "representedByLawyer": "",
+      "lawyerName": "",
+      "lawyerPhone": "",
+      "lawyerAddress": "",
+      "lawyerEmail": ""
+    },
+    {
+      "fullLegalName": "",
+      "age": null,
+      "birthdate": "",
+      "muncipilityAndProvince": "",
+      "nowLivingWith": "",
+      "representedByLawyer": "",
+      "lawyerName": "",
+      "lawyerPhone": "",
+      "lawyerAddress": "",
+      "lawyerEmail": ""
+    }
+  ],
+
+  "expenses": {
+    "client": {
+      "automaticDeductions": {
+        "cppContributions": 0,
+        "eiPremiums": 0,
+        "incomeTaxes": 0,
+        "employeePensionContributions": 0,
+        "unionDues": 0,
+        "subtotal": 0
+      },
+      "housing": {
+        "rentOrMortgage": 0,
+        "propertyTaxes": 0,
+        "propertyInsurance": 0,
+        "condominiumFees": 0,
+        "repairsAndMaintenance": 0,
+        "otherHousingExpense": 0,
+        "subtotal": 0
+      },
+      "utilities": {
+        "water": 0,
+        "heat": 0,
+        "electricity": 0,
+        "telephone": 0,
+        "cellPhone": 0,
+        "cable": 0,
+        "internet": 0,
+        "utilities": 0,
+        "utilities_subtotal": 0,
+        "household_utilities_subtotal": 0
+      },
+      "householdExpenses": {
+        "groceries": 0,
+        "foodAndHousingSupplies": 0,
+        "householdSupplies": 0,
+        "mealsOutsideTheHome": 0,
+        "eatingOut": 0,
+        "petCare": 0,
+        "laundryAndDryCleaning": 0,
+        "otherHousehold": 0,
+        "telephoneCableTvInternet": 0,
+        "subtotal": 0
+      },
+      "childcare": {
+        "daycare": 0,
+        "babysitting": 0,
+        "subtotal": 0
+      },
+      "transportation": {
+        "publicTransit": 0,
+        "carPayments": 0,
+        "gasAndOil": 0,
+        "insurance": 0,
+        "repairsAndMaintenance": 0,
+        "parking": 0,
+        "licenseAndRegistration": 0,
+        "otherTransportation": 0,
+        "subtotal": 0
+      },
+      "health": {
+        "insurance": 0,
+        "dental": 0,
+        "medicine": 0,
+        "eyecare": 0,
+        "subtotal": 0
+      },
+      "personal": {
+        "clothing": 0,
+        "haircare": 0,
+        "alcohol": 0,
+        "education": 0,
+        "personalHygiene": 0,
+        "entertainment": 0,
+        "gifts": 0,
+        "subtotal": 0
+      },
+      "other": {
+        "lifeInsurance": 0,
+        "rrsp": 0,
+        "medicalAndDentalInsurance": 0,
+        "birthdayAndChristmasGifts": 0,
+        "vacations": 0,
+        "school": 0,
+        "clothingForChildren": 0,
+        "childrenActivities": 0,
+        "summerCamp": 0,
+        "debtPayments": 0,
+        "bankLoanPayments": 0,
+        "premiumsContributionsDebt": 0,
+        "supportPaidForOtherChildren": 0,
+        "other": 0,
+        "creditCardPayments": 0,
+        "educationalExpenses": 0,
+        "miscellaneous": 0,
+        "supportForOthers": 0,
+        "subtotal": 0
+      },
+      "totalMonthlyExpenses": 0,
+      "totalYearlyExpenses": 0
+    },
+    "opposingParty": {
+      "automaticDeductions": {
+        "cppContributions": 0,
+        "eiPremiums": 0,
+        "incomeTaxes": 0,
+        "employeePensionContributions": 0,
+        "unionDues": 0,
+        "subtotal": 0
+      },
+      "housing": {
+        "rentOrMortgage": 0,
+        "propertyTaxes": 0,
+        "propertyInsurance": 0,
+        "condominiumFees": 0,
+        "repairsAndMaintenance": 0,
+        "otherHousingExpense": 0,
+        "subtotal": 0
+      },
+      "utilities": {
+        "water": 0,
+        "heat": 0,
+        "electricity": 0,
+        "telephone": 0,
+        "cellPhone": 0,
+        "cable": 0,
+        "internet": 0,
+        "utilities": 0,
+        "utilities_subtotal": 0,
+        "household_utilities_subtotal": 0
+      },
+      "householdExpenses": {
+        "groceries": 0,
+        "foodAndHousingSupplies": 0,
+        "householdSupplies": 0,
+        "mealsOutsideTheHome": 0,
+        "eatingOut": 0,
+        "petCare": 0,
+        "laundryAndDryCleaning": 0,
+        "otherHousehold": 0,
+        "telephoneCableTvInternet": 0,
+        "subtotal": 0
+      },
+      "childcare": {
+        "daycare": 0,
+        "babysitting": 0,
+        "subtotal": 0
+      },
+      "transportation": {
+        "publicTransit": 0,
+        "carPayments": 0,
+        "gasAndOil": 0,
+        "insurance": 0,
+        "repairsAndMaintenance": 0,
+        "parking": 0,
+        "licenseAndRegistration": 0,
+        "otherTransportation": 0,
+        "subtotal": 0
+      },
+      "health": {
+        "insurance": 0,
+        "dental": 0,
+        "medicine": 0,
+        "eyecare": 0,
+        "subtotal": 0
+      },
+      "personal": {
+        "clothing": 0,
+        "haircare": 0,
+        "alcohol": 0,
+        "education": 0,
+        "personalHygiene": 0,
+        "entertainment": 0,
+        "gifts": 0,
+        "subtotal": 0
+      },
+      "other": {
+        "lifeInsurance": 0,
+        "rrsp": 0,
+        "medicalAndDentalInsurance": 0,
+        "birthdayAndChristmasGifts": 0,
+        "vacations": 0,
+        "school": 0,
+        "clothingForChildren": 0,
+        "childrenActivities": 0,
+        "summerCamp": 0,
+        "debtPayments": 0,
+        "bankLoanPayments": 0,
+        "premiumsContributionsDebt": 0,
+        "supportPaidForOtherChildren": 0,
+        "other": 0,
+        "creditCardPayments": 0,
+        "educationalExpenses": 0,
+        "miscellaneous": 0,
+        "supportForOthers": 0,
+        "subtotal": 0
+      },
+      "totalMonthlyExpenses": 0,
+      "totalYearlyExpenses": 0
+    }
+  },
+
+  "specialExpenses": {
+    "client": [],
+    "opposingParty": []
+  },
+  "applicationType": {},
+
+  "assets": {
+    "dateOfMarriage": "2024-06-15",
+    "dateOfValuation": null,
+    "dateOfCommencement": "",
+    "land": [
+      {
+        "ownership": "Matrimonial House  ",
+        "address": "Landour Avenue, Toronto, ON ",
+        "property_status": "",
+        "market_value": {
+          "client": {
+            "id": 341,
+            "asset_id": 321,
+            "on_date_of_marriage": "",
+            "on_valuation_date": "1200000",
+            "today": "1200000"
+          },
+          "opposing_party": {
+            "id": 341,
+            "asset_id": 321,
+            "on_date_of_marriage": "",
+            "on_valuation_date": "",
+            "today": ""
+          }
+        },
+        "onDateOfMarriage": "",
+        "onValuationDate": "1200000",
+        "today": "1200000",
+        "total1": "",
+        "total2": ""
+      },
+      {
+        "ownership": "5656",
+        "address": "5656",
+        "property_status": "opposing_Party_view_differs",
+        "market_value": {
+          "client": {
+            "id": 427,
+            "asset_id": 406,
+            "on_date_of_marriage": "3454",
+            "on_valuation_date": "45",
+            "today": "45"
+          },
+          "opposing_party": {
+            "id": 427,
+            "asset_id": 406,
+            "on_date_of_marriage": "665",
+            "on_valuation_date": "565",
+            "today": "5656"
+          }
+        },
+        "onDateOfMarriage": "3454",
+        "onValuationDate": "45",
+        "today": "45",
+        "total1": "565",
+        "total2": "5656"
+      },
+      {
+        "ownership": "5656",
+        "address": "5656",
+        "property_status": "opposing_Party_view_differs",
+        "market_value": {
+          "client": {
+            "id": 427,
+            "asset_id": 406,
+            "on_date_of_marriage": "3454",
+            "on_valuation_date": "45",
+            "today": "45"
+          },
+          "opposing_party": {
+            "id": 427,
+            "asset_id": 406,
+            "on_date_of_marriage": "665",
+            "on_valuation_date": "565",
+            "today": "5656"
+          }
+        },
+        "onDateOfMarriage": "3454",
+        "onValuationDate": "45",
+        "today": "45",
+        "total1": "565",
+        "total2": "5656"
+      },
+      {
+        "ownership": "5656",
+        "address": "5656",
+        "property_status": "opposing_Party_view_differs",
+        "market_value": {
+          "client": {
+            "id": 427,
+            "asset_id": 406,
+            "on_date_of_marriage": "3454",
+            "on_valuation_date": "45",
+            "today": "45"
+          },
+          "opposing_party": {
+            "id": 427,
+            "asset_id": 406,
+            "on_date_of_marriage": "665",
+            "on_valuation_date": "565",
+            "today": "5656"
+          }
+        },
+        "onDateOfMarriage": "3454",
+        "onValuationDate": "45",
+        "today": "45",
+        "total1": "565",
+        "total2": "5656"
+      },
+      {
+        "ownership": "5656",
+        "address": "5656",
+        "property_status": "opposing_Party_view_differs",
+        "market_value": {
+          "client": {
+            "id": 427,
+            "asset_id": 406,
+            "on_date_of_marriage": "3454",
+            "on_valuation_date": "45",
+            "today": "45"
+          },
+          "opposing_party": {
+            "id": 427,
+            "asset_id": 406,
+            "on_date_of_marriage": "665",
+            "on_valuation_date": "565",
+            "today": "5656"
+          }
+        },
+        "onDateOfMarriage": "3454",
+        "onValuationDate": "45",
+        "today": "45",
+        "total1": "565",
+        "total2": "5656"
+      }
+    ],
+    "household": [
+      {
+        "item": "Cars, Boats, Vehicles",
+        "description": "Ford ranger",
+        "isInPossession": "Yes",
+        "property_status": "",
+        "market_value": {
+          "client": {
+            "id": 342,
+            "asset_id": 319,
+            "on_date_of_marriage": "50000",
+            "on_valuation_date": "45000",
+            "today": "45000"
+          },
+          "opposing_party": {
+            "id": 342,
+            "asset_id": 319,
+            "on_date_of_marriage": "",
+            "on_valuation_date": "",
+            "today": ""
+          }
+        },
+        "onDateOfMarriage": "50000",
+        "onValuationDate": "45000",
+        "today": "45000",
+        "total1": "",
+        "total2": ""
+      },
+      {
+        "item": "Cars, Boats, Vehicles",
+        "description": "Ford ranger",
+        "isInPossession": "Yes",
+        "property_status": "",
+        "market_value": {
+          "client": {
+            "id": 342,
+            "asset_id": 319,
+            "on_date_of_marriage": "50000",
+            "on_valuation_date": "45000",
+            "today": "45000"
+          },
+          "opposing_party": {
+            "id": 342,
+            "asset_id": 319,
+            "on_date_of_marriage": "",
+            "on_valuation_date": "",
+            "today": ""
+          }
+        },
+        "onDateOfMarriage": "50000",
+        "onValuationDate": "45000",
+        "today": "45000",
+        "total1": "",
+        "total2": ""
+      },
+      {
+        "item": "Cars, Boats, Vehicles",
+        "description": "Ford ranger",
+        "isInPossession": "Yes",
+        "property_status": "",
+        "market_value": {
+          "client": {
+            "id": 342,
+            "asset_id": 319,
+            "on_date_of_marriage": "50000",
+            "on_valuation_date": "45000",
+            "today": "45000"
+          },
+          "opposing_party": {
+            "id": 342,
+            "asset_id": 319,
+            "on_date_of_marriage": "",
+            "on_valuation_date": "",
+            "today": ""
+          }
+        },
+        "onDateOfMarriage": "50000",
+        "onValuationDate": "45000",
+        "today": "45000",
+        "total1": "",
+        "total2": ""
+      },
+      {
+        "item": "Cars, Boats, Vehicles",
+        "description": "Ford ranger",
+        "isInPossession": "Yes",
+        "property_status": "",
+        "market_value": {
+          "client": {
+            "id": 342,
+            "asset_id": 319,
+            "on_date_of_marriage": "50000",
+            "on_valuation_date": "45000",
+            "today": "45000"
+          },
+          "opposing_party": {
+            "id": 342,
+            "asset_id": 319,
+            "on_date_of_marriage": "",
+            "on_valuation_date": "",
+            "today": ""
+          }
+        },
+        "onDateOfMarriage": "50000",
+        "onValuationDate": "45000",
+        "today": "45000",
+        "total1": "",
+        "total2": ""
+      },
+      {
+        "item": "Cars, Boats, Vehicles",
+        "description": "Ford ranger",
+        "isInPossession": "Yes",
+        "property_status": "",
+        "market_value": {
+          "client": {
+            "id": 342,
+            "asset_id": 319,
+            "on_date_of_marriage": "50000",
+            "on_valuation_date": "45000",
+            "today": "45000"
+          },
+          "opposing_party": {
+            "id": 342,
+            "asset_id": 319,
+            "on_date_of_marriage": "",
+            "on_valuation_date": "",
+            "today": ""
+          }
+        },
+        "onDateOfMarriage": "50000",
+        "onValuationDate": "45000",
+        "today": "45000",
+        "total1": "",
+        "total2": ""
+      }
+    ],
+    "bank": [
+      {
+        "category": "Bank accounts",
+        "institution": "Bank of Montreal",
+        "description_bassp": "Savings",
+        "account_number": "12695",
+        "property_status": "",
+        "market_value": {
+          "client": {
+            "id": 340,
+            "asset_id": 318,
+            "on_date_of_marriage": "10500",
+            "on_valuation_date": "11500",
+            "today": "11500"
+          },
+          "opposing_party": {
+            "id": 340,
+            "asset_id": 318,
+            "on_date_of_marriage": "",
+            "on_valuation_date": "",
+            "today": ""
+          }
+        },
+        "onDateOfMarriage": "10500",
+        "onValuationDate": "11500",
+        "today": "11500",
+        "total1": "",
+        "total2": ""
+      },
+      {
+        "category": "Bank accounts",
+        "institution": "Bank of Montreal",
+        "description_bassp": "Savings",
+        "account_number": "12695",
+        "property_status": "",
+        "market_value": {
+          "client": {
+            "id": 340,
+            "asset_id": 318,
+            "on_date_of_marriage": "10500",
+            "on_valuation_date": "11500",
+            "today": "11500"
+          },
+          "opposing_party": {
+            "id": 340,
+            "asset_id": 318,
+            "on_date_of_marriage": "",
+            "on_valuation_date": "",
+            "today": ""
+          }
+        },
+        "onDateOfMarriage": "10500",
+        "onValuationDate": "11500",
+        "today": "11500",
+        "total1": "",
+        "total2": ""
+      },
+      {
+        "category": "Bank accounts",
+        "institution": "Bank of Montreal",
+        "description_bassp": "Savings",
+        "account_number": "12695",
+        "property_status": "",
+        "market_value": {
+          "client": {
+            "id": 340,
+            "asset_id": 318,
+            "on_date_of_marriage": "10500",
+            "on_valuation_date": "11500",
+            "today": "11500"
+          },
+          "opposing_party": {
+            "id": 340,
+            "asset_id": 318,
+            "on_date_of_marriage": "",
+            "on_valuation_date": "",
+            "today": ""
+          }
+        },
+        "onDateOfMarriage": "10500",
+        "onValuationDate": "11500",
+        "today": "11500",
+        "total1": "",
+        "total2": ""
+      },
+      {
+        "category": "Bank accounts",
+        "institution": "Bank of Montreal",
+        "description_bassp": "Savings",
+        "account_number": "12695",
+        "property_status": "",
+        "market_value": {
+          "client": {
+            "id": 340,
+            "asset_id": 318,
+            "on_date_of_marriage": "10500",
+            "on_valuation_date": "11500",
+            "today": "11500"
+          },
+          "opposing_party": {
+            "id": 340,
+            "asset_id": 318,
+            "on_date_of_marriage": "",
+            "on_valuation_date": "",
+            "today": ""
+          }
+        },
+        "onDateOfMarriage": "10500",
+        "onValuationDate": "11500",
+        "today": "11500",
+        "total1": "",
+        "total2": ""
+      },
+      {
+        "category": "Bank accounts",
+        "institution": "Bank of Montreal",
+        "description_bassp": "Savings",
+        "account_number": "12695",
+        "property_status": "",
+        "market_value": {
+          "client": {
+            "id": 340,
+            "asset_id": 318,
+            "on_date_of_marriage": "10500",
+            "on_valuation_date": "11500",
+            "today": "11500"
+          },
+          "opposing_party": {
+            "id": 340,
+            "asset_id": 318,
+            "on_date_of_marriage": "",
+            "on_valuation_date": "",
+            "today": ""
+          }
+        },
+        "onDateOfMarriage": "10500",
+        "onValuationDate": "11500",
+        "today": "11500",
+        "total1": "",
+        "total2": ""
+      }
+    ],
+    "life": [
+      {
+        "policy_no": "",
+        "owner": "",
+        "beneficiary": "",
+        "face_amount": 0,
+        "property_status": "",
+        "market_value": {
+          "client": {
+            "id": 339,
+            "asset_id": 317,
+            "on_date_of_marriage": "",
+            "on_valuation_date": "",
+            "today": ""
+          },
+          "opposing_party": {
+            "id": 339,
+            "asset_id": 317,
+            "on_date_of_marriage": "",
+            "on_valuation_date": "",
+            "today": ""
+          }
+        },
+        "onDateOfMarriage": "",
+        "onValuationDate": "",
+        "today": "",
+        "total1": "",
+        "total2": ""
+      },
+      {
+        "policy_no": "",
+        "owner": "",
+        "beneficiary": "",
+        "face_amount": 0,
+        "property_status": "",
+        "market_value": {
+          "client": {
+            "id": 339,
+            "asset_id": 317,
+            "on_date_of_marriage": "",
+            "on_valuation_date": "",
+            "today": ""
+          },
+          "opposing_party": {
+            "id": 339,
+            "asset_id": 317,
+            "on_date_of_marriage": "",
+            "on_valuation_date": "",
+            "today": ""
+          }
+        },
+        "onDateOfMarriage": "",
+        "onValuationDate": "",
+        "today": "",
+        "total1": "",
+        "total2": ""
+      },
+      {
+        "policy_no": "",
+        "owner": "",
+        "beneficiary": "",
+        "face_amount": 0,
+        "property_status": "",
+        "market_value": {
+          "client": {
+            "id": 339,
+            "asset_id": 317,
+            "on_date_of_marriage": "",
+            "on_valuation_date": "",
+            "today": ""
+          },
+          "opposing_party": {
+            "id": 339,
+            "asset_id": 317,
+            "on_date_of_marriage": "",
+            "on_valuation_date": "",
+            "today": ""
+          }
+        },
+        "onDateOfMarriage": "",
+        "onValuationDate": "",
+        "today": "",
+        "total1": "",
+        "total2": ""
+      },
+      {
+        "policy_no": "",
+        "owner": "",
+        "beneficiary": "",
+        "face_amount": 0,
+        "property_status": "",
+        "market_value": {
+          "client": {
+            "id": 339,
+            "asset_id": 317,
+            "on_date_of_marriage": "",
+            "on_valuation_date": "",
+            "today": ""
+          },
+          "opposing_party": {
+            "id": 339,
+            "asset_id": 317,
+            "on_date_of_marriage": "",
+            "on_valuation_date": "",
+            "today": ""
+          }
+        },
+        "onDateOfMarriage": "",
+        "onValuationDate": "",
+        "today": "",
+        "total1": "",
+        "total2": ""
+      },
+      {
+        "policy_no": "",
+        "owner": "",
+        "beneficiary": "",
+        "face_amount": 0,
+        "property_status": "",
+        "market_value": {
+          "client": {
+            "id": 339,
+            "asset_id": 317,
+            "on_date_of_marriage": "",
+            "on_valuation_date": "",
+            "today": ""
+          },
+          "opposing_party": {
+            "id": 339,
+            "asset_id": 317,
+            "on_date_of_marriage": "",
+            "on_valuation_date": "",
+            "today": ""
+          }
+        },
+        "onDateOfMarriage": "",
+        "onValuationDate": "",
+        "today": "",
+        "total1": "",
+        "total2": ""
+      }
+    ],
+    "interests": [
+      {
+        "firm_name": "Consulting",
+        "interest": "100",
+        "property_status": "",
+        "market_value": {
+          "client": {
+            "id": 470,
+            "asset_id": 449,
+            "on_date_of_marriage": "",
+            "on_valuation_date": "50000",
+            "today": "50000"
+          },
+          "opposing_party": {
+            "id": 470,
+            "asset_id": 449,
+            "on_date_of_marriage": "",
+            "on_valuation_date": "",
+            "today": ""
+          }
+        },
+        "onDateOfMarriage": "",
+        "onValuationDate": "50000",
+        "today": "50000",
+        "total1": "",
+        "total2": ""
+      },
+      {
+        "firm_name": "Consulting",
+        "interest": "100",
+        "property_status": "",
+        "market_value": {
+          "client": {
+            "id": 470,
+            "asset_id": 449,
+            "on_date_of_marriage": "",
+            "on_valuation_date": "50000",
+            "today": "50000"
+          },
+          "opposing_party": {
+            "id": 470,
+            "asset_id": 449,
+            "on_date_of_marriage": "",
+            "on_valuation_date": "",
+            "today": ""
+          }
+        },
+        "onDateOfMarriage": "",
+        "onValuationDate": "50000",
+        "today": "50000",
+        "total1": "",
+        "total2": ""
+      },
+      {
+        "firm_name": "Consulting",
+        "interest": "100",
+        "property_status": "",
+        "market_value": {
+          "client": {
+            "id": 470,
+            "asset_id": 449,
+            "on_date_of_marriage": "",
+            "on_valuation_date": "50000",
+            "today": "50000"
+          },
+          "opposing_party": {
+            "id": 470,
+            "asset_id": 449,
+            "on_date_of_marriage": "",
+            "on_valuation_date": "",
+            "today": ""
+          }
+        },
+        "onDateOfMarriage": "",
+        "onValuationDate": "50000",
+        "today": "50000",
+        "total1": "",
+        "total2": ""
+      },
+      {
+        "firm_name": "Consulting",
+        "interest": "100",
+        "property_status": "",
+        "market_value": {
+          "client": {
+            "id": 470,
+            "asset_id": 449,
+            "on_date_of_marriage": "",
+            "on_valuation_date": "50000",
+            "today": "50000"
+          },
+          "opposing_party": {
+            "id": 470,
+            "asset_id": 449,
+            "on_date_of_marriage": "",
+            "on_valuation_date": "",
+            "today": ""
+          }
+        },
+        "onDateOfMarriage": "",
+        "onValuationDate": "50000",
+        "today": "50000",
+        "total1": "",
+        "total2": ""
+      },
+      {
+        "firm_name": "Consulting",
+        "interest": "100",
+        "property_status": "",
+        "market_value": {
+          "client": {
+            "id": 470,
+            "asset_id": 449,
+            "on_date_of_marriage": "",
+            "on_valuation_date": "50000",
+            "today": "50000"
+          },
+          "opposing_party": {
+            "id": 470,
+            "asset_id": 449,
+            "on_date_of_marriage": "",
+            "on_valuation_date": "",
+            "today": ""
+          }
+        },
+        "onDateOfMarriage": "",
+        "onValuationDate": "50000",
+        "today": "50000",
+        "total1": "",
+        "total2": ""
+      }
+    ],
+    "moneyOwed": [
+      {
+        "details": "Loan given to family",
+        "property_status": "",
+        "market_value": {
+          "client": {
+            "id": 478,
+            "asset_id": 457,
+            "on_date_of_marriage": "",
+            "on_valuation_date": "30000",
+            "today": "30000"
+          },
+          "opposing_party": {
+            "id": 478,
+            "asset_id": 457,
+            "on_date_of_marriage": "",
+            "on_valuation_date": "",
+            "today": ""
+          }
+        },
+        "onDateOfMarriage": "",
+        "onValuationDate": "30000",
+        "today": "30000",
+        "total1": "",
+        "total2": ""
+      },
+      {
+        "details": "Loan given to family",
+        "property_status": "",
+        "market_value": {
+          "client": {
+            "id": 478,
+            "asset_id": 457,
+            "on_date_of_marriage": "",
+            "on_valuation_date": "30000",
+            "today": "30000"
+          },
+          "opposing_party": {
+            "id": 478,
+            "asset_id": 457,
+            "on_date_of_marriage": "",
+            "on_valuation_date": "",
+            "today": ""
+          }
+        },
+        "onDateOfMarriage": "",
+        "onValuationDate": "30000",
+        "today": "30000",
+        "total1": "",
+        "total2": ""
+      },
+      {
+        "details": "Loan given to family",
+        "property_status": "",
+        "market_value": {
+          "client": {
+            "id": 478,
+            "asset_id": 457,
+            "on_date_of_marriage": "",
+            "on_valuation_date": "30000",
+            "today": "30000"
+          },
+          "opposing_party": {
+            "id": 478,
+            "asset_id": 457,
+            "on_date_of_marriage": "",
+            "on_valuation_date": "",
+            "today": ""
+          }
+        },
+        "onDateOfMarriage": "",
+        "onValuationDate": "30000",
+        "today": "30000",
+        "total1": "",
+        "total2": ""
+      },
+      {
+        "details": "Loan given to family",
+        "property_status": "",
+        "market_value": {
+          "client": {
+            "id": 478,
+            "asset_id": 457,
+            "on_date_of_marriage": "",
+            "on_valuation_date": "30000",
+            "today": "30000"
+          },
+          "opposing_party": {
+            "id": 478,
+            "asset_id": 457,
+            "on_date_of_marriage": "",
+            "on_valuation_date": "",
+            "today": ""
+          }
+        },
+        "onDateOfMarriage": "",
+        "onValuationDate": "30000",
+        "today": "30000",
+        "total1": "",
+        "total2": ""
+      },
+      {
+        "details": "Loan given to family",
+        "property_status": "",
+        "market_value": {
+          "client": {
+            "id": 478,
+            "asset_id": 457,
+            "on_date_of_marriage": "",
+            "on_valuation_date": "30000",
+            "today": "30000"
+          },
+          "opposing_party": {
+            "id": 478,
+            "asset_id": 457,
+            "on_date_of_marriage": "",
+            "on_valuation_date": "",
+            "today": ""
+          }
+        },
+        "onDateOfMarriage": "",
+        "onValuationDate": "30000",
+        "today": "30000",
+        "total1": "",
+        "total2": ""
+      }
+    ],
+    "otherProperty": [
+      {
+        "category": "",
+        "details": "",
+        "property_status": "",
+        "market_value": {
+          "client": {
+            "id": 320,
+            "asset_id": 299,
+            "on_date_of_marriage": "",
+            "on_valuation_date": "",
+            "today": ""
+          },
+          "opposing_party": {
+            "id": 320,
+            "asset_id": 299,
+            "on_date_of_marriage": "",
+            "on_valuation_date": "",
+            "today": ""
+          }
+        },
+        "onDateOfMarriage": "",
+        "onValuationDate": "",
+        "today": "",
+        "total1": "",
+        "total2": ""
+      },
+      {
+        "category": "",
+        "details": "",
+        "property_status": "",
+        "market_value": {
+          "client": {
+            "id": 320,
+            "asset_id": 299,
+            "on_date_of_marriage": "",
+            "on_valuation_date": "",
+            "today": ""
+          },
+          "opposing_party": {
+            "id": 320,
+            "asset_id": 299,
+            "on_date_of_marriage": "",
+            "on_valuation_date": "",
+            "today": ""
+          }
+        },
+        "onDateOfMarriage": "",
+        "onValuationDate": "",
+        "today": "",
+        "total1": "",
+        "total2": ""
+      },
+      {
+        "category": "",
+        "details": "",
+        "property_status": "",
+        "market_value": {
+          "client": {
+            "id": 320,
+            "asset_id": 299,
+            "on_date_of_marriage": "",
+            "on_valuation_date": "",
+            "today": ""
+          },
+          "opposing_party": {
+            "id": 320,
+            "asset_id": 299,
+            "on_date_of_marriage": "",
+            "on_valuation_date": "",
+            "today": ""
+          }
+        },
+        "onDateOfMarriage": "",
+        "onValuationDate": "",
+        "today": "",
+        "total1": "",
+        "total2": ""
+      },
+      {
+        "category": "",
+        "details": "",
+        "property_status": "",
+        "market_value": {
+          "client": {
+            "id": 320,
+            "asset_id": 299,
+            "on_date_of_marriage": "",
+            "on_valuation_date": "",
+            "today": ""
+          },
+          "opposing_party": {
+            "id": 320,
+            "asset_id": 299,
+            "on_date_of_marriage": "",
+            "on_valuation_date": "",
+            "today": ""
+          }
+        },
+        "onDateOfMarriage": "",
+        "onValuationDate": "",
+        "today": "",
+        "total1": "",
+        "total2": ""
+      },
+      {
+        "category": "",
+        "details": "",
+        "property_status": "",
+        "market_value": {
+          "client": {
+            "id": 320,
+            "asset_id": 299,
+            "on_date_of_marriage": "",
+            "on_valuation_date": "",
+            "today": ""
+          },
+          "opposing_party": {
+            "id": 320,
+            "asset_id": 299,
+            "on_date_of_marriage": "",
+            "on_valuation_date": "",
+            "today": ""
+          }
+        },
+        "onDateOfMarriage": "",
+        "onValuationDate": "",
+        "today": "",
+        "total1": "",
+        "total2": ""
+      }
+    ],
+    "debts": [],
+    "property": {
+      "land": {
+        "assets": 3454,
+        "liabilities": ""
+      },
+      "household": {
+        "assets": 50000,
+        "liabilities": ""
+      },
+      "bank": {
+        "assets": 10500,
+        "liabilities": ""
+      },
+      "life": {
+        "assets": 0,
+        "liabilities": ""
+      },
+      "interests": {
+        "assets": 0,
+        "liabilities": ""
+      },
+      "moneyOwed": {
+        "assets": 0,
+        "liabilities": ""
+      },
+      "otherProperty": {
+        "assets": 0,
+        "liabilities": ""
+      },
+      "debts": {
+        "assets": "",
+        "liabilities": ""
+      },
+      "total1": 63954,
+      "total2": "",
+      "netValue1": "",
+      "netValue2": "",
+      "valueOfDeductions1": "",
+      "valueOfDeductions2": ""
+    },
+    "excluded": {
+      "category": "",
+      "details": "",
+      "onValuationDate": "",
+      "total": ""
+    },
+    "disposed": {
+      "category": "",
+      "details": "",
+      "onValuationDate": "",
+      "total": ""
+    },
+    "calculations": {
+      "allProperty": "",
+      "subtractDeductions": {
+        "deductions": "",
+        "balance": ""
+      },
+      "subtractExcluded": {
+        "deductions": "",
+        "balance": ""
+      },
+      "netFamilyProperty": ""
+    },
+    "totalValue": 63954
+  },
+  "debts": {
+    "totalValue": 0
+  },
+  "income": {
+    "client": {
+      "employmentIncome": "",
+      "commissionTipsBonuses": "",
+      "selfEmploymentIncome": "",
+      "employmentInsuranceBenefits": "",
+      "workersCompensationBenefits": "",
+      "socialAssistanceIncome": "",
+      "interestInvestmentIncome": "",
+      "pensionIncome": "",
+      "spousalSupport": "",
+      "childTaxBenefits": "",
+      "otherIncome": ""
+    },
+    "opposingParty": {
+      "employmentIncome": "",
+      "commissionTipsBonuses": "",
+      "selfEmploymentIncome": "",
+      "employmentInsuranceBenefits": "",
+      "workersCompensationBenefits": "",
+      "socialAssistanceIncome": "",
+      "interestInvestmentIncome": "",
+      "pensionIncome": "",
+      "spousalSupport": "",
+      "childTaxBenefits": "",
+      "otherIncome": ""
+    }
+  },
+  "benefits": {
+    "client": {
+      "medicalInsuranceCover": "",
+      "companyCar": "",
+      "useOfRoom": "",
+      "otherBenefit": ""
+    },
+    "opposingParty": {
+      "medicalInsuranceCover": "",
+      "companyCar": "",
+      "useOfRoom": "",
+      "otherBenefit": ""
+    }
+  },
+  "relationshipDates": {
+    "marriedOn": {
+      "checked": true,
+      "date": "2024-06-15"
+    },
+    "startedLivingTogetherOn": {
+      "checked": true,
+      "date": "2024-06-13"
+    },
+    "separatedOn": {
+      "checked": true,
+      "date": "2024-06-13"
+    },
+    "isNeverLivedTogether": {
+      "checked": ""
+    },
+    "placeOfMarriage": "ontario"
+  },
+  "filledBy": "client",
+  "filler": {
+    "fullLegalName": "Matter test client \\",
+    "province": "Ontario"
+  },
+  "employmentStatus": {},
+  "otherIncomeEarners": {
+    "liveAlone": false,
+    "isLivingWith": false,
+    "livingWith": "",
+    "isAdults": false,
+    "adults": "",
+    "isChildren": true,
+    "children": 1,
+    "partner": {
+      "isWorks": "",
+      "worksAt": "",
+      "isEarns": "no",
+      "earns": "",
+      "earnsPer": "year",
+      "contributions": "",
+      "contributionsPer": ""
+    }
+  }
+}
