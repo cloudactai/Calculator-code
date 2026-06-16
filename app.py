@@ -15,7 +15,40 @@ from datetime import date
 from flask import Flask, request, jsonify, render_template
 from flask_cors import CORS
 import anthropic
-from spousal_support import calculate_spousal_support
+from spousal_support import calculate_spousal_support_no_children, calculate_spousal_support_with_children, SpousalSupportResult
+
+def calculate_spousal_support(
+    party1_name:                    str,
+    party2_name:                    str,
+    party1_net_income:              float,
+    party2_net_income:              float,
+    years:                          float,
+    recipient_age:                  float,
+    children:                       bool,
+    monthly_child_support:          float = 0.0,
+    monthly_notional_child_support: float = 0.0,
+    youngest_child_age:             float = 0.0,
+) -> SpousalSupportResult:
+    if children:
+        return calculate_spousal_support_with_children(
+            party1_name=party1_name,
+            party2_name=party2_name,
+            party1_net_income=party1_net_income,
+            party2_net_income=party2_net_income,
+            monthly_child_support=monthly_child_support,
+            monthly_notional_child_support=monthly_notional_child_support,
+            years=years,
+            recipient_age=recipient_age,
+            youngest_child_age=youngest_child_age,
+        )
+    return calculate_spousal_support_no_children(
+        party1_name=party1_name,
+        party2_name=party2_name,
+        party1_net_income=party1_net_income,
+        party2_net_income=party2_net_income,
+        years=years,
+        recipient_age=recipient_age,
+    )
 #comment
 # ── Make sure child_support.py is importable ─────────────────────────────────
 THIS_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -390,12 +423,15 @@ def spousal_calculate():
     try:
         data = request.get_json(force=True)
 
-        party1_name       = data.get("party1_name", "Party 1")
-        party2_name       = data.get("party2_name", "Party 2")
-        party1_net_income = float(data["party1_net_income"])
-        party2_net_income = float(data["party2_net_income"])
-        years             = float(data["years"])
-        recipient_age     = float(data["recipient_age"])
+        party1_name            = data.get("party1_name", "Party 1")
+        party2_name            = data.get("party2_name", "Party 2")
+        party1_net_income      = float(data["party1_net_income"])
+        party2_net_income      = float(data["party2_net_income"])
+        years                  = float(data["years"])
+        recipient_age          = float(data["recipient_age"])
+        children               = bool(data.get("children", False))
+        monthly_child_support  = float(data.get("monthly_child_support", 0.0))
+        youngest_child_age     = float(data.get("youngest_child_age", 0.0))
 
         result = calculate_spousal_support(
             party1_name=party1_name,
@@ -404,6 +440,9 @@ def spousal_calculate():
             party2_net_income=party2_net_income,
             years=years,
             recipient_age=recipient_age,
+            children=children,
+            monthly_child_support=monthly_child_support,
+            youngest_child_age=youngest_child_age,
         )
 
         return jsonify({

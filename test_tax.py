@@ -29,45 +29,35 @@ TOLERANCE = 0.10   # dollars — ✓ if diff < this
 YEAR = 2025
 
 inp = TaxInput(
-    # Who
-    party_num=1,                     # 1 or 2
+    party_num=2,
     province="ON",
-    age=40,
-    eligible_for_disability="No",    # "Yes" or "No"
+    age=38,                          # Party 1's actual age — not specified in table
+    eligible_for_disability="No",
 
-    # Income
-    employed_income=100000,
-    self_employed_income=0,
-    other_income=0,
+    employed_income=20000,           # ✓
+    self_employed_income=0,          # ✓
+    other_income=0,                  # ✓
 
-    # Support
-    support_received=0,
-    deductible_support_paid=5000,
+    support_received=841,              # ✓ Party 1 is the payor
+    deductible_support_paid=0,       # ✓ child support is not deductible in Canada
 
-    # Deductions
-    child_care_expenses=0,
-    other_deductions=0,
+    child_care_expenses=0,           # ✓
+    other_deductions=0,              # ✓
 
-    # Children — add one ChildInfo per child, or leave list empty
     children=[
-        # ChildInfo(
-        #     date_of_birth="2018-01-01",    # "YYYY-MM-DD"
-        #     custody_arrangement="Party 1", # "Party 1", "Party 2", or "Shared"
-        #     child_has_disability="No",     # "Yes" or "No"
-        # ),
+        ChildInfo(
+            date_of_birth="2025-06-01",    # fix: age 1 at June 2026 separation
+            custody_arrangement="Party 2",  # ✓
+            child_has_disability="No",      # ✓
+        ),
     ],
 
-    # Arrangement
-    type_of_splitting="SEPARATED",
-    child_counts={"party1": 0, "party2": 0, "shared": 0},
-
-    # Cross-party values (needed for CWB and child-direction logic)
-    child_support_amounts={"party1": 0, "party2": 0},
-    both_incomes={"party1": 400000, "party2": 0},
-
+    type_of_splitting="SEPARATED",          # ✓
+    child_counts={"party1": 0, "party2": 1, "shared": 0},  # ✓
+    child_support_amounts={"party1": 841, "party2": 0},     # ✓
+    both_incomes={"party1": 90000, "party2": 20000},        # ✓
     year=YEAR,
 )
-
 
 # ===========================================================================
 # TEST RUNNER — nothing to edit below here
