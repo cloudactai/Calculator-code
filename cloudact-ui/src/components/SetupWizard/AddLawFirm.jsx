@@ -3,7 +3,7 @@
 // (useHistory instead of useNavigate; process.env instead of import.meta.env).
 import React, { useState } from "react";
 import { Link, useHistory, useLocation } from "react-router-dom";
-import { apiPath } from "./apiUrls";
+import { apiPath, authHeaders } from "./apiUrls";
 import { SETUP_WIZARD_API } from "../../config";
 import cloudactLogo from "../../assets/images/cloudact-logo.svg";
 import "./addLawFirm.css";
@@ -62,6 +62,7 @@ export default function AddLawFirm() {
           credentials: "include",
           headers: {
             "Content-Type": "application/json",
+            ...authHeaders(),
           },
           body: JSON.stringify({
             firmName: lawFirmName,

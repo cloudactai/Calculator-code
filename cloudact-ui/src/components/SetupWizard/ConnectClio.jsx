@@ -3,7 +3,7 @@
 // Adapted for CRA + react-router-dom v5 (useHistory; process.env).
 import React, { useEffect, useMemo, useState } from "react";
 import { Link, useLocation, useHistory } from "react-router-dom";
-import { apiPath } from "./apiUrls";
+import { apiPath, authHeaders } from "./apiUrls";
 import { SETUP_WIZARD_API } from "../../config";
 import cloudactLogo from "../../assets/images/cloudact-logo.svg";
 import { SignOutIcon, SyncIcon, UserIcon } from "./profileActionIcons";
@@ -46,7 +46,8 @@ export default function ConnectClio() {
             setLoading(true);
             const response = await fetch(oauthStatusUrl, {
                 method: "GET",
-                credentials: "include"
+                credentials: "include",
+                headers: authHeaders()
             });
             const data = await response.json().catch(() => ({}));
             if (!response.ok) {
@@ -99,7 +100,8 @@ export default function ConnectClio() {
     async function startOauthFlow(endpoint, providerName) {
         const response = await fetch(endpoint, {
             method: "POST",
-            credentials: "include"
+            credentials: "include",
+            headers: authHeaders()
         });
         const data = await response.json().catch(() => ({}));
         if (response.status === 401) {
@@ -116,7 +118,8 @@ export default function ConnectClio() {
     async function disconnectProvider(endpoint, providerName) {
         const response = await fetch(endpoint, {
             method: "POST",
-            credentials: "include"
+            credentials: "include",
+            headers: authHeaders()
         });
         const data = await response.json().catch(() => ({}));
         if (response.status === 401) {
@@ -135,7 +138,8 @@ export default function ConnectClio() {
         try {
             await fetch(logoutUrl, {
                 method: "POST",
-                credentials: "include"
+                credentials: "include",
+                headers: authHeaders()
             });
         } finally {
             history.replace("/signIn");
