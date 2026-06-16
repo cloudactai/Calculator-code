@@ -1,0 +1,622 @@
+{
+    "matter_data": {
+        "financial_year_expenses": "2024",
+        "financial_year_income_benefits": "2024",
+        "valuation_date": "2024-03-14",
+        "matter_id": "CA-2024-00011"
+    },
+    "court_info": {
+        "courtName": "Armstrong Courthouse",
+        "courtFileNumber": "RW- 001 ",
+        "courtOfficeAddress": "ARDC Building 111 Queen St, PO Box 2000, Armstrong, Ontario P0T 1A0"
+    },
+    "applicant": {
+        "fullLegalName": "Ronald Weasley ",
+        "address": "Suite 448 2179 Kasie Curve, South Frediamouth, AK 33028",
+        "phoneAndFax": "(647)726-0053",
+        "email": "Ron@gmail.com",
+        "province": "Ontario",
+        "municipality": "Adelaide-Metcalfe, Township of",
+        "dateOfBirth": "1980-06-30"
+    },
+    "applicantsLawyer": {
+        "fullLegalName": "Albus Dumbledore",
+        "address": "Diagon Alley ",
+        "phoneAndFax": "(647)726-0053",
+        "email": "albus@lawyer.com"
+    },
+    "respondent": {
+        "fullLegalName": "Hermione Weasley",
+        "address": "209 Edgardo Valley, Port Pedroberg, MS 98950-1079",
+        "phoneAndFax": "(647)726-0053",
+        "email": "Hermione Weasley",
+        "province": "Ontario",
+        "municipality": "Adelaide-Metcalfe, Township of",
+        "dateOfBirth": "1993-06-30"
+    },
+    "respondentsLawyer": {
+        "fullLegalName": "",
+        "address": "",
+        "phoneAndFax": "",
+        "email": ""
+    },
+    "theChildren": [
+        {
+            "fullLegalName": "James Weasley ",
+            "age": 4,
+            "birthdate": "2020-06-30",
+            "muncipilityAndProvince": "",
+            "nowLivingWith": "Mother",
+            "representedByLawyer": "No",
+            "lawyerName": "",
+            "lawyerPhone": "",
+            "lawyerAddress": "",
+            "lawyerEmail": ""
+        },
+        {
+            "fullLegalName": "Lily Weasley ",
+            "age": 1,
+            "birthdate": "2023-06-30",
+            "muncipilityAndProvince": "",
+            "nowLivingWith": "Mother",
+            "representedByLawyer": "No",
+            "lawyerName": "",
+            "lawyerPhone": "",
+            "lawyerAddress": "",
+            "lawyerEmail": ""
+        }
+    ],
+    "expenses": {
+        "client": {
+            "automaticDeductions": {
+                "cppContributions": 100,
+                "eiPremiums": 50,
+                "incomeTaxes": 0,
+                "employeePensionContributions": 0,
+                "unionDues": 0,
+                "subtotal": 150
+            },
+            "housing": {
+                "rentOrMortgage": 0,
+                "propertyTaxes": 0,
+                "propertyInsurance": 200,
+                "condominiumFees": 0,
+                "repairsAndMaintenance": 0,
+                "subtotal": 200
+            },
+            "utilities": {
+                "water": 0,
+                "heat": 0,
+                "electricity": 150,
+                "telephone": 0,
+                "cellPhone": 0,
+                "cable": 0,
+                "internet": 0,
+                "subtotal": 150
+            },
+            "householdExpenses": {
+                "groceries": 0,
+                "householdSupplies": 0,
+                "mealsOutsideTheHome": 0,
+                "petCare": 0,
+                "laundryAndDryCleaning": 0,
+                "subtotal": 0
+            },
+            "childcare": {
+                "daycare": 0,
+                "babysitting": 0,
+                "subtotal": 0
+            },
+            "transportation": {
+                "publicTransit": 0,
+                "carPayments": 0,
+                "gasAndOil": 0,
+                "insurance": 0,
+                "repairsAndMaintenance": 0,
+                "parking": 0,
+                "subtotal": 0
+            },
+            "health": {
+                "insurance": 0,
+                "dental": 0,
+                "medicine": 0,
+                "eyecare": 0,
+                "subtotal": 0
+            },
+            "personal": {
+                "clothing": 0,
+                "haircare": 0,
+                "alcohol": 0,
+                "education": 0,
+                "entertainment": 0,
+                "gifts": 0,
+                "subtotal": 0
+            },
+            "other": {
+                "lifeInsurance": 0,
+                "rrsp": 0,
+                "vacations": 0,
+                "school": 0,
+                "clothingForChildren": 0,
+                "childrenActivities": 0,
+                "summerCamp": 0,
+                "debtPayments": 0,
+                "supportPaidForOtherChildren": 0,
+                "other": 0,
+                "subtotal": 0
+            },
+            "totalMonthlyExpenses": 500,
+            "totalYearlyExpenses": 6000
+        },
+        "opposingParty": {
+            "automaticDeductions": {
+                "cppContributions": 0,
+                "eiPremiums": 0,
+                "incomeTaxes": 0,
+                "employeePensionContributions": 0,
+                "unionDues": 0,
+                "subtotal": 0
+            },
+            "housing": {
+                "rentOrMortgage": 0,
+                "propertyTaxes": 0,
+                "propertyInsurance": 0,
+                "condominiumFees": 0,
+                "repairsAndMaintenance": 0,
+                "subtotal": 0
+            },
+            "utilities": {
+                "water": 0,
+                "heat": 0,
+                "electricity": 0,
+                "telephone": 0,
+                "cellPhone": 0,
+                "cable": 0,
+                "internet": 0,
+                "subtotal": 0
+            },
+            "householdExpenses": {
+                "groceries": 0,
+                "householdSupplies": 500,
+                "mealsOutsideTheHome": 0,
+                "petCare": 150,
+                "laundryAndDryCleaning": 0,
+                "subtotal": 650
+            },
+            "childcare": {
+                "daycare": 0,
+                "babysitting": 0,
+                "subtotal": 0
+            },
+            "transportation": {
+                "publicTransit": 0,
+                "carPayments": 0,
+                "gasAndOil": 0,
+                "insurance": 0,
+                "repairsAndMaintenance": 0,
+                "parking": 0,
+                "subtotal": 0
+            },
+            "health": {
+                "insurance": 0,
+                "dental": 0,
+                "medicine": 0,
+                "eyecare": 0,
+                "subtotal": 0
+            },
+            "personal": {
+                "clothing": 0,
+                "haircare": 0,
+                "alcohol": 0,
+                "education": 0,
+                "entertainment": 0,
+                "gifts": 0,
+                "subtotal": 0
+            },
+            "other": {
+                "lifeInsurance": 0,
+                "rrsp": 0,
+                "vacations": 0,
+                "school": 0,
+                "clothingForChildren": 0,
+                "childrenActivities": 560,
+                "summerCamp": 0,
+                "debtPayments": 0,
+                "supportPaidForOtherChildren": 0,
+                "other": 0,
+                "subtotal": 560
+            },
+            "totalMonthlyExpenses": 500,
+            "totalYearlyExpenses": 6000
+        }
+    },
+    "specialExpenses": {
+        "client": [
+            {
+                "name": "James Weasley ",
+                "expenses": "Child care expense",
+                "amount": "150",
+                "tax": "150"
+            },
+            {
+                "name": "Lily Weasley ",
+                "expenses": "Medical expenses",
+                "amount": "500",
+                "tax": "150"
+            }
+        ],
+        "opposingParty": [
+            {
+                "name": "Lily Weasley ",
+                "expenses": "Child care expense",
+                "amount": "5000",
+                "tax": "5000"
+            },
+            {
+                "name": "James Weasley ",
+                "expenses": "Extraordinary education expenses",
+                "amount": "500",
+                "tax": "150"
+            }
+        ]
+    },
+    "applicationType": {},
+    "assets": {
+        "dateOfMarriage": "",
+        "dateOfValuation": "2024-03-14",
+        "dateOfCommencement": "",
+        "land": [
+            {
+                "ownership": "Matrimonial House",
+                "address": "Landour Avenue ",
+                "onDateOfMarriage": "2400",
+                "onValuationDate": "450000",
+                "today": "450000",
+                "total1": "",
+                "total2": ""
+            },
+            {
+                "ownership": "Investment Property ",
+                "address": "Islington street, Ontario ",
+                "onDateOfMarriage": "2400",
+                "onValuationDate": "840000",
+                "today": "840000",
+                "total1": "",
+                "total2": ""
+            },
+            {
+                "ownership": "Investment Property",
+                "address": "1233 Dummy Road",
+                "onDateOfMarriage": "1234500",
+                "onValuationDate": "1234500",
+                "today": "1234500",
+                "total1": "",
+                "total2": ""
+            },
+            {
+                "ownership": "Investment Property",
+                "address": "54528 Meta Squares",
+                "onDateOfMarriage": "1234500",
+                "onValuationDate": "1234500",
+                "today": "1234500",
+                "total1": "",
+                "total2": ""
+            }
+        ],
+        "household": [
+            {
+                "item": "Cars, Boats, Vehicles",
+                "description": "Ford ranger",
+                "isInPossession": "Yes",
+                "onDateOfMarriage": "500000",
+                "onValuationDate": "250000",
+                "today": "250000",
+                "total1": "",
+                "total2": ""
+            },
+            {
+                "item": "Other Possessions of Value",
+                "description": "Art items ",
+                "isInPossession": "Yes",
+                "onDateOfMarriage": "",
+                "onValuationDate": "50000",
+                "today": "50000",
+                "total1": "",
+                "total2": ""
+            }
+        ],
+        "bank": [
+            {
+                "category": "Bank accounts",
+                "institution": "Bank of Montreal",
+                "description_bassp": "Chequing",
+                "account_number": "169821",
+                "property_status_bassp": "",
+                "onDateOfMarriage": "26500",
+                "onValuationDate": "12930",
+                "today": "12930",
+                "total1": "",
+                "total2": ""
+            },
+            {
+                "category": "Bank accounts",
+                "institution": "Bank of Montreal ",
+                "description_bassp": "RRSP- 100% ",
+                "account_number": "3435414",
+                "property_status_bassp": "",
+                "onDateOfMarriage": "",
+                "onValuationDate": "17257",
+                "today": "17257",
+                "total1": "",
+                "total2": ""
+            }
+        ],
+        "life": [
+            {
+                "policy_no": "LI23532",
+                "owner": "Ronald Weasley ",
+                "beneficiary": "Children",
+                "face_amount": 250000,
+                "property_status_ladi": "",
+                "onDateOfMarriage": "",
+                "onValuationDate": "11295.98",
+                "today": "11295.98",
+                "total1": "",
+                "total2": ""
+            }
+        ],
+        "interests": [
+            {
+                "firm_name": "CloudAct",
+                "interest": "cloud act",
+                "onDateOfMarriage": "31335",
+                "onValuationDate": "1234500",
+                "today": "1234500",
+                "total1": "",
+                "total2": ""
+            }
+        ],
+        "moneyOwed": [
+            {
+                "details": "Gert Owes",
+                "status": "",
+                "onDateOfMarriage": "120000",
+                "onValuationDate": "31335",
+                "today": "31335",
+                "total1": "",
+                "total2": ""
+            }
+        ],
+        "otherProperty": [
+            {
+                "category": "other Property",
+                "details": "details_op",
+                "status": "",
+                "onDateOfMarriage": "2400",
+                "onValuationDate": "2400",
+                "today": "2400",
+                "total1": "",
+                "total2": ""
+            }
+        ],
+        "debts": [],
+        "property": {
+            "land": {
+                "assets": 3759000,
+                "liabilities": ""
+            },
+            "household": {
+                "assets": 300000,
+                "liabilities": ""
+            },
+            "bank": {
+                "assets": 30187,
+                "liabilities": ""
+            },
+            "life": {
+                "assets": 11295,
+                "liabilities": ""
+            },
+            "interests": {
+                "assets": 1234500,
+                "liabilities": ""
+            },
+            "moneyOwed": {
+                "assets": 31335,
+                "liabilities": ""
+            },
+            "otherProperty": {
+                "assets": 2400,
+                "liabilities": ""
+            },
+            "debts": {
+                "assets": "",
+                "liabilities": ""
+            },
+            "total1": 5368717,
+            "total2": "",
+            "netValue1": "",
+            "netValue2": "",
+            "valueOfDeductions1": "",
+            "valueOfDeductions2": ""
+        },
+        "excluded": {
+            "category": "",
+            "details": "",
+            "onValuationDate": "",
+            "total": ""
+        },
+        "disposed": {
+            "category": "",
+            "details": "",
+            "onValuationDate": "",
+            "total": ""
+        },
+        "calculations": {
+            "allProperty": "",
+            "subtractDeductions": {
+                "deductions": "",
+                "balance": ""
+            },
+            "subtractExcluded": {
+                "deductions": "",
+                "balance": ""
+            },
+            "netFamilyProperty": ""
+        },
+        "totalValue": 5368717
+    },
+    "debts": {
+        "lineofcredits": [
+            {
+                "id": 21,
+                "sid": 1,
+                "matter_id": "CA-2024-00011",
+                "category": "Line of credits",
+                "details": "Credit card ",
+                "on_date_of_marriage": "500",
+                "on_valuation_date": "500",
+                "today": "500",
+                "created": "2024-05-23T17:24:55.000Z"
+            }
+        ],
+        "mortgages": [
+            {
+                "id": 23,
+                "sid": 1,
+                "matter_id": "CA-2024-00011",
+                "category": "Mortgages",
+                "details": "bank Loan",
+                "on_date_of_marriage": "2400",
+                "on_valuation_date": "2400",
+                "today": "2400",
+                "created": "2024-05-30T11:01:12.000Z"
+            },
+            {
+                "id": 32,
+                "sid": 1,
+                "matter_id": "CA-2024-00011",
+                "category": "Mortgages",
+                "details": "bank Loan",
+                "on_date_of_marriage": "2400",
+                "on_valuation_date": "2400",
+                "today": "2400",
+                "created": "2024-05-31T07:59:06.000Z"
+            }
+        ],
+        "totalValue": 15900
+    },
+    "income": {
+        "client": {
+            "employmentIncome": 350,
+            "commissionTipsBonuses": "",
+            "selfEmploymentIncome": 50,
+            "employmentInsuranceBenefits": "",
+            "workersCompensationBenefits": "",
+            "socialAssistanceIncome": "",
+            "interestInvestmentIncome": "",
+            "pensionIncome": "",
+            "spousalSupport": "",
+            "childTaxBenefits": "",
+            "otherIncome": ""
+        },
+        "opposingParty": {
+            "employmentIncome": 500,
+            "commissionTipsBonuses": 250,
+            "selfEmploymentIncome": "",
+            "employmentInsuranceBenefits": "",
+            "workersCompensationBenefits": "",
+            "socialAssistanceIncome": "",
+            "interestInvestmentIncome": "",
+            "pensionIncome": "",
+            "spousalSupport": "",
+            "childTaxBenefits": "",
+            "otherIncome": ""
+        }
+    },
+    "benefits": {
+        "client": {
+            "medicalInsuranceCover": 1000,
+            "companyCar": "",
+            "useOfRoom": "",
+            "otherBenefit": 100
+        },
+        "opposingParty": {
+            "medicalInsuranceCover": "",
+            "companyCar": 250,
+            "useOfRoom": 400,
+            "otherBenefit": ""
+        }
+    },
+    "relationshipDates": {
+        "marriedOn": {
+            "checked": true,
+            "date": "2012-06-21"
+        },
+        "startedLivingTogetherOn": {
+            "checked": true,
+            "date": "2024-05-22"
+        },
+        "separatedOn": {
+            "checked": true,
+            "date": "2023-06-30"
+        },
+        "isNeverLivedTogether": {
+            "checked": true
+        },
+        "placeOfMarriage": "Toronto"
+    },
+    "filledBy": "client",
+    "filler": {
+        "fullLegalName": "Ronald Weasley ",
+        "province": "Ontario"
+    },
+    "employmentStatus": {
+        "client": {
+            "id": 35,
+            "sid": 1,
+            "matter_id": "CA-2024-00011",
+            "employmentStatus": "employed",
+            "employerName": "Ministry of Magic ",
+            "employerAddress": "Ministry of Magic HeadQurters",
+            "employedSince": "2012-06-30",
+            "businessName": "",
+            "businessAddress": "",
+            "lastEmployed": "",
+            "created": "2024-05-23T17:24:55.000Z",
+            "role": "Client"
+        },
+        "opposingParty": {
+            "id": 36,
+            "sid": 1,
+            "matter_id": "CA-2024-00011",
+            "employmentStatus": "self_employed",
+            "employerName": "",
+            "employerAddress": "",
+            "employedSince": "",
+            "businessName": "Coaching ",
+            "businessAddress": "Toronto, Ontario ",
+            "lastEmployed": "",
+            "created": "2024-05-23T17:24:55.000Z",
+            "role": "Opposing Party"
+        }
+    },
+    "otherIncomeEarners": {
+        "liveAlone": false,
+        "isLivingWith": false,
+        "livingWith": "",
+        "isAdults": false,
+        "adults": "",
+        "isChildren": true,
+        "children": 2,
+        "partner": {
+            "isWorks": "",
+            "worksAt": "",
+            "isEarns": "no",
+            "earns": "",
+            "earnsPer": "year",
+            "contributions": "",
+            "contributionsPer": ""
+        }
+    }
+}

@@ -1,0 +1,11 @@
+input::placeholder {
+  font-size: 1rem;
+}
+
+.custom-select-operational {
+  appearance: none; /* Remove the default arrow */
+  background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 10 10"><path fill="gray" d="M0 2L5 7 10 2z"/></svg>');
+  background-repeat: no-repeat;
+  background-position: right 10px center; /* Position the arrow */
+  background-size: 10px 10px; /* Adjust the size as needed */
+}

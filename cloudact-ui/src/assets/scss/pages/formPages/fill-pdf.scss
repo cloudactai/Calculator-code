@@ -1,0 +1,1124 @@
+.pdf-form {
+  padding-right: 10px;
+
+  .form-control {
+    border: 1px solid rgba($black, 0.6);
+    border-radius: 0;
+    padding: 0.5rem 0.75rem;
+    font-size: 1rem;
+    line-height: 1.5;
+    color: rgba($primary, 1);
+    background-color: $white;
+    background-clip: padding-box;
+    transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+    &:focus {
+      color: rgba($black, 1);
+      background-color: $white;
+      border-color: rgba($black, 1);
+      outline: 0;
+      box-shadow: 0 0 0 0.2rem rgba($primary, 0.25);
+    }
+  }
+
+  .form-group {
+    .form-control {
+      @extend .form-control;
+    }
+  }
+
+  .data-group {
+    label {
+      border: 1px solid rgba($black, 0.6);
+      border-radius: 0;
+      padding: 0.5rem 0.75rem;
+      font-size: 1rem;
+      line-height: 1;
+      color: rgba($black, 1);
+      background-color: $white;
+      font-style: italic;
+    }
+
+    textarea {
+      @extend .form-control;
+      resize: none;
+      display: block;
+      width: 100%;
+      border-top: unset;
+    }
+
+    &.inputs {
+      border: 1px solid rgba($black, 0.6);
+
+      .data-input {
+        border-bottom: 1px solid rgba($black, 0.6);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 0.5rem;
+
+        &:last-child {
+          border-bottom: unset;
+        }
+
+        .label {
+          text-wrap: nowrap;
+          padding-left: 4px;
+        }
+
+        input {
+          width: 100%;
+          border: unset;
+          padding: unset;
+        }
+      }
+    }
+  }
+
+  .data-group-radio {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+
+    .data-input {
+      label {
+        cursor: pointer;
+        border: 1px solid rgba($black, 0.6);
+        border-radius: 0;
+        padding: 0.5rem 0.75rem;
+        font-size: 1rem;
+        line-height: 1;
+        color: rgba($black, 1);
+        background-color: $white;
+        font-style: italic;
+      }
+
+      input {
+        display: none;
+
+        &:checked {
+          & + label {
+            background-color: rgba($primary, 1);
+            color: rgba($white, 1);
+          }
+        }
+      }
+    }
+  }
+
+  .data-input {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 0.5rem;
+
+    .label {
+      text-wrap: nowrap;
+    }
+
+    input {
+      width: 100%;
+      border-top: unset;
+      border-left: unset;
+      border-right: unset;
+      padding: unset;
+    }
+  }
+
+  /// Tables ///
+  table {
+    margin-bottom: 40px;
+    border: 1px solid rgba($black, 0.6);
+
+    .number {
+      font-weight: bold;
+      padding: 0 8px;
+    }
+
+    thead {
+      .name {
+        text-align: center;
+        font-weight: bold;
+      }
+      .info {
+        font-style: italic;
+        font-weight: normal;
+      }
+    }
+
+    tbody {
+      tr {
+        th,
+        td {
+          border: 1px solid rgba($black, 0.6);
+
+          &:not(:first-child) {
+            width: 200px;
+          }
+        }
+
+        td {
+          &:not(:first-child) {
+            .form-control {
+              text-align: end;
+            }
+          }
+
+          .form-control {
+            width: 100%;
+            border: unset;
+            padding: unset;
+          }
+        }
+      }
+    }
+
+    &.form-13a {
+      thead {
+        tr {
+          th {
+            border: 1px solid rgba($black, 0.6);
+            text-align: center;
+          }
+        }
+      }
+
+      tbody {
+        tr {
+          th {
+            &.sub-table-heading {
+              font-size: 1.2rem;
+              font-weight: 800;
+              background-color: $dark;
+              color: $white;
+            }
+            &.sub-table-heading-2 {
+              font-size: 1.2rem;
+              font-weight: 800;
+            }
+            &.sub-table-heading-3 {
+              font-size: 1rem;
+              font-weight: 700;
+            }
+          }
+
+          td {
+            border: 1px solid rgba($black, 0.6);
+
+            &:nth-child(1) {
+              width: 40px;
+            }
+
+            &:nth-child(3),
+            &:nth-child(4) {
+              width: 40px;
+            }
+
+            .form-control {
+              width: 100%;
+              text-align: left;
+              border: unset;
+              padding: unset;
+            }
+          }
+        }
+      }
+    }
+
+    &.form-131-income {
+      tbody {
+        tr {
+          th,
+          td {
+            border: 1px solid rgba($black, 0.6);
+
+            &:nth-child(2) {
+              width: 300px;
+            }
+          }
+
+          td {
+            &:nth-child(2) {
+              .form-control {
+                text-align: end;
+              }
+            }
+
+            .form-control {
+              width: 100%;
+              border: unset;
+              padding: unset;
+            }
+          }
+        }
+      }
+    }
+
+    &.form-131-income-inner {
+      tbody {
+        tr {
+          th,
+          td {
+            border: 1px solid rgba($black, 0.6);
+
+            &:not(:nth-child(2)) {
+              width: 50px;
+            }
+          }
+
+          td {
+            &:nth-child(3) {
+              .form-control {
+                text-align: end;
+              }
+            }
+
+            .form-control {
+              text-align: left;
+              width: 100%;
+              border: unset;
+              padding: unset;
+            }
+          }
+        }
+      }
+    }
+
+    &.form-131-expenses {
+      width: 100%;
+      tbody {
+        tr {
+          th,
+          td {
+            border: 1px solid rgba($black, 0.6);
+
+            &:nth-child(2) {
+              width: 200px;
+            }
+          }
+
+          td {
+            &:nth-child(2) {
+              .form-control {
+                text-align: end;
+              }
+            }
+
+            .form-control {
+              text-align: left;
+              width: 100%;
+              border: unset;
+              padding: unset;
+            }
+          }
+        }
+      }
+    }
+
+    &.form-131-4a {
+      width: 100%;
+
+      thead {
+        text-align: center;
+      }
+
+      tbody,
+      thead {
+        tr {
+          th,
+          td {
+            border: 1px solid rgba($black, 0.6);
+          }
+
+          td {
+            &:nth-child(1) {
+              width: 20%;
+            }
+
+            &:nth-child(3),
+            &:nth-child(4),
+            &:nth-child(5) {
+              width: 15%;
+            }
+
+            &:nth-child(3),
+            &:nth-child(4),
+            &:nth-child(5) {
+              .form-control {
+                text-align: end;
+              }
+            }
+
+            .form-control {
+              text-align: left;
+              width: 100%;
+              border: unset;
+              padding: unset;
+            }
+          }
+
+          &.inputs {
+            td {
+              textarea {
+                height: 200px !important;
+                resize: none;
+              }
+            }
+          }
+        }
+      }
+    }
+
+    &.form-131-4b {
+      width: 100%;
+
+      thead {
+        text-align: center;
+      }
+
+      tbody,
+      thead {
+        tr {
+          th,
+          td {
+            border: 1px solid rgba($black, 0.6);
+          }
+
+          td {
+            &:nth-child(1),
+            &:nth-child(3) {
+              width: 16%;
+            }
+
+            &:nth-child(4),
+            &:nth-child(5),
+            &:nth-child(6) {
+              width: 12%;
+            }
+
+            &:nth-child(4),
+            &:nth-child(5),
+            &:nth-child(6) {
+              .form-control {
+                text-align: end;
+              }
+            }
+
+            .form-control {
+              text-align: left;
+              width: 100%;
+              border: unset;
+              padding: unset;
+
+              height: 80px !important;
+              resize: none;
+            }
+          }
+        }
+      }
+    }
+
+    &.form-131-4c {
+      width: 100%;
+
+      thead {
+        text-align: center;
+      }
+
+      tbody,
+      thead {
+        tr {
+          th,
+          td {
+            border: 1px solid rgba($black, 0.6);
+          }
+
+          td {
+            &:nth-child(1),
+            &:nth-child(3),
+            &:nth-child(4),
+            &:nth-child(5),
+            &:nth-child(6) {
+              width: 12%;
+            }
+
+            &:nth-child(4),
+            &:nth-child(5),
+            &:nth-child(6) {
+              .form-control {
+                text-align: end;
+              }
+            }
+
+            .form-control {
+              text-align: left;
+              width: 100%;
+              border: unset;
+              padding: unset;
+            }
+          }
+
+          &.inputs {
+            td {
+              textarea {
+                height: 200px !important;
+                resize: none;
+              }
+            }
+          }
+        }
+      }
+    }
+
+    &.form-131-4d {
+      width: 100%;
+
+      thead {
+        text-align: center;
+      }
+
+      tbody,
+      thead {
+        tr {
+          th,
+          td {
+            border: 1px solid rgba($black, 0.6);
+          }
+
+          td {
+            &:nth-child(2),
+            &:nth-child(3),
+            &:nth-child(4),
+            &:nth-child(5),
+            &:nth-child(6),
+            &:nth-child(7) {
+              width: 12%;
+            }
+
+            &:nth-child(5),
+            &:nth-child(6),
+            &:nth-child(7) {
+              .form-control {
+                text-align: end;
+              }
+            }
+
+            .form-control {
+              text-align: left;
+              width: 100%;
+              border: unset;
+              padding: unset;
+            }
+          }
+
+          &.inputs {
+            td {
+              textarea {
+                height: 200px !important;
+                resize: none;
+              }
+            }
+          }
+        }
+      }
+    }
+
+    &.form-131-4e {
+      width: 100%;
+
+      thead {
+        text-align: center;
+      }
+
+      tbody,
+      thead {
+        tr {
+          th,
+          td {
+            border: 1px solid rgba($black, 0.6);
+          }
+
+          td {
+            &:nth-child(1) {
+              width: 20%;
+            }
+
+            &:nth-child(3),
+            &:nth-child(4),
+            &:nth-child(5) {
+              width: 12%;
+            }
+
+            &:nth-child(3),
+            &:nth-child(4),
+            &:nth-child(5) {
+              .form-control {
+                text-align: end;
+              }
+            }
+
+            .form-control {
+              text-align: left;
+              width: 100%;
+              border: unset;
+              padding: unset;
+            }
+          }
+
+          &.inputs {
+            td {
+              textarea {
+                height: 200px !important;
+                resize: none;
+              }
+            }
+          }
+        }
+      }
+    }
+
+    &.form-131-4d {
+      width: 100%;
+
+      thead {
+        text-align: center;
+      }
+
+      tbody,
+      thead {
+        tr {
+          th,
+          td {
+            border: 1px solid rgba($black, 0.6);
+          }
+
+          td {
+            &:nth-child(2),
+            &:nth-child(3),
+            &:nth-child(4) {
+              width: 15%;
+            }
+
+            &:nth-child(2),
+            &:nth-child(3),
+            &:nth-child(4) {
+              .form-control {
+                text-align: end;
+              }
+            }
+
+            .form-control {
+              text-align: left;
+              width: 100%;
+              border: unset;
+              padding: unset;
+            }
+          }
+
+          &.inputs {
+            td {
+              textarea {
+                height: 200px !important;
+                resize: none;
+              }
+            }
+          }
+        }
+      }
+    }
+
+    &.form-131-4g {
+      width: 100%;
+
+      thead {
+        text-align: center;
+      }
+
+      tbody,
+      thead {
+        tr {
+          th,
+          td {
+            border: 1px solid rgba($black, 0.6);
+          }
+
+          td {
+            &:nth-child(3),
+            &:nth-child(4),
+            &:nth-child(5) {
+              width: 15%;
+            }
+
+            &:nth-child(3),
+            &:nth-child(4),
+            &:nth-child(5) {
+              .form-control {
+                text-align: end;
+              }
+            }
+
+            .form-control {
+              text-align: left;
+              width: 100%;
+              border: unset;
+              padding: unset;
+            }
+          }
+
+          &.inputs {
+            td {
+              textarea {
+                height: 200px !important;
+                resize: none;
+              }
+            }
+          }
+        }
+      }
+    }
+
+    &.form-131-5 {
+      width: 100%;
+
+      thead {
+        text-align: center;
+      }
+
+      tbody,
+      thead {
+        tr {
+          th,
+          td {
+            border: 1px solid rgba($black, 0.6);
+          }
+
+          td {
+            &:nth-child(1) {
+              width: 25%;
+            }
+
+            &:nth-child(3),
+            &:nth-child(4),
+            &:nth-child(5) {
+              width: 15%;
+            }
+
+            &:nth-child(3),
+            &:nth-child(4),
+            &:nth-child(5) {
+              .form-control {
+                text-align: end;
+              }
+            }
+
+            .form-control {
+              text-align: left;
+              width: 100%;
+              border: unset;
+              padding: unset;
+            }
+          }
+
+          &.inputs {
+            td {
+              textarea {
+                height: 200px !important;
+                resize: none;
+              }
+            }
+          }
+        }
+      }
+    }
+
+    &.form-131-6 {
+      width: 100%;
+
+      thead {
+        text-align: center;
+      }
+
+      tbody,
+      thead {
+        tr {
+          th,
+          td {
+            border: 1px solid rgba($black, 0.6);
+          }
+
+          td {
+            &:nth-child(2),
+            &:nth-child(3) {
+              width: 15%;
+            }
+
+            &:nth-child(2),
+            &:nth-child(3) {
+              .form-control {
+                text-align: end;
+              }
+            }
+
+            .form-control {
+              text-align: left;
+              width: 100%;
+              border: unset;
+              padding: unset;
+            }
+          }
+        }
+      }
+    }
+
+    &.form-131-7 {
+      width: 100%;
+
+      thead {
+        text-align: center;
+      }
+
+      tbody,
+      thead {
+        tr {
+          th,
+          td {
+            border: 1px solid rgba($black, 0.6);
+          }
+
+          td {
+            &:nth-child(1) {
+              width: 25%;
+            }
+
+            &:nth-child(3) {
+              width: 20%;
+            }
+
+            &:nth-child(3) {
+              .form-control {
+                text-align: end;
+              }
+            }
+
+            .form-control {
+              text-align: left;
+              width: 100%;
+              border: unset;
+              padding: unset;
+            }
+          }
+
+          &.inputs {
+            td {
+              textarea {
+                height: 200px !important;
+                resize: none;
+              }
+            }
+          }
+        }
+      }
+    }
+
+    // Part 8 is using the same style as part 7
+
+    &.form-131-9 {
+      width: 100%;
+
+      thead {
+        text-align: center;
+      }
+
+      tbody,
+      thead {
+        tr {
+          th,
+          td {
+            border: 1px solid rgba($black, 0.6);
+          }
+
+          td {
+            &:nth-child(2),
+            &:nth-child(3) {
+              width: 15%;
+            }
+
+            &:nth-child(2),
+            &:nth-child(3) {
+              .form-control {
+                text-align: end;
+              }
+            }
+
+            .form-control {
+              text-align: left;
+              width: 100%;
+              border: unset;
+              padding: unset;
+            }
+          }
+        }
+      }
+    }
+
+    &.form-131-schedule-a {
+      width: 100%;
+
+      thead {
+        text-align: center;
+      }
+
+      tbody,
+      thead {
+        tr {
+          th,
+          td {
+            border: 1px solid rgba($black, 0.6);
+          }
+
+          td {
+            &:nth-child(1) {
+              width: 10%;
+            }
+
+            &:nth-child(3) {
+              width: 20%;
+            }
+
+            &:nth-child(3) {
+              .form-control {
+                text-align: end;
+              }
+            }
+
+            .form-control {
+              text-align: left;
+              width: 100%;
+              border: unset;
+              padding: unset;
+            }
+          }
+        }
+      }
+    }
+
+    &.form-131-schedule-b {
+      width: 100%;
+
+      thead {
+        text-align: center;
+      }
+
+      tbody,
+      thead {
+        tr {
+          th,
+          td {
+            border: 1px solid rgba($black, 0.6);
+          }
+
+          td {
+            &:nth-child(1) {
+              width: 30%;
+            }
+
+            &:nth-child(3),
+            &:nth-child(4) {
+              width: 15%;
+            }
+
+            &:nth-child(3) {
+              .form-control {
+                text-align: end;
+              }
+            }
+
+            .form-control {
+              text-align: left;
+              width: 100%;
+              border: unset;
+              padding: unset;
+            }
+          }
+        }
+      }
+    }
+
+    &.form-13-assets {
+      width: 100%;
+
+      thead {
+        text-align: center;
+      }
+
+      tbody,
+      thead {
+        tr {
+          th,
+          td {
+            border: 1px solid rgba($black, 0.6);
+            text-align: center;
+          }
+
+          td {
+            &:nth-child(1),
+            &:nth-child(4) {
+              width: 20%;
+            }
+
+            &.number {
+              width: 5%;
+            }
+
+            &:last-child {
+              .form-control {
+                text-align: end;
+              }
+            }
+
+            .form-control {
+              text-align: left;
+              width: 100%;
+              border: unset;
+              padding: unset;
+            }
+          }
+        }
+      }
+    }
+
+    &.form-13-debts {
+      width: 100%;
+
+      thead,
+      tbody {
+        tr {
+          th,
+          td {
+            border: 1px solid rgba($black, 0.6);
+            text-align: center;
+            width: unset;
+          }
+
+          th {
+            &:nth-child(1),
+            &:nth-child(5) {
+              width: 220px;
+            }
+
+            &:nth-child(3),
+            &:nth-child(4) {
+              width: 120px;
+            }
+          }
+
+          td {
+            .form-control {
+              text-align: left;
+              width: 100%;
+              border: unset;
+              padding: unset;
+            }
+          }
+        }
+      }
+    }
+
+    &.form-131-5 {
+      width: 100%;
+
+      thead,
+      tbody {
+        tr {
+          th,
+          td {
+            border: 1px solid rgba($black, 0.6);
+            text-align: center;
+            width: unset;
+          }
+
+          td {
+            &:last-child {
+              width: 10%;
+            }
+
+            .form-control {
+              text-align: left;
+              width: 100%;
+              border: unset;
+              padding: unset;
+            }
+          }
+        }
+      }
+    }
+
+    &.form-8a-children {
+      width: 100%;
+
+      thead,
+      tbody {
+        tr {
+          th,
+          td {
+            border: 1px solid rgba($black, 0.6);
+            text-align: center;
+            width: unset;
+            width: 22.5%;
+
+            &:nth-child(2) {
+              width: 80px;
+            }
+          }
+
+          td {
+            &:last-child {
+              width: 10%;
+            }
+
+            .form-control {
+              text-align: left;
+              width: 100%;
+              border: unset;
+              padding: unset;
+            }
+          }
+        }
+      }
+    }
+  }
+
+  //////// Typography ////////
+  ///
+  /// Heading ///
+  .heading {
+    font-size: 1.5rem;
+    font-weight: bold;
+    text-align: center;
+    margin-bottom: 20px;
+  }
+
+  .sub-heading {
+    font-size: 1.25rem;
+    font-weight: bold;
+    text-align: center;
+    margin-bottom: 20px;
+  }
+
+  /// Paragraph ///
+  .paragraph {
+    font-size: 1rem;
+    text-align: justify;
+    margin-bottom: 8px;
+    line-height: 1.4;
+  }
+
+  /// List ///
+  ul {
+    margin-bottom: 8px;
+    li {
+      .paragraph {
+        margin-bottom: 0;
+      }
+    }
+  }
+}

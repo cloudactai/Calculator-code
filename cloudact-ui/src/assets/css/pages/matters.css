@@ -1,0 +1,4024 @@
+@import url("https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800&display=swap");
+
+.w-300px {
+  width: 300px;
+}
+
+.gap-50px {
+  gap: 50px;
+}
+
+.pt-10px {
+  padding-top: 10px;
+}
+
+.pt-20px {
+  padding-top: 20px;
+}
+
+.pt-30px {
+  padding-top: 30px;
+}
+
+.pt-40px {
+  padding-top: 40px;
+}
+
+.pt-50px {
+  padding-top: 50px;
+}
+
+.pt-60px {
+  padding-top: 60px;
+}
+
+.pt-70px {
+  padding-top: 70px;
+}
+
+.pt-80px {
+  padding-top: 80px;
+}
+
+.pt-90px {
+  padding-top: 90px;
+}
+
+.pt-100px {
+  padding-top: 100px;
+}
+
+.pb-10px {
+  padding-bottom: 10px;
+}
+
+.pb-20px {
+  padding-bottom: 20px;
+}
+
+.pb-30px {
+  padding-bottom: 30px;
+}
+
+.pb-40px {
+  padding-bottom: 40px;
+}
+
+.pb-50px {
+  padding-bottom: 50px;
+}
+
+.pb-60px {
+  padding-bottom: 60px;
+}
+
+.pb-70px {
+  padding-bottom: 70px;
+}
+
+.pb-80px {
+  padding-bottom: 80px;
+}
+
+.pb-90px {
+  padding-bottom: 90px;
+}
+
+.pb-100px {
+  padding-bottom: 100px;
+}
+
+.pl-10px {
+  padding-left: 10px;
+}
+
+.pl-20px {
+  padding-left: 20px;
+}
+
+.pl-30px {
+  padding-left: 30px;
+}
+
+.pl-40px {
+  padding-left: 40px;
+}
+
+.pl-50px {
+  padding-left: 50px;
+}
+
+.pl-60px {
+  padding-left: 60px;
+}
+
+.pl-70px {
+  padding-left: 70px;
+}
+
+.pl-80px {
+  padding-left: 80px;
+}
+
+.pl-90px {
+  padding-left: 90px;
+}
+
+.pl-100px {
+  padding-left: 100px;
+}
+
+.pr-10px {
+  padding-right: 10px;
+}
+
+.pr-20px {
+  padding-right: 20px;
+}
+
+.pr-30px {
+  padding-right: 30px;
+}
+
+.pr-40px {
+  padding-right: 40px;
+}
+
+.pr-50px {
+  padding-right: 50px;
+}
+
+.pr-60px {
+  padding-right: 60px;
+}
+
+.pr-70px {
+  padding-right: 70px;
+}
+
+.pr-80px {
+  padding-right: 80px;
+}
+
+.pr-90px {
+  padding-right: 90px;
+}
+
+.pr-100px {
+  padding-right: 100px;
+}
+
+.mt-10px {
+  margin-top: 10px;
+}
+
+.mt-20px {
+  margin-top: 20px;
+}
+
+.mt-30px {
+  margin-top: 30px;
+}
+
+.mt-40px {
+  margin-top: 40px;
+}
+
+.mt-50px {
+  margin-top: 50px;
+}
+
+.mt-60px {
+  margin-top: 60px;
+}
+
+.mt-70px {
+  margin-top: 70px;
+}
+
+.mt-80px {
+  margin-top: 80px;
+}
+
+.mt-90px {
+  margin-top: 90px;
+}
+
+.mt-100px {
+  margin-top: 100px;
+}
+
+.mb-10px {
+  margin-bottom: 10px;
+}
+
+.mb-20px {
+  margin-bottom: 20px;
+}
+
+.mb-30px {
+  margin-bottom: 30px;
+}
+
+.mb-40px {
+  margin-bottom: 40px;
+}
+
+.mb-50px {
+  margin-bottom: 50px;
+}
+
+.mb-60px {
+  margin-bottom: 60px;
+}
+
+.mb-70px {
+  margin-bottom: 70px;
+}
+
+.mb-80px {
+  margin-bottom: 80px;
+}
+
+.mb-90px {
+  margin-bottom: 90px;
+}
+
+.mb-100px {
+  margin-bottom: 100px;
+}
+
+.ml-10px {
+  margin-left: 10px;
+}
+
+.ml-20px {
+  margin-left: 20px;
+}
+
+.ml-30px {
+  margin-left: 30px;
+}
+
+.ml-40px {
+  margin-left: 40px;
+}
+
+.ml-50px {
+  margin-left: 50px;
+}
+
+.ml-60px {
+  margin-left: 60px;
+}
+
+.ml-70px {
+  margin-left: 70px;
+}
+
+.ml-80px {
+  margin-left: 80px;
+}
+
+.ml-90px {
+  margin-left: 90px;
+}
+
+.ml-100px {
+  margin-left: 100px;
+}
+
+.mr-10px {
+  margin-right: 10px;
+}
+
+.mr-20px {
+  margin-right: 20px;
+}
+
+.mr-30px {
+  margin-right: 30px;
+}
+
+.mr-40px {
+  margin-right: 40px;
+}
+
+.mr-50px {
+  margin-right: 50px;
+}
+
+.mr-60px {
+  margin-right: 60px;
+}
+
+.mr-70px {
+  margin-right: 70px;
+}
+
+.mr-80px {
+  margin-right: 80px;
+}
+
+.mr-90px {
+  margin-right: 90px;
+}
+
+.mr-100px {
+  margin-right: 100px;
+}
+
+.btn {
+  font-size: 14px;
+  font-weight: 600;
+  padding: 0 25px !important;
+  height: 45px;
+  display: flex;
+  align-items: center;
+  box-shadow: none !important;
+  justify-content: center;
+  -webkit-border-radius: 10px;
+  -moz-border-radius: 10px;
+  border-radius: 10px;
+  font-weight: 700;
+}
+
+.btn>i {
+  margin-left: 5px;
+}
+
+.btn.btnPrimary {
+  background-color: #f6bd3d;
+  color: #171d34;
+  border: 0;
+  border-radius: 10px !important;
+}
+
+.btn.btnSecondary {
+  border: #73c3fd solid 1px;
+  background-color: transparent;
+  -webkit-border-radius: 50px;
+  -moz-border-radius: 50px;
+  border-radius: 50px;
+}
+
+.btn.btnSecondary.icon {
+  width: 45px;
+  padding: 0 !important;
+}
+
+.btn.btnSecondary.icon i {
+  margin: 0;
+}
+
+.btn.btnDefault {
+  border-color: #73c3fd;
+}
+
+.btn.blue {
+  background-color: #73c3fd;
+  color: #171d34;
+}
+
+.customBadge {
+  text-align: center;
+  padding: 4px 30px;
+  border-radius: 25px;
+  border: 2px #171d34 solid;
+  gap: 10px;
+  display: inline-flex;
+  text-decoration: none;
+  text-wrap: nowrap;
+  cursor: pointer;
+  color: #171d34;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.customBadge.customBadge-primary {
+  border-color: #307ff4;
+}
+
+.customBadge.customBadge-secondary {
+  border-color: #f6bd3d;
+}
+
+.customBadge.customBadge-success {
+  border-color: #4cb528;
+}
+
+.customBadge.customBadge-danger {
+  border-color: #fb554a;
+}
+
+.customBadge.customBadge-light {
+  border-color: #ffffff;
+}
+
+.customBadge.customBadge-dark {
+  border-color: #171d34;
+}
+
+.statusBadge {
+  text-align: center;
+  padding: 6px 30px;
+  background-color: #73c3fd;
+  border-radius: 8px;
+  gap: 10px;
+  text-decoration: none;
+  text-wrap: nowrap;
+  cursor: pointer;
+  color: #171d34;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.statusBadge.statusBadge-primary {
+  background-color: #307ff4;
+  color: #FFF;
+}
+
+.statusBadge.statusBadge-secondary {
+  background-color: #f6bd3d;
+}
+
+.statusBadge.statusBadge-success {
+  background-color: #20c997;
+
+}
+
+.statusBadge.statusBadge-danger {
+  background-color: #fb554a;
+}
+
+.statusBadge.statusBadge-light {
+  background-color: #ffffff;
+}
+
+.statusBadge.statusBadge-dark {
+  background-color: #171d34;
+  color: #FFF;
+}
+
+.statusBadge.statusBadge-disabled {
+  opacity: 50%;
+}
+
+/* The Custom Checkbox */
+.custom-checkbox {
+  display: block;
+  position: relative;
+  padding-left: 25px;
+  margin-bottom: 12px;
+  cursor: pointer;
+  font-size: 18px;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+  box-sizing: border-box;
+  /* Hide the browser's default checkbox */
+  /* Create a custom checkbox */
+  /* On mouse-over, add a off-white background color */
+}
+
+.custom-checkbox input {
+  position: absolute;
+  opacity: 0;
+  cursor: pointer;
+  height: 0;
+  width: 0;
+  /* When the checkbox is checked, add a blue background */
+}
+
+.custom-checkbox input:checked~.checkmark {
+  background-color: #73c3fd;
+  border-color: #73c3fd;
+  /* Show the checkmark when checked */
+}
+
+.custom-checkbox input:checked~.checkmark:after {
+  display: block;
+}
+
+.custom-checkbox .checkmark {
+  position: absolute;
+  top: 3px;
+  left: 0;
+  height: 18px;
+  width: 18px;
+  border: 1px solid #9fabc1;
+  border-radius: 5px;
+  background-color: transparent;
+  /* Create the checkmark/indicator (hidden when not checked) */
+}
+
+.custom-checkbox .checkmark:after {
+  content: "";
+  position: absolute;
+  display: none;
+  /* Style the checkmark/indicator */
+  left: 6px;
+  top: 2px;
+  width: 5px;
+  height: 10px;
+  border: solid white;
+  border-width: 0 1.5px 1.5px 0;
+  -webkit-transform: rotate(45deg);
+  -ms-transform: rotate(45deg);
+  transform: rotate(45deg);
+}
+
+.custom-checkbox:hover input~.checkmark {
+  background-color: #ededed;
+}
+
+.custom-checkbox:hover input:checked~.checkmark {
+  background-color: rgba(115, 195, 253, 0.8);
+}
+
+::-webkit-scrollbar {
+  width: 4px;
+  height: 4px;
+}
+
+::-webkit-scrollbar-track {
+  background: 0 0;
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.3);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 0, 0, 0.5);
+}
+
+.maxHeight-300px {
+  max-height: 300px;
+}
+
+.maxHeight-400px {
+  max-height: 400px;
+}
+
+.maxHeight-500px {
+  max-height: 500px;
+}
+
+.maxHeight-600px {
+  max-height: 600px;
+}
+
+.maxHeight-700px {
+  max-height: 700px;
+}
+
+.maxHeight-800px {
+  max-height: 800px;
+}
+
+.maxHeight-900px {
+  max-height: 900px;
+}
+
+.maxHeight-1000px {
+  max-height: 1000px;
+}
+
+.maxHeight-25vh {
+  max-height: 25vh;
+}
+
+.maxHeight-50vh {
+  max-height: 50vh;
+}
+
+.maxHeight-75vh {
+  max-height: 75vh;
+}
+
+.maxHeight-100vh {
+  max-height: 100vh;
+}
+
+.thead-primary tr th {
+  background-color: rgba(115, 195, 253, 0.3) !important;
+}
+
+.thead-primary tr th:first-child {
+  border-radius: 8px 0 0 0;
+}
+
+.thead-primary tr th:last-child {
+  border-radius: 0 8px 0 0;
+}
+
+.matterSelect {
+  width: 180px;
+  padding: 10px;
+  text-align: center;
+  border: #73c3fd solid 2px;
+  border-radius: 8px;
+  margin: 10px;
+  border: 2px solid rgba(23, 29, 52, 0.08);
+}
+
+.matterSelect .matterName {
+  display: block;
+}
+
+.matterSelect svg {
+  display: block;
+  margin: auto;
+}
+
+.matterSelect.checked {
+  border: 2px solid #73c3fd;
+}
+
+.five-steps-page .text {
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.five-steps-page .form-label {
+  font-size: 16px;
+  font-weight: 800;
+}
+
+.five-steps-page .sidebar {
+  position: -webkit-sticky;
+  /* For Safari */
+  position: sticky;
+  top: 20px;
+  /* Stick to the top of the viewport */
+  height: 100vh;
+  /* Full height of the viewport */
+  padding: 20px;
+}
+
+.five-steps-page .sidebar .btn.btnPrimary {
+  position: relative;
+  bottom: 0px;
+  top: calc(555px + 30px + 20px);
+  /* width: fit-content; */
+  width: 100%
+}
+
+.five-steps-page .sidebar .timeline {
+  position: relative;
+  margin-top: 30px;
+}
+
+.five-steps-page .sidebar .timeline .status-line {
+  width: 0;
+  height: 555px;
+  left: 11px;
+  top: 2px;
+  position: absolute;
+  border: 1px #307ff4 solid;
+}
+
+.five-steps-page .sidebar .timeline .items {
+  width: 249px;
+  height: 564px;
+  left: 0;
+  top: 0;
+  position: absolute;
+  flex-direction: column;
+  justify-content: flex-start;
+  align-items: flex-start;
+  gap: 30px;
+  display: inline-flex;
+}
+
+.five-steps-page .sidebar .timeline .items .item {
+  justify-content: flex-start;
+  align-items: center;
+  gap: 20px;
+  display: inline-flex;
+  cursor: pointer;
+}
+
+.five-steps-page .sidebar .timeline .items .item .circle {
+  width: 24px;
+  height: 24px;
+  background-color: #ffffff;
+  -webkit-border-radius: 50%;
+  -moz-border-radius: 50%;
+  border-radius: 50%;
+  border: 2px #307ff4 solid;
+}
+
+.five-steps-page .sidebar .timeline .items .item .text {
+  font-size: 16px;
+  font-weight: 600;
+  word-wrap: break-word;
+}
+
+.five-steps-page .sidebar .timeline .items .item.active .circle {
+  border-width: 4px;
+}
+
+.five-steps-page .sidebar .timeline .items .item.active .text {
+  font-weight: 800;
+}
+
+.five-steps-page .sidebar .timeline .items .item.done .circle {
+  background-color: #307ff4;
+}
+
+.five-steps-page .accordion {
+  background-color: rgba(115, 195, 253, 0.2);
+  padding: 30px;
+  border-radius: 8px;
+}
+
+.five-steps-page .accordion .accordion-header button {
+  background-color: #ffffff;
+  padding: 26px 30px;
+  border: 3px solid rgba(115, 195, 253, 0.8) !important;
+}
+
+.five-steps-page .accordion .accordion-header button:not(.collapsed) {
+  background-color: #ffffff;
+}
+
+.five-steps-page .accordion .accordion-collapse {
+  border: 3px solid rgba(115, 195, 253, 0.6) !important;
+  margin-top: -3px;
+}
+
+.five-steps-page .accordion .accordion-collapse .accordion-body {
+  background-color: #ffffff;
+  padding: 30px 30px 0px;
+}
+
+.five-steps-page .accordion .accordion-collapse .accordion-body .tab-actions {
+  display: flex;
+  justify-content: flex-start;
+  align-items: flex-start;
+  margin-top: -30px;
+  gap: 10px;
+}
+
+.five-steps-page .accordion .accordion-collapse .accordion-body .tab-actions .tab-action {
+  font-size: 14px;
+  width: 160px;
+  padding: 4px 0;
+  background: rgba(23, 29, 52, 0.1);
+  box-shadow: 0px 14px 34px rgba(23, 29, 52, 0.04);
+  border-radius: 0 0 8px 8px;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.3s ease-in-out;
+}
+
+.five-steps-page .accordion .accordion-collapse .accordion-body .tab-actions .tab-action.active {
+  background: rgba(115, 195, 253, 0.3);
+  box-shadow: 0px 14px 34px rgba(115, 195, 253, 0.04);
+}
+
+.five-steps-page .accordion .accordion-collapse .accordion-body .tab-content {
+  transition: all 0.3s ease-in-out;
+}
+
+.five-steps-page .accordion .accordion-collapse .accordion-body .form-group {
+  margin-bottom: unset;
+}
+
+.five-steps-page .accordion .accordion-collapse .accordion-body .form-label-custom {
+  font-size: 16px;
+  font-weight: 800;
+}
+
+.five-steps-page .accordion .accordion-collapse .accordion-body .sub-heading {
+  font-size: 20px;
+  font-weight: 700;
+  padding: 20px 0;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.five-steps-page .accordion .accordion-collapse .accordion-body .inputs-row {
+  display: grid;
+  grid-template-columns: 1fr;
+  grid-gap: 10px 10px;
+  justify-content: space-between;
+  align-items: end;
+}
+
+.five-steps-page .accordion .accordion-collapse .accordion-body .inputs-row.repeater-row {
+  padding-bottom: 20px;
+}
+
+.five-steps-page .accordion .accordion-collapse .accordion-body .inputs-row.repeater-row:last-child {
+  padding-bottom: 0;
+}
+
+@media screen and (min-width: 1400px) {
+  .five-steps-page .accordion .accordion-collapse .accordion-body .inputs-row {
+    grid-template-columns: 11fr 1fr;
+  }
+}
+
+.five-steps-page .accordion .accordion-collapse .accordion-body .inputs-row.labeled {
+  grid-template-columns: 1fr 1fr;
+  grid-gap: 10px 50px;
+  align-items: center;
+}
+
+@media screen and (max-width: 1400px) {
+  .five-steps-page .accordion .accordion-collapse .accordion-body .inputs-row.labeled {
+    grid-template-columns: 1fr;
+  }
+}
+
+.five-steps-page .accordion .accordion-collapse .accordion-body .inputs-row.no-action {
+  grid-template-columns: 1fr;
+}
+
+.five-steps-page .accordion .accordion-collapse .accordion-body .inputs-row .inputs {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  grid-gap: 10px 50px;
+  align-items: center;
+}
+
+.five-steps-page .accordion .accordion-collapse .accordion-body .inputs-row .inputs.inputs-4 {
+  grid-template-columns: 1fr 1fr 1fr 1fr;
+}
+
+.five-steps-page .accordion .accordion-collapse .accordion-body .inputs-row .inputs.inputs-2-3 {
+  grid-template-columns: 2fr 3fr;
+  grid-gap: unset;
+}
+
+@media screen and (max-width: 1200px) {
+  .five-steps-page .accordion .accordion-collapse .accordion-body .inputs-row .inputs {
+    grid-template-columns: 1fr;
+  }
+
+  .five-steps-page .accordion .accordion-collapse .accordion-body .inputs-row .inputs.inputs-4 {
+    grid-template-columns: 1fr;
+  }
+
+  .five-steps-page .accordion .accordion-collapse .accordion-body .inputs-row .inputs.inputs-2-3 {
+    grid-template-columns: 1fr;
+  }
+}
+
+.five-steps-page .accordion .accordion-collapse .accordion-body .inputs-row .action {
+  display: flex;
+  flex-direction: row;
+  margin: 0;
+  padding: 0;
+  justify-content: flex-start;
+  margin-left: 20px;
+  align-items: flex-end;
+  text-wrap: nowrap;
+}
+
+.five-steps-page .accordion .accordion-collapse .accordion-body .inputs-group .header {
+  height: 65px;
+  background-color: rgba(115, 195, 253, 0.2);
+  box-shadow: 0px 14px 34px rgba(23, 29, 52, 0.04);
+  border-radius: 8px 8px 0px 0px;
+  border-bottom: 1px solid rgba(48, 127, 244, 0.4);
+  padding: 0 30px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.five-steps-page .accordion .accordion-collapse .accordion-body .inputs-group .header .title,
+.five-steps-page .accordion .accordion-collapse .accordion-body .inputs-group .header .calculated_amount {
+  font-size: 20px;
+  font-weight: 700;
+}
+
+.five-steps-page .accordion .accordion-collapse .accordion-body .inputs-group .header div {
+  display: flex;
+  justify-content: flex-start;
+  align-items: center;
+  gap: 60px;
+}
+
+.five-steps-page .accordion .accordion-collapse .accordion-body .inputs-group .body {
+  padding: 30px;
+  border-radius: 0px 0px 8px 8px;
+  border-bottom: 1px solid rgba(48, 127, 244, 0.2);
+  box-shadow: 0px 14px 34px rgba(36, 60, 96, 0.04);
+}
+
+.five-steps-page .accordion .accordion-collapse .accordion-body .inputs-group .body .spanned-rows {
+  display: grid;
+  grid-template-columns: 3fr 1fr;
+  grid-gap: 10px 50px;
+  align-items: start;
+  margin-bottom: 50px;
+}
+
+@media screen and (max-width: 1200px) {
+  .five-steps-page .accordion .accordion-collapse .accordion-body .inputs-group .body .spanned-rows {
+    grid-template-columns: 1fr;
+    grid-gap: 30px 0px;
+  }
+}
+
+.five-steps-page .accordion .accordion-collapse .accordion-body .btn.btn-link {
+  justify-content: end;
+  padding: 0 !important;
+  margin: 0;
+  color: #307ff4;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.five-steps-page .accordion .accordion-item {
+  background-color: unset;
+}
+
+.five-steps-page .accordion .accordion-item button:after {
+  width: 26px;
+  height: 26px;
+}
+
+.five-steps-page .accordion .accordion-item:last-child button:after {
+  transform: unset;
+}
+
+.five-steps-page .accordion .accordion-item:last-child button:not(.collapsed):after {
+  transform: rotate(-180deg);
+}
+
+.five-steps-page .accordion .progress-bar {
+  background-color: rgba(115, 195, 253, 0.4);
+  height: 8px;
+  width: 100%;
+  margin-top: 6px;
+  position: relative;
+  -webkit-border-radius: 2px;
+  -moz-border-radius: 2px;
+  border-radius: 2px;
+}
+
+.five-steps-page .accordion .progress-bar:before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  background-color: #73c3fd;
+  height: 8px;
+  width: var(--progress-width);
+}
+
+.five-steps-page .accordion .progress-bar.done:before {
+  width: 100%;
+  background-color: #aae07f;
+}
+
+.five-steps-page table {
+  text-align: center;
+  box-shadow: 0px 4px 5px rgba(0, 0, 0, 0.05);
+}
+
+.five-steps-page table .hide {
+  color: transparent;
+}
+
+.five-steps-page table.reports-table-primary thead tr th {
+  background-color: rgba(48, 127, 244, 0.2);
+}
+
+.five-steps-page table thead tr th {
+  padding: 14px 0;
+  background-color: rgba(189, 189, 189, 0.15);
+  border-bottom: 1px solid rgba(48, 127, 244, 0.4);
+}
+
+.five-steps-page table thead tr th:first-child {
+  padding-left: 30px;
+  text-align: left;
+  border-top-left-radius: 8px;
+}
+
+.five-steps-page table thead tr th:last-child {
+  border-top-right-radius: 8px;
+}
+
+.five-steps-page table tbody tr td {
+  padding: 8px 0;
+  border-bottom: 1px solid rgba(48, 127, 244, 0.2);
+}
+
+.five-steps-page table tbody tr td:first-child {
+  padding-left: 30px;
+  text-align: left;
+}
+
+.five-steps-page table tfoot tr td {
+  padding: 8px 0;
+  font-weight: 800;
+  border-bottom: none;
+}
+
+.five-steps-page table tfoot tr td:first-child {
+  padding-left: 30px;
+  text-align: left;
+  border-bottom-left-radius: 8px;
+}
+
+.five-steps-page table tfoot tr td:last-child {
+  border-bottom-right-radius: 8px;
+}
+
+.single-matter.panel .pHead {
+  min-height: auto;
+}
+
+.single-matter.panel .pBody {
+  padding-right: 10px !important;
+}
+
+.single-matter.panel .pBody .row {
+  gap: 30px;
+}
+
+@media screen and (min-width: 1440px) {
+  .single-matter.panel .pBody .row {
+    gap: 0;
+  }
+}
+
+.single-matter .info-container {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 60px;
+}
+
+.single-matter .info-container .info-row {
+  display: flex;
+}
+
+.single-matter .info-container .info-row .label {
+  margin-right: 10px;
+  font-size: 16px;
+  font-weight: 800;
+}
+
+.single-matter .info-container .info-row .value {
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.single-matter .box-container,
+.single-matter .summary-container,
+.single-matter .document-container,
+.single-matter .create-new-form-page .new-form-container,
+.create-new-form-page .single-matter .new-form-container {
+  border-radius: 25px;
+  border: 2px solid #73c3fd;
+  background: #ffffff;
+  padding: 30px;
+  box-shadow: 0px 8px 40px 0px rgba(23, 29, 52, 0.05);
+}
+
+.single-matter .box-container .head,
+.single-matter .summary-container .head,
+.single-matter .document-container .head,
+.single-matter .create-new-form-page .new-form-container .head,
+.create-new-form-page .single-matter .new-form-container .head {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  font-size: 20px;
+  font-style: italic;
+  font-weight: 600;
+}
+
+.single-matter .box-container .body,
+.single-matter .summary-container .body,
+.single-matter .document-container .body,
+.single-matter .create-new-form-page .new-form-container .body,
+.create-new-form-page .single-matter .new-form-container .body {
+  margin-top: 30px;
+  overflow-y: none;
+  overflow-x: none;
+  height: auto;
+}
+
+@media screen and (min-width: 1440px) {
+
+  .single-matter .box-container .body,
+  .single-matter .summary-container .body,
+  .single-matter .document-container .body,
+  .single-matter .create-new-form-page .new-form-container .body,
+  .create-new-form-page .single-matter .new-form-container .body {
+    overflow-y: auto;
+    overflow-x: hidden;
+    height: calc(100vh - 360px);
+  }
+}
+
+.single-matter .summary-container .body {
+  padding-right: 10px;
+}
+
+.single-matter .summary-container .body .profile-menu {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  padding: 12px;
+  border-radius: 8px 8px 8px 8px;
+  border: 2px solid rgba(115, 195, 253, 0.8);
+}
+
+.single-matter .summary-container .body .profile-menu .info {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 20px;
+  font-weight: 700;
+}
+
+.single-matter .summary-container .body .profile-menu .info img {
+  width: 25px;
+  height: 25px;
+}
+
+.single-matter .document-container .body {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding-right: 10px;
+}
+
+.single-matter .document-container .body .info {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  margin-bottom: 8px;
+}
+
+.single-matter .document-container .body .info .breadcrumbs {
+  color: #307ff4;
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.single-matter .document-container .body .info .description {
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.single-matter .document-container .body .forms-container .info {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  margin-bottom: 10px;
+}
+
+.single-matter .document-container .body .forms-container .info .title {
+  font-size: 20px;
+  font-weight: 700;
+}
+
+.single-matter .document-container .body .forms-container .info .description {
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.single-matter .document-container .body .forms-container .forms-actions,
+.single-matter .document-container .body .forms-container .document-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  grid-gap: 10px 50px;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.single-matter .document-container .body .forms-container .forms-actions>span,
+.single-matter .document-container .body .forms-container .document-actions>span {
+  width: 170px;
+}
+
+.single-matter .document-container .body .forms-container .forms-actions>span:nth-child(even),
+.single-matter .document-container .body .forms-container .document-actions>span:nth-child(even) {
+  margin-left: auto;
+}
+
+.single-matter .document-container .body .forms-container .document-actions {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.single-matter .document-container .body table {
+  text-align: center;
+  background: unset;
+  box-shadow: 0px 4px 5px rgba(0, 0, 0, 0.05);
+}
+
+.single-matter .document-container .body table thead tr th {
+  padding: 20px 0;
+  background-color: rgba(115, 195, 253, 0.2);
+  border-bottom: 1px solid rgba(48, 127, 244, 0.4);
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.single-matter .document-container .body table thead tr th:first-child {
+  padding-left: 30px;
+  text-align: left;
+  border-top-left-radius: 8px;
+}
+
+.single-matter .document-container .body table thead tr th:last-child {
+  border-top-right-radius: 8px;
+}
+
+.single-matter .document-container .body table tbody tr td {
+  padding: 14px 0;
+  border-bottom: 1px solid rgba(48, 127, 244, 0.2);
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.single-matter .document-container .body table tbody tr td:first-child {
+  padding-left: 30px;
+  text-align: left;
+}
+
+.single-matter .document-container .body table tbody tr td.folder {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+}
+
+.single-matter .document-container .body table tbody tr td.folder .folder-icon {
+  width: 25px;
+  height: 25px;
+}
+
+.single-matter .document-container .body table tbody tr td.folder .folder-name {
+  text-decoration-line: underline;
+}
+
+.single-matter .document-container .body table tbody tr td .icon {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.single-matter .document-container .body table tbody tr td .icon .upload-icon {
+  width: 24px;
+  height: 24px;
+}
+
+.single-matter .document-container .body table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.single-matter .document-container .body table tbody tr:last-child td:first-child {
+  border-bottom-left-radius: 8px;
+}
+
+.single-matter .document-container .body table tbody tr:last-child td:last-child {
+  border-bottom-right-radius: 8px;
+}
+
+.single-matter .document-container .body .actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 20px;
+}
+
+.matterModal .modal-body {
+  padding-top: 0;
+}
+
+.matterModal .accordion-body {
+  background-color: #ffffff;
+  padding: 30px 30px 0px;
+}
+
+.matterModal .accordion-body .tab-actions {
+  display: flex;
+  justify-content: flex-start;
+  align-items: flex-start;
+  margin-top: -30px;
+  gap: 10px;
+}
+
+.matterModal .accordion-body .tab-actions .tab-action {
+  font-size: 14px;
+  width: 160px;
+  padding: 4px 0;
+  background: rgba(23, 29, 52, 0.1);
+  box-shadow: 0px 14px 34px rgba(23, 29, 52, 0.04);
+  border-radius: 0 0 8px 8px;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.3s ease-in-out;
+}
+
+.matterModal .accordion-body .tab-actions .tab-action.active {
+  background: rgba(115, 195, 253, 0.3);
+  box-shadow: 0px 14px 34px rgba(115, 195, 253, 0.04);
+}
+
+.matterModal .accordion-body .tab-content {
+  transition: all 0.3s ease-in-out;
+}
+
+.matterModal .accordion-body .form-group {
+  margin-bottom: unset;
+}
+
+.matterModal .accordion-body .form-label-custom {
+  font-size: 16px;
+  font-weight: 800;
+}
+
+.matterModal .accordion-body .sub-heading {
+  font-size: 20px;
+  font-weight: 700;
+  padding: 20px 0;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.matterModal .accordion-body .inputs-row {
+  display: grid;
+  grid-template-columns: 1fr;
+  grid-gap: 10px 10px;
+  justify-content: space-between;
+  align-items: end;
+}
+
+.matterModal .accordion-body .inputs-row.repeater-row {
+  padding-bottom: 20px;
+}
+
+.matterModal .accordion-body .inputs-row.repeater-row:last-child {
+  padding-bottom: 0;
+}
+
+@media screen and (min-width: 1400px) {
+  .matterModal .accordion-body .inputs-row {
+    grid-template-columns: 11fr 1fr;
+  }
+}
+
+.matterModal .accordion-body .inputs-row.labeled {
+  grid-template-columns: 1fr 1fr;
+  grid-gap: 10px 50px;
+  align-items: center;
+}
+
+@media screen and (max-width: 1400px) {
+  .matterModal .accordion-body .inputs-row.labeled {
+    grid-template-columns: 1fr;
+  }
+}
+
+.matterModal .accordion-body .inputs-row.no-action {
+  grid-template-columns: 1fr;
+}
+
+.matterModal .accordion-body .inputs-row .inputs {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  grid-gap: 10px 50px;
+  align-items: center;
+}
+
+.inputs-col-2 {
+  grid-template-columns: 1fr 1fr !important;
+}
+
+.matterModal .accordion-body .inputs-row .inputs.inputs-4 {
+  grid-template-columns: 1fr 1fr 1fr 1fr;
+}
+
+.matterModal .accordion-body .inputs-row .inputs.inputs-2-3 {
+  grid-template-columns: 2fr 3fr;
+  grid-gap: unset;
+}
+
+@media screen and (max-width: 1200px) {
+  .matterModal .accordion-body .inputs-row .inputs {
+    grid-template-columns: 1fr;
+  }
+
+  .matterModal .accordion-body .inputs-row .inputs.inputs-4 {
+    grid-template-columns: 1fr;
+  }
+
+  .matterModal .accordion-body .inputs-row .inputs.inputs-2-3 {
+    grid-template-columns: 1fr;
+  }
+}
+
+.matterModal .accordion-body .inputs-row .action {
+  display: flex;
+  flex-direction: row;
+  margin: 0;
+  padding: 0;
+  justify-content: flex-start;
+  margin-left: 20px;
+  align-items: flex-end;
+  text-wrap: nowrap;
+}
+
+.matterModal .accordion-body .inputs-group .header {
+  height: 65px;
+  background-color: rgba(115, 195, 253, 0.2);
+  box-shadow: 0px 14px 34px rgba(23, 29, 52, 0.04);
+  border-radius: 8px 8px 0px 0px;
+  border-bottom: 1px solid rgba(48, 127, 244, 0.4);
+  padding: 0 30px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.matterModal .accordion-body .inputs-group .header .title,
+.matterModal .accordion-body .inputs-group .header .calculated_amount {
+  font-size: 20px;
+  font-weight: 700;
+}
+
+.matterModal .accordion-body .inputs-group .header div {
+  display: flex;
+  justify-content: flex-start;
+  align-items: center;
+  gap: 60px;
+}
+
+.matterModal .accordion-body .inputs-group .body {
+  padding: 30px;
+  border-radius: 0px 0px 8px 8px;
+  border-bottom: 1px solid rgba(48, 127, 244, 0.2);
+  box-shadow: 0px 14px 34px rgba(36, 60, 96, 0.04);
+}
+
+.matterModal .accordion-body .inputs-group .body .spanned-rows {
+  display: grid;
+  grid-template-columns: 3fr 1fr;
+  grid-gap: 10px 50px;
+  align-items: start;
+  margin-bottom: 50px;
+}
+
+@media screen and (max-width: 1200px) {
+  .matterModal .accordion-body .inputs-group .body .spanned-rows {
+    grid-template-columns: 1fr;
+    grid-gap: 30px 0px;
+  }
+}
+
+.matterModal .accordion-body .btn.btn-link {
+  justify-content: end;
+  padding: 0 !important;
+  margin: 0;
+  color: #307ff4;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.add-forms-modal-body {
+  padding: 20px 30px;
+}
+
+.add-forms-modal-body .accordion .accordion-item {
+  box-shadow: unset;
+  margin-bottom: unset;
+}
+
+.add-forms-modal-body .accordion .accordion-item .accordion-header .accordion-button {
+  display: flex;
+  align-items: center;
+  background: none;
+  padding: 10px 0;
+}
+
+.add-forms-modal-body .accordion .accordion-item .accordion-header .accordion-button .folder-icon {
+  width: 24px;
+  height: 24px;
+  margin-right: 8px;
+}
+
+.add-forms-modal-body .accordion .accordion-item .accordion-header .accordion-button .folder-name {
+  font-size: 16px;
+  font-weight: 600;
+  margin-top: 2px;
+}
+
+.add-forms-modal-body .accordion .accordion-item .accordion-header .accordion-button::after {
+  display: none;
+}
+
+.add-forms-modal-body .accordion .accordion-item .accordion-body {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: 10px;
+}
+
+.add-forms-modal-body .accordion .accordion-item .accordion-body .form-checkbox .custom-checkbox {
+  margin-bottom: 0;
+  font-size: 16px;
+  font-weight: 400;
+}
+
+.upload-forms-modal .upload-forms-modal-body {
+  padding: 20px;
+}
+
+.upload-forms-modal .upload-forms-modal-body .dropzone {
+  padding: 24px;
+  border-radius: 15px;
+  border: 2px dashed #73c3fd;
+  background: #ffffff;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+}
+
+.upload-forms-modal .upload-forms-modal-body .dropzone img.icon {
+  margin-bottom: 10px;
+}
+
+.upload-forms-modal .upload-forms-modal-body .dropzone .label {
+  font-size: 16px;
+  font-weight: 800;
+  width: 200px;
+  text-align: center;
+}
+
+.upload-forms-modal .upload-forms-modal-body .dropzone .divider {
+  margin: 10px 0;
+  width: 150px;
+  height: 1px;
+  background: #171d34;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.upload-forms-modal .upload-forms-modal-body .dropzone .divider span {
+  padding: 0 10px;
+  font-size: 18px;
+  font-weight: 400;
+  color: #171d34;
+  background: #ffffff;
+}
+
+.upload-forms-modal .upload-forms-modal-body .dropzone button.btnDefault {
+  margin-top: 16px;
+}
+
+.upload-forms-modal .modal-footer {
+  padding: 20px 30px;
+}
+
+.create-new-form-page.panel .pHead {
+  min-height: auto;
+}
+
+.create-new-form-page.panel .pBody {
+  padding-right: 10px !important;
+}
+
+.create-new-form-page .box-container,
+.create-new-form-page .single-matter .summary-container,
+.single-matter .create-new-form-page .summary-container,
+.create-new-form-page .single-matter .document-container,
+.single-matter .create-new-form-page .document-container,
+.create-new-form-page .new-form-container {
+  border-radius: 25px;
+  border: 2px solid rbga(#73c3fd, 1);
+  background: #ffffff;
+  padding: 30px;
+  box-shadow: 0px 8px 40px 0px rgba(23, 29, 52, 0.05);
+}
+
+.create-new-form-page .box-container .head,
+.create-new-form-page .single-matter .summary-container .head,
+.single-matter .create-new-form-page .summary-container .head,
+.create-new-form-page .single-matter .document-container .head,
+.single-matter .create-new-form-page .document-container .head,
+.create-new-form-page .new-form-container .head {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  font-size: 24px;
+  font-weight: 700;
+}
+
+.create-new-form-page .box-container .body,
+.create-new-form-page .single-matter .summary-container .body,
+.single-matter .create-new-form-page .summary-container .body,
+.create-new-form-page .single-matter .document-container .body,
+.single-matter .create-new-form-page .document-container .body,
+.create-new-form-page .new-form-container .body {
+  margin-top: 30px;
+  overflow-y: none;
+  overflow-x: none;
+  height: auto;
+}
+
+/* @media screen and (min-width: 1440px) {
+
+  .create-new-form-page .box-container .body,
+  .create-new-form-page .single-matter .summary-container .body,
+  .single-matter .create-new-form-page .summary-container .body,
+  .create-new-form-page .single-matter .document-container .body,
+  .single-matter .create-new-form-page .document-container .body,
+  .create-new-form-page .new-form-container .body {
+    overflow-y: auto;
+    overflow-x: hidden;
+    height: calc(100vh - 360px);
+  }
+} */
+
+.create-new-form-page .new-form-container .body {
+  padding: 12px;
+}
+
+.create-new-form-page .new-form-container .body .content-container {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 30px;
+  gap: 40px;
+}
+
+.create-new-form-page .new-form-container .body .content-container .content p {
+  font-size: 16px;
+  font-weight: 700;
+  margin-bottom: 12px;
+}
+
+.create-new-form-page .new-form-container .body .content-container .content .folder {
+  display: flex;
+  align-items: center;
+  background: none;
+  padding: 4px 0;
+  cursor: pointer;
+}
+
+.create-new-form-page .new-form-container .body .content-container .content .folder .folder-icon {
+  width: 24px;
+  height: 24px;
+  margin-right: 8px;
+}
+
+.create-new-form-page .new-form-container .body .content-container .content .folder .folder-name {
+  font-size: 16px;
+  font-weight: 600;
+  margin-top: 2px;
+}
+
+.create-new-form-page .new-form-container .body .content-container .content .folder::after {
+  display: none;
+}
+
+.create-new-form-page .new-form-container .body .content-container .content .output-forms {
+  max-width: 560px;
+  min-height: 127px;
+  max-height: auto;
+  border: 2px solid rgba(115, 195, 253, 0.8);
+  border-radius: 8px;
+  margin-top: 12px;
+  padding: 10px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.create-new-form-page .new-form-container .body .content-container .content .output-forms .form {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 6px 12px;
+  background-color: #73c3fd;
+  border-radius: 50px;
+  width: fit-content;
+  height: 100%;
+  gap: 8px;
+}
+
+.create-new-form-page .new-form-container .body .content-container .content .output-forms .form .name {
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 19px;
+}
+
+.create-new-form-page .new-form-container .body .content-container .content .output-forms .form .icon {
+  width: 24px;
+  height: 24px;
+}
+
+.create-new-form-page .new-form-container .body .content-container .content .input-row {
+  padding-top: 30px;
+}
+
+.create-new-form-page .new-form-container .body .content-container .content .input-row .label {
+  font-size: 16px;
+  font-weight: 700;
+  margin-bottom: 12px;
+}
+
+.create-new-form-page .new-form-container .body .content-container .content .input-row .inputs {
+  display: grid;
+  grid-template-columns: 1fr;
+  grid-gap: 10px 10px;
+  justify-content: space-between;
+  align-items: end;
+}
+
+/* @media screen and (min-width: 1400px) {
+  .create-new-form-page .new-form-container .body .content-container .content .input-row .inputs {
+    grid-template-columns: 1fr 1fr;
+  }
+} */
+
+.create-new-form-page .new-form-container .body .content-container .content .input-row .inputs .input-item .form-label {
+  font-weight: 600;
+}
+
+.create-new-form-page .new-form-container .body .content-container .img {
+  width: 500px;
+  height: 500px;
+}
+
+.create-new-form-page .new-form-container .body .action button {
+  float: right;
+}
+
+.fill-information-page.panel .pHead {
+  min-height: auto;
+}
+
+.fill-information-page.panel .pBody {
+  padding-right: 10px !important;
+}
+
+.fill-information-page .accordion .accordion-header button {
+  background-color: rgba(115, 195, 253, 0.3);
+  padding: 12px 30px;
+}
+
+.fill-information-page .accordion .accordion-collapse {
+  border: 2px solid rgba(115, 195, 253, 0.6) !important;
+  margin-top: -2px;
+}
+
+.fill-information-page .accordion .accordion-collapse .accordion-body {
+  background-color: #ffffff;
+  padding: 30px;
+}
+
+.fill-information-page .accordion .accordion-collapse .accordion-body .form-group {
+  margin-bottom: unset;
+}
+
+.fill-information-page .accordion .accordion-collapse .accordion-body .form-label-custom {
+  font-size: 16px;
+  font-weight: 800;
+}
+
+.fill-information-page .accordion .accordion-collapse .accordion-body .sub-heading {
+  font-size: 20px;
+  font-weight: 700;
+  padding: 20px 0;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.fill-information-page .accordion .accordion-collapse .accordion-body .inputs-row {
+  display: grid;
+  grid-template-columns: 1fr;
+  grid-gap: 10px 10px;
+  justify-content: space-between;
+  align-items: end;
+}
+
+.fill-information-page .accordion .accordion-collapse .accordion-body .inputs-row.repeater-row {
+  padding-bottom: 20px;
+}
+
+.fill-information-page .accordion .accordion-collapse .accordion-body .inputs-row.repeater-row:last-child {
+  padding-bottom: 0;
+}
+
+@media screen and (min-width: 1400px) {
+  .fill-information-page .accordion .accordion-collapse .accordion-body .inputs-row {
+    grid-template-columns: 11fr 1fr;
+  }
+}
+
+.fill-information-page .accordion .accordion-collapse .accordion-body .inputs-row.labeled {
+  grid-template-columns: 1fr 1fr;
+  grid-gap: 10px 50px;
+  align-items: center;
+}
+
+@media screen and (max-width: 1400px) {
+  .fill-information-page .accordion .accordion-collapse .accordion-body .inputs-row.labeled {
+    grid-template-columns: 1fr;
+  }
+}
+
+.fill-information-page .accordion .accordion-collapse .accordion-body .inputs-row.no-action {
+  grid-template-columns: 1fr;
+}
+
+.fill-information-page .accordion .accordion-collapse .accordion-body .inputs-row .inputs {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  grid-gap: 10px 50px;
+  align-items: center;
+}
+
+.fill-information-page .accordion .accordion-collapse .accordion-body .inputs-row .inputs.inputs-4 {
+  grid-template-columns: 1fr 1fr 1fr 1fr;
+}
+
+.fill-information-page .accordion .accordion-collapse .accordion-body .inputs-row .inputs.inputs-2-3 {
+  grid-template-columns: 2fr 3fr;
+  grid-gap: unset;
+}
+
+@media screen and (max-width: 1200px) {
+  .fill-information-page .accordion .accordion-collapse .accordion-body .inputs-row .inputs {
+    grid-template-columns: 1fr;
+  }
+
+  .fill-information-page .accordion .accordion-collapse .accordion-body .inputs-row .inputs.inputs-4 {
+    grid-template-columns: 1fr;
+  }
+
+  .fill-information-page .accordion .accordion-collapse .accordion-body .inputs-row .inputs.inputs-2-3 {
+    grid-template-columns: 1fr;
+  }
+}
+
+.fill-information-page .accordion .accordion-collapse .accordion-body .inputs-row .action {
+  display: flex;
+  flex-direction: row;
+  margin: 0;
+  padding: 0;
+  justify-content: flex-start;
+  margin-left: 20px;
+  align-items: flex-end;
+  text-wrap: nowrap;
+}
+
+.fill-information-page .accordion .accordion-collapse .accordion-body .inputs-group .header {
+  height: 65px;
+  background-color: rgba(115, 195, 253, 0.2);
+  box-shadow: 0px 14px 34px rgba(23, 29, 52, 0.04);
+  border-radius: 8px 8px 0px 0px;
+  border-bottom: 1px solid rgba(48, 127, 244, 0.4);
+  padding: 0 30px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.fill-information-page .accordion .accordion-collapse .accordion-body .inputs-group .header .title,
+.fill-information-page .accordion .accordion-collapse .accordion-body .inputs-group .header .calculated_amount {
+  font-size: 20px;
+  font-weight: 700;
+}
+
+.fill-information-page .accordion .accordion-collapse .accordion-body .inputs-group .header div {
+  display: flex;
+  justify-content: flex-start;
+  align-items: center;
+  gap: 60px;
+}
+
+.fill-information-page .accordion .accordion-collapse .accordion-body .inputs-group .body {
+  padding: 30px;
+  border-radius: 0px 0px 8px 8px;
+  border-bottom: 1px solid rgba(48, 127, 244, 0.2);
+  box-shadow: 0px 14px 34px rgba(36, 60, 96, 0.04);
+}
+
+.fill-information-page .accordion .accordion-collapse .accordion-body .inputs-group .body .spanned-rows {
+  display: grid;
+  grid-template-columns: 3fr 1fr;
+  grid-gap: 10px 50px;
+  align-items: start;
+  margin-bottom: 50px;
+}
+
+@media screen and (max-width: 1200px) {
+  .fill-information-page .accordion .accordion-collapse .accordion-body .inputs-group .body .spanned-rows {
+    grid-template-columns: 1fr;
+    grid-gap: 30px 0px;
+  }
+}
+
+.fill-information-page .accordion .accordion-collapse .accordion-body .btn.btn-link {
+  justify-content: end;
+  padding: 0 !important;
+  margin: 0;
+  color: #307ff4;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.fill-information-page .accordion .accordion-item {
+  background-color: unset;
+}
+
+.fill-information-page .accordion .accordion-item button {
+  font-size: 20px;
+  line-height: 27px;
+  font-weight: 700;
+}
+
+.fill-information-page .accordion .accordion-item button:after {
+  width: 24px;
+  height: 24px;
+}
+
+.fill-information-page .accordion .accordion-item:last-child button:after {
+  transform: unset;
+}
+
+.fill-information-page .accordion .accordion-item:last-child button:not(.collapsed):after {
+  transform: rotate(-180deg);
+}
+
+.fill-information-page .page-sidebar {
+  display: flex;
+  flex-direction: column;
+  height: calc(100vh - 200px);
+}
+
+.fill-information-page .page-sidebar .head {
+  background-color: rgba(115, 195, 253, 0.3);
+  border-radius: 8px 8px 0px 0px;
+  padding: 12px 30px;
+  font-size: 20px;
+  line-height: 27px;
+  font-weight: 700;
+}
+
+.fill-information-page .page-sidebar .body {
+  border: 1px solid rgba(115, 195, 253, 0.6);
+    display: flex;
+    flex-direction: column;
+    height: calc(100vh - 200px);
+    overflow-y: scroll;
+    overflow: hidden;
+    overflow-y: scroll;
+}
+
+.fill-information-page .page-sidebar .body .content {
+  padding: 30px;
+  flex-grow: 1;
+}
+
+.fill-information-page .page-sidebar .body .actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 30px;
+}
+
+@media screen and (min-width: 1280px) {
+  .newFormModal {
+    max-width: 900px !important;
+  }
+}
+
+.add-forms-modal-body .content {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+@media screen and (min-width: 1280px) {
+  .add-forms-modal-body .content {
+    gap: 40px;
+    flex-direction: row;
+  }
+}
+
+.add-forms-modal-body .content .left .search {
+  position: relative;
+}
+
+.add-forms-modal-body .content .left .search input {
+  border: 1px solid rgba(115, 195, 253, 0.5);
+  display: flex;
+  font-size: 16px;
+  -webkit-border-radius: 50px;
+  -moz-border-radius: 50px;
+  border-radius: 50px;
+  width: 100%;
+  height: 35px;
+  font-weight: 400;
+  padding: 0 20px;
+}
+
+.add-forms-modal-body .content .left .search .icon {
+  width: 24px;
+  height: 24px;
+  margin-right: 10px;
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  right: 10px;
+}
+
+.add-forms-modal-body .content .left .navbar {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-top: 16px;
+  border: 1px solid #73c3fd;
+  border-radius: 8px;
+  padding: 0;
+}
+
+.add-forms-modal-body .content .left .navbar .folder {
+  display: flex;
+  align-items: center;
+  background: none;
+  padding: 12px;
+  cursor: pointer;
+  border-bottom: 1px solid #73c3fd;
+  width: 100%;
+}
+
+.add-forms-modal-body .content .left .navbar .folder:last-child {
+  border-bottom: none;
+}
+
+.add-forms-modal-body .content .left .navbar .folder.active {
+  background: rgba(115, 195, 253, 0.2);
+}
+
+.add-forms-modal-body .content .left .navbar .folder .folder-icon {
+  width: 24px;
+  height: 24px;
+  margin-right: 8px;
+}
+
+.add-forms-modal-body .content .left .navbar .folder .folder-name {
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.add-forms-modal-body .content .left .navbar .folder::after {
+  display: none;
+}
+
+.add-forms-modal-body .content .right {
+  margin-top: 10px;
+}
+
+@media screen and (min-width: 1280px) {
+  .add-forms-modal-body .content .right {
+    margin-top: 50px;
+  }
+}
+
+.matterModal {
+  max-width: 1200px !important;
+}
+
+.matterType .dropdown>.dropdownBtn {
+  width: 100%;
+  -webkit-border-radius: 8px;
+  -moz-border-radius: 8px;
+  border-radius: 8px;
+  border-color: #73c3fd;
+  background-color: #fff;
+  font-size: 14px;
+  height: 45px;
+}
+
+.matterType .dropdown>.dropdownList {
+  z-index: 99;
+  max-height: 250px;
+  overflow: scroll;
+}
+
+.pdf-form {
+  padding-right: 10px;
+  font-size: 13px;
+    /* margin: 0 auto; */
+    /* background: #fff;
+    width: 8.5in; */
+}
+
+.pdf-form .form-control,
+.pdf-form .form-group .form-control,
+.pdf-form .data-group textarea {
+  border: 1px solid rgba(23, 29, 52, 0.6);
+  border-radius: 0;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.9rem;
+  line-height: 1.5;
+  background-color: #ffffff;
+  background-clip: padding-box;
+  transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+}
+
+.pdf-form .form-control:focus,
+.pdf-form .data-group textarea:focus {
+  color: #171d34;
+  background-color: #ffffff;
+  border-color: #171d34;
+  outline: 0;
+  box-shadow: 0 0 0 0.2rem rgba(48, 127, 244, 0.25);
+}
+
+.pdf-form .data-group label {
+  border: 1px solid rgba(23, 29, 52, 0.6);
+  border-radius: 0;
+  padding: 0.5rem 0.75rem;
+  /* font-size: 1rem; */
+  line-height: 1;
+  color: #171d34;
+  background-color: #ffffff;
+  font-style: italic;
+  margin-bottom: 0;
+}
+
+.pdf-form .data-group textarea {
+  resize: none;
+  display: block;
+  width: 100%;
+  border-top: unset;
+}
+
+.pdf-form .small-input {
+  padding-right: 0;
+  padding-left: 0;
+}
+
+.pdf-form .data-group.inputs {
+  border: 1px solid rgba(23, 29, 52, 0.6);
+}
+
+.pdf-form .data-group.inputs .data-input {
+  border-bottom: 1px solid rgba(23, 29, 52, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 5px;
+}
+
+.pdf-form .data-group.inputs .data-input:last-child {
+  border-bottom: unset;
+}
+
+.pdf-form .data-group.inputs .data-input .label {
+  text-wrap: nowrap;
+  padding-left: 4px;
+}
+
+.pdf-form .data-group.inputs .data-input input {
+  width: 100%;
+  border: unset;
+  padding: unset;
+}
+
+.pdf-form .data-group-radio {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.pdf-form .data-group-radio .data-input label {
+  cursor: pointer;
+  border: 1px solid rgba(23, 29, 52, 0.6);
+  border-radius: 0;
+  padding: 0.5rem 0.75rem;
+  font-size: 1rem;
+  line-height: 1;
+  color: #171d34;
+  background-color: #ffffff;
+  font-style: italic;
+}
+
+.pdf-form .data-group-radio .data-input input {
+  display: none;
+}
+
+.pdf-form .data-group-radio .data-input input:checked+label {
+  background-color: #307ff4;
+  color: white;
+}
+
+.pdf-form .data-input {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+.pdf-form .data-input .label {
+  text-wrap: nowrap;
+}
+
+/* .pdf-form .data-input input {
+  width: 100%;
+  border-top: unset;
+  border-left: unset;
+  border-right: unset;
+  padding: 0px 10px;
+} */
+
+.pdf-form table {
+  margin-bottom: 15px;
+  border: 1px solid rgba(23, 29, 52, 0.6);
+}
+
+.pdf-form table .number {
+  font-weight: bold;
+  padding: 0 8px;
+}
+
+.pdf-form table thead .name {
+  text-align: center;
+  font-weight: bold;
+}
+
+.pdf-form table thead .info {
+  font-style: italic;
+  font-weight: normal;
+}
+
+.pdf-form table tbody tr th,
+.pdf-form table tbody tr td {
+  border: 1px solid rgba(23, 29, 52, 0.6);
+}
+
+.pdf-form table tbody tr th:not(:first-child),
+.pdf-form table tbody tr td:not(:first-child) {
+  width: 200px;
+}
+
+.pdf-form table tbody tr td:not(:first-child) .form-control,
+.pdf-form table tbody tr td:not(:first-child) .data-group textarea,
+.pdf-form .data-group table tbody tr td:not(:first-child) textarea {
+  text-align: end;
+}
+
+.pdf-form table tbody tr td .form-control,
+.pdf-form table tbody tr td .form-group .form-control,
+.pdf-form .form-group table tbody tr td .form-control,
+.pdf-form table tbody tr td .data-group textarea,
+.pdf-form .data-group table tbody tr td textarea {
+  width: 100%;
+  border: unset;
+  padding: unset;
+}
+
+.pdf-form table.form-13a thead tr th {
+  border: 1px solid rgba(23, 29, 52, 0.6);
+  text-align: center;
+}
+
+.pdf-form table.form-13a tbody tr th.sub-table-heading {
+  font-size: 1.2rem;
+  font-weight: 800;
+  background-color: #343a40;
+  color: #ffffff;
+}
+
+.pdf-form table.form-13a tbody tr th.sub-table-heading-2 {
+  font-size: 1.2rem;
+  font-weight: 800;
+}
+
+.pdf-form table.form-13a tbody tr th.sub-table-heading-3 {
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+.pdf-form table.form-13a tbody tr td {
+  border: 1px solid rgba(23, 29, 52, 0.6);
+}
+
+.pdf-form table.form-13a tbody tr td:nth-child(1) {
+  width: 40px;
+}
+
+.pdf-form table.form-13a tbody tr td:nth-child(3),
+.pdf-form table.form-13a tbody tr td:nth-child(4) {
+  width: 40px;
+}
+
+.pdf-form table.form-13a tbody tr td .form-control,
+.pdf-form table.form-13a tbody tr td .data-group textarea,
+.pdf-form .data-group table.form-13a tbody tr td textarea {
+  width: 100%;
+  text-align: left;
+  border: unset;
+  padding: unset;
+}
+
+.pdf-form table.form-131-income tbody tr th,
+.pdf-form table.form-131-income tbody tr td {
+  border: 1px solid rgba(23, 29, 52, 0.6);
+}
+
+.pdf-form table.form-131-income tbody tr th:nth-child(2),
+.pdf-form table.form-131-income tbody tr td:nth-child(2) {
+  width: 300px;
+}
+
+.pdf-form table.form-131-income tbody tr td:nth-child(2) .form-control,
+.pdf-form table.form-131-income tbody tr td:nth-child(2) .data-group textarea,
+.pdf-form .data-group table.form-131-income tbody tr td:nth-child(2) textarea {
+  text-align: end;
+}
+
+.pdf-form table.form-131-income tbody tr td .form-control,
+.pdf-form table.form-131-income tbody tr td .data-group textarea,
+.pdf-form .data-group table.form-131-income tbody tr td textarea {
+  width: 100%;
+  border: unset;
+  padding: unset;
+}
+
+.pdf-form table.form-131-income-inner tbody tr th,
+.pdf-form table.form-131-income-inner tbody tr td {
+  border: 1px solid rgba(23, 29, 52, 0.6);
+}
+
+.pdf-form table.form-131-income-inner tbody tr th:not(:nth-child(2)),
+.pdf-form table.form-131-income-inner tbody tr td:not(:nth-child(2)) {
+  width: 50px;
+}
+
+.pdf-form table.form-131-income-inner tbody tr td:nth-child(3) .form-control,
+.pdf-form table.form-131-income-inner tbody tr td:nth-child(3) .data-group textarea,
+.pdf-form .data-group table.form-131-income-inner tbody tr td:nth-child(3) textarea {
+  text-align: end;
+}
+
+.pdf-form table.form-131-income-inner tbody tr td .form-control,
+.pdf-form table.form-131-income-inner tbody tr td .data-group textarea,
+.pdf-form .data-group table.form-131-income-inner tbody tr td textarea {
+  text-align: left;
+  width: 100%;
+  border: unset;
+  padding: unset;
+}
+
+.pdf-form table.form-131-expenses {
+  width: 100%;
+}
+
+.pdf-form table.form-131-expenses tbody tr th,
+.pdf-form table.form-131-expenses tbody tr td {
+  border: 1px solid rgba(23, 29, 52, 0.6);
+}
+
+.pdf-form table.form-131-expenses tbody tr th:nth-child(2),
+.pdf-form table.form-131-expenses tbody tr td:nth-child(2) {
+  width: 200px;
+}
+
+.pdf-form table.form-131-expenses tbody tr td:nth-child(2) .form-control,
+.pdf-form table.form-131-expenses tbody tr td:nth-child(2) .data-group textarea,
+.pdf-form .data-group table.form-131-expenses tbody tr td:nth-child(2) textarea {
+  text-align: end;
+}
+
+.pdf-form table.form-131-expenses tbody tr td .form-control,
+.pdf-form table.form-131-expenses tbody tr td .data-group textarea,
+.pdf-form .data-group table.form-131-expenses tbody tr td textarea {
+  text-align: left;
+  width: 100%;
+  border: unset;
+  padding: unset;
+}
+
+.pdf-form table.form-131-4a {
+  width: 100%;
+}
+
+.pdf-form table.form-131-4a thead {
+  text-align: center;
+}
+
+.pdf-form table.form-131-4a tbody tr th,
+.pdf-form table.form-131-4a tbody tr td,
+.pdf-form table.form-131-4a thead tr th,
+.pdf-form table.form-131-4a thead tr td {
+  border: 1px solid rgba(23, 29, 52, 0.6);
+}
+
+.pdf-form table.form-131-4a tbody tr td:nth-child(1),
+.pdf-form table.form-131-4a thead tr td:nth-child(1) {
+  width: 20%;
+}
+
+.pdf-form table.form-131-4a tbody tr td:nth-child(3),
+.pdf-form table.form-131-4a tbody tr td:nth-child(4),
+.pdf-form table.form-131-4a tbody tr td:nth-child(5),
+.pdf-form table.form-131-4a thead tr td:nth-child(3),
+.pdf-form table.form-131-4a thead tr td:nth-child(4),
+.pdf-form table.form-131-4a thead tr td:nth-child(5) {
+  width: 15%;
+}
+
+.pdf-form table.form-131-4a tbody tr td:nth-child(3) .form-control,
+.pdf-form table.form-131-4a tbody tr td:nth-child(3) .data-group textarea,
+.pdf-form .data-group table.form-131-4a tbody tr td:nth-child(3) textarea,
+.pdf-form table.form-131-4a tbody tr td:nth-child(4) .form-control,
+.pdf-form table.form-131-4a tbody tr td:nth-child(4) .data-group textarea,
+.pdf-form .data-group table.form-131-4a tbody tr td:nth-child(4) textarea,
+.pdf-form table.form-131-4a tbody tr td:nth-child(5) .form-control,
+.pdf-form table.form-131-4a tbody tr td:nth-child(5) .data-group textarea,
+.pdf-form .data-group table.form-131-4a tbody tr td:nth-child(5) textarea,
+.pdf-form table.form-131-4a thead tr td:nth-child(3) .form-control,
+.pdf-form table.form-131-4a thead tr td:nth-child(3) .data-group textarea,
+.pdf-form .data-group table.form-131-4a thead tr td:nth-child(3) textarea,
+.pdf-form table.form-131-4a thead tr td:nth-child(4) .form-control,
+.pdf-form table.form-131-4a thead tr td:nth-child(4) .data-group textarea,
+.pdf-form .data-group table.form-131-4a thead tr td:nth-child(4) textarea,
+.pdf-form table.form-131-4a thead tr td:nth-child(5) .form-control,
+.pdf-form table.form-131-4a thead tr td:nth-child(5) .data-group textarea,
+.pdf-form .data-group table.form-131-4a thead tr td:nth-child(5) textarea {
+  text-align: end;
+}
+
+.pdf-form table.form-131-4a tbody tr td .form-control,
+.pdf-form table.form-131-4a tbody tr td .data-group textarea,
+.pdf-form .data-group table.form-131-4a tbody tr td textarea,
+.pdf-form table.form-131-4a thead tr td .form-control,
+.pdf-form table.form-131-4a thead tr td .data-group textarea,
+.pdf-form .data-group table.form-131-4a thead tr td textarea {
+  text-align: left;
+  width: 100%;
+  border: unset;
+  padding: unset;
+}
+
+.pdf-form table.form-131-4a tbody tr.inputs td textarea,
+.pdf-form table.form-131-4a thead tr.inputs td textarea {
+  /* height: 200px !important; */
+  resize: none;
+}
+
+.pdf-form table.form-131-4b {
+  width: 100%;
+}
+
+.pdf-form table.form-131-4b thead {
+  text-align: center;
+}
+
+.pdf-form table.form-131-4b tbody tr th,
+.pdf-form table.form-131-4b tbody tr td,
+.pdf-form table.form-131-4b thead tr th,
+.pdf-form table.form-131-4b thead tr td {
+  border: 1px solid rgba(23, 29, 52, 0.6);
+}
+
+.pdf-form table.form-131-4b tbody tr td:nth-child(1),
+.pdf-form table.form-131-4b tbody tr td:nth-child(3),
+.pdf-form table.form-131-4b thead tr td:nth-child(1),
+.pdf-form table.form-131-4b thead tr td:nth-child(3) {
+  width: 16%;
+}
+
+.pdf-form table.form-131-4b tbody tr td:nth-child(4),
+.pdf-form table.form-131-4b tbody tr td:nth-child(5),
+.pdf-form table.form-131-4b tbody tr td:nth-child(6),
+.pdf-form table.form-131-4b thead tr td:nth-child(4),
+.pdf-form table.form-131-4b thead tr td:nth-child(5),
+.pdf-form table.form-131-4b thead tr td:nth-child(6) {
+  width: 12%;
+}
+
+.pdf-form table.form-131-4b tbody tr td:nth-child(4) .form-control,
+.pdf-form table.form-131-4b tbody tr td:nth-child(4) .data-group textarea,
+.pdf-form .data-group table.form-131-4b tbody tr td:nth-child(4) textarea,
+.pdf-form table.form-131-4b tbody tr td:nth-child(5) .form-control,
+.pdf-form table.form-131-4b tbody tr td:nth-child(5) .data-group textarea,
+.pdf-form .data-group table.form-131-4b tbody tr td:nth-child(5) textarea,
+.pdf-form table.form-131-4b tbody tr td:nth-child(6) .form-control,
+.pdf-form table.form-131-4b tbody tr td:nth-child(6) .data-group textarea,
+.pdf-form .data-group table.form-131-4b tbody tr td:nth-child(6) textarea,
+.pdf-form table.form-131-4b thead tr td:nth-child(4) .form-control,
+.pdf-form table.form-131-4b thead tr td:nth-child(4) .data-group textarea,
+.pdf-form .data-group table.form-131-4b thead tr td:nth-child(4) textarea,
+.pdf-form table.form-131-4b thead tr td:nth-child(5) .form-control,
+.pdf-form table.form-131-4b thead tr td:nth-child(5) .data-group textarea,
+.pdf-form .data-group table.form-131-4b thead tr td:nth-child(5) textarea,
+.pdf-form table.form-131-4b thead tr td:nth-child(6) .form-control,
+.pdf-form table.form-131-4b thead tr td:nth-child(6) .data-group textarea,
+.pdf-form .data-group table.form-131-4b thead tr td:nth-child(6) textarea {
+  text-align: end;
+}
+
+.pdf-form table.form-131-4b tbody tr td .form-control,
+.pdf-form table.form-131-4b tbody tr td .data-group textarea,
+.pdf-form .data-group table.form-131-4b tbody tr td textarea,
+.pdf-form table.form-131-4b thead tr td .form-control,
+.pdf-form table.form-131-4b thead tr td .data-group textarea,
+.pdf-form .data-group table.form-131-4b thead tr td textarea {
+  text-align: left;
+  width: 100%;
+  border: unset;
+  padding: unset;
+  height: 80px !important;
+  resize: none;
+}
+
+.pdf-form table.form-131-4c {
+  width: 100%;
+}
+
+.pdf-form table.form-131-4c thead {
+  text-align: center;
+}
+
+.pdf-form table.form-131-4c tbody tr th,
+.pdf-form table.form-131-4c tbody tr td,
+.pdf-form table.form-131-4c thead tr th,
+.pdf-form table.form-131-4c thead tr td {
+  border: 1px solid rgba(23, 29, 52, 0.6);
+}
+
+.pdf-form table.form-131-4c tbody tr td:nth-child(1),
+.pdf-form table.form-131-4c tbody tr td:nth-child(3),
+.pdf-form table.form-131-4c tbody tr td:nth-child(4),
+.pdf-form table.form-131-4c tbody tr td:nth-child(5),
+.pdf-form table.form-131-4c tbody tr td:nth-child(6),
+.pdf-form table.form-131-4c thead tr td:nth-child(1),
+.pdf-form table.form-131-4c thead tr td:nth-child(3),
+.pdf-form table.form-131-4c thead tr td:nth-child(4),
+.pdf-form table.form-131-4c thead tr td:nth-child(5),
+.pdf-form table.form-131-4c thead tr td:nth-child(6) {
+  width: 12%;
+}
+
+.pdf-form table.form-131-4c tbody tr td:nth-child(4) .form-control,
+.pdf-form table.form-131-4c tbody tr td:nth-child(4) .data-group textarea,
+.pdf-form .data-group table.form-131-4c tbody tr td:nth-child(4) textarea,
+.pdf-form table.form-131-4c tbody tr td:nth-child(5) .form-control,
+.pdf-form table.form-131-4c tbody tr td:nth-child(5) .data-group textarea,
+.pdf-form .data-group table.form-131-4c tbody tr td:nth-child(5) textarea,
+.pdf-form table.form-131-4c tbody tr td:nth-child(6) .form-control,
+.pdf-form table.form-131-4c tbody tr td:nth-child(6) .data-group textarea,
+.pdf-form .data-group table.form-131-4c tbody tr td:nth-child(6) textarea,
+.pdf-form table.form-131-4c thead tr td:nth-child(4) .form-control,
+.pdf-form table.form-131-4c thead tr td:nth-child(4) .data-group textarea,
+.pdf-form .data-group table.form-131-4c thead tr td:nth-child(4) textarea,
+.pdf-form table.form-131-4c thead tr td:nth-child(5) .form-control,
+.pdf-form table.form-131-4c thead tr td:nth-child(5) .data-group textarea,
+.pdf-form .data-group table.form-131-4c thead tr td:nth-child(5) textarea,
+.pdf-form table.form-131-4c thead tr td:nth-child(6) .form-control,
+.pdf-form table.form-131-4c thead tr td:nth-child(6) .data-group textarea,
+.pdf-form .data-group table.form-131-4c thead tr td:nth-child(6) textarea {
+  text-align: end;
+}
+
+.pdf-form table.form-131-4c tbody tr td .form-control,
+.pdf-form table.form-131-4c tbody tr td .data-group textarea,
+.pdf-form .data-group table.form-131-4c tbody tr td textarea,
+.pdf-form table.form-131-4c thead tr td .form-control,
+.pdf-form table.form-131-4c thead tr td .data-group textarea,
+.pdf-form .data-group table.form-131-4c thead tr td textarea {
+  text-align: left;
+  width: 100%;
+  border: unset;
+  padding: unset;
+}
+
+.pdf-form table.form-131-4c tbody tr.inputs td textarea,
+.pdf-form table.form-131-4c thead tr.inputs td textarea {
+  /* height: 200px !important; */
+  resize: none;
+}
+
+.pdf-form table.form-131-4d {
+  width: 100%;
+}
+
+.pdf-form table.form-131-4d thead {
+  text-align: center;
+}
+
+.pdf-form table.form-131-4d tbody tr th,
+.pdf-form table.form-131-4d tbody tr td,
+.pdf-form table.form-131-4d thead tr th,
+.pdf-form table.form-131-4d thead tr td {
+  border: 1px solid rgba(23, 29, 52, 0.6);
+}
+
+.pdf-form table.form-131-4d tbody tr td:nth-child(2),
+.pdf-form table.form-131-4d tbody tr td:nth-child(3),
+.pdf-form table.form-131-4d tbody tr td:nth-child(4),
+.pdf-form table.form-131-4d tbody tr td:nth-child(5),
+.pdf-form table.form-131-4d tbody tr td:nth-child(6),
+.pdf-form table.form-131-4d tbody tr td:nth-child(7),
+.pdf-form table.form-131-4d thead tr td:nth-child(2),
+.pdf-form table.form-131-4d thead tr td:nth-child(3),
+.pdf-form table.form-131-4d thead tr td:nth-child(4),
+.pdf-form table.form-131-4d thead tr td:nth-child(5),
+.pdf-form table.form-131-4d thead tr td:nth-child(6),
+.pdf-form table.form-131-4d thead tr td:nth-child(7) {
+  width: 12%;
+}
+
+.pdf-form table.form-131-4d tbody tr td:nth-child(5) .form-control,
+.pdf-form table.form-131-4d tbody tr td:nth-child(5) .data-group textarea,
+.pdf-form .data-group table.form-131-4d tbody tr td:nth-child(5) textarea,
+.pdf-form table.form-131-4d tbody tr td:nth-child(6) .form-control,
+.pdf-form table.form-131-4d tbody tr td:nth-child(6) .data-group textarea,
+.pdf-form .data-group table.form-131-4d tbody tr td:nth-child(6) textarea,
+.pdf-form table.form-131-4d tbody tr td:nth-child(7) .form-control,
+.pdf-form table.form-131-4d tbody tr td:nth-child(7) .data-group textarea,
+.pdf-form .data-group table.form-131-4d tbody tr td:nth-child(7) textarea,
+.pdf-form table.form-131-4d thead tr td:nth-child(5) .form-control,
+.pdf-form table.form-131-4d thead tr td:nth-child(5) .data-group textarea,
+.pdf-form .data-group table.form-131-4d thead tr td:nth-child(5) textarea,
+.pdf-form table.form-131-4d thead tr td:nth-child(6) .form-control,
+.pdf-form table.form-131-4d thead tr td:nth-child(6) .data-group textarea,
+.pdf-form .data-group table.form-131-4d thead tr td:nth-child(6) textarea,
+.pdf-form table.form-131-4d thead tr td:nth-child(7) .form-control,
+.pdf-form table.form-131-4d thead tr td:nth-child(7) .data-group textarea,
+.pdf-form .data-group table.form-131-4d thead tr td:nth-child(7) textarea {
+  text-align: end;
+}
+
+.pdf-form table.form-131-4d tbody tr td .form-control,
+.pdf-form table.form-131-4d tbody tr td .data-group textarea,
+.pdf-form .data-group table.form-131-4d tbody tr td textarea,
+.pdf-form table.form-131-4d thead tr td .form-control,
+.pdf-form table.form-131-4d thead tr td .data-group textarea,
+.pdf-form .data-group table.form-131-4d thead tr td textarea {
+  text-align: left;
+  width: 100%;
+  border: unset;
+  padding: unset;
+}
+
+.pdf-form table.form-131-4d tbody tr.inputs td textarea,
+.pdf-form table.form-131-4d thead tr.inputs td textarea {
+  /* height: 200px !important; */
+  resize: none;
+}
+
+.pdf-form table.form-131-4e {
+  width: 100%;
+}
+
+.pdf-form table.form-131-4e thead {
+  text-align: center;
+}
+
+.pdf-form table.form-131-4e tbody tr th,
+.pdf-form table.form-131-4e tbody tr td,
+.pdf-form table.form-131-4e thead tr th,
+.pdf-form table.form-131-4e thead tr td {
+  border: 1px solid rgba(23, 29, 52, 0.6);
+}
+
+.pdf-form table.form-131-4e tbody tr td:nth-child(1),
+.pdf-form table.form-131-4e thead tr td:nth-child(1) {
+  width: 20%;
+}
+
+.pdf-form table.form-131-4e tbody tr td:nth-child(3),
+.pdf-form table.form-131-4e tbody tr td:nth-child(4),
+.pdf-form table.form-131-4e tbody tr td:nth-child(5),
+.pdf-form table.form-131-4e thead tr td:nth-child(3),
+.pdf-form table.form-131-4e thead tr td:nth-child(4),
+.pdf-form table.form-131-4e thead tr td:nth-child(5) {
+  width: 12%;
+}
+
+.pdf-form table.form-131-4e tbody tr td:nth-child(3) .form-control,
+.pdf-form table.form-131-4e tbody tr td:nth-child(3) .data-group textarea,
+.pdf-form .data-group table.form-131-4e tbody tr td:nth-child(3) textarea,
+.pdf-form table.form-131-4e tbody tr td:nth-child(4) .form-control,
+.pdf-form table.form-131-4e tbody tr td:nth-child(4) .data-group textarea,
+.pdf-form .data-group table.form-131-4e tbody tr td:nth-child(4) textarea,
+.pdf-form table.form-131-4e tbody tr td:nth-child(5) .form-control,
+.pdf-form table.form-131-4e tbody tr td:nth-child(5) .data-group textarea,
+.pdf-form .data-group table.form-131-4e tbody tr td:nth-child(5) textarea,
+.pdf-form table.form-131-4e thead tr td:nth-child(3) .form-control,
+.pdf-form table.form-131-4e thead tr td:nth-child(3) .data-group textarea,
+.pdf-form .data-group table.form-131-4e thead tr td:nth-child(3) textarea,
+.pdf-form table.form-131-4e thead tr td:nth-child(4) .form-control,
+.pdf-form table.form-131-4e thead tr td:nth-child(4) .data-group textarea,
+.pdf-form .data-group table.form-131-4e thead tr td:nth-child(4) textarea,
+.pdf-form table.form-131-4e thead tr td:nth-child(5) .form-control,
+.pdf-form table.form-131-4e thead tr td:nth-child(5) .data-group textarea,
+.pdf-form .data-group table.form-131-4e thead tr td:nth-child(5) textarea {
+  text-align: end;
+}
+
+.pdf-form table.form-131-4e tbody tr td .form-control,
+.pdf-form table.form-131-4e tbody tr td .data-group textarea,
+.pdf-form .data-group table.form-131-4e tbody tr td textarea,
+.pdf-form table.form-131-4e thead tr td .form-control,
+.pdf-form table.form-131-4e thead tr td .data-group textarea,
+.pdf-form .data-group table.form-131-4e thead tr td textarea {
+  text-align: left;
+  width: 100%;
+  border: unset;
+  padding: unset;
+}
+
+.pdf-form table.form-131-4e tbody tr.inputs td textarea,
+.pdf-form table.form-131-4e thead tr.inputs td textarea {
+  /* height: 200px !important; */
+  resize: none;
+}
+
+.pdf-form table.form-131-4d {
+  width: 100%;
+}
+
+.pdf-form table.form-131-4d thead {
+  text-align: center;
+}
+
+.pdf-form table.form-131-4d tbody tr th,
+.pdf-form table.form-131-4d tbody tr td,
+.pdf-form table.form-131-4d thead tr th,
+.pdf-form table.form-131-4d thead tr td {
+  border: 1px solid rgba(23, 29, 52, 0.6);
+}
+
+.pdf-form table.form-131-4d tbody tr td:nth-child(2),
+.pdf-form table.form-131-4d tbody tr td:nth-child(3),
+.pdf-form table.form-131-4d tbody tr td:nth-child(4),
+.pdf-form table.form-131-4d thead tr td:nth-child(2),
+.pdf-form table.form-131-4d thead tr td:nth-child(3),
+.pdf-form table.form-131-4d thead tr td:nth-child(4) {
+  width: 15%;
+}
+
+.pdf-form table.form-131-4d tbody tr td:nth-child(2) .form-control,
+.pdf-form table.form-131-4d tbody tr td:nth-child(2) .data-group textarea,
+.pdf-form .data-group table.form-131-4d tbody tr td:nth-child(2) textarea,
+.pdf-form table.form-131-4d tbody tr td:nth-child(3) .form-control,
+.pdf-form table.form-131-4d tbody tr td:nth-child(3) .data-group textarea,
+.pdf-form .data-group table.form-131-4d tbody tr td:nth-child(3) textarea,
+.pdf-form table.form-131-4d tbody tr td:nth-child(4) .form-control,
+.pdf-form table.form-131-4d tbody tr td:nth-child(4) .data-group textarea,
+.pdf-form .data-group table.form-131-4d tbody tr td:nth-child(4) textarea,
+.pdf-form table.form-131-4d thead tr td:nth-child(2) .form-control,
+.pdf-form table.form-131-4d thead tr td:nth-child(2) .data-group textarea,
+.pdf-form .data-group table.form-131-4d thead tr td:nth-child(2) textarea,
+.pdf-form table.form-131-4d thead tr td:nth-child(3) .form-control,
+.pdf-form table.form-131-4d thead tr td:nth-child(3) .data-group textarea,
+.pdf-form .data-group table.form-131-4d thead tr td:nth-child(3) textarea,
+.pdf-form table.form-131-4d thead tr td:nth-child(4) .form-control,
+.pdf-form table.form-131-4d thead tr td:nth-child(4) .data-group textarea,
+.pdf-form .data-group table.form-131-4d thead tr td:nth-child(4) textarea {
+  text-align: start;
+}
+
+.pdf-form table.form-131-4d tbody tr td .form-control,
+.pdf-form table.form-131-4d tbody tr td .data-group textarea,
+.pdf-form .data-group table.form-131-4d tbody tr td textarea,
+.pdf-form table.form-131-4d thead tr td .form-control,
+.pdf-form table.form-131-4d thead tr td .data-group textarea,
+.pdf-form .data-group table.form-131-4d thead tr td textarea {
+  text-align: left;
+  width: 100%;
+  border: unset;
+  padding: unset;
+}
+
+.pdf-form table.form-131-4d tbody tr.inputs td textarea,
+.pdf-form table.form-131-4d thead tr.inputs td textarea {
+  /* height: 200px !important; */
+  resize: none;
+}
+
+.pdf-form table.form-131-4g {
+  width: 100%;
+}
+
+.pdf-form table.form-131-4g thead {
+  text-align: center;
+}
+
+.pdf-form table.form-131-4g tbody tr th,
+.pdf-form table.form-131-4g tbody tr td,
+.pdf-form table.form-131-4g thead tr th,
+.pdf-form table.form-131-4g thead tr td {
+  border: 1px solid rgba(23, 29, 52, 0.6);
+}
+
+.pdf-form table.form-131-4g tbody tr td:nth-child(3),
+.pdf-form table.form-131-4g tbody tr td:nth-child(4),
+.pdf-form table.form-131-4g tbody tr td:nth-child(5),
+.pdf-form table.form-131-4g thead tr td:nth-child(3),
+.pdf-form table.form-131-4g thead tr td:nth-child(4),
+.pdf-form table.form-131-4g thead tr td:nth-child(5) {
+  width: 15%;
+}
+
+.pdf-form table.form-131-4g tbody tr td:nth-child(3) .form-control,
+.pdf-form table.form-131-4g tbody tr td:nth-child(3) .data-group textarea,
+.pdf-form .data-group table.form-131-4g tbody tr td:nth-child(3) textarea,
+.pdf-form table.form-131-4g tbody tr td:nth-child(4) .form-control,
+.pdf-form table.form-131-4g tbody tr td:nth-child(4) .data-group textarea,
+.pdf-form .data-group table.form-131-4g tbody tr td:nth-child(4) textarea,
+.pdf-form table.form-131-4g tbody tr td:nth-child(5) .form-control,
+.pdf-form table.form-131-4g tbody tr td:nth-child(5) .data-group textarea,
+.pdf-form .data-group table.form-131-4g tbody tr td:nth-child(5) textarea,
+.pdf-form table.form-131-4g thead tr td:nth-child(3) .form-control,
+.pdf-form table.form-131-4g thead tr td:nth-child(3) .data-group textarea,
+.pdf-form .data-group table.form-131-4g thead tr td:nth-child(3) textarea,
+.pdf-form table.form-131-4g thead tr td:nth-child(4) .form-control,
+.pdf-form table.form-131-4g thead tr td:nth-child(4) .data-group textarea,
+.pdf-form .data-group table.form-131-4g thead tr td:nth-child(4) textarea,
+.pdf-form table.form-131-4g thead tr td:nth-child(5) .form-control,
+.pdf-form table.form-131-4g thead tr td:nth-child(5) .data-group textarea,
+.pdf-form .data-group table.form-131-4g thead tr td:nth-child(5) textarea {
+  text-align: end;
+}
+
+.pdf-form table.form-131-4g tbody tr td .form-control,
+.pdf-form table.form-131-4g tbody tr td .data-group textarea,
+.pdf-form .data-group table.form-131-4g tbody tr td textarea,
+.pdf-form table.form-131-4g thead tr td .form-control,
+.pdf-form table.form-131-4g thead tr td .data-group textarea,
+.pdf-form .data-group table.form-131-4g thead tr td textarea {
+  text-align: left;
+  width: 100%;
+  border: unset;
+  padding: unset;
+}
+
+.pdf-form table.form-131-4g tbody tr.inputs td textarea,
+.pdf-form table.form-131-4g thead tr.inputs td textarea {
+  /* height: 200px !important; */
+  resize: none;
+}
+
+.pdf-form table.form-131-5 {
+  width: 100%;
+}
+
+.pdf-form table.form-131-5 thead {
+  text-align: center;
+}
+
+.pdf-form table.form-131-5 tbody tr th,
+.pdf-form table.form-131-5 tbody tr td,
+.pdf-form table.form-131-5 thead tr th,
+.pdf-form table.form-131-5 thead tr td {
+  border: 1px solid rgba(23, 29, 52, 0.6);
+}
+
+.pdf-form table.form-131-5 tbody tr td:nth-child(1),
+.pdf-form table.form-131-5 thead tr td:nth-child(1) {
+  width: 25%;
+}
+
+.pdf-form table.form-131-5 tbody tr td:nth-child(3),
+.pdf-form table.form-131-5 tbody tr td:nth-child(4),
+.pdf-form table.form-131-5 tbody tr td:nth-child(5),
+.pdf-form table.form-131-5 thead tr td:nth-child(3),
+.pdf-form table.form-131-5 thead tr td:nth-child(4),
+.pdf-form table.form-131-5 thead tr td:nth-child(5) {
+  width: 15%;
+}
+
+.pdf-form table.form-131-5 tbody tr td:nth-child(3) .form-control,
+.pdf-form table.form-131-5 tbody tr td:nth-child(3) .data-group textarea,
+.pdf-form .data-group table.form-131-5 tbody tr td:nth-child(3) textarea,
+.pdf-form table.form-131-5 tbody tr td:nth-child(4) .form-control,
+.pdf-form table.form-131-5 tbody tr td:nth-child(4) .data-group textarea,
+.pdf-form .data-group table.form-131-5 tbody tr td:nth-child(4) textarea,
+.pdf-form table.form-131-5 tbody tr td:nth-child(5) .form-control,
+.pdf-form table.form-131-5 tbody tr td:nth-child(5) .data-group textarea,
+.pdf-form .data-group table.form-131-5 tbody tr td:nth-child(5) textarea,
+.pdf-form table.form-131-5 thead tr td:nth-child(3) .form-control,
+.pdf-form table.form-131-5 thead tr td:nth-child(3) .data-group textarea,
+.pdf-form .data-group table.form-131-5 thead tr td:nth-child(3) textarea,
+.pdf-form table.form-131-5 thead tr td:nth-child(4) .form-control,
+.pdf-form table.form-131-5 thead tr td:nth-child(4) .data-group textarea,
+.pdf-form .data-group table.form-131-5 thead tr td:nth-child(4) textarea,
+.pdf-form table.form-131-5 thead tr td:nth-child(5) .form-control,
+.pdf-form table.form-131-5 thead tr td:nth-child(5) .data-group textarea,
+.pdf-form .data-group table.form-131-5 thead tr td:nth-child(5) textarea {
+  text-align: end;
+}
+
+.pdf-form table.form-131-5 tbody tr td .form-control,
+.pdf-form table.form-131-5 tbody tr td .data-group textarea,
+.pdf-form .data-group table.form-131-5 tbody tr td textarea,
+.pdf-form table.form-131-5 thead tr td .form-control,
+.pdf-form table.form-131-5 thead tr td .data-group textarea,
+.pdf-form .data-group table.form-131-5 thead tr td textarea {
+  text-align: left;
+  width: 100%;
+  border: unset;
+  padding: unset;
+}
+
+.pdf-form table.form-131-5 tbody tr.inputs td textarea,
+.pdf-form table.form-131-5 thead tr.inputs td textarea {
+  /* height: 200px !important; */
+  resize: none;
+}
+
+.pdf-form table.form-131-6 {
+  width: 100%;
+}
+
+.pdf-form table.form-131-6 thead {
+  text-align: center;
+}
+
+.pdf-form table.form-131-6 tbody tr th,
+.pdf-form table.form-131-6 tbody tr td,
+.pdf-form table.form-131-6 thead tr th,
+.pdf-form table.form-131-6 thead tr td {
+  border: 1px solid rgba(23, 29, 52, 0.6);
+}
+
+.pdf-form table.form-131-6 tbody tr td:nth-child(2),
+.pdf-form table.form-131-6 tbody tr td:nth-child(3),
+.pdf-form table.form-131-6 thead tr td:nth-child(2),
+.pdf-form table.form-131-6 thead tr td:nth-child(3) {
+  width: 15%;
+}
+
+.pdf-form table.form-131-6 tbody tr td:nth-child(2) .form-control,
+.pdf-form table.form-131-6 tbody tr td:nth-child(2) .data-group textarea,
+.pdf-form .data-group table.form-131-6 tbody tr td:nth-child(2) textarea,
+.pdf-form table.form-131-6 tbody tr td:nth-child(3) .form-control,
+.pdf-form table.form-131-6 tbody tr td:nth-child(3) .data-group textarea,
+.pdf-form .data-group table.form-131-6 tbody tr td:nth-child(3) textarea,
+.pdf-form table.form-131-6 thead tr td:nth-child(2) .form-control,
+.pdf-form table.form-131-6 thead tr td:nth-child(2) .data-group textarea,
+.pdf-form .data-group table.form-131-6 thead tr td:nth-child(2) textarea,
+.pdf-form table.form-131-6 thead tr td:nth-child(3) .form-control,
+.pdf-form table.form-131-6 thead tr td:nth-child(3) .data-group textarea,
+.pdf-form .data-group table.form-131-6 thead tr td:nth-child(3) textarea {
+  text-align: end;
+}
+
+.pdf-form table.form-131-6 tbody tr td .form-control,
+.pdf-form table.form-131-6 tbody tr td .data-group textarea,
+.pdf-form .data-group table.form-131-6 tbody tr td textarea,
+.pdf-form table.form-131-6 thead tr td .form-control,
+.pdf-form table.form-131-6 thead tr td .data-group textarea,
+.pdf-form .data-group table.form-131-6 thead tr td textarea {
+  text-align: left;
+  width: 100%;
+  border: unset;
+  padding: unset;
+}
+
+.pdf-form table.form-131-7 {
+  width: 100%;
+}
+
+.pdf-form table.form-131-7 thead {
+  text-align: center;
+}
+
+.pdf-form table.form-131-7 tbody tr th,
+.pdf-form table.form-131-7 tbody tr td,
+.pdf-form table.form-131-7 thead tr th,
+.pdf-form table.form-131-7 thead tr td {
+  border: 1px solid rgba(23, 29, 52, 0.6);
+}
+
+.pdf-form table.form-131-7 tbody tr td:nth-child(1),
+.pdf-form table.form-131-7 thead tr td:nth-child(1) {
+  width: 25%;
+}
+
+.pdf-form table.form-131-7 tbody tr td:nth-child(3),
+.pdf-form table.form-131-7 thead tr td:nth-child(3) {
+  width: 20%;
+}
+
+.pdf-form table.form-131-7 tbody tr td:nth-child(3) .form-control,
+.pdf-form table.form-131-7 tbody tr td:nth-child(3) .data-group textarea,
+.pdf-form .data-group table.form-131-7 tbody tr td:nth-child(3) textarea,
+.pdf-form table.form-131-7 thead tr td:nth-child(3) .form-control,
+.pdf-form table.form-131-7 thead tr td:nth-child(3) .data-group textarea,
+.pdf-form .data-group table.form-131-7 thead tr td:nth-child(3) textarea {
+  text-align: end;
+}
+
+.pdf-form table.form-131-7 tbody tr td .form-control,
+.pdf-form table.form-131-7 tbody tr td .data-group textarea,
+.pdf-form .data-group table.form-131-7 tbody tr td textarea,
+.pdf-form table.form-131-7 thead tr td .form-control,
+.pdf-form table.form-131-7 thead tr td .data-group textarea,
+.pdf-form .data-group table.form-131-7 thead tr td textarea {
+  text-align: left;
+  width: 100%;
+  border: unset;
+  padding: unset;
+}
+
+.pdf-form table.form-131-7 tbody tr.inputs td textarea,
+.pdf-form table.form-131-7 thead tr.inputs td textarea {
+  /* height: 200px !important; */
+  resize: none;
+}
+
+.pdf-form table.form-131-9 {
+  width: 100%;
+}
+
+.pdf-form table.form-131-9 thead {
+  text-align: center;
+}
+
+.pdf-form table.form-131-9 tbody tr th,
+.pdf-form table.form-131-9 tbody tr td,
+.pdf-form table.form-131-9 thead tr th,
+.pdf-form table.form-131-9 thead tr td {
+  border: 1px solid rgba(23, 29, 52, 0.6);
+}
+
+.pdf-form table.form-131-9 tbody tr td:nth-child(2),
+.pdf-form table.form-131-9 tbody tr td:nth-child(3),
+.pdf-form table.form-131-9 thead tr td:nth-child(2),
+.pdf-form table.form-131-9 thead tr td:nth-child(3) {
+  width: 15%;
+}
+
+.pdf-form table.form-131-9 tbody tr td:nth-child(2) .form-control,
+.pdf-form table.form-131-9 tbody tr td:nth-child(2) .data-group textarea,
+.pdf-form .data-group table.form-131-9 tbody tr td:nth-child(2) textarea,
+.pdf-form table.form-131-9 tbody tr td:nth-child(3) .form-control,
+.pdf-form table.form-131-9 tbody tr td:nth-child(3) .data-group textarea,
+.pdf-form .data-group table.form-131-9 tbody tr td:nth-child(3) textarea,
+.pdf-form table.form-131-9 thead tr td:nth-child(2) .form-control,
+.pdf-form table.form-131-9 thead tr td:nth-child(2) .data-group textarea,
+.pdf-form .data-group table.form-131-9 thead tr td:nth-child(2) textarea,
+.pdf-form table.form-131-9 thead tr td:nth-child(3) .form-control,
+.pdf-form table.form-131-9 thead tr td:nth-child(3) .data-group textarea,
+.pdf-form .data-group table.form-131-9 thead tr td:nth-child(3) textarea {
+  text-align: end;
+}
+
+.pdf-form table.form-131-9 tbody tr td .form-control,
+.pdf-form table.form-131-9 tbody tr td .data-group textarea,
+.pdf-form .data-group table.form-131-9 tbody tr td textarea,
+.pdf-form table.form-131-9 thead tr td .form-control,
+.pdf-form table.form-131-9 thead tr td .data-group textarea,
+.pdf-form .data-group table.form-131-9 thead tr td textarea {
+  text-align: left;
+  width: 100%;
+  border: unset;
+  padding: unset;
+}
+
+.pdf-form table.form-131-schedule-a {
+  width: 100%;
+}
+
+.pdf-form table.form-131-schedule-a thead {
+  text-align: center;
+}
+
+.pdf-form table.form-131-schedule-a tbody tr th,
+.pdf-form table.form-131-schedule-a tbody tr td,
+.pdf-form table.form-131-schedule-a thead tr th,
+.pdf-form table.form-131-schedule-a thead tr td {
+  border: 1px solid rgba(23, 29, 52, 0.6);
+}
+
+.pdf-form table.form-131-schedule-a tbody tr td:nth-child(1),
+.pdf-form table.form-131-schedule-a thead tr td:nth-child(1) {
+  width: 10%;
+}
+
+.pdf-form table.form-131-schedule-a tbody tr td:nth-child(3),
+.pdf-form table.form-131-schedule-a thead tr td:nth-child(3) {
+  width: 20%;
+}
+
+.pdf-form table.form-131-schedule-a tbody tr td:nth-child(3) .form-control,
+.pdf-form table.form-131-schedule-a tbody tr td:nth-child(3) .data-group textarea,
+.pdf-form .data-group table.form-131-schedule-a tbody tr td:nth-child(3) textarea,
+.pdf-form table.form-131-schedule-a thead tr td:nth-child(3) .form-control,
+.pdf-form table.form-131-schedule-a thead tr td:nth-child(3) .data-group textarea,
+.pdf-form .data-group table.form-131-schedule-a thead tr td:nth-child(3) textarea {
+  text-align: end;
+}
+
+.pdf-form table.form-131-schedule-a tbody tr td .form-control,
+.pdf-form table.form-131-schedule-a tbody tr td .data-group textarea,
+.pdf-form .data-group table.form-131-schedule-a tbody tr td textarea,
+.pdf-form table.form-131-schedule-a thead tr td .form-control,
+.pdf-form table.form-131-schedule-a thead tr td .data-group textarea,
+.pdf-form .data-group table.form-131-schedule-a thead tr td textarea {
+  text-align: left;
+  width: 100%;
+  border: unset;
+  padding: unset;
+}
+
+.pdf-form table.form-131-schedule-b {
+  width: 100%;
+}
+
+.pdf-form table.form-131-schedule-b thead {
+  text-align: center;
+}
+
+.pdf-form table.form-131-schedule-b tbody tr th,
+.pdf-form table.form-131-schedule-b tbody tr td,
+.pdf-form table.form-131-schedule-b thead tr th,
+.pdf-form table.form-131-schedule-b thead tr td {
+  border: 1px solid rgba(23, 29, 52, 0.6);
+}
+
+.pdf-form table.form-131-schedule-b tbody tr td:nth-child(1),
+.pdf-form table.form-131-schedule-b thead tr td:nth-child(1) {
+  width: 30%;
+}
+
+.pdf-form table.form-131-schedule-b tbody tr td:nth-child(3),
+.pdf-form table.form-131-schedule-b tbody tr td:nth-child(4),
+.pdf-form table.form-131-schedule-b thead tr td:nth-child(3),
+.pdf-form table.form-131-schedule-b thead tr td:nth-child(4) {
+  width: 15%;
+}
+
+.pdf-form table.form-131-schedule-b tbody tr td:nth-child(3) .form-control,
+.pdf-form table.form-131-schedule-b tbody tr td:nth-child(3) .data-group textarea,
+.pdf-form .data-group table.form-131-schedule-b tbody tr td:nth-child(3) textarea,
+.pdf-form table.form-131-schedule-b thead tr td:nth-child(3) .form-control,
+.pdf-form table.form-131-schedule-b thead tr td:nth-child(3) .data-group textarea,
+.pdf-form .data-group table.form-131-schedule-b thead tr td:nth-child(3) textarea {
+  text-align: end;
+}
+
+.pdf-form table.form-131-schedule-b tbody tr td .form-control,
+.pdf-form table.form-131-schedule-b tbody tr td .data-group textarea,
+.pdf-form .data-group table.form-131-schedule-b tbody tr td textarea,
+.pdf-form table.form-131-schedule-b thead tr td .form-control,
+.pdf-form table.form-131-schedule-b thead tr td .data-group textarea,
+.pdf-form .data-group table.form-131-schedule-b thead tr td textarea {
+  text-align: left;
+  width: 100%;
+  border: unset;
+  padding: unset;
+}
+
+.pdf-form table.form-13-assets {
+  width: 100%;
+}
+
+.pdf-form table.form-13-assets thead {
+  text-align: center;
+}
+
+.pdf-form table.form-13-assets tbody tr th,
+.pdf-form table.form-13-assets tbody tr td,
+.pdf-form table.form-13-assets thead tr th,
+.pdf-form table.form-13-assets thead tr td {
+  border: 1px solid rgba(23, 29, 52, 0.6);
+  text-align: center;
+  padding: 5px
+}
+
+.pdf-form table.form-13-assets tbody tr td:nth-child(1),
+.pdf-form table.form-13-assets tbody tr td:nth-child(4),
+.pdf-form table.form-13-assets thead tr td:nth-child(1),
+.pdf-form table.form-13-assets thead tr td:nth-child(4) {
+  width: 20%;
+}
+
+.pdf-form table.form-13-assets tbody tr td.number,
+.pdf-form table.form-13-assets thead tr td.number {
+  width: 5%;
+}
+
+.pdf-form table.form-13-assets tbody tr td:last-child .form-control,
+.pdf-form table.form-13-assets tbody tr td:last-child .data-group textarea,
+.pdf-form .data-group table.form-13-assets tbody tr td:last-child textarea,
+.pdf-form table.form-13-assets thead tr td:last-child .form-control,
+.pdf-form table.form-13-assets thead tr td:last-child .data-group textarea,
+.pdf-form .data-group table.form-13-assets thead tr td:last-child textarea {
+  text-align: end;
+}
+
+.pdf-form table.form-13-assets tbody tr td .form-control,
+.pdf-form table.form-13-assets tbody tr td .data-group textarea,
+.pdf-form .data-group table.form-13-assets tbody tr td textarea,
+.pdf-form table.form-13-assets thead tr td .form-control,
+.pdf-form table.form-13-assets thead tr td .data-group textarea,
+.pdf-form .data-group table.form-13-assets thead tr td textarea {
+  text-align: start;
+  width: 100%;
+  border: unset;
+  padding: unset;
+}
+
+.pdf-form table.form-13-debts {
+  width: 100%;
+}
+
+.pdf-form table.form-13-debts thead tr th,
+.pdf-form table.form-13-debts thead tr td,
+.pdf-form table.form-13-debts tbody tr th,
+.pdf-form table.form-13-debts tbody tr td {
+  border: 1px solid rgba(23, 29, 52, 0.6);
+  text-align: center;
+  width: unset;
+}
+
+.pdf-form table.form-13-debts thead tr th:nth-child(1),
+.pdf-form table.form-13-debts thead tr th:nth-child(5),
+.pdf-form table.form-13-debts tbody tr th:nth-child(1),
+.pdf-form table.form-13-debts tbody tr th:nth-child(5) {
+  width: 220px;
+}
+
+.pdf-form table.form-13-debts thead tr th:nth-child(3),
+.pdf-form table.form-13-debts thead tr th:nth-child(4),
+.pdf-form table.form-13-debts tbody tr th:nth-child(3),
+.pdf-form table.form-13-debts tbody tr th:nth-child(4) {
+  width: 120px;
+}
+
+.pdf-form table.form-13-debts thead tr td .form-control,
+.pdf-form table.form-13-debts thead tr td .data-group textarea,
+.pdf-form .data-group table.form-13-debts thead tr td textarea,
+.pdf-form table.form-13-debts tbody tr td .form-control,
+.pdf-form table.form-13-debts tbody tr td .data-group textarea,
+.pdf-form .data-group table.form-13-debts tbody tr td textarea {
+  text-align: right;
+  width: 100%;
+  border: unset;
+  padding: unset;
+}
+
+.pdf-form table.form-131-5 {
+  width: 100%;
+}
+
+.pdf-form table.form-131-5 thead tr th,
+.pdf-form table.form-131-5 thead tr td,
+.pdf-form table.form-131-5 tbody tr th,
+.pdf-form table.form-131-5 tbody tr td {
+  border: 1px solid rgba(23, 29, 52, 0.6);
+  text-align: center;
+  width: unset;
+}
+
+.pdf-form table.form-131-5 thead tr td:last-child,
+.pdf-form table.form-131-5 tbody tr td:last-child {
+  width: 10%;
+}
+
+.pdf-form table.form-131-5 thead tr td .form-control,
+.pdf-form table.form-131-5 thead tr td .data-group textarea,
+.pdf-form .data-group table.form-131-5 thead tr td textarea,
+.pdf-form table.form-131-5 tbody tr td .form-control,
+.pdf-form table.form-131-5 tbody tr td .data-group textarea,
+.pdf-form .data-group table.form-131-5 tbody tr td textarea {
+  text-align: left;
+  width: 100%;
+  border: unset;
+  padding: unset;
+}
+
+.pdf-form table.form-8a-children {
+  width: 100%;
+}
+
+.pdf-form table.form-8a-children thead tr th,
+.pdf-form table.form-8a-children thead tr td,
+.pdf-form table.form-8a-children tbody tr th,
+.pdf-form table.form-8a-children tbody tr td {
+  border: 1px solid rgba(23, 29, 52, 0.6);
+  text-align: center;
+  width: unset;
+  width: 22.5%;
+}
+
+.pdf-form table.form-8a-children thead tr th:nth-child(2),
+.pdf-form table.form-8a-children thead tr td:nth-child(2),
+.pdf-form table.form-8a-children tbody tr th:nth-child(2),
+.pdf-form table.form-8a-children tbody tr td:nth-child(2) {
+  width: 80px;
+}
+
+.pdf-form table.form-8a-children thead tr td:last-child,
+.pdf-form table.form-8a-children tbody tr td:last-child {
+  width: 10%;
+}
+
+.pdf-form table.form-8a-children thead tr td .form-control,
+.pdf-form table.form-8a-children thead tr td .data-group textarea,
+.pdf-form .data-group table.form-8a-children thead tr td textarea,
+.pdf-form table.form-8a-children tbody tr td .form-control,
+.pdf-form table.form-8a-children tbody tr td .data-group textarea,
+.pdf-form .data-group table.form-8a-children tbody tr td textarea {
+  text-align: left;
+  width: 100%;
+  border: unset;
+  padding: 10px;
+}
+
+.pdf-form .heading {
+  font-size: 1.5rem;
+  font-weight: bold;
+  text-align: center;
+  margin-bottom: 20px;
+}
+
+.pdf-form .sub-heading {
+  font-size: 1.25rem;
+  font-weight: bold;
+  text-align: center;
+  margin-bottom: 10px;
+}
+
+.pdf-form .paragraph {
+  font-size: 1rem;
+  text-align: justify;
+  margin-bottom: 8px;
+  line-height: 1.4;
+}
+
+.pdf-form ul {
+  margin-bottom: 8px;
+}
+
+.pdf-form ul li .paragraph {
+  margin-bottom: 0;
+}
+
+/* Fill Form Panel */
+
+
+.fill-information-page.panel .pHead {
+  min-height: auto;
+}
+
+.fill-information-page.panel .pBody {
+  padding-right: 10px !important;
+}
+
+.fill-information-page .accordion .accordion-header button {
+  background-color: rgba(115, 195, 253, 0.3);
+  padding: 12px 30px;
+}
+
+.fill-information-page .accordion .accordion-collapse {
+  border: 2px solid rgba(115, 195, 253, 0.6) !important;
+  margin-top: -2px;
+}
+
+.fill-information-page .accordion .accordion-collapse .accordion-body {
+  background-color: #ffffff;
+  padding: 30px;
+}
+
+.fill-information-page .accordion .accordion-collapse .accordion-body .form-group {
+  margin-bottom: unset;
+}
+
+.fill-information-page .accordion .accordion-collapse .accordion-body .form-label-custom {
+  font-size: 16px;
+  font-weight: 800;
+}
+
+.fill-information-page .accordion .accordion-collapse .accordion-body .sub-heading {
+  font-size: 20px;
+  font-weight: 700;
+  padding: 20px 0;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.fill-information-page .accordion .accordion-collapse .accordion-body .inputs-row {
+  display: grid;
+  grid-template-columns: 1fr;
+  grid-gap: 10px 10px;
+  justify-content: space-between;
+  align-items: end;
+}
+
+.fill-information-page .accordion .accordion-collapse .accordion-body .inputs-row.repeater-row {
+  padding-bottom: 20px;
+}
+
+.fill-information-page .accordion .accordion-collapse .accordion-body .inputs-row.repeater-row:last-child {
+  padding-bottom: 0;
+}
+
+@media screen and (min-width: 1400px) {
+  .fill-information-page .accordion .accordion-collapse .accordion-body .inputs-row {
+    grid-template-columns: 11fr 1fr;
+  }
+}
+
+.fill-information-page .accordion .accordion-collapse .accordion-body .inputs-row.labeled {
+  grid-template-columns: 1fr 1fr;
+  grid-gap: 10px 50px;
+  align-items: center;
+}
+
+@media screen and (max-width: 1400px) {
+  .fill-information-page .accordion .accordion-collapse .accordion-body .inputs-row.labeled {
+    grid-template-columns: 1fr;
+  }
+}
+
+.fill-information-page .accordion .accordion-collapse .accordion-body .inputs-row.no-action {
+  grid-template-columns: 1fr;
+}
+
+.fill-information-page .accordion .accordion-collapse .accordion-body .inputs-row .inputs {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  grid-gap: 10px 50px;
+  align-items: center;
+}
+
+.fill-information-page .accordion .accordion-collapse .accordion-body .inputs-row .inputs.inputs-4 {
+  grid-template-columns: 1fr 1fr 1fr 1fr;
+}
+
+.fill-information-page .accordion .accordion-collapse .accordion-body .inputs-row .inputs.inputs-2-3 {
+  grid-template-columns: 2fr 3fr;
+  grid-gap: unset;
+}
+
+@media screen and (max-width: 1200px) {
+  .fill-information-page .accordion .accordion-collapse .accordion-body .inputs-row .inputs {
+    grid-template-columns: 1fr;
+  }
+
+  .fill-information-page .accordion .accordion-collapse .accordion-body .inputs-row .inputs.inputs-4 {
+    grid-template-columns: 1fr;
+  }
+
+  .fill-information-page .accordion .accordion-collapse .accordion-body .inputs-row .inputs.inputs-2-3 {
+    grid-template-columns: 1fr;
+  }
+}
+
+.fill-information-page .accordion .accordion-collapse .accordion-body .inputs-row .action {
+  display: flex;
+  flex-direction: row;
+  margin: 0;
+  padding: 0;
+  justify-content: flex-start;
+  margin-left: 20px;
+  align-items: flex-end;
+  text-wrap: nowrap;
+}
+
+.fill-information-page .accordion .accordion-collapse .accordion-body .inputs-group .header {
+  height: 65px;
+  background-color: rgba(115, 195, 253, 0.2);
+  box-shadow: 0px 14px 34px rgba(23, 29, 52, 0.04);
+  border-radius: 8px 8px 0px 0px;
+  border-bottom: 1px solid rgba(48, 127, 244, 0.4);
+  padding: 0 30px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.fill-information-page .accordion .accordion-collapse .accordion-body .inputs-group .header .title,
+.fill-information-page .accordion .accordion-collapse .accordion-body .inputs-group .header .calculated_amount {
+  font-size: 20px;
+  font-weight: 700;
+}
+
+.fill-information-page .accordion .accordion-collapse .accordion-body .inputs-group .header div {
+  display: flex;
+  justify-content: flex-start;
+  align-items: center;
+  gap: 60px;
+}
+
+.fill-information-page .accordion .accordion-collapse .accordion-body .inputs-group .body {
+  padding: 30px;
+  border-radius: 0px 0px 8px 8px;
+  border-bottom: 1px solid rgba(48, 127, 244, 0.2);
+  box-shadow: 0px 14px 34px rgba(36, 60, 96, 0.04);
+}
+
+.fill-information-page .accordion .accordion-collapse .accordion-body .inputs-group .body .spanned-rows {
+  display: grid;
+  grid-template-columns: 3fr 1fr;
+  grid-gap: 10px 50px;
+  align-items: start;
+  margin-bottom: 50px;
+}
+
+@media screen and (max-width: 1200px) {
+  .fill-information-page .accordion .accordion-collapse .accordion-body .inputs-group .body .spanned-rows {
+    grid-template-columns: 1fr;
+    grid-gap: 30px 0px;
+  }
+}
+
+.fill-information-page .accordion .accordion-collapse .accordion-body .btn.btn-link {
+  justify-content: end;
+  padding: 0 !important;
+  margin: 0;
+  color: #307ff4;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.fill-information-page .accordion .accordion-item {
+  background-color: unset;
+}
+
+.fill-information-page .accordion .accordion-item button {
+  font-size: 20px;
+  line-height: 27px;
+  font-weight: 700;
+}
+
+.fill-information-page .accordion .accordion-item button:after {
+  width: 24px;
+  height: 24px;
+}
+
+.fill-information-page .accordion .accordion-item:last-child button:after {
+  transform: unset;
+}
+
+.fill-information-page .accordion .accordion-item:last-child button:not(.collapsed):after {
+  transform: rotate(-180deg);
+}
+
+.fill-information-page .page-sidebar {
+  display: flex;
+  flex-direction: column;
+  height: calc(100vh - 200px);
+  position: -webkit-sticky;
+  position: sticky;
+  top: 0;
+}
+
+.fill-information-page .page-content {
+  display: flex;
+  flex-direction: column;
+  height: calc(100vh - 200px);
+}
+
+.fill-information-page .page-content .head {
+  background-color: rgba(115, 195, 253, 0.3);
+  border-radius: 8px 8px 0px 0px;
+  padding: 12px 30px;
+  font-size: 20px;
+  line-height: 27px;
+  font-weight: 700;
+}
+
+.fill-information-page .page-content .body {
+  border: 1px solid rgba(115, 195, 253, 0.6);
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+  overflow-y: scroll;
+  padding: 0 10px;
+      /* background: #333; */
+
+}
+
+.fill-information-page .page-content .body .content {
+  padding: 30px;
+  flex-grow: 1;
+}
+
+.fill-information-page .page-content .body .actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 30px;
+}
+
+/* Custom Button */
+
+.matterType .rounded-pill {
+  border-radius: 10px !important;
+  margin: 0px 5px;
+}
+
+.statusOutline {}
+
+.simple_background {
+  padding: 10px 30px;
+  background: #f5f5f5;
+  border-radius: 10px;
+}
+
+.customDrawer .title {
+  font-weight: 700;
+  font-size: 20px;
+}
+
+.customDrawer .subcategory {
+  font-size: 18px;
+  padding-top: 10px;
+}
+
+.customDrawer .fields {
+  font-weight: 700;
+  font-size: 16px;
+}
+
+.customDrawer .header {
+  background-color: transparent;
+  border-bottom: 1px solid #f1f1f4;
+}
+
+.customDrawer {
+  top: 0;
+  right: 0;
+  width: 550px;
+  border-left: var(--bs-offcanvas-border-width) solid var(--bs-offcanvas-border-color);
+  transform: translateX(100%);
+}
+
+
+.pdf-custom-assets tbody tr td {
+  padding: 5px;
+}
+
+.pdf-custom-assets .details {
+  text-align: left;
+}
+
+.pdf-form table.form-13-assets tbody tr td .form-control .details {
+  text-align: left;
+}
+
+.seal {
+  border-radius: 100%;
+  height: 200px;
+  font-weight: bold;
+  width: 200px;
+  display: table;
+  margin: 0px auto;
+  border: 1px solid;
+}
+
+.seal-text {
+  vertical-align: middle;
+  display: table-cell;
+}
+
+.seal-block {
+  text-align: center;
+  vertical-align: middle;
+}
+
+.form-check {
+  min-height: unset !important;
+  /* margin-top: 5px;
+  margin-bottom: 5px; */
+}
+
+/* .data-input {
+  margin-top: 5px;
+} */
+
+.textcont {
+  display: none;
+}
+
+.child-table thead tr th {
+  font-size: 14px;
+  text-align: center;
+}
+
+.text-container {
+  /* display: flex;
+  flex-wrap: wrap; */
+  /* gap: 0.5rem; */
+  /* Add spacing between items */
+}
+
+.text-container span {
+  flex-basis: 100%;
+  /* Ensure each span takes full width */
+  margin-bottom: 0.5rem;
+  /* Add space between lines */
+}
+
+.text-container .data-input {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+
+@media print {
+  .textcont {
+    display: block !important;
+  }
+ 
+}
+
+.pdf-form ol li {
+  padding-top:10px;
+}
+
+.pdf-form ul li {
+  padding-top:10px;
+}
+
+.pdf-form table.form-131-income-inner tbody tr td .custom-input-control {
+    text-align: left;
+    width: 100%;
+    border: unset;
+    padding: unset;
+}
+
+.pdf-form table.form-8a-children tbody tr td .custom-input-control {
+  text-align: left;
+  width: 100%;
+  border: unset;
+  padding: unset;
+}
+
+.custom-input-control {
+    display: block;
+    width: 100%;
+    padding: .375rem .75rem;
+    /* font-size: 1rem; */
+    font-weight: 400;
+    line-height: 1.5;
+    color: var(--bs-body-color);
+    -webkit-appearance: none;
+    appearance: none;
+    background-color: var(--bs-body-bg);
+    background-clip: padding-box;
+    border: var(--bs-border-width) solid rgba(23, 29, 52, 0.6);
+    /* border-radius: var(--bs-border-radius); */
+    transition: border-color .15s ease-in-out, box-shadow .15s ease-in-out;
+}
+
+.input-small {
+  width: 10% !important
+
+}
+
+.pdf-form .data-input input[type=text]  {
+    width: 100%; 
+    border-top: unset;
+    border-left: unset;
+    border-right: unset;
+     padding: 0px 10px;
+}
+
+.pdf-form .data-input input[type=date]  {
+    width: 100%; 
+    border-top: unset;
+    border-left: unset;
+    border-right: unset;
+     padding: 0px 10px;
+}
+
+/* ApplicationDivorce8A.css */
+
+.pdf-container {
+  /* Ensures content fits the PDF page */
+  position: relative;
+  width: 100%;
+  padding: 20px;
+}
+
+.pdf-header {
+  position: fixed;
+  top: 0;
+  width: 100%;
+  text-align: center;
+  background: #f5f5f5;
+  padding: 10px;
+}
+
+.pdf-main {
+  margin-top: 50px; /* Space for the header */
+  margin-bottom: 40px; /* Space for the footer */
+}
+
+.pdf-footer {
+  position: fixed;
+  bottom: 0;
+  width: 100%;
+  text-align: center;
+  background: #f5f5f5;
+  padding: 10px;
+}
+
+.page-break {
+  page-break-before: always; /* Forces a page break before this element */
+  display: block; /* Ensures it is a block element to apply the break */
+  height: 0; /* Ensures no extra space is added */
+  margin: 0; /* Removes any margin around the page break */
+}
+
+/* Add styling for each section */
+.content-section {
+  margin-bottom: 20px;
+}
+
+@page {
+  size: A4;
+  margin: 0;
+}
+
+.page {
+  width: 21cm;
+  min-height: 29.7cm;
+  /* padding: 2cm; */
+  /* margin: 1cm auto; */
+  /* border: 1px #D3D3D3 solid;
+  border-radius: 5px;
+  background: white;
+  box-shadow: 0 0 5px rgba(0, 0, 0, 0.1); */
+}
+
+.font13 {
+  font-size: 13px;
+}
+
+.pdf-form .data-group label .font13 {
+  border: 1px solid rgba(23, 29, 52, 0.6);
+  border-radius: 0;
+  padding: 0.5rem 0.75rem;
+
+  line-height: 1;
+  color: #171d34;
+  background-color: #ffffff;
+  font-style: italic;
+  margin-bottom: 0;
+}
+
+.pdf-form table.form-children {
+  width: 100%;
+}
+
+.pdf-form table.form-children thead tr th,
+.pdf-form table.form-children thead tr td,
+.pdf-form table.form-children tbody tr th,
+.pdf-form table.form-children tbody tr td {
+  border: 1px solid rgba(23, 29, 52, 0.6);
+  text-align: center;
+  width: unset;
+  width: 22.5%;
+}
+
+.pdf-form table.form-children thead tr th:nth-child(2),
+.pdf-form table.form-children thead tr td:nth-child(2),
+.pdf-form table.form-children tbody tr th:nth-child(2),
+.pdf-form table.form-children tbody tr td:nth-child(2) {
+  width: 80px;
+}
+
+.pdf-form table.form-children thead tr td:last-child,
+.pdf-form table.form-children tbody tr td:last-child {
+  width: 10%;
+}
+
+.pdf-form table.form-children thead tr td .form-control,
+.pdf-form table.form-children thead tr td .data-group textarea,
+.pdf-form .data-group table.form-children thead tr td textarea,
+.pdf-form table.form-children tbody tr td .form-control,
+.pdf-form table.form-children tbody tr td .data-group textarea,
+.pdf-form .data-group table.form-children tbody tr td textarea {
+  text-align: left;
+  width: 100%;
+  border: unset;
+  padding: 10px;
+}
+
+.input-border-bottom {
+  border-bottom: 1px solid rgba(23, 29, 52, 0.6) !important;
+}
+
+
+/* Income Table */
+
+.pdf-form table.table-income {
+  width: 100%;
+}
+
+.pdf-form table.table-income thead tr th,
+.pdf-form table.table-income thead tr td,
+.pdf-form table.table-income tbody tr th,
+.pdf-form table.table-income tbody tr td {
+  border: 1px solid rgba(23, 29, 52, 0.6);
+  text-align: center;
+  width: unset;
+}
+
+.pdf-form table.table-income thead tr th:nth-child(1) 
+{
+  width: 10%;
+}
+
+/* .pdf-form table.table-income thead tr td:last-child,
+.pdf-form table.table-income tbody tr td:last-child {
+  width: 10%;
+} */
+
+.list-items-table-container {
+  display: flex;
+  align-items: center;
+}
+
+.pdf-form table.table-income thead tr td .form-control,
+.pdf-form table.table-income thead tr td .data-group textarea,
+.pdf-form .data-group table.table-income thead tr td textarea,
+.pdf-form table.table-income tbody tr td .form-control,
+.pdf-form table.table-income tbody tr td .data-group textarea,
+.pdf-form .data-group table.table-income tbody tr td textarea {
+  text-align: left;
+  width: 100%;
+  border: unset;
+  padding: 10px;
+}
+
+
+.pdf-form table.list-items-table {
+  width: 100%;
+  border: none;
+}
+
+.pdf-form table.list-items-table thead tr th,
+.pdf-form table.list-items-table thead tr td {
+  text-align: left;
+  width: 33.3%;
+  vertical-align: top;
+}
+
+.pdf-form table.list-items-table tbody tr th,
+.pdf-form table.list-items-table tbody tr td {
+  text-align: left;
+  width: 33.3%;
+  vertical-align: top;
+  border: none;
+  border-bottom: 1px solid rgba(23, 29, 52, 0.6);
+}
+
+.pdf-form table.list-items-table thead tr th:nth-child(2),
+.pdf-form table.list-items-table thead tr td:nth-child(2),
+.pdf-form table.list-items-table tbody tr th:nth-child(2),
+.pdf-form table.list-items-table tbody tr td:nth-child(2) {
+  width: 80px;
+}
+
+.pdf-form table.list-items-table thead tr td:last-child,
+.pdf-form table.list-items-table tbody tr td:last-child {
+  width: 10%;
+}
+
+.pdf-form table.list-items-table thead tr td .form-control,
+.pdf-form table.list-items-table thead tr td .data-group textarea,
+.pdf-form .data-group table.list-items-table thead tr td textarea,
+.pdf-form table.list-items-table tbody tr td .form-control,
+.pdf-form table.list-items-table tbody tr td .data-group textarea,
+.pdf-form .data-group table.list-items-table tbody tr td textarea {
+  text-align: left;
+  width: 100%;
+  border: unset;
+  padding: 10px;
+}

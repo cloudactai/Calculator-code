@@ -1,0 +1,19 @@
+input#signature_pic{
+    padding: 0px;
+}
+input#signature_pic::file-selector-button {
+    margin-right: 20px;
+    border: none;
+    background: #1976d2;
+    border: 1px solid #1976d2;
+    border-top-left-radius: 0px !important;
+    border-bottom-left-radius: 0px !important;
+    padding: 3px 12px;
+    border-radius: 5px;
+    font-size: 14px;
+    color: #fff;
+    cursor: pointer;
+    height: 100%;
+  }
+
+  
