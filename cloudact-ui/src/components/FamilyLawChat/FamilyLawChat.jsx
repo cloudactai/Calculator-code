@@ -92,6 +92,7 @@ function fmtCAD(n) {
 }
 
 export default function FamilyLawChat() {
+  const [signedIn, setSignedIn] = useState(hasSession());
   const [open, setOpen] = useState(false);
   const [activeCalc, setActiveCalc] = useState("child");
 
@@ -122,6 +123,21 @@ export default function FamilyLawChat() {
   useEffect(() => {
     if (open && calc.kind === "chat" && inputRef.current) inputRef.current.focus();
   }, [open, activeCalc, calc.kind]);
+
+  // The session cookie is set during login *after* this app first mounts, and
+  // App doesn't re-render on SPA login — so re-check it (cheap cookie read) on
+  // an interval and on tab focus, instead of evaluating sign-in only once.
+  useEffect(() => {
+    const recheck = () => setSignedIn(hasSession());
+    const id = setInterval(recheck, 1500);
+    window.addEventListener("focus", recheck);
+    document.addEventListener("visibilitychange", recheck);
+    return () => {
+      clearInterval(id);
+      window.removeEventListener("focus", recheck);
+      document.removeEventListener("visibilitychange", recheck);
+    };
+  }, []);
 
   async function send(text) {
     if (calc.kind !== "chat") return;
@@ -262,6 +278,8 @@ export default function FamilyLawChat() {
   }
 
   const showTyping = loading && loadingCalc === activeCalc;
+
+  if (!signedIn) return null;
 
   return (
     <div className="flc-root">
