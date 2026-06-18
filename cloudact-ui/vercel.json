@@ -1,4 +1,5 @@
 {
   "buildCommand": "CI=false GENERATE_SOURCEMAP=false DISABLE_ESLINT_PLUGIN=true NODE_OPTIONS=--max-old-space-size=4096 npm run build",
+  "outputDirectory": "build",
   "rewrites": [{ "source": "/(.*)", "destination": "/index.html" }]
 }
