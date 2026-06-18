@@ -92,3 +92,56 @@ OAuth needs more than secrets:
 4. **Tokens must live where they're consumed** — Report-Generation uses them;
    storing them in the calculator backend orphans them from their consumer.
 5. **Secret sprawl** — duplicating a client secret = more leak/rotation surface.
+
+## New instance — full setup checklist
+> ⚠️ Exact env-var names must be confirmed against the **Report-Creation repo's
+> `.env.example` / README** (entry point ~ `backend/server.js`). Names below
+> marked *(confirm)* are inferred from the wizard's calls, not verified.
+
+**1. Service**
+- New Render **Web Service** from the Report-Creation repo, on a **team-owned**
+  Render account. Build/start per that repo (`npm install` / `npm start`).
+- Note its URL, e.g. `https://cloudact-report-creation.onrender.com`.
+
+**2. Database** (the backend persists law firms + OAuth tokens)
+- Provision a DB (Render Postgres, or whatever the repo uses).
+- `DATABASE_URL` *(confirm — could be a Mongo URI instead)*.
+- Run its migrations/schema step. Fresh DB is fine for a clean start.
+
+**3. Auth**
+- `JWT_SECRET` = the **legacy backend's** signing secret (from **Marc**) so the
+  Bearer `AccessToken` from cloudact-ui validates. Confirm it reads `userId`/`sid`
+  from the token the same way.
+
+**4. Frontend wiring**
+- `FRONTEND_URL` = `https://calculator-ai-ui.vercel.app` (post-OAuth redirect target)
+- `FRONTEND_URLS` = `https://calculator-ai-ui.vercel.app` (CORS allow-list; add
+  `http://localhost:3000` for local dev)
+
+**5. Clio OAuth**
+- `CLIO_CLIENT_ID`, `CLIO_CLIENT_SECRET` *(confirm names)*
+- `CLIO_REDIRECT_URI` = `https://<new-render>/oauth/clio/callback`
+- **Register that redirect URI in the Clio developer app** (Clio only redirects to
+  registered URIs). New Clio app = full isolation + fresh secrets; reusing the
+  existing app = must obtain its secrets.
+- `CLIO_REGION`/base URL *(confirm, if the repo supports app.clio.com vs EU/CA)*
+
+**6. QuickBooks (QBO) OAuth**
+- `QBO_CLIENT_ID`, `QBO_CLIENT_SECRET` *(confirm names)*
+- `QBO_REDIRECT_URI` = `https://<new-render>/oauth/qbo/callback`
+- **Register that redirect URI in the Intuit developer app.**
+- `QBO_ENVIRONMENT` sandbox vs production *(confirm)*
+
+**7. Misc** *(confirm from repo)*
+- `NODE_ENV=production`; `PORT` (Render injects — app must read `process.env.PORT`).
+- `SESSION_SECRET` / cookie settings if it uses sessions.
+- Any encryption key if it encrypts stored tokens at rest.
+
+**8. Point the UI at it**
+- Vercel `calculator-ai-ui` project → set `REACT_APP_SETUP_WIZARD_API_URL` =
+  `https://<new-render>` → redeploy. (No UI code change needed.)
+
+**Secret sourcing:** to avoid the report-generation account entirely, create
+**your own Clio + Intuit developer apps** (fresh client id/secret, your own
+redirect URIs). Reusing the existing apps means copying their secrets, which
+still requires access to where those live. `JWT_SECRET` comes from Marc either way.
