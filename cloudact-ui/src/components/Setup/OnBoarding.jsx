@@ -400,7 +400,9 @@ const OnBoarding = ({ isQBOConnected, familyLawTools, complianceReports }) => {
             }
           } catch (error) {
             console.error("Error fetching company data:", error);
-            toast.error("Failed to fetch company data.");
+            if (error?.response?.status !== 401) {
+              toast.error("Failed to fetch company data.");
+            }
           }
         }
       };

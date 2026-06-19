@@ -1,7 +1,15 @@
 import Cookies from "js-cookie";
 import { decrypt } from "./Encrypted";
 
-const accessTokenFields = ["AccessToken", "accessToken", "access_token", "token"];
+const accessTokenFields = [
+  "AccessToken",
+  "accessToken",
+  "access_token",
+  "authToken",
+  "jwt",
+  "jwtToken",
+  "token",
+];
 const refreshTokenFields = ["RefreshToken", "refreshToken", "refresh_token"];
 const authCookieOptions = { path: "/" };
 
@@ -25,9 +33,28 @@ const pickToken = (source, fields) => {
   return null;
 };
 
-export const getAccessTokenFromBody = (body) => pickToken(body, accessTokenFields);
+const payloadCandidates = (payload) => [
+  payload,
+  payload?.body,
+  payload?.data,
+  payload?.data?.body,
+];
 
-export const getRefreshTokenFromBody = (body) => pickToken(body, refreshTokenFields);
+const pickTokenFromPayload = (payload, fields) => {
+  for (const candidate of payloadCandidates(payload)) {
+    const token = pickToken(candidate, fields);
+
+    if (token) {
+      return token;
+    }
+  }
+
+  return null;
+};
+
+export const getAccessTokenFromBody = (body) => pickTokenFromPayload(body, accessTokenFields);
+
+export const getRefreshTokenFromBody = (body) => pickTokenFromPayload(body, refreshTokenFields);
 
 export const getAuthToken = () => {
   const accessToken = Cookies.get("AccessToken");
@@ -39,12 +66,12 @@ export const getAuthToken = () => {
   const userInfoCookie = Cookies.get("allUserInfo");
   const userInfo = userInfoCookie ? decrypt(userInfoCookie) : null;
 
-  return getAccessTokenFromBody(userInfo);
+  return pickTokenFromPayload(userInfo, accessTokenFields);
 };
 
-export const persistAuthTokens = (body) => {
-  const accessToken = getAccessTokenFromBody(body);
-  const refreshToken = getRefreshTokenFromBody(body);
+export const persistAuthTokens = (payload) => {
+  const accessToken = pickTokenFromPayload(payload, accessTokenFields);
+  const refreshToken = pickTokenFromPayload(payload, refreshTokenFields);
 
   if (accessToken) {
     Cookies.set("AccessToken", accessToken, authCookieOptions);

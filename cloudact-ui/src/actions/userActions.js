@@ -50,7 +50,7 @@ export const userLoginAction = (email, password) => async (dispatch) => {
       !data.data.body.hasOwnProperty("authkey")
     ) {
 
-      persistAuthTokens(data.data.body);
+      persistAuthTokens(data.data);
 
       const roleData = data.data.body.role; 
       const baseCookieName = "allUserInfo";
@@ -130,7 +130,9 @@ export const userProfileInfoAction = () => async (dispatch) => {
       dispatch({ type: USER_PROFILE_INFO_FAIL, payload: data });
     }
   } catch (error) {
-    toast.error(error.message)
+    if (error?.response?.status !== 401) {
+      toast.error(error.message)
+    }
     dispatch({ type: USER_PROFILE_INFO_FAIL, payload: error });
   }
 };
@@ -379,7 +381,7 @@ export const userOPTMatchAction = (matchObj) => async (dispatch) => {
         CookiesParser.set("allUserInfo", res.data.data.body, {
           path: "/",
         });
-        persistAuthTokens(res.data.data.body);
+        persistAuthTokens(res.data.data);
 
         Cookies.set("authClio", JSON.stringify(res.data.data.body.authClio), {
           path: "/",

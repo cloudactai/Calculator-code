@@ -20,6 +20,8 @@ const cookies_name = [
   'province',
   'authClio',
   'authIntuit',
+  'AccessToken',
+  'RefreshToken',
   'DiagnoseConnection',
   'calculatorLabel'
 ];

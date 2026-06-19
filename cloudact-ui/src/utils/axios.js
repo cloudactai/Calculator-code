@@ -2,6 +2,25 @@ import axios from "axios";
 import { APIS, REACT_APP_ENVIRONMENT } from "../config";
 import { getAuthToken } from "./authToken";
 
+const ignoreUnauthorizedModalFor = [
+  "/login",
+  "/logout",
+  "/profile/info",
+  "/getcompanydata/",
+  "companyInfo/",
+  "/update/companyData/",
+];
+
+const shouldShowUnauthorizedModal = (error) => {
+  const url = error.config?.url || "";
+
+  if (error.config?.skipUnauthorizedModal) {
+    return false;
+  }
+
+  return !ignoreUnauthorizedModalFor.some((path) => url.includes(path));
+};
+
 const instance = axios.create({
   baseURL: 
     REACT_APP_ENVIRONMENT === 'DEV' ? APIS.dev : 
@@ -35,7 +54,11 @@ instance.interceptors.response.use(
     return response;
   },
   function (error) {
-    if (error.response && error.response.status === 401) {
+    if (
+      error.response &&
+      error.response.status === 401 &&
+      shouldShowUnauthorizedModal(error)
+    ) {
       window.dispatchEvent(new CustomEvent('unauthorized'));
     }
     return Promise.reject(error);
