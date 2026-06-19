@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>CloudAct · Tax Calculator Assistant</title>
+<link rel="stylesheet" href="css/chat.css"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/marked/9.1.6/marked.min.js"></script>
+</head>
+<body>
+
+<header>
+  CloudAct &nbsp;·&nbsp; <span>Tax Calculator Assistant</span>
+  <button class="reset-btn" onclick="resetChat()">New conversation</button>
+</header>
+
+<div id="config-banner">
+  Backend URL not set. Enter your Flask server URL:
+  <input type="text" id="api-url-input" placeholder="http://localhost:5050"/>
+  <button onclick="saveApiUrl()">Save</button>
+</div>
+
+<div id="chat-window">
+  <div id="welcome">
+    <h1>Ontario Income Tax Calculator</h1>
+    <p>
+      I'll ask you a few questions about your income, deductions, and family
+      situation, then calculate your federal and Ontario taxes and benefits.
+      Everything stays in this session — nothing is stored.
+    </p>
+    <div class="starter-chips">
+      <button class="chip" onclick="sendStarter(this)">Calculate my taxes for 2025</button>
+      <button class="chip" onclick="sendStarter(this)">What information do you need from me?</button>
+      <button class="chip" onclick="sendStarter(this)">I have self-employment income</button>
+    </div>
+  </div>
+</div>
+
+<div id="input-bar">
+  <textarea id="msg-input" rows="1" placeholder="Type a message…"
+    oninput="autoResize(this)"
+    onkeydown="handleKey(event)"></textarea>
+  <button id="send-btn" onclick="sendMessage()">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+      <line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/>
+    </svg>
+    Send
+  </button>
+</div>
+
+<div id="toast"></div>
+
+<script src="js/tax-chat.js"></script>
+</body>
+</html>

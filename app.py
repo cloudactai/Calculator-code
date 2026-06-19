@@ -15,7 +15,40 @@ from datetime import date
 from flask import Flask, request, jsonify, render_template
 from flask_cors import CORS
 import anthropic
-from spousal_support import calculate_spousal_support
+from spousal_support import calculate_spousal_support_no_children, calculate_spousal_support_with_children, SpousalSupportResult
+
+def calculate_spousal_support(
+    party1_name:                    str,
+    party2_name:                    str,
+    party1_net_income:              float,
+    party2_net_income:              float,
+    years:                          float,
+    recipient_age:                  float,
+    children:                       bool,
+    monthly_child_support:          float = 0.0,
+    monthly_notional_child_support: float = 0.0,
+    youngest_child_age:             float = 0.0,
+) -> SpousalSupportResult:
+    if children:
+        return calculate_spousal_support_with_children(
+            party1_name=party1_name,
+            party2_name=party2_name,
+            party1_net_income=party1_net_income,
+            party2_net_income=party2_net_income,
+            monthly_child_support=monthly_child_support,
+            monthly_notional_child_support=monthly_notional_child_support,
+            years=years,
+            recipient_age=recipient_age,
+            youngest_child_age=youngest_child_age,
+        )
+    return calculate_spousal_support_no_children(
+        party1_name=party1_name,
+        party2_name=party2_name,
+        party1_net_income=party1_net_income,
+        party2_net_income=party2_net_income,
+        years=years,
+        recipient_age=recipient_age,
+    )
 #comment
 # ── Make sure child_support.py is importable ─────────────────────────────────
 THIS_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -25,6 +58,7 @@ from child_support import (
     calculate_child_support,
     determine_type_of_splitting,
 )
+from tax import calculate_taxes, TaxInput, ChildInfo
 
 # ── Load Schedule I table once at startup ────────────────────────────────────
 SCHEDULE_I_PATH = os.path.join(THIS_DIR, "schedule_i.json")
@@ -389,36 +423,42 @@ def spousal_calculate():
     try:
         data = request.get_json(force=True)
 
-        party1_name   = data.get("party1_name", "Party 1")
-        party2_name   = data.get("party2_name", "Party 2")
-        party1_income = float(data["party1_income"])
-        party2_income = float(data["party2_income"])
-        years         = float(data["years"])
-        recipient_age = float(data["recipient_age"])
+        party1_name            = data.get("party1_name", "Party 1")
+        party2_name            = data.get("party2_name", "Party 2")
+        party1_net_income      = float(data["party1_net_income"])
+        party2_net_income      = float(data["party2_net_income"])
+        years                  = float(data["years"])
+        recipient_age          = float(data["recipient_age"])
+        children               = bool(data.get("children", False))
+        monthly_child_support  = float(data.get("monthly_child_support", 0.0))
+        youngest_child_age     = float(data.get("youngest_child_age", 0.0))
 
         result = calculate_spousal_support(
             party1_name=party1_name,
             party2_name=party2_name,
-            party1_income=party1_income,
-            party2_income=party2_income,
+            party1_net_income=party1_net_income,
+            party2_net_income=party2_net_income,
             years=years,
             recipient_age=recipient_age,
+            children=children,
+            monthly_child_support=monthly_child_support,
+            youngest_child_age=youngest_child_age,
         )
 
         return jsonify({
-            "payor":             result.payor,
-            "recipient":         result.recipient,
-            "gross_income_diff": result.gross_income_diff,
-            "pct_low":           result.pct_low,
-            "pct_med":           result.pct_med,
-            "pct_high":          result.pct_high,
-            "monthly_low":       result.monthly_low,
-            "monthly_med":       result.monthly_med,
-            "monthly_high":      result.monthly_high,
-            "annual_low":        result.annual_low,
-            "annual_med":        result.annual_med,
-            "annual_high":       result.annual_high,
-            "duration_label":    result.duration_label,
+            "payor":            result.payor,
+            "recipient":        result.recipient,
+            "net_income_diff":  result.net_income_diff,
+            "pct_low":          result.pct_low,
+            "pct_med":          result.pct_med,
+            "pct_high":         result.pct_high,
+            "monthly_low":      result.monthly_low,
+            "monthly_med":      result.monthly_med,
+            "monthly_high":     result.monthly_high,
+            "annual_low":       result.annual_low,
+            "annual_med":       result.annual_med,
+            "annual_high":      result.annual_high,
+            "duration_label":   result.duration_label,
         })
 
     except KeyError as e:
@@ -426,6 +466,341 @@ def spousal_calculate():
     except Exception as e:
         return jsonify({"error": str(e)}), 400
     
+# ── /tax-chat ─────────────────────────────────────────────────────────────────
+
+TAX_CHAT_SYSTEM = """
+You are a Canadian income tax intake assistant for CloudAct (Ontario).
+
+Your job is to collect all the information needed to calculate a user's Ontario
+income taxes and benefits by asking questions one at a time, then call the
+calculate_taxes tool. Do not do any math yourself — the calculator handles all of that.
+
+Ask one question at a time. If the user volunteers multiple pieces of information
+at once, extract all of it and only ask about what is still missing.
+Use plain language — avoid tax jargon where possible, but do use correct field names
+when confirming what you've collected.
+
+Collect the following through conversation:
+
+BASIC INFO
+- Age (integer, as of December 31 of the tax year)
+- Tax year (default: 2025 if not mentioned)
+- Do they have a disability and claim the Disability Tax Credit? (Yes / No)
+
+INCOME  (enter 0 if none — don't skip fields)
+- Employed / T4 income (gross employment income before deductions)
+- Net self-employment income (after business expenses)
+- Other income (interest, dividends, rental income, foreign income, RRSP withdrawals, etc.)
+- Spousal / child support received (taxable alimony only — not child support received)
+- Deductible support paid (court-ordered spousal support paid to a former spouse)
+
+DEDUCTIONS  (enter 0 if none)
+- Child care expenses paid
+- Other deductions (RRSP contributions, union dues, moving expenses, etc.)
+
+CHILDREN  (only ask if they mention having children, or if income suggests it)
+For each child:
+- Date of birth (ask for year and month; you will format it as YYYY-MM-01 internally)
+- Custody arrangement: who do they primarily live with?
+  Use exactly: "Party 1" (this user), "Party 2" (other parent), or "Shared" (50/50)
+- Does the child have a disability? (Yes / No)
+
+If there are children with shared or split custody, also ask:
+- Monthly child support this user pays
+- Monthly child support the other parent pays
+- The other parent's annual income (needed to determine which parent claims the child for credits)
+
+Once you have everything, call calculate_taxes immediately — do not ask for permission.
+
+After you get the result, write a brief plain-language explanation (who qualifies for which benefits, why taxable income differs from gross, etc.), then output the FULL detailed breakdown below — every section, every line, no exceptions. Round all amounts to the nearest dollar and use comma formatting (e.g. $12,345). Include every line even if it is $0.
+
+--- Income ---
+Gross income:                      $X,XXX
+Taxable income:                    $X,XXX
+
+--- Federal Credits ---
+Basic personal amount:             $X,XXX
+CPP/EI credit:                     $X,XXX
+Canada employment credit:          $X,XXX
+Eligible dependent credit:         $X,XXX
+Age amount:                        $X,XXX
+Disability credit:                 $X,XXX
+Total federal credits:             $X,XXX
+
+--- Provincial Credits ---
+Basic personal amount (ON):        $X,XXX
+Eligible dependent credit (ON):    $X,XXX
+Age amount (ON):                   $X,XXX
+Disability credit (ON):            $X,XXX
+Total provincial credits:          $X,XXX
+
+--- Tax ---
+Federal tax before credits:        $X,XXX
+Provincial tax before credits:     $X,XXX
+Federal tax:                       $X,XXX
+Provincial tax:                    $X,XXX
+Ontario health premium:            $X,XXX
+Ontario surtax:                    $X,XXX
+Ontario tax reduction:             $X,XXX
+Ontario LIFT credit:               $X,XXX
+
+--- CPP / EI ---
+CPP base:                          $X,XXX
+CPP enhanced:                      $X,XXX
+CPP2:                              $X,XXX
+EI premium:                        $X,XXX
+Total CPP/EI deductions:           $X,XXX
+
+--- Benefits ---
+Canada Workers Benefit:            $X,XXX
+Canada Child Benefit:              $X,XXX
+GST/HST benefit:                   $X,XXX
+Ontario Child Benefit:             $X,XXX
+Ontario Sales Tax Credit:          $X,XXX
+Climate Action Incentive:          $X,XXX
+Total benefits:                    $X,XXX
+
+--- Summary ---
+**Federal tax:                     $X,XXX**
+**Ontario provincial tax:          $X,XXX**
+**Total taxes owing:               $X,XXX**
+Total benefits received:           $X,XXX
+Net income after tax and benefits: $X,XXX
+
+This full breakdown must always appear at the end of your reply, after any explanation.
+
+Ontario income tax only (2024 or 2025). Politely decline questions about other provinces or corporate tax.
+"""
+
+TAX_CALC_TOOL = {
+    "name": "calculate_taxes",
+    "description": "Calculate Ontario income taxes and benefits once all information has been collected from the user.",
+    "input_schema": {
+        "type": "object",
+        "required": [
+            "age", "year",
+            "eligible_for_disability",
+            "employed_income", "self_employed_income", "other_income",
+            "support_received", "deductible_support_paid",
+            "child_care_expenses", "other_deductions",
+            "children",
+            "child_support_party1", "child_support_party2",
+            "party2_income"
+        ],
+        "properties": {
+            "age": {
+                "type": "integer",
+                "description": "User's age as of December 31 of the tax year"
+            },
+            "year": {
+                "type": "integer",
+                "description": "Tax year (e.g. 2025). Default to 2025 if not specified.",
+                "default": 2025
+            },
+            "eligible_for_disability": {
+                "type": "string",
+                "enum": ["Yes", "No"],
+                "description": "Does the user have an approved Disability Tax Credit certificate?"
+            },
+            "employed_income": {
+                "type": "number",
+                "description": "Gross T4 / employment income in CAD. 0 if none."
+            },
+            "self_employed_income": {
+                "type": "number",
+                "description": "Net self-employment income (after business expenses) in CAD. 0 if none."
+            },
+            "other_income": {
+                "type": "number",
+                "description": "Other income: interest, dividends, rental, RRSP withdrawals, etc. in CAD. 0 if none."
+            },
+            "support_received": {
+                "type": "number",
+                "description": "Taxable spousal support received (NOT child support). 0 if none."
+            },
+            "deductible_support_paid": {
+                "type": "number",
+                "description": "Court-ordered spousal support paid to a former spouse (deductible). 0 if none."
+            },
+            "child_care_expenses": {
+                "type": "number",
+                "description": "Child care expenses paid in CAD. 0 if none."
+            },
+            "other_deductions": {
+                "type": "number",
+                "description": "Other deductions: RRSP, union dues, moving expenses, etc. in CAD. 0 if none."
+            },
+            "children": {
+                "type": "array",
+                "description": "List of dependent children. Empty array if no children.",
+                "items": {
+                    "type": "object",
+                    "required": ["date_of_birth", "custody_arrangement", "child_has_disability"],
+                    "properties": {
+                        "date_of_birth": {
+                            "type": "string",
+                            "description": "Child's date of birth in YYYY-MM-DD format. Use YYYY-MM-01 if only year/month known."
+                        },
+                        "custody_arrangement": {
+                            "type": "string",
+                            "enum": ["Party 1", "Party 2", "Shared"],
+                            "description": "Who the child primarily lives with. Party 1 = this user."
+                        },
+                        "child_has_disability": {
+                            "type": "string",
+                            "enum": ["Yes", "No"],
+                            "description": "Does the child have a disability?"
+                        }
+                    }
+                }
+            },
+            "child_support_party1": {
+                "type": "number",
+                "description": "Monthly child support this user (Party 1) pays. 0 if none."
+            },
+            "child_support_party2": {
+                "type": "number",
+                "description": "Monthly child support the other parent (Party 2) pays. 0 if none."
+            },
+            "party2_income": {
+                "type": "number",
+                "description": "Other parent's annual income in CAD. 0 if no other parent or unknown."
+            }
+        }
+    }
+}
+
+
+def run_tax_calc_tool(tool_input: dict) -> dict:
+    """Called when Claude invokes the calculate_taxes tool."""
+
+    children_raw = tool_input.get("children", [])
+
+    # Build child_counts from the children list
+    child_counts = {"party1": 0, "party2": 0, "shared": 0,
+                    "party1WithAdultChild": 0, "party2WithAdultChild": 0}
+    child_infos = []
+
+    today = date.today()
+    year = int(tool_input.get("year", 2025))
+
+    for c in children_raw:
+        dob_str = c["date_of_birth"]
+        try:
+            dob = date.fromisoformat(dob_str)
+            age = today.year - dob.year - ((today.month, today.day) < (dob.month, dob.day))
+            is_adult = age >= 18
+        except (ValueError, KeyError):
+            is_adult = False
+
+        arrangement = c["custody_arrangement"]
+        if arrangement == "Party 1":
+            if is_adult:
+                child_counts["party1WithAdultChild"] += 1
+            else:
+                child_counts["party1"] += 1
+        elif arrangement == "Party 2":
+            if is_adult:
+                child_counts["party2WithAdultChild"] += 1
+            else:
+                child_counts["party2"] += 1
+        elif arrangement == "Shared":
+            child_counts["shared"] += 1
+
+        child_infos.append(ChildInfo(
+            date_of_birth=dob_str,
+            custody_arrangement=arrangement,
+            child_has_disability=c.get("child_has_disability", "No"),
+        ))
+
+    minor_total = child_counts["party1"] + child_counts["party2"] + child_counts["shared"]
+    type_of_splitting = determine_type_of_splitting(child_counts, minor_total) if minor_total > 0 else "SEPARATED"
+
+    user_income = (
+        float(tool_input.get("employed_income", 0))
+        + float(tool_input.get("self_employed_income", 0))
+        + float(tool_input.get("other_income", 0))
+    )
+
+    inp = TaxInput(
+        party_num=1,
+        province="ON",
+        age=int(tool_input["age"]),
+        eligible_for_disability=tool_input.get("eligible_for_disability", "No"),
+        employed_income=float(tool_input.get("employed_income", 0)),
+        self_employed_income=float(tool_input.get("self_employed_income", 0)),
+        other_income=float(tool_input.get("other_income", 0)),
+        support_received=float(tool_input.get("support_received", 0)),
+        deductible_support_paid=float(tool_input.get("deductible_support_paid", 0)),
+        child_care_expenses=float(tool_input.get("child_care_expenses", 0)),
+        other_deductions=float(tool_input.get("other_deductions", 0)),
+        children=child_infos,
+        type_of_splitting=type_of_splitting,
+        child_counts=child_counts,
+        child_support_amounts={
+            "party1": float(tool_input.get("child_support_party1", 0)),
+            "party2": float(tool_input.get("child_support_party2", 0)),
+        },
+        both_incomes={
+            "party1": user_income,
+            "party2": float(tool_input.get("party2_income", 0)),
+        },
+        year=year,
+    )
+
+    return calculate_taxes(inp)
+
+
+@app.route("/tax-chat", methods=["POST"])
+def tax_chat():
+    try:
+        body = request.get_json(force=True)
+        messages = body.get("messages", [])
+
+        client = anthropic.Anthropic()
+
+        for _ in range(10):
+            response = client.messages.create(
+                model=os.getenv("CLAUDE_MODEL", "claude-sonnet-4-6"),
+                max_tokens=1024,
+                system=TAX_CHAT_SYSTEM,
+                tools=[TAX_CALC_TOOL],
+                messages=messages,
+            )
+
+            assistant_content = []
+            for block in response.content:
+                if hasattr(block, "model_dump"):
+                    assistant_content.append(block.model_dump())
+                else:
+                    assistant_content.append(block)
+
+            messages.append({"role": "assistant", "content": assistant_content})
+
+            if response.stop_reason != "tool_use":
+                reply = "".join(
+                    b["text"] for b in assistant_content if b.get("type") == "text"
+                )
+                return jsonify({"reply": reply, "messages": messages})
+
+            tool_results = []
+            for block in assistant_content:
+                if block.get("type") == "tool_use":
+                    result = run_tax_calc_tool(block["input"])
+                    tool_results.append({
+                        "type":        "tool_result",
+                        "tool_use_id": block["id"],
+                        "content":     json.dumps(result),
+                    })
+
+            messages.append({"role": "user", "content": tool_results})
+
+        return jsonify({"error": "Reached iteration limit without a final reply."}), 500
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
 # ── Entry point ───────────────────────────────────────────────────────────────
 
 if __name__ == "__main__":
