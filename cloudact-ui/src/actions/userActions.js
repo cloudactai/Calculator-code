@@ -32,6 +32,7 @@ import store from "../store";
 import axios from "../utils/axios";
 import { getUserId, getUserSID, updateCookiesInfo } from "../utils/helpers";
 import { companyInfoAction } from "./companyActions";
+import { persistAuthTokens } from "../utils/authToken";
 import CookiesParser from "../utils/cookieParser/Cookies";
 import toast from "react-hot-toast"
 
@@ -48,6 +49,8 @@ export const userLoginAction = (email, password) => async (dispatch) => {
       data.data.status !== "error" &&
       !data.data.body.hasOwnProperty("authkey")
     ) {
+
+      persistAuthTokens(data.data.body);
 
       const roleData = data.data.body.role; 
       const baseCookieName = "allUserInfo";
@@ -202,7 +205,9 @@ export const userLogoutAction = () => async (dispatch) => {
     "companyInfo",
     "userProfile",
     "calculatorLabel",
+    "AccessToken",
     "DiagnoseConnection",
+    "RefreshToken",
     "province"
   ];
 
@@ -374,6 +379,8 @@ export const userOPTMatchAction = (matchObj) => async (dispatch) => {
         CookiesParser.set("allUserInfo", res.data.data.body, {
           path: "/",
         });
+        persistAuthTokens(res.data.data.body);
+
         Cookies.set("authClio", JSON.stringify(res.data.data.body.authClio), {
           path: "/",
         });

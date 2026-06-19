@@ -1,11 +1,6 @@
 import axios from "axios";
 import { APIS, REACT_APP_ENVIRONMENT } from "../config";
-import Cookies from 'js-cookie';
-
-// Function to get token from cookies
-const getToken = () => {
-  return Cookies.get('AccessToken');
-};
+import { getAuthToken } from "./authToken";
 
 const instance = axios.create({
   baseURL: 
@@ -19,8 +14,15 @@ const instance = axios.create({
 
 instance.interceptors.request.use(
   function (config) {
-    const token = getToken();
-    config.headers.Authorization = token ? `Bearer ${token}` : '';
+    const token = getAuthToken();
+    config.headers = config.headers || {};
+
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    } else {
+      delete config.headers.Authorization;
+    }
+
     return config;
   },
   function (error) {

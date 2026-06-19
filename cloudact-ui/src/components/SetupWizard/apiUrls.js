@@ -1,7 +1,7 @@
 // Ported from Report-Generation. Returns the env override if set, else the
 // relative fallback path. Lets each setup-wizard endpoint be repointed at the
 // backend that serves the /api/* auth routes.
-import Cookies from "js-cookie";
+import { getAuthToken } from "../../utils/authToken";
 
 function trimValue(value) {
   return String(value || "").trim();
@@ -18,6 +18,6 @@ export function apiPath(envValue, fallbackPath) {
 // avoids relying on the cookie being readable cross-domain. Returns an empty
 // object when there's no token so we never send "Bearer undefined".
 export function authHeaders() {
-  const token = Cookies.get("AccessToken");
+  const token = getAuthToken();
   return token ? { Authorization: `Bearer ${token}` } : {};
 }
