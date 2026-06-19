@@ -94,6 +94,7 @@ function fmtCAD(n) {
 export default function FamilyLawChat() {
   const [signedIn, setSignedIn] = useState(hasSession());
   const [open, setOpen] = useState(false);
+  const [fullscreen, setFullscreen] = useState(false);
   const [activeCalc, setActiveCalc] = useState("child");
 
   // Separate conversation per AI calculator so switching tabs preserves context.
@@ -284,17 +285,40 @@ export default function FamilyLawChat() {
   return (
     <div className="flc-root">
       {open && (
-        <div className="flc-panel" role="dialog" aria-label="Family Law calculators">
+        <div
+          className={`flc-panel${fullscreen ? " is-fullscreen" : ""}`}
+          role="dialog"
+          aria-label="Family Law calculators"
+        >
           <div className="flc-header">
             <div className="flc-header-top">
               <span className="flc-title">CloudAct · Family Law Calculators</span>
-              <button
-                className="flc-icon-btn"
-                onClick={() => setOpen(false)}
-                aria-label="Close"
-              >
-                ✕
-              </button>
+              <div className="flc-header-btns">
+                <button
+                  className="flc-icon-btn"
+                  onClick={() => setFullscreen((f) => !f)}
+                  aria-pressed={fullscreen}
+                  aria-label={fullscreen ? "Exit full screen" : "Full screen"}
+                  title={fullscreen ? "Exit full screen" : "Full screen"}
+                >
+                  {fullscreen ? (
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M9 9H5V5" /><path d="M15 9h4V5" /><path d="M9 15H5v4" /><path d="M15 15h4v4" />
+                    </svg>
+                  ) : (
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M15 3h6v6" /><path d="M9 21H3v-6" /><path d="M21 3l-7 7" /><path d="M3 21l7-7" />
+                    </svg>
+                  )}
+                </button>
+                <button
+                  className="flc-icon-btn"
+                  onClick={() => setOpen(false)}
+                  aria-label="Close"
+                >
+                  ✕
+                </button>
+              </div>
             </div>
             <div className="flc-tabs" role="tablist">
               {CALCULATORS.map((c) => (

@@ -92,6 +92,26 @@
   color: #fff;
 }
 
+.flc-icon-btn svg {
+  display: block;
+}
+
+/* Header button group (full-screen toggle + close) */
+.flc-header-btns {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+/* Full-screen mode — expand the panel to (nearly) fill the viewport.
+   Stays anchored bottom-right so the launcher remains reachable. */
+.flc-panel.is-fullscreen {
+  width: calc(100vw - 48px);
+  height: calc(100vh - 110px);
+  max-width: none;
+  max-height: none;
+}
+
 /* Calculator selector tabs */
 .flc-tabs {
   display: flex;
