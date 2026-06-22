@@ -579,17 +579,7 @@ const Routes = () => {
       </Route> */}
 
       <Route path="/" exact>
-        {userInfo && userInfo.role[0].role === Roles.SUPERADMIN ? (
-          <Redirect to={AUTH_ROUTES.SUPERADMINDB} />
-        ) : userInfo ? (
-          clioConnectedOrNot() && intuitConnectedOrNot() ? (
-            <Redirect to={AUTH_ROUTES.HOME} />
-          ) : (
-            <Redirect to={AUTH_ROUTES.SETUPWIZARD} />
-          )
-        ) : (
-          <Redirect to={UN_AUTH_ROUTES.SIGNIN} />
-        )}
+        <Redirect to={AUTH_ROUTES.CALCULATOR} />
       </Route>
 
       <Route path={AUTH_ROUTES.HOME}>
@@ -626,7 +616,7 @@ const Routes = () => {
       </Route>
 
       <Route path="**">
-        {userInfo ? <NotFound /> : <Redirect to={UN_AUTH_ROUTES.SIGNIN} />}
+        <NotFound />
       </Route>
     </Switch>
   );

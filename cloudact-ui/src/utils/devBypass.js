@@ -2,13 +2,10 @@
  * LOCAL DEV AUTH BYPASS
  * ---------------------
  * Seeds the encrypted auth cookies the app normally gets from the backend on
- * login, so the UI can be explored locally without any backend running.
+ * login, so the calculator UI can be explored locally without any backend running.
  *
- * Enable: put REACT_APP_DEV_BYPASS_AUTH=true in cloudact-ui/.env, run npm start.
- * Disable: remove the variable (or just don't set it).
- *
- * Guarded by NODE_ENV — this is dead code in production builds even if the
- * env var were set, so it can never bypass auth on a deployed site.
+ * Always active in development builds. Safe in production — NODE_ENV guard
+ * makes this dead code in any production bundle.
  *
  * Pages will render and navigation works, but anything that fetches data
  * (matters, tasks, reports) will show empty/error states — there's no API.
@@ -16,9 +13,7 @@
 import Cookies from "js-cookie";
 import { encrypt } from "./Encrypted";
 
-const BYPASS_ENABLED =
-  process.env.NODE_ENV === "development" &&
-  process.env.REACT_APP_DEV_BYPASS_AUTH === "true";
+const BYPASS_ENABLED = process.env.NODE_ENV === "development";
 
 const DEV_USER = {
   id: 1,
@@ -94,6 +89,6 @@ if (BYPASS_ENABLED) {
 
   console.warn(
     "[devBypass] Auth bypass active — signed in as Dev User (ADMIN). " +
-      "API-backed pages will show empty data. Remove REACT_APP_DEV_BYPASS_AUTH to disable."
+      "API-backed pages will show empty data."
   );
 }
