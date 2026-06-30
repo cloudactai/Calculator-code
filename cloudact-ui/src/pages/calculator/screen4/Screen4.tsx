@@ -254,8 +254,14 @@ const Screen4 = ({
   }, []);
 
   const downloadReports = async (id: number) => {
-    const data = await apiCalculatorById.get_value(id);
- 
+    if (!id || isNaN(id)) return;
+    let data: any;
+    try {
+      data = await apiCalculatorById.get_value(id);
+    } catch {
+      return;
+    }
+    if (!data?.report_data) return;
     const ExtractedData = JSON.parse(data.report_data);
     // setRestructioring(ExtractedData.restructioring)
     console.log("ExtractedData",ExtractedData.restructioring)

@@ -118,7 +118,9 @@ export interface calculatorScreen2State {
 export const getCalculatorIdFromQuery = (value: Object) => {
   const id = value.get("id");
 
-  return id ? parseInt(id) : getCookieCalculatorId();
+  if (!id || id === 'null') return getCookieCalculatorId();
+  const parsed = parseInt(id);
+  return isNaN(parsed) ? null : parsed;
 };
 
 export const getCalculatorTypeFromQuery = (value: Object) => {

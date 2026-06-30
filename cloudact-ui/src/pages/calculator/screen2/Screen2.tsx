@@ -18,6 +18,8 @@ import Tooltip from "react-bootstrap/Tooltip";
 import CAL_PERCENTAGE from "../CalculationPercentage";
 import SettingsIcon from "@mui/icons-material/Settings";
 import { fetchAllCalculatorDatawithTaxs } from "../../../utils/Apis/calculator/fetchAllCalculatorDatawithTaxs";
+import { calcSpousalSupportFlask } from "../../../utils/Apis/calculator/calcSpousalSupportFlask";
+import { calcChildSupportFlask } from "../../../utils/Apis/calculator/calcChildSupportFlask";
 
 
 import useQuery from "../../../hooks/useQuery";
@@ -78,6 +80,7 @@ import { momentFunction } from "../../../utils/moment";
 import {
   backgroundState,
   calculatorScreen2State,
+  CHILD_SUPPORT_CAL,
   CUSTODIAL_FORMULA,
   getCalculatorIdFromQuery,
   ItypeOfSplitting,
@@ -228,6 +231,7 @@ const Screen2 = ({
   const history = useHistory();
   const calculatorId = useQuery();
   const [showAlertFillAllDetails, setShowAlertFillAllDetails] = useState(false);
+  const [showFlaskError, setShowFlaskError] = useState(false);
   const storedMatterNumber = JSON.parse(localStorage.getItem('selectedCalculatorMatterNumber') || '""');
 
   // const [taxeswithAddSupport, settaxeswithAddSupport] = useState({
@@ -497,8 +501,8 @@ const Screen2 = ({
   });
 
   const [distinctYears, setDistinctYears] = useState({
-    allYears: [{ year: 0 }],
-    selectedYear: 0,
+    allYears: [{ year: 2025 }],
+    selectedYear: 2025,
   });
 
   const [showSaveCalculatorValues, setShowSaveCalculatorValues] =
@@ -972,12 +976,12 @@ const Screen2 = ({
   });
 
   const [storedCalculatorValues, setStoredCalculatorValues] = useState({
-    label: calculatorState.label || getCalculatorLabelFromCookies().label,
+    label: calculatorState.label || getCalculatorLabelFromCookies()?.label || "",
     description:
       calculatorState.description ||
-      getCalculatorLabelFromCookies().description ||
+      getCalculatorLabelFromCookies()?.description ||
       screen1.background.party1FirstName,
-    savedBy: calculatorState.savedBy || getAllUserInfo().username,
+    savedBy: calculatorState.savedBy || getAllUserInfo()?.username || "",
     error: "",
   });
 
@@ -1957,8 +1961,78 @@ const Screen2 = ({
     saveValues: boolean
   ) => {
 
+    // Build the minimal object Screen4 needs — all heavy computation skipped.
+    const _spousalSupport = {
+      spousalSupport1Med:  spousalSupportMed.current.party1,
+      spousalSupport2Med:  spousalSupportMed.current.party2,
+      spousalSupport1Low:  spousalSupportLow.current.party1,
+      spousalSupport2Low:  spousalSupportLow.current.party2,
+      spousalSupport1High: spousalSupportHigh.current.party1,
+      spousalSupport2High: spousalSupportHigh.current.party2,
+      givenTo: spousalSupportGivenTo(),
+    };
 
-      let gettaxbyIncome = {
+    const _childSupport = {
+      childSupport1: childSupportRef.current.party1,
+      childSupport2: childSupportRef.current.party2,
+      givenTo: childSupportGivenTo(),
+    };
+
+    const _obj: any = {
+      income,
+      spousalSupport: _spousalSupport,
+      childSupport: _childSupport,
+      childSupportReadOnly: childSupportReadOnly.current,
+      tax_year: distinctYears.selectedYear,
+      totalIncomeParty1: totalIncomeByIncomeState(income.party1),
+      totalIncomeParty2: totalIncomeByIncomeState(income.party2),
+      dobParty1: momentFunction.calculateNumberOfYears(screen1.background.party1DateOfBirth),
+      dobParty2: momentFunction.calculateNumberOfYears(screen1.background.party2DateOfBirth),
+      durationOfSupport: calculateDurationOfSupport(),
+      specialExpensesArr,
+      otherhouseholdmember,
+      nonTaxableincome,
+      deductions,
+      benefits,
+      guidelineIncome,
+      scenarios,
+      lumpsumReport:    { highparty2: 0, midparty2: 0, lowparty2: 0 },
+      insurenceReport:  { highparty2: 0, midparty2: 0, lowparty2: 0 },
+      viceversaReport:  { highparty2: 0, midparty2: 0, lowparty2: 0, child: 0 },
+      gettaxsAndDedutionByIncome: { party1: [], party2: [] },
+      changeInTaxesAndBenefit: {
+        changeInTaxesAndBenefitLow1: 0, changeInTaxesAndBenefitLow2: 0,
+        changeInTaxesAndBenefitMed1: 0, changeInTaxesAndBenefitMed2: 0,
+        changeInTaxesAndBenefitHigh1: 0, changeInTaxesAndBenefitHigh2: 0,
+      },
+      taxesWithoutSpecialExpenses: taxesWithoutSpecialExpenses.current,
+      taxesWithSpecialExpenses: taxesWithSpecialExpenses.current,
+      specialExpenses: {
+        specialExpensesLow1: 0, specialExpensesLow2: 0,
+        specialExpensesMed1: 0, specialExpensesMed2: 0,
+        specialExpensesHigh1: 0, specialExpensesHigh2: 0,
+      },
+      report_type: typeOfReport.current,
+      calculator_type: typeOfCalculatorSelected,
+      updated_at: new Date(),
+    };
+
+    const _report_data = {
+      ..._obj,
+      background: screen1.background,
+      aboutTheRelationship: screen1.aboutTheRelationship,
+      aboutTheChildren: screen1.aboutTheChildren,
+    };
+
+    settingScreen2StateFromChild({ ..._obj, report_data: _report_data });
+
+    history.push(
+      `${AUTH_ROUTES.CALCULATOR}?id=${getCalculatorIdFromQuery(calculatorId)}&step=3&saveValues=${saveValues}`
+    );
+    return;
+
+    // ── DEAD CODE BELOW — original heavy computation kept for reference ──
+    let gettaxbyIncome = {
         tax_year: distinctYears.selectedYear,
         "others": [
   
@@ -2001,7 +2075,11 @@ const Screen2 = ({
         ]
       }
   
-      const AlldataofTaxAnddedution = await fetchSpecificTaxandDeductionforAmount(gettaxbyIncome)
+      let AlldataofTaxAnddedution: any[] = [];
+      try {
+        const _taxResult = await fetchSpecificTaxandDeductionforAmount(gettaxbyIncome);
+        AlldataofTaxAnddedution = _taxResult ?? [];
+      } catch { /* non-fatal — continue with empty array */ }
      
 
     let childSupport = {
@@ -5388,8 +5466,9 @@ const Screen2 = ({
     //   taxesWithSpecialExpenses,
     //   taxesWithoutSpecialExpenses
     // );
-    setShowCalculationCompleted(true);
-    setShowSaveCalculatorValues(true);
+    // NOTE: setShowCalculationCompleted / setShowSaveCalculatorValues moved to
+    // calculateChildAndSpousalSupportAuto so the modal only appears AFTER Flask
+    // has overridden the spousal support refs with the correct values.
   };
 
   const getDateofBirthParty=(PartyNum:number)=>{
@@ -5488,68 +5567,102 @@ const Screen2 = ({
      
 
     if (checkIfAllMandatoryValuesAreFilled()) {
-      // //storing the original values. These values are stored because we would reset these values after the calculation for low, med, high.
-      storeBasicValues();
-      // // We need to calculate child support before calculating anything. First Child support will be calculated and stored in useRef variables. Then these variables are used in all the calculations.
-      calculateChildSupport();
+      setLoading(true);
 
-      
-      const incomes = {
-        totalIncomeParty1: totalIncomeByIncomeState(income.party1) + nonTaxableIncomeParty1(),
-        totalIncomeParty2: totalIncomeByIncomeState(income.party2) + nonTaxableIncomeParty2(),
+      // ── Child-support-only path ────────────────────────────────────────────
+      if (typeOfCalculatorSelected === CHILD_SUPPORT_CAL) {
+        const childrenList: any[] = screen1.aboutTheChildren.childrenInfo ?? [];
+        const csPayload = {
+          party1_income: totalIncomeByIncomeState(income.party1) + nonTaxableIncomeParty1(),
+          party2_income: totalIncomeByIncomeState(income.party2) + nonTaxableIncomeParty2(),
+          party1_name: party1Name(),
+          party2_name: party2Name(),
+          children: childrenList.map((c: any) => ({
+            name: c.name ?? "",
+            csg_table: c.CSGTable ?? "No",
+            child_support_override: c.ChildSupportOverride ?? 0,
+            custody_arrangement: c.custodyArrangement ?? "Party 1",
+          })),
+        };
+        console.log('[Flask CS] payload:', csPayload);
+
+        const csResult = await calcChildSupportFlask(csPayload);
+        console.log('[Flask CS] result:', csResult);
+
+        if (!csResult) {
+          setLoading(false);
+          setShowFlaskError(true);
+          return;
+        }
+
+        // child_support_ref values are annual totals per party
+        const csReadOnly = {
+          party1: csResult.child_support_ref.party1_annual,
+          party2: csResult.child_support_ref.party2_annual,
+        };
+        childSupportReadOnly.current = csReadOnly;
+        childSupportRef.current = {
+          party1: csResult.child_support_ref.party1_annual,
+          party2: csResult.child_support_ref.party2_annual,
+        };
+
+        Cookies.set('demo_cal_data', JSON.stringify(objforApi), { path: '/' });
+        setLoading(false);
+        setShowCalculationCompleted(true);
+        setShowSaveCalculatorValues(true);
+        return;
+      }
+      // ── End child-support-only path ───────────────────────────────────────
+
+      const childrenList: any[] = screen1.aboutTheChildren.childrenInfo ?? [];
+      const hasChildren = childrenList.length > 0;
+      const childAges = childrenList.map((c: any) =>
+        momentFunction.differenceBetweenNowAndThen(c.dateOfBirth) as number
+      );
+      const youngestChildAge = hasChildren ? Math.min(...childAges) : 0;
+
+      const flaskPayload = {
+        party1_net_income: totalIncomeByIncomeState(income.party1) + nonTaxableIncomeParty1(),
+        party2_net_income: totalIncomeByIncomeState(income.party2) + nonTaxableIncomeParty2(),
+        party1_age: momentFunction.calculateNumberOfYears(screen1.background.party1DateOfBirth),
+        recipient_age: momentFunction.calculateNumberOfYears(screen1.background.party2DateOfBirth),
+        years: momentFunction.differenceBetweenTwoDates(
+          screen1.aboutTheRelationship.dateOfMarriage,
+          screen1.aboutTheRelationship.dateOfSeparation
+        ),
+        province: getProvinceOfParty1(),
+        children: hasChildren,
+        children_list: hasChildren ? childrenList : undefined,
+        youngest_child_age: youngestChildAge,
+        // monthly_child_support and monthly_notional_child_support omitted —
+        // Python computes them from children_list via the Schedule I calculator
       };
+      console.log('[Flask] payload:', flaskPayload);
 
-    
-      if (totalNumberOfChildren(screen1.aboutTheChildren) === 0) {
-        // High Case
-        typeOfReport.current = WITHOUT_CHILD_FORMULA;
-        await calculateSpousalSupportAuto({
-          highLimit: true,
-          lowTaxes: false,
-          medTaxes: false,
-          highTaxes: false,
-          specialExpensesLow: false,
-          specialExpensesMed: false,
-          specialExpensesHigh: false,
-        });
-      } else if (
-        determineWhichPartyHasGreaterIncomeAndChild(
-          screen1.aboutTheChildren,
-          incomes
-        )
-      ) {
-        // High Case
-        typeOfReport.current = ONLY_CHILD;
-        await calculateSpousalSupportAuto({
-          highLimit: true,
-          lowTaxes: false,
-          medTaxes: false,
-          highTaxes: false,
-          specialExpensesLow: false,
-          specialExpensesMed: false,
-          specialExpensesHigh: false,
-        });
-      } else if (totalNumberOfChildren(screen1.aboutTheChildren) > 0) {
-        typeOfReport.current = CUSTODIAL_FORMULA;
-        await calculateSpousalSupportAuto({
-          highLimit: false,
-          lowTaxes: true,
-          medTaxes: true,
-          highTaxes: true,
-          specialExpensesLow: true,
-          specialExpensesMed: true,
-          specialExpensesHigh: true,
-        });
+      const flaskResult = await calcSpousalSupportFlask(flaskPayload);
+
+      console.log('[Flask] result:', flaskResult);
+      console.log('[Flask] refs before override - low:', spousalSupportLow.current, 'med:', spousalSupportMed.current, 'high:', spousalSupportHigh.current);
+
+      if (flaskResult) {
+        spousalSupportLow.current.party1  = flaskResult.monthly_low;
+        spousalSupportLow.current.party2  = 0;
+        spousalSupportMed.current.party1  = flaskResult.monthly_med;
+        spousalSupportMed.current.party2  = 0;
+        spousalSupportHigh.current.party1 = flaskResult.monthly_high;
+        spousalSupportHigh.current.party2 = 0;
+        console.log('[Flask] refs after override - low:', spousalSupportLow.current, 'med:', spousalSupportMed.current, 'high:', spousalSupportHigh.current);
+      } else {
+        setLoading(false);
+        setShowFlaskError(true);
+        return;
       }
 
-      Cookies.set('demo_cal_data',JSON.stringify(objforApi), {
-        path:'/'
-       })
-  
-      const {data} = await fetchAllCalculatorDatawithTaxs(objforApi);
-      setAllApiDataCal(data)
-  
-      console.log('checkDataaExistence',data)
+      Cookies.set('demo_cal_data', JSON.stringify(objforApi), { path: '/' });
+
+      setLoading(false);
+      setShowCalculationCompleted(true);
+      setShowSaveCalculatorValues(true);
 
       //else if if any party has more income and also have child custody,
       //then spousal support will be calculated by years of living together (same as highlimit and when there is no child.)
@@ -5621,33 +5734,29 @@ const Screen2 = ({
       });
   };
 
-  const fetchDistinctTaxYears = () => {
-    return new Promise((resolve, reject) => {
-      setLoading(true);
-      getDistinctYearsInTaxRef()
-        .then((res) => {
-          const year =
-            screen2.tax_year !== -1
-              ? screen2.tax_year
-              : res[res.length - 1].year;
+  const fetchDistinctTaxYears = async () => {
+    setLoading(true);
 
-          setDistinctYears({
-            allYears: res,
-            selectedYear: year,
-          });
+    const timeout = new Promise<never>((_, reject) =>
+      setTimeout(() => reject(new Error('timeout')), 3000)
+    );
 
-          fetchFederalDBValues(year, getProvinceOfParty1()).then((res) => {
-            resolve(true);
-          });
-        })
-        .catch((err) => {
-          console.log("err", err);
-          // alert("Error Fetching Tax Years");
-          reject(false);
-        });
-    });
+    try {
+      const res = await Promise.race([getDistinctYearsInTaxRef(), timeout]);
+      const year = screen2.tax_year !== -1 ? screen2.tax_year : 2025;
+      setDistinctYears({ allYears: res, selectedYear: year });
+
+      try {
+        await fetchFederalDBValues(year, getProvinceOfParty1());
+      } catch {
+        // optional — continue without it
+      }
+    } catch {
+      setDistinctYears({ allYears: [{ year: 2025 }], selectedYear: 2025 });
+    } finally {
+      setLoading(false);
+    }
   };
-
   const checkIfScreen1OptionsFilled = () => {
     if (
       screen1.background.party1DateOfBirth === "" ||
@@ -7582,20 +7691,34 @@ const Screen2 = ({
 
   const AlertFillAllDetails = () => {
     return (
-      <ModalInputCenter
-        heading="Please fill all details"
-        handleClick={() => {
-          setShowAlertFillAllDetails(false);
-        }}
-        changeShow={() => setShowAlertFillAllDetails(false)}
-        show={showAlertFillAllDetails}
-        action="Ok"
-        cancelOption="Cancel"
-      >
-        <p className="heading-5">
-          Please fill all the details to proceed further!
-        </p>
-      </ModalInputCenter>
+      <>
+        <ModalInputCenter
+          heading="Please fill all details"
+          handleClick={() => {
+            setShowAlertFillAllDetails(false);
+          }}
+          changeShow={() => setShowAlertFillAllDetails(false)}
+          show={showAlertFillAllDetails}
+          action="Ok"
+          cancelOption="Cancel"
+        >
+          <p className="heading-5">
+            Please fill all the details to proceed further!
+          </p>
+        </ModalInputCenter>
+        <ModalInputCenter
+          heading="Calculation Failed"
+          handleClick={() => setShowFlaskError(false)}
+          changeShow={() => setShowFlaskError(false)}
+          show={showFlaskError}
+          action="Ok"
+          cancelOption="Cancel"
+        >
+          <p className="heading-5">
+            The spousal support calculation could not be completed. Please ensure the backend is running and try again.
+          </p>
+        </ModalInputCenter>
+      </>
     );
   };
 
