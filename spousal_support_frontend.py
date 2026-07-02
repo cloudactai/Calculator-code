@@ -44,51 +44,42 @@ def run_iterative():
     year = 2025   # use available tax constants; swap to 2021 when those are added
 
     # Child aged 5 at time of separation → approximate DOB
-    child_dob = f"{year - 5}-07-01"
     children = [
         TaxChildInfo(
-            date_of_birth        = child_dob,
+            date_of_birth        = "2012-01-01",
             custody_arrangement  = "Party 2",   # sole custody Party 2
             child_has_disability = "No",
         )
     ]
     child_counts = {"party1": 0, "party2": 1, "shared": 0}
-
+    
     r = calculate_spousal_support_iterative(
-        payor_gross         = 90_000,
-        recipient_gross     = 20_000,
-        payor_age           = 40,
-        recipient_age       = 38,
-        years               = 10.0,
+        payor_gross         = 90000,
+        recipient_gross     = 20000,
+        payor_age           = 35,
+        recipient_age       = 35,
+        years               = 15.0,
         children            = children,
         child_counts        = child_counts,
-        monthly_cs_paid     = 841.0,
-        monthly_notional_cs = 128.0,
-        youngest_child_age  = 5.0,
+        # monthly_cs_paid     = 841.0,
+        # monthly_notional_cs = 128.0,
+        youngest_child_age  = 15.0,
         province            = "ON",
         year                = year,
+        payor_is_party1     = True,  # payor ($170k) is UI Party 2
     )
 
     print()
     print("=" * 60)
     print("  ITERATIVE WITH-CHILDREN FORMULA  (tax.py convergence)")
     print("=" * 60)
-    print(f"\n  Inputs")
-    print(f"    Party 1 gross income          :    $90,000")
-    print(f"    Party 2 gross income          :    $20,000")
-    print(f"    Monthly CS paid by Party 1    :       $841")
-    print(f"    Monthly notional CS (Party 2) :       $128")
-    print(f"    Years of cohabitation         :         10")
-    print(f"    Recipient age                 :         38")
-    print(f"    Youngest child age            :          5")
-    print(f"    Tax year constants            :   {year}")
     print(f"\n  Results")
     print(f"    {'Rate':<8} {'Monthly':>10} {'Annual':>12}  {'Payor INDI':>12}  {'Recip INDI':>12}  {'Iters':>6}")
     print(f"    {'-'*8} {'-'*10} {'-'*12}  {'-'*12}  {'-'*12}  {'-'*6}")
     print(f"    {'Low 40%':<8} {r.monthly_low:>10,.0f} {r.annual_low:>12,.0f}  {r.payor_indi_low:>12,.0f}  {r.recipient_indi_low:>12,.0f}  {r.iterations_low:>6}")
     print(f"    {'Mid 43%':<8} {r.monthly_mid:>10,.0f} {r.annual_mid:>12,.0f}  {r.payor_indi_mid:>12,.0f}  {r.recipient_indi_mid:>12,.0f}  {r.iterations_mid:>6}")
     print(f"    {'High 46%':<8} {r.monthly_high:>10,.0f} {r.annual_high:>12,.0f}  {r.payor_indi_high:>12,.0f}  {r.recipient_indi_high:>12,.0f}  {r.iterations_high:>6}")
-    print(f"\n  Excel reference   : Low $376 / Mid $643 / High $926")
+    print(f"    Monthly CS paid: {r.monthly_cs_paid} ")
 
     if r.duration_low >= INDEFINITE:
         print(f"\n  Duration          : Indefinite")

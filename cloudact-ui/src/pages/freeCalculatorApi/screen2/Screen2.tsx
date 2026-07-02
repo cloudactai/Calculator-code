@@ -86,6 +86,8 @@ import {
   childSupportValuesFor,
   fetchChildSupportDetails,
 } from "./childInfo.service";
+import { calcSpousalSupportFlask } from "../../../utils/Apis/calculator/calcSpousalSupportFlask";
+import { calcChildSupportFlask } from "../../../utils/Apis/calculator/calcChildSupportFlask";
 import {
   climateActionIncentiveAB,
   climateActionIncentiveBC,
@@ -3436,65 +3438,124 @@ const Screen2 = ({
   const calculateChildAndSpousalSupportAuto = async () => {
     setis4thDisplay(false);
     if (checkIfAllMandatoryValuesAreFilled()) {
-      // resetAllValues()
-      //storing the original values. These values are stored because we would reset these values after the calculation for low, med, high.
       storeBasicValues();
+      // calculateChildSupport(); // removed — Flask API handles child support
+      setLoading(true);
 
-      // We need to calculate child support before calculating anything. First Child support will be calculated and stored in useRef variables. Then these variables are used in all the calculations.
-      calculateChildSupport();
+      const p1Income = totalIncomeByIncomeState(income.party1);
+      const p2Income = totalIncomeByIncomeState(income.party2);
 
       const incomes = {
-        totalIncomeParty1: totalIncomeByIncomeState(income.party1),
-        totalIncomeParty2: totalIncomeByIncomeState(income.party2),
+        totalIncomeParty1: p1Income,
+        totalIncomeParty2: p2Income,
       };
 
-      if (totalNumberOfChildren(screen1.aboutTheChildren) === 0) {
-        // High Case
-        typeOfReport.current = WITHOUT_CHILD_FORMULA;
-        console.log("if 1");
+      const childrenList: any[] = screen1.aboutTheChildren.childrenInfo ?? [];
+      const hasChildren = childrenList.length > 0;
+      const childAges = childrenList.map((c: any) =>
+        momentFunction.differenceBetweenNowAndThen(c.dateOfBirth) as number
+      );
+      const youngestChildAge = hasChildren ? Math.min(...childAges) : 0;
 
-        await calculateSpousalSupportAuto({
-          highLimit: true,
-          lowTaxes: false,
-          medTaxes: false,
-          highTaxes: false,
-          specialExpensesLow: false,
-          specialExpensesMed: false,
-          specialExpensesHigh: false,
-        });
-      } else if (
-        determineWhichPartyHasGreaterIncomeAndChild(
-          screen1.aboutTheChildren,
-          incomes
-        )
-      ) {
-        // High Case
-        console.log("if 2");
+      // ── Call Flask child support API first ──────────────────────────────
+      let monthly_child_support: number | undefined = undefined;
+      let monthly_notional_child_support: number | undefined = undefined;
 
-        typeOfReport.current = ONLY_CHILD;
-        await calculateSpousalSupportAuto({
-          highLimit: true,
-          lowTaxes: false,
-          medTaxes: false,
-          highTaxes: false,
-          specialExpensesLow: false,
-          specialExpensesMed: false,
-          specialExpensesHigh: false,
-        });
-      } else if (totalNumberOfChildren(screen1.aboutTheChildren) > 0) {
-        typeOfReport.current = CUSTODIAL_FORMULA;
-        console.log("if 3");
+      if (hasChildren) {
+        const csPayload = {
+          party1_income: p1Income,
+          party2_income: p2Income,
+          party1_name: party1Name(),
+          party2_name: party2Name(),
+          children: childrenList.map((c: any) => ({
+            name: c.name ?? "",
+            csg_table: c.CSGTable ?? "No",
+            child_support_override: c.ChildSupportOverride ?? 0,
+            custody_arrangement: c.custodyArrangement ?? "Party 1",
+          })),
+        };
+        console.log('[Flask CS] payload:', csPayload);
+        const csResult = await calcChildSupportFlask(csPayload);
+        console.log('[Flask CS] result:', csResult);
 
-        await calculateSpousalSupportAuto({
-          highLimit: false,
-          lowTaxes: true,
-          medTaxes: true,
-          highTaxes: true,
-          specialExpensesLow: true,
-          specialExpensesMed: true,
-          specialExpensesHigh: true,
-        });
+        if (csResult) {
+          childSupportReadOnly.current = {
+            party1: csResult.party1_annual,
+            party2: csResult.party2_annual,
+          };
+          childSupportRef.current = {
+            party1: csResult.party1_annual,
+            party2: csResult.party2_annual,
+          };
+
+          const p1IsPayor = p1Income >= p2Income;
+          monthly_child_support = p1IsPayor
+            ? csResult.child_support_ref.party1_monthly
+            : csResult.child_support_ref.party2_monthly;
+          monthly_notional_child_support = p1IsPayor
+            ? csResult.party2_monthly
+            : csResult.party1_monthly;
+        }
       }
+
+      // ── Call Flask spousal support API ──────────────────────────────────
+      const flaskPayload: any = {
+        party1_net_income: p1Income,
+        party2_net_income: p2Income,
+        party1_age: momentFunction.calculateNumberOfYears(screen1.background.party1DateOfBirth),
+        recipient_age: momentFunction.calculateNumberOfYears(screen1.background.party2DateOfBirth),
+        years: momentFunction.differenceBetweenTwoDates(
+          screen1.aboutTheRelationship.dateOfMarriage,
+          screen1.aboutTheRelationship.dateOfSeparation
+        ),
+        province: getProvinceOfParty1(),
+        children: hasChildren,
+        children_list: hasChildren ? childrenList : undefined,
+        youngest_child_age: youngestChildAge,
+        ...(monthly_child_support !== undefined && { monthly_child_support }),
+        ...(monthly_notional_child_support !== undefined && { monthly_notional_child_support }),
+      };
+      console.log('[Flask Spousal] payload:', flaskPayload);
+
+      const flaskResult = await calcSpousalSupportFlask(flaskPayload);
+      console.log('[Flask Spousal] result:', flaskResult);
+
+      if (flaskResult) {
+        // Store amount in the RECIPIENT's slot so spousalSupportGivenTo()
+        // returns the correct party name and the arrow points the right way.
+        const payorIsParty1 = p1Income >= p2Income;
+        if (payorIsParty1) {
+          // Party 1 pays → support given to Party 2
+          spousalSupportLow.current.party1  = 0;
+          spousalSupportLow.current.party2  = flaskResult.monthly_low;
+          spousalSupportMed.current.party1  = 0;
+          spousalSupportMed.current.party2  = flaskResult.monthly_med;
+          spousalSupportHigh.current.party1 = 0;
+          spousalSupportHigh.current.party2 = flaskResult.monthly_high;
+        } else {
+          // Party 2 pays → support given to Party 1
+          spousalSupportLow.current.party1  = flaskResult.monthly_low;
+          spousalSupportLow.current.party2  = 0;
+          spousalSupportMed.current.party1  = flaskResult.monthly_med;
+          spousalSupportMed.current.party2  = 0;
+          spousalSupportHigh.current.party1 = flaskResult.monthly_high;
+          spousalSupportHigh.current.party2 = 0;
+        }
+
+        // Set report type for downstream report generation
+        if (totalNumberOfChildren(screen1.aboutTheChildren) === 0) {
+          typeOfReport.current = WITHOUT_CHILD_FORMULA;
+        } else if (determineWhichPartyHasGreaterIncomeAndChild(screen1.aboutTheChildren, incomes)) {
+          typeOfReport.current = ONLY_CHILD;
+        } else if (totalNumberOfChildren(screen1.aboutTheChildren) > 0) {
+          typeOfReport.current = CUSTODIAL_FORMULA;
+        }
+      } else {
+        setLoading(false);
+        return;
+      }
+
+      setLoading(false);
 
       passStateToParentAndNextPage(
         Number(getCalculatorIdFromQuery(calculatorId)),
@@ -3502,9 +3563,6 @@ const Screen2 = ({
       );
 
       setis4thDisplay(true);
-
-      //else if if any party has more income and also have child custody,
-      //then spousal support will be calculated by years of living together (same as highlimit and when there is no child.)
     }
   };
 

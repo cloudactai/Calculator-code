@@ -23,10 +23,10 @@ from spousal_support import (
 
 nc_party1_name         = "Husband"
 nc_party2_name         = "Wife"
-nc_party1_gross_income = 50_000   # gross annual income, CAD
-nc_party2_gross_income = 20_000   # gross annual income, CAD
-nc_years               = 6       # years of marriage / cohabitation
-nc_recipient_age       = 26       # age of the lower-income spouse at separation
+nc_party1_gross_income = 90000   # gross annual income, CAD
+nc_party2_gross_income = 0   # gross annual income, CAD
+nc_years               = 10       # years of marriage / cohabitation
+nc_recipient_age       = 35       # age of the lower-income spouse at separation
 
 
 # ===========================================================================
