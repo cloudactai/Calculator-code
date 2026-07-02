@@ -523,6 +523,7 @@ def spousal_calculate():
             youngest_child_age   = youngest_child_age,
             province             = province,
             year                 = year,
+            payor_is_party1      = (party1_gross >= party2_gross),
         )
         return jsonify({
             "payor":              payor_name,

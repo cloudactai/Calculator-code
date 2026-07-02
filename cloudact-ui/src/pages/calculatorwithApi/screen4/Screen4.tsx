@@ -557,8 +557,8 @@ const Screen4 = ({
 
   const ChildSpecialExpenseArrow = ({ amount, givenTo }: ArrowDetails) => {
     return (
-      <div className="arrow">
-        <span>
+      <div className="arrow" style={givenTo ? { transform: 'scaleX(-1)' } : {}}>
+        <span style={givenTo ? { transform: 'scaleX(-1)' } : {}}>
           {formatNumberInThousands(amount)
             .toString()
             .replace(/(\.00|\.0+)$/, "")}{" "}
@@ -572,8 +572,8 @@ const Screen4 = ({
 
   const LumpsumArrow = ({ amount, givenTo }: ArrowDetails) => {
     return (
-      <div className="arrow">
-        <span>
+      <div className="arrow" style={givenTo ? { transform: 'scaleX(-1)' } : {}}>
+        <span style={givenTo ? { transform: 'scaleX(-1)' } : {}}>
           {amount} {""}
           Lump Sum Amount
         </span>
@@ -584,8 +584,8 @@ const Screen4 = ({
 
   const LifeinsurenceArrow = ({ amount, givenTo }: ArrowDetails) => {
     return (
-      <div className="arrow">
-        <span>
+      <div className="arrow" style={givenTo ? { transform: 'scaleX(-1)' } : {}}>
+        <span style={givenTo ? { transform: 'scaleX(-1)' } : {}}>
           {amount} {""}
           Lump Sum Amount
         </span>
@@ -596,10 +596,10 @@ const Screen4 = ({
 
   const SpousalSupportArrow = ({ amount, givenTo }: ArrowDetails) =>
     typeOfCalculatorSelected !== "CHILD_SUPPORT_CAL" && (
-      <div className="arrow">
+      <div className="arrow" style={givenTo ? { transform: 'scaleX(-1)' } : {}}>
         {getSvg('SpousalSupportArrow')}
 
-        <span>
+        <span style={givenTo ? { transform: 'scaleX(-1)' } : {}}>
           {formatNumberInThousands(amount)
             .toString()
             .replace(/(\.00|\.0+)$/, "")}{" "}
@@ -610,10 +610,10 @@ const Screen4 = ({
 
   const SpousalSupportArrowApi = ({ amount, givenTo }: ArrowDetails) =>
     typeOfCalculatorSelected !== "CHILD_SUPPORT_CAL" && (
-      <div className="arrow">
+      <div className="arrow" style={givenTo ? { transform: 'scaleX(-1)' } : {}}>
         {getSvg('SpousalSupportArrow')}
 
-        <span>
+        <span style={givenTo ? { transform: 'scaleX(-1)' } : {}}>
           {formatNumberInThousands(amount)
             .toString()
             .replace(/(\.00|\.0+)$/, "")}{" "}
@@ -623,10 +623,10 @@ const Screen4 = ({
     );
 
   const ChildSupportArrow = ({ amount, givenTo }: ArrowDetails) => (
-    <div className="arrow">
+    <div className="arrow" style={givenTo ? { transform: 'scaleX(-1)' } : {}}>
 
       {getSvg("ChildSupportArrow")}
-      <span>
+      <span style={givenTo ? { transform: 'scaleX(-1)' } : {}}>
         {formatNumberInThousands(amount)
           .toString()
           .replace(/(\.00|\.0+)$/, "")}{" "}
@@ -635,10 +635,10 @@ const Screen4 = ({
     </div>
   );
   const ChildSupportArrowApi = ({ amount, givenTo }: ArrowDetails) => (
-    <div className="arrow">
+    <div className="arrow" style={givenTo ? { transform: 'scaleX(-1)' } : {}}>
 
       {getSvg("ChildSupportArrow")}
-      <span>
+      <span style={givenTo ? { transform: 'scaleX(-1)' } : {}}>
         {formatNumberInThousands(amount)
           .toString()
           .replace(/(\.00|\.0+)$/, "")}{" "}

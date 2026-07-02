@@ -93,7 +93,7 @@ def run(label, **kwargs):
 run(
     "SCENARIO 1 — SEPARATED (all children with Party 2)",
 
-    party1_guideline_income = 1200000,
+    party1_guideline_income = 180000,
     party2_guideline_income = 50000,
     party1_province         = "ON",
     party2_province         = "ON",
@@ -101,8 +101,8 @@ run(
     type_of_splitting = "SEPARATED",
 
     child_counts = {
-        "party1": 0,
-        "party2": 1,
+        "party1": 1,
+        "party2": 0,
         "shared": 0,
         "party1WithAdultChild": 0,
         "party2WithAdultChild": 0,
