@@ -30,7 +30,7 @@ import {
 } from "../constants/userConstants";
 import store from "../store";
 import axios from "../utils/axios";
-import { getUserId, getUserSID, updateCookiesInfo } from "../utils/helpers";
+import { getAllUserInfo, getUserId, getUserSID, updateCookiesInfo } from "../utils/helpers";
 import { companyInfoAction } from "./companyActions";
 import { persistAuthTokens } from "../utils/authToken";
 import CookiesParser from "../utils/cookieParser/Cookies";
@@ -39,6 +39,8 @@ import * as authApi from "../utils/Apis/auth/authApi";
 import {
   clearClientSessionCookies,
   establishSession,
+  isPersonalAuthUser,
+  updatePersonalSessionProfile,
 } from "../utils/personalAuthSession";
 
 // Personal login: POST /api/login on the auth-server. The server sets httpOnly
@@ -78,6 +80,18 @@ export const userLoginAction = (email, password) => async (dispatch) => {
 export const userProfileInfoAction = () => async (dispatch) => {
   try {
     dispatch({ type: USER_PROFILE_INFO_REQUEST });
+    const personalUser = getAllUserInfo();
+
+    if (isPersonalAuthUser(personalUser)) {
+      const profile = {
+        ...personalUser,
+        TFA: personalUser.TFA ?? 0,
+        username: personalUser.username || personalUser.name || personalUser.email,
+      };
+      CookiesParser.set("userProfile", profile, { path: "/" });
+      dispatch({ type: USER_PROFILE_INFO_SUCCESS, payload: profile });
+      return;
+    }
 
     const {
       data: { data },
@@ -104,6 +118,28 @@ export const userProfileInfoAction = () => async (dispatch) => {
 export const userProfileInfoChangeAction = (obj) => async (dispatch) => {
   try {
     dispatch({ type: USER_PROFILE_INFO_CHANGE_REQUEST });
+    const personalUser = getAllUserInfo();
+
+    if (isPersonalAuthUser(personalUser)) {
+      const updatedProfile = updatePersonalSessionProfile(obj);
+      const updatedUser = getAllUserInfo();
+      dispatch({
+        type: USER_PROFILE_INFO_CHANGE_SUCCESS,
+        payload: updatedProfile || obj,
+      });
+      dispatch({
+        type: USER_PROFILE_INFO_SUCCESS,
+        payload: updatedProfile || obj,
+      });
+      if (updatedProfile) {
+        dispatch({ type: USER_CHANGE_SUCCESS, payload: updatedProfile });
+      }
+      if (updatedUser) {
+        dispatch({ type: USER_LOGIN_SUCCESS, payload: updatedUser });
+      }
+      toast.success("Profile updated");
+      return;
+    }
 
     const {
       data: { data },

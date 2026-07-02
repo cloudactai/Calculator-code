@@ -15,7 +15,7 @@
  * accessible.
  */
 import Cookies from "js-cookie";
-import { encrypt } from "./Encrypted";
+import { decrypt, encrypt } from "./Encrypted";
 
 // Routes.jsx gates pages on these flags (state.accessPages.response.auth_*).
 // A personal account gets everything.
@@ -46,6 +46,9 @@ const SESSION_COOKIE_NAMES = [
   "allUserInfo1",
   "allUserInfo2",
   "allUserInfo3",
+  "allUserInfo4",
+  "allUserInfo5",
+  "allUserInfo6",
   "isUserLogged",
   "currentUserRole",
   "access_pages",
@@ -61,26 +64,48 @@ const SESSION_COOKIE_NAMES = [
   "jwtToken",
 ];
 
+export const isPersonalAuthUser = (user) => {
+  if (!user) return false;
+  const roleUser = Array.isArray(user.role) ? user.role[0] : null;
+  const id = user.id || user.uid || roleUser?.id || roleUser?.uid;
+  const sid = user.sid || roleUser?.sid;
+  return Boolean(user.personal_auth || (id && sid && String(id) === String(sid)));
+};
+
 // Build the legacy userInfo shape (role array etc.) from the auth server's
 // public user object ({ id, email, name, jobTitle, profilePic, ... }).
 export function buildLegacyUserInfo(user) {
   const fullName = String(user?.name || "").trim();
   const [firstName, ...restName] = fullName ? fullName.split(/\s+/) : [""];
+  const email = user?.email || "";
+  const displayName =
+    user?.username || user?.user_name || fullName || email || "CloudAct User";
+  const first = user?.first_name || user?.firstName || firstName || displayName;
+  const last = user?.last_name || user?.lastName || restName.join(" ");
 
   const base = {
     id: user?.id,
     uid: user?.id,
     sid: user?.id,
-    first_name: firstName || user?.email || "",
-    last_name: restName.join(" "),
-    name: fullName || user?.email || "",
-    email: user?.email || "",
+    personal_auth: true,
+    first_name: first,
+    last_name: last,
+    name: displayName,
+    username: displayName,
+    user_name: displayName,
+    email,
+    description: user?.description || "",
+    phone_number: user?.phone_number || user?.phoneNumber || "",
+    profile_pic: user?.profilePic || user?.profile_pic || "",
+    signature: user?.signature || "",
     province: "ON",
     region: "ON",
     // No Clio/QBO in the personal build — marked connected so nothing tries
     // to bounce the user into the legacy setup wizard.
     authClio: true,
     authIntuit: true,
+    company_name: "Personal Account",
+    short_firmname: displayName,
   };
 
   return {
@@ -101,6 +126,17 @@ export function seedSessionCookies(userInfo, accessToken) {
   Cookies.set("currentUserRole", encrypt(role), opts);
   Cookies.set("access_pages", encrypt(ALL_ACCESS), opts);
   Cookies.set("userProfile", encrypt(role), opts);
+  Cookies.set(
+    "companyInfo",
+    encrypt({
+      legaladdress: {
+        Line1: "",
+        CountrySubDivisionCode: userInfo.province || "ON",
+        Country: "Canada",
+      },
+    }),
+    opts
+  );
   Cookies.set("authClio", "true", opts);
   Cookies.set("authIntuit", "true", opts);
   Cookies.set("province", JSON.stringify(userInfo.province || "ON"), opts);
@@ -112,6 +148,49 @@ export function seedSessionCookies(userInfo, accessToken) {
 export function clearClientSessionCookies() {
   const opts = { path: "/" };
   SESSION_COOKIE_NAMES.forEach((name) => Cookies.remove(name, opts));
+}
+
+export function updatePersonalSessionProfile(profile) {
+  const opts = { path: "/" };
+  const currentCookie = Cookies.get("allUserInfo");
+  const current = currentCookie ? decrypt(currentCookie) : null;
+
+  if (!isPersonalAuthUser(current)) {
+    return null;
+  }
+
+  const username =
+    profile.username ||
+    [profile.first_name, profile.last_name].filter(Boolean).join(" ") ||
+    current.username ||
+    current.name ||
+    current.email;
+
+  const nextUserInfo = {
+    ...current,
+    first_name: profile.first_name ?? current.first_name,
+    last_name: profile.last_name ?? current.last_name,
+    username,
+    user_name: username,
+    name: username,
+    email: profile.email ?? current.email,
+    description: profile.description ?? current.description,
+    phone_number: profile.phone_number ?? current.phone_number,
+    profile_pic: profile.profile_pic ?? current.profile_pic,
+    TFA: profile.TFA ?? current.TFA,
+  };
+
+  nextUserInfo.role = (nextUserInfo.role || []).map((role) => ({
+    ...role,
+    ...nextUserInfo,
+    role: role.role,
+  }));
+
+  const currentRole = nextUserInfo.role[0] || nextUserInfo;
+  Cookies.set("allUserInfo", encrypt(nextUserInfo), opts);
+  Cookies.set("currentUserRole", encrypt(currentRole), opts);
+  Cookies.set("userProfile", encrypt(currentRole), opts);
+  return currentRole;
 }
 
 // One-stop helper for login/verify success handlers.

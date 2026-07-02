@@ -6,14 +6,7 @@ import { getUserSID, getUserId, getCurrentUserFromCookies, updateInfoInCurrentUs
 import toast from "react-hot-toast";
 import React, { useEffect } from "react";
 import { Roles } from "../../routes/Role.types";
-
-const isPersonalAuthUser = (user) => {
-  if (!user) return false;
-  const roleUser = Array.isArray(user.role) ? user.role[0] : null;
-  const id = user.id || user.uid || roleUser?.id || roleUser?.uid;
-  const sid = user.sid || roleUser?.sid;
-  return Boolean(id && sid && String(id) === String(sid));
-};
+import { isPersonalAuthUser } from "../../utils/personalAuthSession";
 
 const Layout = ({ children, title }) => {
   const { sidebarCollapse } = useSelector((state) => state.userChange);

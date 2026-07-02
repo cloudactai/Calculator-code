@@ -57,22 +57,34 @@ const ProfileEdit = () => {
     updatePassword : false
   })
 
-  console.log('getUserProfileInfo',getUserProfileInfo())
+  const currentUserInfo = getAllUserInfo() || {};
+  const currentProfileInfo = getUserProfileInfo() || {};
+  const currentCompanyInfo = getCompanyInfo() || {};
+  const currentDisplayName =
+    currentUserInfo.username ||
+    currentUserInfo.name ||
+    currentUserInfo.email ||
+    "";
+
+  console.log('getUserProfileInfo',currentProfileInfo)
 
   const [profileInfo, setProfileInfo] = useState({
-    profilePhoto: getUserProfileInfo().profile_pic,
-    firstName: getAllUserInfo().username,
-    lastName: "",
-    username:getAllUserInfo().username,
-    email: getAllUserInfo().email,
-    street: getCompanyInfo()?.legaladdress?.Line1 ?? '',
-    province: getCompanyInfo()?.legaladdress?.CountrySubDivisionCode ?? '',
-    Country: getCompanyInfo()?.legaladdress?.Country ?? '',
+    profilePhoto: currentProfileInfo.profile_pic || currentUserInfo.profile_pic || "",
+    firstName: currentUserInfo.first_name || currentDisplayName,
+    lastName: currentUserInfo.last_name || "",
+    username: currentDisplayName,
+    email: currentUserInfo.email || "",
+    street: currentCompanyInfo?.legaladdress?.Line1 ?? '',
+    province:
+      currentCompanyInfo?.legaladdress?.CountrySubDivisionCode ??
+      currentUserInfo.province ??
+      '',
+    Country: currentCompanyInfo?.legaladdress?.Country ?? '',
     // location: getAllUserInfo().province,
-    bio: getAllUserInfo()?.description ?? '',
-    areInputDisabled: parseInt(getAllUserInfo().TFA) ?? '',
-    multiVerification: getAllUserInfo()?.TFA === 0 ? false : true,
-    phone: getAllUserInfo()?.phone_number ?? '',
+    bio: currentUserInfo?.description ?? '',
+    areInputDisabled: parseInt(currentUserInfo.TFA) ?? '',
+    multiVerification: currentUserInfo?.TFA === 0 ? false : true,
+    phone: currentUserInfo?.phone_number ?? '',
     verificationRequested: false,
     verificationDone: false,
     changePasswordRequest: false,
@@ -80,8 +92,8 @@ const ProfileEdit = () => {
     alert: "",
   });
 
-  const [signature , setSignature] = useState(getUserProfileInfo().signature ? 
-    getUserProfileInfo().signature : ProfilePic);
+  const [signature , setSignature] = useState(currentProfileInfo.signature ? 
+    currentProfileInfo.signature : ProfilePic);
 
 
   const user2FAState = useSelector((state) => state.user2FAVerification);

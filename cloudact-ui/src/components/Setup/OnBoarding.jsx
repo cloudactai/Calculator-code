@@ -26,14 +26,7 @@ import InputCustom from "../InputCustom";
 import ModalInputCenter from "../ModalInputCenter";
 import DoubleInput from "./DoubleInput";
 import OnboardingSteps from "./OnboardingSteps";
-
-const isPersonalAuthUser = (user) => {
-  if (!user) return false;
-  const roleUser = Array.isArray(user.role) ? user.role[0] : null;
-  const id = user.id || user.uid || roleUser?.id || roleUser?.uid;
-  const sid = user.sid || roleUser?.sid;
-  return Boolean(id && sid && String(id) === String(sid));
-};
+import { isPersonalAuthUser } from "../../utils/personalAuthSession";
 
 const OnBoarding = ({ isQBOConnected, familyLawTools, complianceReports }) => {
   const [activeStep, setActiveStep] = useState(1);
