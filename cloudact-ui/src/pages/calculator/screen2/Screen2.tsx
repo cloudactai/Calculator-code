@@ -26,6 +26,7 @@ import useQuery from "../../../hooks/useQuery";
 import { AUTH_ROUTES } from "../../../routes/Routes.types";
 import { apiCalculatorById } from "../../../utils/Apis/calculator/Calculator_values_id";
 import { SaveAllCalculatorValuesByID } from "../../../utils/Apis/calculator/SaveAllCalculatorValuesByID";
+import { FEATURES } from "../../../config/features";
 import { fetchSpecificTaxandDeductionforAmount } from "../../../utils/Apis/calculator/fetchSpecificTaxandDeductionforAmount";
 import { getDistinctYearsInTaxRef } from "../../../utils/Apis/getDistinctYearsInTaxRef";
 import {
@@ -5617,7 +5618,7 @@ const Screen2 = ({
         Cookies.set('demo_cal_data', JSON.stringify(objforApi), { path: '/' });
         setLoading(false);
         setShowCalculationCompleted(true);
-        setShowSaveCalculatorValues(true);
+        promptSaveOrContinue();
         return;
       }
       // ── End child-support-only path ───────────────────────────────────────
@@ -5725,7 +5726,7 @@ const Screen2 = ({
 
       setLoading(false);
       setShowCalculationCompleted(true);
-      setShowSaveCalculatorValues(true);
+      promptSaveOrContinue();
 
       //else if if any party has more income and also have child custody,
       //then spousal support will be calculated by years of living together (same as highlimit and when there is no child.)
@@ -5952,6 +5953,20 @@ const Screen2 = ({
     };
 
     return obj;
+  };
+
+  // Saved calculations live on the legacy law-firm backend, which the
+  // personal build doesn't run. When the feature is off, skip the save
+  // prompt entirely and continue exactly like "Don't Save and Next".
+  const promptSaveOrContinue = () => {
+    if (FEATURES.SAVED_CALCULATIONS) {
+      setShowSaveCalculatorValues(true);
+    } else {
+      passStateToParentAndNextPage(
+        Number(getCalculatorIdFromQuery(calculatorId)),
+        false
+      );
+    }
   };
 
   const saveValuesToDB = async (obj: any) => {
