@@ -86,11 +86,6 @@ if (BYPASS_ENABLED) {
   Cookies.set("authIntuit", "true", opts);
   Cookies.set("province", JSON.stringify("ON"), opts);
   Cookies.set("AccessToken", "dev-bypass-token", opts);
-  Cookies.set(
-    "calculatorLabel",
-    JSON.stringify({ label: "Dev Calculator", description: "" }),
-    opts
-  );
 
   console.warn(
     "[devBypass] Auth bypass active — signed in as Dev User (ADMIN). " +
