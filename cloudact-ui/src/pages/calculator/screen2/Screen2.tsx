@@ -861,6 +861,10 @@ const Screen2 = ({
     party2: 0,
   });
 
+  // Set to true after Flask sets childSupportRef so the JS calculateChildSupport()
+  // useEffect doesn't overwrite the Flask value when loading toggles.
+  const childSupportLockedByFlask = useRef<boolean>(false);
+
   let specialExpensesLowVal = useRef<twoPartyStates>({
     party1: 0,
     party2: 0,
@@ -3437,6 +3441,9 @@ const Screen2 = ({
   };
 
   const calculateChildSupport = () => {
+    // Flask has already set childSupportRef — don't overwrite with stale JS values.
+    if (childSupportLockedByFlask.current) return;
+
     //For Party 1
     //declare variable notionalChildSupport1 = 0;
     //if split case, then totalNumberofchildren - noOfChildrenOfTheParty2
@@ -5595,15 +5602,16 @@ const Screen2 = ({
           return;
         }
 
-        // child_support_ref values are annual totals per party
-        const csReadOnly = {
-          party1: csResult.child_support_ref.party1_annual,
-          party2: csResult.child_support_ref.party2_annual,
+        // Use gross annual amounts (party1_annual / party2_annual) — always positive.
+        // child_support_ref values are post-offset and can be negative; don't use those here.
+        childSupportLockedByFlask.current = true;
+        childSupportReadOnly.current = {
+          party1: csResult.party1_annual,
+          party2: csResult.party2_annual,
         };
-        childSupportReadOnly.current = csReadOnly;
         childSupportRef.current = {
-          party1: csResult.child_support_ref.party1_annual,
-          party2: csResult.child_support_ref.party2_annual,
+          party1: csResult.party1_annual,
+          party2: csResult.party2_annual,
         };
 
         Cookies.set('demo_cal_data', JSON.stringify(objforApi), { path: '/' });
@@ -5621,9 +5629,64 @@ const Screen2 = ({
       );
       const youngestChildAge = hasChildren ? Math.min(...childAges) : 0;
 
+      const p1Income = totalIncomeByIncomeState(income.party1) + nonTaxableIncomeParty1();
+      const p2Income = totalIncomeByIncomeState(income.party2) + nonTaxableIncomeParty2();
+
+      // ── Call /calculate first to get Python CS amounts ───────────────────────
+      let monthly_child_support: number | undefined = undefined;
+      let monthly_notional_child_support: number | undefined = undefined;
+
+      if (hasChildren) {
+        const csPayload = {
+          party1_income: p1Income,
+          party2_income: p2Income,
+          party1_name: party1Name(),
+          party2_name: party2Name(),
+          children: childrenList.map((c: any) => ({
+            name: c.name ?? "",
+            csg_table: c.CSGTable ?? "No",
+            child_support_override: c.ChildSupportOverride ?? 0,
+            custody_arrangement: c.custodyArrangement ?? "Party 1",
+          })),
+        };
+        console.log('[Flask CS] payload:', csPayload);
+        const csResult = await calcChildSupportFlask(csPayload);
+        console.log('[Flask CS] result:', csResult);
+
+        if (!csResult) {
+          setLoading(false);
+          setShowFlaskError(true);
+          return;
+        }
+
+        // childSupportRef / childSupportReadOnly expect GROSS annual amounts per party
+        // (what each party independently owes before any set-off).
+        // child_support_ref values are post-offset and party2 can be negative — don't use those here.
+        childSupportLockedByFlask.current = true;
+        childSupportReadOnly.current = {
+          party1: csResult.party1_annual,
+          party2: csResult.party2_annual,
+        };
+        childSupportRef.current = {
+          party1: csResult.party1_annual,
+          party2: csResult.party2_annual,
+        };
+
+        // For INDI convergence, pass the NET amount the payor actually pays and the
+        // gross amount the recipient would hypothetically owe (notional).
+        const p1IsPayor = p1Income >= p2Income;
+        monthly_child_support = p1IsPayor
+          ? csResult.child_support_ref.party1_monthly   // net CS party1 pays after offset
+          : csResult.child_support_ref.party2_monthly;  // net CS party2 pays after offset
+        monthly_notional_child_support = p1IsPayor
+          ? csResult.party2_monthly   // gross party2 would owe (notional)
+          : csResult.party1_monthly;  // gross party1 would owe (notional)
+      }
+      // ── End CS pre-fetch ─────────────────────────────────────────────────────
+
       const flaskPayload = {
-        party1_net_income: totalIncomeByIncomeState(income.party1) + nonTaxableIncomeParty1(),
-        party2_net_income: totalIncomeByIncomeState(income.party2) + nonTaxableIncomeParty2(),
+        party1_net_income: p1Income,
+        party2_net_income: p2Income,
         party1_age: momentFunction.calculateNumberOfYears(screen1.background.party1DateOfBirth),
         recipient_age: momentFunction.calculateNumberOfYears(screen1.background.party2DateOfBirth),
         years: momentFunction.differenceBetweenTwoDates(
@@ -5634,8 +5697,8 @@ const Screen2 = ({
         children: hasChildren,
         children_list: hasChildren ? childrenList : undefined,
         youngest_child_age: youngestChildAge,
-        // monthly_child_support and monthly_notional_child_support omitted —
-        // Python computes them from children_list via the Schedule I calculator
+        ...(monthly_child_support !== undefined && { monthly_child_support }),
+        ...(monthly_notional_child_support !== undefined && { monthly_notional_child_support }),
       };
       console.log('[Flask] payload:', flaskPayload);
 

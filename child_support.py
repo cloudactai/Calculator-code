@@ -633,6 +633,9 @@ def calculate_child_support(
     # ------------------------------------------------------------------
     # Step 7: Return  (monthly amounts, rounded up to whole dollars)
     # ------------------------------------------------------------------
+    print(f"party1: {math.ceil(cs_p1_monthly + override_sum_p1),} \n\n\n party2: {math.ceil(cs_p2_monthly + override_sum_p2)}")
+    print(f"CS: party1:{math.ceil(child_support_ref['party1'])}, \n\n\n party2:{math.ceil(child_support_ref['party2'])}")
+    print(f"Net monthly = {child_support_ref['party1'] - child_support_ref['party2']}")
     return {
         # Gross monthly amounts regardless of direction.
         "party1": math.ceil(cs_p1_monthly + override_sum_p1),
