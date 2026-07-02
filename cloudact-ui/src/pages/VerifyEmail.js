@@ -109,14 +109,18 @@ const VerifyEmail = () => {
                 Check your email
               </span>
               <span className="h5 justify-content-center text-center email">
-                {resendEmail ? (
-                  <>
-                    We sent a verification link to <br />
-                    <b>{resendEmail}</b>
-                  </>
-                ) : (
-                  "Enter your email to send a new verification link."
-                )}
+                {/* Inner span keeps this as one flowing sentence — the .h5 rule
+                    is display:flex, so bare text + <b> would split into
+                    side-by-side flex items. */}
+                <span>
+                  {resendEmail ? (
+                    <>
+                      We sent a verification link to <b>{resendEmail}</b>.
+                    </>
+                  ) : (
+                    "Enter your email to send a new verification link."
+                  )}
+                </span>
               </span>
               <span className="text justify-content-center text-center">
                 The verification link expires in 24 hours.
