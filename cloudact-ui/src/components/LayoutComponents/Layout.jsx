@@ -7,6 +7,14 @@ import toast from "react-hot-toast";
 import React, { useEffect } from "react";
 import { Roles } from "../../routes/Role.types";
 
+const isPersonalAuthUser = (user) => {
+  if (!user) return false;
+  const roleUser = Array.isArray(user.role) ? user.role[0] : null;
+  const id = user.id || user.uid || roleUser?.id || roleUser?.uid;
+  const sid = user.sid || roleUser?.sid;
+  return Boolean(id && sid && String(id) === String(sid));
+};
+
 const Layout = ({ children, title }) => {
   const { sidebarCollapse } = useSelector((state) => state.userChange);
 
@@ -87,6 +95,11 @@ const Layout = ({ children, title }) => {
     const fetchData = async () => {
       console.log("Checking user role and fetching company data...");
       const user = getCurrentUserFromCookies();
+
+      if (isPersonalAuthUser(user)) {
+        console.log("Personal auth user detected; skipping legacy company data fetch.");
+        return;
+      }
 
       if (user.role !== "SUPERADMIN") {
         try {

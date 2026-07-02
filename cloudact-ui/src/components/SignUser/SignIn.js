@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
-import { Alert, Col, Row, Container, Image } from "react-bootstrap";
+import { Alert, Image } from "react-bootstrap";
 import { useDispatch, useSelector } from "react-redux";
-import { Link, useHistory } from "react-router-dom";
+import { Link, useHistory, useLocation } from "react-router-dom";
 import {
   userLoginAction,
   userOPTMatchAction,
@@ -14,6 +14,7 @@ import Logo from "../../assets/images/CloudAct-Accounting-Taxation-logo-1 3.png"
 import InvalidUsernameOrPasswordImage from "../../assets/images/invalid username or password.png";
 import { Roles } from "../../routes/Role.types";
 import { AUTH_ROUTES } from "../../routes/Routes.types";
+import { clearClientSessionCookies } from "../../utils/personalAuthSession";
 
 const SignIn = ({
   isUserLogged,
@@ -31,14 +32,11 @@ const SignIn = ({
       : ""
   );
   const [sideImage, setSideImage] = useState(SignInSVG);
-  const [password, setPassword] = useState(
-    localStorage.getItem("password")
-      ? JSON.parse(localStorage.getItem("password"))
-      : ""
-  );
+  const [password, setPassword] = useState("");
   const [emailError, setEmailError] = useState("");
   const [passwordError, setPasswordError] = useState("");
   const [showAlert, setShowAlert] = useState("");
+  const [submittedLogin, setSubmittedLogin] = useState(false);
   const number1 = useRef(null);
   const number2 = useRef(null);
   const number3 = useRef(null);
@@ -53,12 +51,18 @@ const SignIn = ({
     showModal: false,
   });
   const history = useHistory();
+  const location = useLocation();
   const userLogin = useSelector((state) => state.userLogin);
 
   const { error, loading, userInfo } = userLogin;
   const userAuth = useSelector((state) => state.userLoginAuth);
 
   const userOPTMatch = useSelector((state) => state.userOPTMatch);
+
+  useEffect(() => {
+    clearClientSessionCookies();
+    localStorage.removeItem("password");
+  }, []);
 
   useEffect(() => {
     if (error) {
@@ -77,12 +81,14 @@ const SignIn = ({
 
   useEffect(() => {
 
+    if(!submittedLogin || !userInfo) return;
+
     if(userInfo && userInfo.role[0].role == Roles.SUPERADMIN){
       history.push(AUTH_ROUTES.SUPERADMINDB);
     }else if(userInfo) {
       history.push("/");
     }
-  }, [error, userInfo]);
+  }, [error, userInfo, submittedLogin]);
 
   useEffect(() => {
     if (userOPTMatch.response === false) {
@@ -111,7 +117,6 @@ const SignIn = ({
     const checked = e.target.checked;
     if (checked) {
       localStorage.setItem("email", JSON.stringify(email));
-      localStorage.setItem("password", JSON.stringify(password));
       localStorage.setItem("rememberMe", JSON.stringify(checked));
     } else {
       localStorage.removeItem("email");
@@ -131,6 +136,7 @@ const SignIn = ({
     }
 
     if (email !== "" && password !== "") {
+      setSubmittedLogin(true);
       dispatch(userLoginAction(email, password));
     }
   };
@@ -145,6 +151,13 @@ const SignIn = ({
           <Alert variant="success">
             <div className="heading-5 m-auto">
               Your account has been verified. Sign in to continue.
+            </div>
+          </Alert>
+        )}
+        {location.state?.passwordReset && (
+          <Alert variant="success">
+            <div className="heading-5 m-auto">
+              Password updated. Sign in with your new password.
             </div>
           </Alert>
         )}
@@ -164,6 +177,7 @@ const SignIn = ({
                 required
                 onChange={handleChange}
                 type="email"
+                autoComplete="email"
               />
             </div>
             {emailError && <p className="text-error">{emailError}</p>}
@@ -177,6 +191,7 @@ const SignIn = ({
                 required
                 onChange={handleChange}
                 className={`form-control ${passwordError ? "border_red" : ""}`}
+                autoComplete="current-password"
               />
             </div>
             {passwordError && <p className="text-error">{passwordError}</p>}
@@ -191,7 +206,7 @@ const SignIn = ({
                 />{" "}
                 Remember me
               </label>
-              <Link to="/forgetpassword">Forget your password?</Link>
+              <Link to="/forgot-password">Forget your password?</Link>
             </div>
             <button type="submit" className="btn btnPrimary">
               Sign In
@@ -207,7 +222,7 @@ const SignIn = ({
           <span className="text ">
             Don't have an account?
             <Link
-              to="/createAccount"
+              to="/signup"
               className="text-primary-color heading-6 fw-bold ms-1"
             >
               Sign Up

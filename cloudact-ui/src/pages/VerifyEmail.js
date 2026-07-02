@@ -22,13 +22,12 @@ const VerifyEmail = () => {
   const history = useHistory();
   const location = useLocation();
   const token = new URLSearchParams(location.search).get("token");
+  const emailFromState = location.state?.email || "";
 
-  // verifying -> (redirect) | error | resent
-  const [status, setStatus] = useState(token ? "verifying" : "error");
-  const [error, setError] = useState(
-    token ? "" : "Verification link is missing its token."
-  );
-  const [resendEmail, setResendEmail] = useState("");
+  // check-email | verifying -> (redirect) | error
+  const [status, setStatus] = useState(token ? "verifying" : "check-email");
+  const [error, setError] = useState("");
+  const [resendEmail, setResendEmail] = useState(emailFromState);
   const [resendMessage, setResendMessage] = useState("");
 
   useEffect(() => {
@@ -66,10 +65,18 @@ const VerifyEmail = () => {
 
   const handleResend = async (e) => {
     e.preventDefault();
-    if (!resendEmail) return;
+    if (!resendEmail) {
+      setError("Enter your email address so we can send a new link.");
+      return;
+    }
     try {
-      const { data } = await resendVerification(resendEmail);
-      setStatus("resent");
+      const { ok, data } = await resendVerification(resendEmail);
+      if (!ok) {
+        setError(data?.message || "Could not send the email. Please try again.");
+        return;
+      }
+      setStatus("check-email");
+      setError("");
       setResendMessage(
         data?.message || "Verification email sent. Check your inbox."
       );
@@ -92,6 +99,58 @@ const VerifyEmail = () => {
               </span>
               <span className="h5 justify-content-center text-center">
                 One moment — signing you in.
+              </span>
+            </>
+          )}
+
+          {status === "check-email" && (
+            <>
+              <span className="h3 justify-content-center">
+                Check your email
+              </span>
+              <span className="h5 justify-content-center text-center email">
+                {resendEmail ? (
+                  <>
+                    We sent a verification link to <br />
+                    <b>{resendEmail}</b>
+                  </>
+                ) : (
+                  "Enter your email to send a new verification link."
+                )}
+              </span>
+              <span className="text justify-content-center text-center">
+                The verification link expires in 24 hours.
+              </span>
+              {resendMessage && (
+                <p className="text-primary-color text-center">{resendMessage}</p>
+              )}
+              {error && <p className="text-error text-center">{error}</p>}
+              <form onSubmit={handleResend}>
+                <div className="form-group">
+                  <label>Email Address</label>
+                  <input
+                    className="form-control"
+                    type="email"
+                    placeholder="Enter your email"
+                    value={resendEmail}
+                    onChange={(e) => {
+                      setResendEmail(e.target.value);
+                      setError("");
+                    }}
+                    required
+                  />
+                </div>
+                <button type="submit" className="btn btnPrimary">
+                  Resend email
+                </button>
+              </form>
+              <span className="text justify-content-center text-center mt-4">
+                <Link
+                  to="/login"
+                  className="text-primary-color heading-6 fw-bold"
+                >
+                  Back to sign in
+                </Link>
               </span>
             </>
           )}
@@ -121,34 +180,16 @@ const VerifyEmail = () => {
                 </button>
               </form>
               <span className="text justify-content-center text-center mt-4">
-                <Link
-                  to="/signIn"
-                  className="text-primary-color heading-6 fw-bold"
-                >
+	                <Link
+	                  to="/login"
+	                  className="text-primary-color heading-6 fw-bold"
+	                >
                   Back to sign in
                 </Link>
               </span>
             </>
           )}
 
-          {status === "resent" && (
-            <>
-              <span className="h3 justify-content-center">
-                Check your email
-              </span>
-              <span className="h5 justify-content-center text-center">
-                {resendMessage}
-              </span>
-              <span className="text justify-content-center text-center mt-4">
-                <Link
-                  to="/signIn"
-                  className="text-primary-color heading-6 fw-bold"
-                >
-                  Back to sign in
-                </Link>
-              </span>
-            </>
-          )}
         </div>
       </div>
       <Footer />

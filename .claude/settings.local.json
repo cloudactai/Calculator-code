@@ -1,0 +1,12 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(cd \"/Users/lorelaiphinnemore/Documents/CloudAct/Frontend /Calculator-code\" && cp docs/AUTH_HANDOFF/backend/server.snippet.js auth-server/server.js)",
+      "Bash(npm ls *)"
+    ],
+    "additionalDirectories": [
+      "/Users/lorelaiphinnemore/Documents/CloudAct/Frontend /Calculator-code/docs/AUTH_HANDOFF/backend",
+      "/Users/lorelaiphinnemore/Documents/CloudAct/Frontend /Calculator-code/auth-server/prisma/migrations"
+    ]
+  }
+}

@@ -1,8 +1,7 @@
 import React, { useState } from "react";
-import { Col, Row, Container, Image } from "react-bootstrap";
+import { Image } from "react-bootstrap";
 import { useHistory, useLocation, Link } from "react-router-dom";
 import Footer from "../components/Footer";
-import Nav from "../components/Nav";
 import PasswordStrength from "../components/PasswordStrength";
 import { resetPassword } from "../utils/Apis/auth/authApi";
 import { determineStrengthPassword } from "../utils/helpers";
@@ -28,11 +27,15 @@ const NewPasswordPage = () => {
 
     if (password === "" || confirmPassword === "") {
       setPasswordError("Please Enter the new password");
-    } else if (password === confirmPassword) {
+    } else if (password.length < 8) {
+      setPasswordError("Password must be at least 8 characters.");
+    } else if (password !== confirmPassword) {
+      setConfirmPasswordError("Passwords do not match");
+    } else {
       resetPassword({ token, password })
         .then(({ ok, data }) => {
           if (ok) {
-            history.push("/newPasswordSet");
+            history.push("/login", { passwordReset: true });
           } else {
             setPasswordError(
               data?.message || "Reset link is invalid or expired."
@@ -43,10 +46,27 @@ const NewPasswordPage = () => {
           console.log("err", err);
           setPasswordError("Unable to reach the password service. Try again.");
         });
-    } else {
-      setConfirmPasswordError("Passwords do not match");
     }
   };
+
+  if (!token) {
+    return (
+      <div className="loginSection">
+        <div className="login">
+          <Link className="brand" to="/"><Image src={Logo} /></Link>
+          <div className="loginFields">
+            <span className="h3">Reset link is invalid</span>
+            <span className="h5">Please request a new password reset link.</span>
+            <Link to="/forgot-password" className="btn btnPrimary">
+              Request new link
+            </Link>
+          </div>
+        </div>
+        <div className="loginGraphic"><img src={ResetPasswordImage} alt="forgot your password"></img></div>
+        <Footer />
+      </div>
+    );
+  }
 
   return (
     <div className="loginSection">

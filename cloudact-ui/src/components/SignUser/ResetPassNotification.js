@@ -1,5 +1,5 @@
-import { Image, Container, Row, Col } from "react-bootstrap";
-import { Link, useLocation, useHistory } from "react-router-dom";
+import { Image } from "react-bootstrap";
+import { Link, useLocation } from "react-router-dom";
 import Footer from "../../components/Footer";
 import CheckYourEmailImage from "../../assets/images/Check your email.svg";
 import { forgotPassword } from "../../utils/Apis/auth/authApi";
@@ -7,12 +7,13 @@ import Logo from "../../assets/images/CloudAct-Accounting-Taxation-logo-1 3.png"
 
 const ResetPassNotification = () => {
   const location = useLocation();
-  const history = useHistory();
+  const params = new URLSearchParams(location.search);
+  const email = location.state?.email || params.get("email") || "";
+  const message =
+    location.state?.message ||
+    "If that email exists, a password reset link has been sent.";
 
   const handleResend = () => {
-    const email =
-      location.search && location.search.split("?")[1].split("=")[1];
-
     if (email) {
       forgotPassword(email).catch((err) => {
         console.log("err", err);
@@ -29,21 +30,40 @@ const ResetPassNotification = () => {
         <div className="loginFields">
           <span className="h3 justify-content-center">Check your email</span>
           <span className="h5 justify-content-center text-center email">
-            We sent a password reset link to <br />{" "}
-            {location.search && location.search.split("?")[1].split("=")[1]}
+            {message}
+            {email && (
+              <>
+                <br />
+                <b>{email}</b>
+              </>
+            )}
+          </span>
+          <span className="text justify-content-center text-center">
+            Password reset links expire in 1 hour.
           </span>
           {/* <Link to="#" className="btn btnPrimary">Open email app</Link> */}
-          <span className="text justify-content-center text-center">
-            Don't receive the email. &nbsp;
-            <a
+          {email && (
+            <span className="text justify-content-center text-center">
+              Don't receive the email. &nbsp;
+              <button
+                type="button"
+                className="text-primary-color heading-6 fw-bold border-0 bg-transparent p-0"
+                onClick={handleResend}
+              >
+                Click to resend
+              </button>
+            </span>
+          )}
+          <span className="text justify-content-center text-center mt-4">
+            <Link
+              to="/forgot-password"
               className="text-primary-color heading-6 fw-bold"
-              onClick={handleResend}
             >
-              Click to resend
-            </a>
+              Try another email
+            </Link>
           </span>
           <span className="text justify-content-center text-center mt-5">
-            <Link to="/signin" className="text-primary-color heading-6 fw-bold">
+            <Link to="/login" className="text-primary-color heading-6 fw-bold">
               <i className="fas fa-angle-left"></i> Back to log in
             </Link>
           </span>

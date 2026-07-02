@@ -40,6 +40,27 @@ const ALL_ACCESS = {
   auth_workflow: true,
 };
 
+const SESSION_COOKIE_NAMES = [
+  "token",
+  "allUserInfo",
+  "allUserInfo1",
+  "allUserInfo2",
+  "allUserInfo3",
+  "isUserLogged",
+  "currentUserRole",
+  "access_pages",
+  "companyInfo",
+  "userProfile",
+  "authClio",
+  "authIntuit",
+  "province",
+  "AccessToken",
+  "RefreshToken",
+  "authToken",
+  "jwt",
+  "jwtToken",
+];
+
 // Build the legacy userInfo shape (role array etc.) from the auth server's
 // public user object ({ id, email, name, jobTitle, profilePic, ... }).
 export function buildLegacyUserInfo(user) {
@@ -88,8 +109,14 @@ export function seedSessionCookies(userInfo, accessToken) {
   }
 }
 
+export function clearClientSessionCookies() {
+  const opts = { path: "/" };
+  SESSION_COOKIE_NAMES.forEach((name) => Cookies.remove(name, opts));
+}
+
 // One-stop helper for login/verify success handlers.
 export function establishSession(user, accessToken) {
+  clearClientSessionCookies();
   const userInfo = buildLegacyUserInfo(user);
   seedSessionCookies(userInfo, accessToken);
   return userInfo;
