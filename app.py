@@ -493,7 +493,6 @@ def spousal_calculate():
                 years               = years,
                 recipient_age       = recipient_age,
             )
-            print(f"\n\n\n\n Marc CS: {result_nc.annual_med} notinal: 0\n\n\n\n\n\n\n cacuiacaiucb ")
             return jsonify({
                 "payor":               payor_name,
                 "recipient":           recipient_name,
@@ -525,9 +524,6 @@ def spousal_calculate():
             province             = province,
             year                 = year,
         )
-
-        print(f"\n\n\n\n Marc CS: {result.annual_mid} notinal: {monthly_notional}\n\n\n\n\n\n\n cacuiacaiucb ")
-
         return jsonify({
             "payor":              payor_name,
             "recipient":          recipient_name,

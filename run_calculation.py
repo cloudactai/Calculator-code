@@ -93,8 +93,8 @@ def run(label, **kwargs):
 run(
     "SCENARIO 1 — SEPARATED (all children with Party 2)",
 
-    party1_guideline_income = 90000,
-    party2_guideline_income = 20000,
+    party1_guideline_income = 1200000,
+    party2_guideline_income = 50000,
     party1_province         = "ON",
     party2_province         = "ON",
 

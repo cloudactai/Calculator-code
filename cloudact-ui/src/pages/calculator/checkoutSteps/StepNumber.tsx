@@ -942,11 +942,11 @@ const ActiveForm3DataElement = ({
             {Math.ceil(
               Math.max(
                 activeForm3Data?.allPropsScreen4?.screen2?.spousalSupport
-                  ?.spousalSupport2Low,
+                  ?.spousalSupport1Low,
                 activeForm3Data?.allPropsScreen4?.screen2?.spousalSupport
-                  ?.spousalSupport2Med,
+                  ?.spousalSupport1Med,
                 activeForm3Data?.allPropsScreen4?.screen2?.spousalSupport
-                  ?.spousalSupport2High
+                  ?.spousalSupport1High
               )
             )}
           </span>
