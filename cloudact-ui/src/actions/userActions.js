@@ -36,7 +36,10 @@ import { persistAuthTokens } from "../utils/authToken";
 import CookiesParser from "../utils/cookieParser/Cookies";
 import toast from "react-hot-toast"
 import * as authApi from "../utils/Apis/auth/authApi";
-import { establishSession } from "../utils/personalAuthSession";
+import {
+  clearClientSessionCookies,
+  establishSession,
+} from "../utils/personalAuthSession";
 
 // Personal login: POST /api/login on the auth-server. The server sets httpOnly
 // session cookies; establishSession() seeds the legacy client cookies the rest
@@ -44,6 +47,7 @@ import { establishSession } from "../utils/personalAuthSession";
 export const userLoginAction = (email, password) => async (dispatch) => {
   try {
     dispatch({ type: USER_LOGIN_REQUEST });
+    clearClientSessionCookies();
 
     const { ok, status, data } = await authApi.login({ email, password });
 

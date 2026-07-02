@@ -22,6 +22,20 @@ const BYPASS_ENABLED =
   process.env.NODE_ENV === "development" &&
   process.env.REACT_APP_DEV_BYPASS_AUTH === "true";
 
+const DEV_COOKIE_NAMES = [
+  "allUserInfo",
+  "currentUserRole",
+  "access_pages",
+  "companyInfo",
+  "userProfile",
+  "authClio",
+  "authIntuit",
+  "province",
+  "AccessToken",
+  "RefreshToken",
+  "calculatorLabel",
+];
+
 const DEV_USER = {
   id: 1,
   uid: 1,
@@ -103,4 +117,11 @@ if (BYPASS_ENABLED) {
     "[devBypass] Auth bypass active — signed in as Dev User (ADMIN). " +
       "API-backed pages will show empty data. Remove REACT_APP_DEV_BYPASS_AUTH to disable."
   );
+} else if (
+  process.env.NODE_ENV === "development" &&
+  Cookies.get("AccessToken") === "dev-bypass-token"
+) {
+  const opts = { path: "/" };
+  DEV_COOKIE_NAMES.forEach((name) => Cookies.remove(name, opts));
+  console.warn("[devBypass] Removed stale Dev User cookies because auth bypass is disabled.");
 }
