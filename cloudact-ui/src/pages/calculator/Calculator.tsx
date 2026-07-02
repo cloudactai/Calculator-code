@@ -795,8 +795,21 @@ const Calculator = () => {
 
   useEffect(() => {
     dispatch(toggleSidebar());
+
+    // Only a saved calculation (?id=... in the URL) has server data to load.
+    // A fresh calculator must not block on the legacy backend at all —
+    // otherwise opening /calculator hangs on a dead /v1 host.
+    if (getCurrentIdFromQuery() === null) {
+      return () => {
+        dispatch(toggleSidebar());
+      };
+    }
+
     requestAction()
       .then((res) => {
+        // Fetch failed (backend down / calculation not found): keep the
+        // fresh-calculator state instead of crashing on missing data.
+        if (!res?.data?.[0]) return;
         const { data, label, description, created_by } = res.data[0];
 
         const dataParsing = JSON.parse(data);
