@@ -1759,8 +1759,15 @@
 }
 
 .create-new-form-page .new-form-container .body .content-container .img {
-  width: 500px;
-  height: 500px;
+  width: 380px;
+  height: 380px;
+  background-size: contain;
+  background-repeat: no-repeat;
+  background-position: top center;
+}
+
+.create-new-form-page .new-form-container .body .action {
+  margin-top: -40px;
 }
 
 .create-new-form-page .new-form-container .body .action button {

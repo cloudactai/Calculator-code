@@ -1,10 +1,9 @@
 import axios from "axios";
 import { APIS, REACT_APP_ENVIRONMENT } from "../config";
-import Cookies from 'js-cookie';
+import { getAuthToken } from "./authToken";
 
-// Function to get token from cookies
-const getToken = () => {
-  return Cookies.get('AccessToken');
+const shouldShowUnauthorizedModal = (error) => {
+  return error.config?.showUnauthorizedModal === true;
 };
 
 const instance = axios.create({
@@ -19,8 +18,15 @@ const instance = axios.create({
 
 instance.interceptors.request.use(
   function (config) {
-    const token = getToken();
-    config.headers.Authorization = token ? `Bearer ${token}` : '';
+    const token = getAuthToken();
+    config.headers = config.headers || {};
+
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    } else {
+      delete config.headers.Authorization;
+    }
+
     return config;
   },
   function (error) {
@@ -33,7 +39,11 @@ instance.interceptors.response.use(
     return response;
   },
   function (error) {
-    if (error.response && error.response.status === 401) {
+    if (
+      error.response &&
+      error.response.status === 401 &&
+      shouldShowUnauthorizedModal(error)
+    ) {
       window.dispatchEvent(new CustomEvent('unauthorized'));
     }
     return Promise.reject(error);

@@ -4,6 +4,8 @@ __pycache__/
 *.pyo
 .env
 .DS_Store
-cloudact-ui/
 .vercel/
 node_modules/
+frontend/
+templates/spousal-chat.html
+cloudact-ui/src/utils/devBypass.js

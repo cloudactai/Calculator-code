@@ -39,9 +39,9 @@ const Calculator = () => {
   const dispatch = useDispatch();
   const [calculatorState, setCalculatorState] = useState({
     currentFormNumber: 1,
-    label: getCalculatorLabelFromCookies().label,
-    description: getCalculatorLabelFromCookies().description,
-    savedBy: getAllUserInfo().username,
+    label: getCalculatorLabelFromCookies()?.label ?? "",
+    description: getCalculatorLabelFromCookies()?.description ?? "",
+    savedBy: getAllUserInfo()?.username ?? "",
   });
   const dateRegex = /^(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}.\d\d\d)Z$/g;
   const { data } = useSelector((state: Store) => state.clientDetailsFromFile);
