@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
-import { Alert, Col, Row, Container, Image } from "react-bootstrap";
+import { Alert, Image } from "react-bootstrap";
 import { useDispatch, useSelector } from "react-redux";
-import { Link, useHistory } from "react-router-dom";
+import { Link, useHistory, useLocation } from "react-router-dom";
 import {
   userLoginAction,
   userOPTMatchAction,
@@ -53,6 +53,7 @@ const SignIn = ({
     showModal: false,
   });
   const history = useHistory();
+  const location = useLocation();
   const userLogin = useSelector((state) => state.userLogin);
 
   const { error, loading, userInfo } = userLogin;
@@ -148,6 +149,13 @@ const SignIn = ({
             </div>
           </Alert>
         )}
+        {location.state?.passwordReset && (
+          <Alert variant="success">
+            <div className="heading-5 m-auto">
+              Password updated. Sign in with your new password.
+            </div>
+          </Alert>
+        )}
         <div className="loginFields">
           <span className="h3">CloudAct Solutions</span>
           <span className="h5">
@@ -191,7 +199,7 @@ const SignIn = ({
                 />{" "}
                 Remember me
               </label>
-              <Link to="/forgetpassword">Forget your password?</Link>
+              <Link to="/forgot-password">Forget your password?</Link>
             </div>
             <button type="submit" className="btn btnPrimary">
               Sign In
@@ -207,7 +215,7 @@ const SignIn = ({
           <span className="text ">
             Don't have an account?
             <Link
-              to="/createAccount"
+              to="/signup"
               className="text-primary-color heading-6 fw-bold ms-1"
             >
               Sign Up

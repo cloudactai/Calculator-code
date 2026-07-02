@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { forgotPassword } from "../../utils/Apis/auth/authApi";
-import { Row, Col, Container, Image } from "react-bootstrap";
+import { Image } from "react-bootstrap";
 import { Link, useHistory } from "react-router-dom";
 import ForgotYourPasswordImage from "../../assets/images/Forgot_Your_password.svg";
 import Logo from "../../assets/images/CloudAct-Accounting-Taxation-logo-1 3.png";
@@ -22,7 +22,13 @@ const ResetPassword = () => {
       forgotPassword(email)
         .then(({ ok, data }) => {
           if (ok) {
-            history.push(`/resetpassword?email=${email}`);
+            history.push("/check-email", {
+              email,
+              mode: "password-reset",
+              message:
+                data?.message ||
+                "If that email exists, a password reset link has been sent.",
+            });
           } else {
             setEmailError(data?.message || "Please enter a valid email");
           }
@@ -49,7 +55,7 @@ const ResetPassword = () => {
             {emailError && <p className="text-error my-3">{emailError}</p>}
             <button type="submit" className="btn btnPrimary">Continue</button>
           </form>
-          <span className="text">Remember your password?{" "}<Link to="/signin">Sign in</Link></span>
+          <span className="text">Remember your password?{" "}<Link to="/login">Sign in</Link></span>
         </div>
       </div>
       <div className="loginGraphic"><img src={ForgotYourPasswordImage} alt="forgot your password"></img></div>

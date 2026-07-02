@@ -412,7 +412,10 @@ const Routes = () => {
         </AuthUser>
       </Route>
 
-      <Route path={UN_AUTH_ROUTES.CREATE_ACCOUNT} exact>
+      <Route
+        path={[UN_AUTH_ROUTES.CREATE_ACCOUNT, UN_AUTH_ROUTES.SIGNUP]}
+        exact
+      >
         <CreateAccount />
       </Route>
 
@@ -505,7 +508,7 @@ const Routes = () => {
         <ActivateClientAccount changeLinkConfirmed={changeLinkConfirmed} />
       </Route>
 
-      <Route path={UN_AUTH_ROUTES.SIGNIN}>
+      <Route path={[UN_AUTH_ROUTES.SIGNIN, UN_AUTH_ROUTES.LOGIN]}>
         <SignUser
           isLinkConfirmed={isLinkConfirmed}
           changeLinkConfirmed={changeLinkConfirmed}
@@ -518,10 +521,12 @@ const Routes = () => {
       <Route path={AUTH_ROUTES.LOGOUT}>
         {userInfo ? <Logout /> : <Redirect to={UN_AUTH_ROUTES.SIGNIN} />}
       </Route>
-      <Route path={UN_AUTH_ROUTES.FORGET_PASSWORD}>
+      <Route
+        path={[UN_AUTH_ROUTES.FORGET_PASSWORD, UN_AUTH_ROUTES.FORGOT_PASSWORD]}
+      >
         <ForgetPassword />
       </Route>
-      <Route path={UN_AUTH_ROUTES.RESET_PASSWORD}>
+      <Route path={[UN_AUTH_ROUTES.RESET_PASSWORD, UN_AUTH_ROUTES.CHECK_EMAIL]}>
         <ResetPassNotification />
       </Route>
       {/* Personal auth email-link landing pages (auth-server) */}

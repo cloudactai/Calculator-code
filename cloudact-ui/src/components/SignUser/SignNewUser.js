@@ -1,9 +1,7 @@
-import React, { useEffect, useState } from "react";
-import { Alert, Col, Row, Container, Image } from "react-bootstrap";
-import { Link } from "react-router-dom";
-import { useDispatch, useSelector } from "react-redux";
+import React, { useState } from "react";
+import { Image } from "react-bootstrap";
+import { Link, useHistory } from "react-router-dom";
 import { PiEyeClosedDuotone, PiEyeBold } from "react-icons/pi";
-import { userRegisterAction } from "../../actions/userActions";
 import PasswordStrength from "../../components/PasswordStrength";
 import { determineStrengthPassword } from "../../utils/helpers";
 import Logo from "../../assets/images/CloudAct-Accounting-Taxation-logo-1 3.png";
@@ -11,6 +9,7 @@ import SignUpImage from "../../assets/images/sign up.svg";
 import ModalInputCenter from "../ModalInputCenter";
 import UserAgreement from "./UserAgreement";
 import Privacypolicy from "./Privacypolicy";
+import { signup } from "../../utils/Apis/auth/authApi";
 
 const SignNewUser = () => {
   const [email, setEmail] = useState("");
@@ -26,37 +25,21 @@ const SignNewUser = () => {
 
   const [newPassword, setNewPassword] = useState("");
   const [newPasswordError, setNewPasswordError] = useState("");
-  const [confirmationLink, setconfirmationLink] = useState(false);
-  const [displayEmail, setdisplayEmail] = useState("");
   const [nameError, setNameError] = useState("");
   const [userName, setUserName] = useState("");
-  const dispatch = useDispatch();
-  const userRegister = useSelector((state) => state.userRegister);
-  const { error, loading, message } = userRegister;
+  const [submitError, setSubmitError] = useState("");
+  const [loading, setLoading] = useState(false);
+  const history = useHistory();
 
   const [modalState, setModalState] = useState({
     privacyModal: false,
     AgreementModal: false,
   })
 
-
-  useEffect(() => {
-    console.log("error", error);
-    console.log("error", message);
-    if (error) setEmailError(error);
-    if (message) {
-      setconfirmationLink(true);
-      setdisplayEmail(email);
-      setUserName("");
-      setEmail("");
-      setPassword("");
-      setNewPassword("");
-    }
-  }, [error, message]);
-
   const handleChange = (e) => {
     const nam = e.target.name;
     const val = e.target.value;
+    setSubmitError("");
 
     if (nam === "email") {
       setEmail(val);
@@ -91,34 +74,49 @@ const SignNewUser = () => {
     }
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
+    let hasError = false;
 
     if (userName === "") {
       setNameError("Enter User Name");
+      hasError = true;
     }
 
     if (email === "") {
       setEmailError("Enter email address");
+      hasError = true;
     }
     if (password !== newPassword) {
       setPasswordError("Password does not match");
+      hasError = true;
+    }
+    if (password === "" || newPassword === "") {
+      setPasswordError("Enter password");
+      hasError = true;
     }
 
-    if (
-      userName !== "" &&
-      email !== "" &&
-      password !== "" &&
-      newPassword !== "" &&
-      password === newPassword
-    ) {
-      const dataStringify = JSON.stringify({
-        user_name: userName,
-        email: email,
-        password: password,
+    if (hasError) return;
+
+    setLoading(true);
+    try {
+      const { ok, data } = await signup({
+        name: userName,
+        email,
+        password,
       });
-      console.log("data stringify", dataStringify);
-      dispatch(userRegisterAction(dataStringify));
+
+      if (ok) {
+        history.push("/verify-email", { email });
+      } else {
+        setSubmitError(data?.message || "Registration failed.");
+      }
+    } catch (error) {
+      setSubmitError(
+        "Registration failed. Please check your connection and try again."
+      );
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -171,15 +169,6 @@ const SignNewUser = () => {
         <Link className="brand" to="/">
           <Image src={Logo} />
         </Link>
-        {confirmationLink && (
-          <Alert variant="success">
-            <span className="heading-5 m-auto">
-              A verification link has been sent to your email
-              <b> {displayEmail} </b> . Verify your email by clicking on the
-              link to continue.
-            </span>
-          </Alert>
-        )}
         <div className="loginFields">
           <span className="h3">Create Account</span>
           <span className="h5">
@@ -285,14 +274,19 @@ const SignNewUser = () => {
 
               >Privacy Policy</span></p>
             </div>
+            {submitError && <p className="text-error mt-2">{submitError}</p>}
             
-            <button type="submit" disabled={!checkboxChecked.privacy} className="btn btnPrimary">
-              Sign up
+            <button
+              type="submit"
+              disabled={!checkboxChecked.privacy || loading}
+              className="btn btnPrimary"
+            >
+              {loading ? "Creating account..." : "Sign up"}
             </button>
           </form>
           <span className="text">
             Already have an CloudAct Account?{" "}
-            <Link to="/signin" className="ms-1">
+            <Link to="/login" className="ms-1">
               Sign In
             </Link>
           </span>
