@@ -79,4 +79,7 @@ export enum UN_AUTH_ROUTES {
   FORGET_PASSWORD = "/forgetpassword",
   RESET_PASSWORD = "/resetpassword",
   NEW_PASSWORD_SET = "/newPasswordSet",
+  // Personal auth (auth-server) email-link landing pages
+  VERIFY_EMAIL = "/verify-email",
+  SET_NEW_PASSWORD = "/reset-password",
 }

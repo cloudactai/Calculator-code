@@ -14,6 +14,7 @@ import WelcomeScreen from "../pages/calculator/WelcomeScreen/WelcomeScreen.jsx";
 import ComplianceForm from "../pages/complianceForms/ComplianceForm.tsx";
 import Confirmation from "../pages/Confirmation";
 import CreateAccount from "../pages/CreateAccount";
+import VerifyEmail from "../pages/VerifyEmail";
 import CreateClientAndAssociatePage from "../pages/CreateClientAndAssociatePage";
 import CreateClientPage from "../pages/CreateClientPage";
 import CreateTaskPage from "../pages/CreateTaskPage";
@@ -523,6 +524,13 @@ const Routes = () => {
       <Route path={UN_AUTH_ROUTES.RESET_PASSWORD}>
         <ResetPassNotification />
       </Route>
+      {/* Personal auth email-link landing pages (auth-server) */}
+      <Route path={UN_AUTH_ROUTES.VERIFY_EMAIL}>
+        <VerifyEmail />
+      </Route>
+      <Route path={UN_AUTH_ROUTES.SET_NEW_PASSWORD}>
+        <NewPasswordPage />
+      </Route>
       <Route path={AUTH_ROUTES.SETTINGS}>
         <NewPasswordPage />
       </Route>
@@ -579,7 +587,13 @@ const Routes = () => {
       </Route> */}
 
       <Route path="/" exact>
-        <Redirect to={AUTH_ROUTES.CALCULATOR} />
+        {/* Signed in -> straight into the app; signed out -> sign-in page.
+            No firm/Clio onboarding in the personal build. */}
+        {userInfo ? (
+          <Redirect to={AUTH_ROUTES.CALCULATOR} />
+        ) : (
+          <Redirect to={UN_AUTH_ROUTES.SIGNIN} />
+        )}
       </Route>
 
       <Route path={AUTH_ROUTES.HOME}>
@@ -616,7 +630,7 @@ const Routes = () => {
       </Route>
 
       <Route path="**">
-        <NotFound />
+        {userInfo ? <NotFound /> : <Redirect to={UN_AUTH_ROUTES.SIGNIN} />}
       </Route>
     </Switch>
   );

@@ -2,7 +2,7 @@ import { Image, Container, Row, Col } from "react-bootstrap";
 import { Link, useLocation, useHistory } from "react-router-dom";
 import Footer from "../../components/Footer";
 import CheckYourEmailImage from "../../assets/images/Check your email.svg";
-import axios from "../../utils/axios";
+import { forgotPassword } from "../../utils/Apis/auth/authApi";
 import Logo from "../../assets/images/CloudAct-Accounting-Taxation-logo-1 3.png";
 
 const ResetPassNotification = () => {
@@ -14,13 +14,9 @@ const ResetPassNotification = () => {
       location.search && location.search.split("?")[1].split("=")[1];
 
     if (email) {
-      axios
-        .post("password/recovery", {
-          email: email,
-        })
-        .catch((err) => {
-          console.log("err", err);
-        });
+      forgotPassword(email).catch((err) => {
+        console.log("err", err);
+      });
     }
   };
 

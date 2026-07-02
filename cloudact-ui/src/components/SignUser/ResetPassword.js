@@ -1,5 +1,5 @@
-import axios from "../../utils/axios";
 import React, { useState } from "react";
+import { forgotPassword } from "../../utils/Apis/auth/authApi";
 import { Row, Col, Container, Image } from "react-bootstrap";
 import { Link, useHistory } from "react-router-dom";
 import ForgotYourPasswordImage from "../../assets/images/Forgot_Your_password.svg";
@@ -17,22 +17,18 @@ const ResetPassword = () => {
     if (email === "") {
       setEmailError("Enter email address");
     } else {
-      axios
-        .post("password/recovery", {
-          email: email,
-        })
-        .then((res) => {
-          console.log("res", res);
-
-          if (res.data.data.code === 200) {
+      // The auth-server replies with a generic success whether or not the
+      // email exists (no user enumeration), so any 2xx moves to "check email".
+      forgotPassword(email)
+        .then(({ ok, data }) => {
+          if (ok) {
             history.push(`/resetpassword?email=${email}`);
           } else {
-            setEmailError(res.data.data.message);
-            // throw res.data.data.message;
+            setEmailError(data?.message || "Please enter a valid email");
           }
         })
         .catch((err) => {
-          setEmailError("Please Enter a valid Email");
+          setEmailError("Unable to reach the password service. Try again.");
           console.log("err", err);
         });
     }

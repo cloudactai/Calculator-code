@@ -1,10 +1,10 @@
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import { Col, Row, Container, Image } from "react-bootstrap";
 import { useHistory, useLocation, Link } from "react-router-dom";
 import Footer from "../components/Footer";
 import Nav from "../components/Nav";
 import PasswordStrength from "../components/PasswordStrength";
-import axios from "../utils/axios";
+import { resetPassword } from "../utils/Apis/auth/authApi";
 import { determineStrengthPassword } from "../utils/helpers";
 import ResetPasswordImage from "../assets/images/Reset password.svg"
 import Logo from "../assets/images/CloudAct-Accounting-Taxation-logo-1 3.png";
@@ -16,23 +16,12 @@ const NewPasswordPage = () => {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [confirmPasswordError, setConfirmPasswordError] = useState("");
   const [StrengthPass, setStrengthPass] = useState("Weak");
-  const [code, setCode] = useState("");
 
   const history = useHistory();
-  const location = useLocation().search;
-
-  useEffect(() => {
-    const extractCode = () => {
-      const code = location.substring(1);
-
-      console.log("code", code);
-      setCode(code);
-      return code;
-    };
-
-    extractCode();
-    console.log("extract code", code);
-  });
+  const search = useLocation().search;
+  // The auth-server emails links as /reset-password?token=…; the legacy email
+  // format was ?<rawcode>, so fall back to the raw query string.
+  const token = new URLSearchParams(search).get("token") || search.substring(1);
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -40,20 +29,22 @@ const NewPasswordPage = () => {
     if (password === "" || confirmPassword === "") {
       setPasswordError("Please Enter the new password");
     } else if (password === confirmPassword) {
-      axios
-        .post(`/reset/password?code=${code}`, { password: password })
-        .then((res) => {
-          console.log("res", res);
-          if (res.data.data.code === 200) {
+      resetPassword({ token, password })
+        .then(({ ok, data }) => {
+          if (ok) {
             history.push("/newPasswordSet");
           } else {
-            throw res.data.data.message;
+            setPasswordError(
+              data?.message || "Reset link is invalid or expired."
+            );
           }
         })
         .catch((err) => {
           console.log("err", err);
-          //   history.push("/createAccount");
+          setPasswordError("Unable to reach the password service. Try again.");
         });
+    } else {
+      setConfirmPasswordError("Passwords do not match");
     }
   };
 

@@ -16,8 +16,8 @@ export const AuthUser: React.FC<{
   const history = useHistory();
 
   if (!userInfo) {
-    // Auth is bypassed in dev — just render the page directly.
-    return children;
+    // Not signed in: clear any stale session state and land on sign-in.
+    return <Logout />;
   } else if (
     usersAuth.includes(getCurrentUserFromCookies().role) &&
     sidAccess
