@@ -30,13 +30,19 @@ const ResetPassNotification = () => {
         <div className="loginFields">
           <span className="h3 justify-content-center">Check your email</span>
           <span className="h5 justify-content-center text-center email">
-            {message}
-            {email && (
-              <>
-                <br />
-                <b>{email}</b>
-              </>
-            )}
+            {/* Inner span keeps this as one flowing sentence — the .h5 rule is
+                display:flex, so bare text + <b> would split into side-by-side
+                flex items. */}
+            <span>
+              {email ? (
+                <>
+                  If that email exists, a password reset link has been sent to{" "}
+                  <b>{email}</b>.
+                </>
+              ) : (
+                message
+              )}
+            </span>
           </span>
           <span className="text justify-content-center text-center">
             Password reset links expire in 1 hour.
