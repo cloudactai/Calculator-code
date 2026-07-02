@@ -13,6 +13,7 @@ import {
   SquareCheck,
 } from "tabler-icons-react";
 import { AUTH_ROUTES } from "../../../routes/Routes.types";
+import { FEATURES } from "../../../config/features";
 import { Roles } from "../../../routes/Role.types";
 import {
   HiOutlineDocumentReport,
@@ -406,7 +407,11 @@ const Navbar = () => {
                     eachLink={{
                       name: "Calculator",
                       type: "CHILD",
-                      linkTo: AUTH_ROUTES.SUPPORT_CALCULATOR,
+                      // The welcome/matter-picker screen needs the legacy
+                      // backend; go straight to the calculator without it.
+                      linkTo: FEATURES.SAVED_CALCULATIONS
+                        ? AUTH_ROUTES.SUPPORT_CALCULATOR
+                        : AUTH_ROUTES.CALCULATOR,
                       icon: <HiOutlineCalculator color="#171d34" size={24} />,
                       auth: accessPagesState?.auth_calculator,
                       accessTo: r_all,

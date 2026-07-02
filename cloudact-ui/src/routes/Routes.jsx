@@ -53,6 +53,7 @@ import {
 } from "../utils/helpers";
 import { Roles } from "./Role.types";
 import { AUTH_ROUTES, UN_AUTH_ROUTES } from "./Routes.types";
+import { FEATURES } from "../config/features";
 import FreCal from "../pages/freeCalculator/Calculator.tsx";
 import FreeCalApi from "../pages/freeCalculatorApi/Calculator.tsx";
 import InProgressCalc from "../pages/InProgressCalc/index";
@@ -478,22 +479,33 @@ const Routes = () => {
         </AuthUser>
       </Route>
 
+      {/* Saved-calculation reports + the matter-picker welcome screen call
+          the legacy law-firm backend — hidden until they get a new backend
+          home (see src/config/features.ts). */}
       <Route path={AUTH_ROUTES.CALCULATOR_REPORTS}>
-        <AuthUser
-          usersAuth={rl_all}
-          sidAccess={accessPagesState?.auth_calculator}
-        >
-          <CalculatorReports />
-        </AuthUser>
+        {FEATURES.SAVED_CALCULATIONS ? (
+          <AuthUser
+            usersAuth={rl_all}
+            sidAccess={accessPagesState?.auth_calculator}
+          >
+            <CalculatorReports />
+          </AuthUser>
+        ) : (
+          <Redirect to={AUTH_ROUTES.CALCULATOR} />
+        )}
       </Route>
 
       <Route path={AUTH_ROUTES.SUPPORT_CALCULATOR}>
-        <AuthUser
-          usersAuth={rl_all}
-          sidAccess={accessPagesState?.auth_calculator}
-        >
-          <WelcomeScreen currentUserRole={userChangeState.userRole} />
-        </AuthUser>
+        {FEATURES.SAVED_CALCULATIONS ? (
+          <AuthUser
+            usersAuth={rl_all}
+            sidAccess={accessPagesState?.auth_calculator}
+          >
+            <WelcomeScreen currentUserRole={userChangeState.userRole} />
+          </AuthUser>
+        ) : (
+          <Redirect to={AUTH_ROUTES.CALCULATOR} />
+        )}
       </Route>
 
       <Route path={UN_AUTH_ROUTES.CREATE_CLIENT}>
