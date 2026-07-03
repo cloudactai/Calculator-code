@@ -15,7 +15,9 @@ if (!databaseUrl) {
   );
 }
 
-const needsSsl = /\.render\.com/i.test(databaseUrl);
+// Hosted Postgres providers require SSL: Render (external URLs), AWS RDS,
+// Neon. Internal/localhost URLs don't.
+const needsSsl = /\.render\.com|\.rds\.amazonaws\.com|\.neon\.tech/i.test(databaseUrl);
 const pool = new Pool({
   connectionString: databaseUrl,
   ...(needsSsl ? { ssl: { rejectUnauthorized: false } } : {}),
