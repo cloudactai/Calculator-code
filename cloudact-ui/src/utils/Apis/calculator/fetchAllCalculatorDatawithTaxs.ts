@@ -9,7 +9,7 @@ const fetchAllCalculatorDatawithTaxs = async (obj: Object) => {
     return res;
   } catch (err: any) {
     // const errorMessage = JSON.parse(err.request.response)
-    return err.response.data.data;
+    return err?.response?.data?.data ?? null;
   }
 };
 

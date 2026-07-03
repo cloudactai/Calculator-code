@@ -4,6 +4,9 @@ __pycache__/
 *.pyo
 .env
 .DS_Store
-cloudact-ui/
 .vercel/
 node_modules/
+# Anchored: only the root static frontend/ dir, not e.g. docs/AUTH_HANDOFF/frontend/
+/frontend/
+templates/spousal-chat.html
+cloudact-ui/src/utils/devBypass.js

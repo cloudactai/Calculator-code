@@ -21,6 +21,7 @@ import { AUTH_ROUTES } from "../../../routes/Routes.types";
 import { apiCalculatorById } from "../../../utils/Apis/calculator/Calculator_values_id";
 import { SaveAllCalculatorValuesByID } from "../../../utils/Apis/calculator/SaveAllCalculatorValuesByID";
 import { fetchAllCalculatorDatawithTaxs } from "../../../utils/Apis/calculator/fetchAllCalculatorDatawithTaxs";
+import { calcSpousalSupportFlask } from "../../../utils/Apis/calculator/calcSpousalSupportFlask";
 import { fetchSpecificTaxandDeductionforAmount } from "../../../utils/Apis/calculator/fetchSpecificTaxandDeductionforAmount";
 import { getDistinctYearsInTaxRef } from "../../../utils/Apis/getDistinctYearsInTaxRef";
 import {
@@ -224,6 +225,12 @@ const Screen2 = ({
   const history = useHistory();
   const calculatorId = useQuery();
   const [showAlertFillAllDetails, setShowAlertFillAllDetails] = useState(false);
+  const [showApiError, setShowApiError] = useState(false);
+  const spousalSupportIterativeRef = useRef<{
+    monthly_low: number;
+    monthly_mid: number;
+    monthly_high: number;
+  } | null>(null);
 
   // const [taxeswithAddSupport, settaxeswithAddSupport] = useState({
   //   party1: 0,
@@ -1910,7 +1917,10 @@ const Screen2 = ({
 
   useEffect(() => {
     const fetchData = async () => {
-      const data = await apiCalculatorById.get_value(Number(getCalculatorIdFromQuery(calculatorId)));
+      const calculatorIdValue = getCalculatorIdFromQuery(calculatorId);
+      const parsedId = Number(calculatorIdValue);
+      if (!calculatorIdValue || calculatorIdValue === 'null' || isNaN(parsedId)) return;
+      const data = await apiCalculatorById.get_value(parsedId);
 
 
       const SceneriosData = JSON.parse(data.report_data)?.scenarios;
@@ -1932,7 +1942,7 @@ const Screen2 = ({
       }
     };
 
-    fetchData();
+    fetchData().catch(() => {});
   }, [Number(getCalculatorIdFromQuery(calculatorId))]);
 
   
@@ -5286,14 +5296,12 @@ const Screen2 = ({
 
   const calculateChildAndSpousalSupportAuto = async () => {
 
-    console.log("checkallpointscreen1",screen1)
-    console.log("checkallpointscreen2",screen2)
-
-
+    // console.log('Screen1Allinfo', screen1)
+    // console.log('Screen2Allinfo', screen2)
 
     let objforApi = {
       "tax_year": distinctYears?.selectedYear,
-      "typeofsupport":"spousal",
+      "typeofsupport": typeOfCalculatorSelected,
       "party1": {
           "personal": {
               "name": party1Name(),
@@ -5344,83 +5352,104 @@ const Screen2 = ({
           "dom": getDateofMarriage(),
           "dos": getDateofSeparation()
       },
-      "childrens": [
-        //  {"name": "child1", "dob": "2008-01-01", "livewith": "party2", "options": {}},
-        //  {"name": "child2", "dob": "2007-01-01", "livewith": "party2", "options": {}}
-      ],
-      "childcareexpenses": [
-        // {"name":"child1", "bywhom":"party2", "amount": 5000, "type": "selected option"}
-      ],   
-      "otherdeductions": [
-      ],   
+      "childrens": screen1.aboutTheChildren.childrenInfo,
+      "childcareexpenses": specialExpensesArr,
+      "otherdeductions": [],
       "rates": {
-          "low": {"rate":40, "spousal_support": -1},
-          "med": {"rate":43, "spousal_support": -1},
-          "high": {"rate":46, "spousal_support": -1}
+          "low": {"rate": calpercentageRef.low, "spousal_support": -1},
+          "med": {"rate": calpercentageRef.mid, "spousal_support": -1},
+          "high": {"rate": calpercentageRef.high, "spousal_support": -1}
       }
-     }
-
-     console.log("objforApi",objforApi)
- 
-
-    const {data} = await fetchAllCalculatorDatawithTaxs(objforApi);
-    setAllApiDataCal(data)
-
-    if (checkIfAllMandatoryValuesAreFilled()) {
-      // //storing the original values. These values are stored because we would reset these values after the calculation for low, med, high.
-      storeBasicValues();
-      // // We need to calculate child support before calculating anything. First Child support will be calculated and stored in useRef variables. Then these variables are used in all the calculations.
-      calculateChildSupport();
-      const incomes = {
-        totalIncomeParty1: totalIncomeByIncomeState(income.party1) + nonTaxableIncomeParty1(),
-        totalIncomeParty2: totalIncomeByIncomeState(income.party2) + nonTaxableIncomeParty2(),
-      };
-      if (totalNumberOfChildren(screen1.aboutTheChildren) === 0) {
-        // High Case
-        typeOfReport.current = WITHOUT_CHILD_FORMULA;
-        await calculateSpousalSupportAuto({
-          highLimit: true,
-          lowTaxes: false,
-          medTaxes: false,
-          highTaxes: false,
-          specialExpensesLow: false,
-          specialExpensesMed: false,
-          specialExpensesHigh: false,
-        });
-      } else if (
-        determineWhichPartyHasGreaterIncomeAndChild(
-          screen1.aboutTheChildren,
-          incomes
-        )
-      ) {
-        // High Case
-        typeOfReport.current = ONLY_CHILD;
-        await calculateSpousalSupportAuto({
-          highLimit: true,
-          lowTaxes: false,
-          medTaxes: false,
-          highTaxes: false,
-          specialExpensesLow: false,
-          specialExpensesMed: false,
-          specialExpensesHigh: false,
-        });
-      } else if (totalNumberOfChildren(screen1.aboutTheChildren) > 0) {
-        typeOfReport.current = CUSTODIAL_FORMULA;
-        await calculateSpousalSupportAuto({
-          highLimit: false,
-          lowTaxes: true,
-          medTaxes: true,
-          highTaxes: true,
-          specialExpensesLow: true,
-          specialExpensesMed: true,
-          specialExpensesHigh: true,
-        });
-      }
-      //else if if any party has more income and also have child custody,
-      //then spousal support will be calculated by years of living together (same as highlimit and when there is no child.)
     }
 
+    if (checkIfAllMandatoryValuesAreFilled()) {
+      storeBasicValues();
+      // Child support must run first — the iterative spousal formula needs CS
+      // amounts (payor's Table CS and recipient's notional CS) as inputs.
+      calculateChildSupport();
 
+      // Gross annual incomes — sent directly to the Python iterative API.
+      // The backend (calculate_spousal_support_iterative) accepts gross income
+      // and runs tax computation on each iteration so SS and taxes converge together.
+      const party1GrossAnnual = totalIncomeByIncomeState(income.party1) + nonTaxableIncomeParty1();
+      const party2GrossAnnual = totalIncomeByIncomeState(income.party2) + nonTaxableIncomeParty2();
+      const party1Age = momentFunction.differenceBetweenNowAndThen(screen1.background.party1DateOfBirth);
+      const party2Age = momentFunction.differenceBetweenNowAndThen(screen1.background.party2DateOfBirth);
+      const yearsOfRelationship = momentFunction.differenceBetweenTwoDates(
+        screen1.aboutTheRelationship.dateOfMarriage,
+        screen1.aboutTheRelationship.dateOfSeparation
+      );
+
+      // When children are present the Python backend uses calculate_spousal_support_iterative
+      // (the with-children SSAG formula) which converges SS ↔ taxes across ~6 iterations.
+      // When children is empty it uses the without-children formula instead.
+      // Either way gross income is the input — the backend handles tax computation internally.
+      const childrenPayload = (screen1.aboutTheChildren.childrenInfo || []).map((child: any) => ({
+        date_of_birth: momentFunction.formatDate(child.dateOfBirth, "YYYY-MM-DD"),
+        custody_arrangement: child.custodyArrangement || "Party 1",
+        child_has_disability: child.childHasDisability === "Yes",
+      }));
+
+      const spousalIterativeResult = await calcSpousalSupportFlask({
+        party1_gross_income: party1GrossAnnual,
+        party2_gross_income: party2GrossAnnual,
+        party1_age: party1Age,
+        recipient_age: party2Age,
+        years: yearsOfRelationship,
+        province: getProvinceOfParty1(),
+        year: distinctYears?.selectedYear ?? new Date().getFullYear(),
+        children: childrenPayload,
+      });
+
+      // Store in ref so passStateToParentAndNextPage uses Python values
+      // instead of the local JS formula when building screen2.spousalSupport.
+      if (spousalIterativeResult) {
+        spousalSupportIterativeRef.current = spousalIterativeResult;
+      }
+
+      Cookies.set('demo_cal_data', JSON.stringify(objforApi), { path: '/' });
+
+      const {data} = await fetchAllCalculatorDatawithTaxs(objforApi);
+
+      // Overlay the iterative monthly amounts so Screen4 reads the Python values
+      // via support_quantum_low/med/high rather than whatever /calculator returns.
+      const apiDataWithIterative = {
+        ...data,
+        ...(spousalIterativeResult ? {
+          support_quantum_low: spousalIterativeResult.monthly_low,
+          support_quantum_med: spousalIterativeResult.monthly_mid,
+          support_quantum_high: spousalIterativeResult.monthly_high,
+          spousal_iterative: spousalIterativeResult,
+        } : {}),
+      };
+      setAllApiDataCal(apiDataWithIterative);
+
+      // console.log('checkDataExistence', data)
+
+      const incomes = {
+        totalIncomeParty1: party1GrossAnnual,
+        totalIncomeParty2: party2GrossAnnual,
+      };
+
+      if (spousalIterativeResult) {
+        // Python iterative API succeeded — set the report type for downstream
+        // report generation but skip the JS spousal support calculation entirely.
+        if (totalNumberOfChildren(screen1.aboutTheChildren) === 0) {
+          typeOfReport.current = WITHOUT_CHILD_FORMULA;
+        } else if (determineWhichPartyHasGreaterIncomeAndChild(screen1.aboutTheChildren, incomes)) {
+          typeOfReport.current = ONLY_CHILD;
+        } else if (totalNumberOfChildren(screen1.aboutTheChildren) > 0) {
+          typeOfReport.current = CUSTODIAL_FORMULA;
+        }
+        assignValuesAfterAllCalculations();
+        setShowCalculationCompleted(true);
+        setShowSaveCalculatorValues(true);
+      } else {
+        // Python iterative API unreachable — show error modal instead of
+        // silently falling back to the JS formula.
+        setShowApiError(true);
+      }
+    }
   };
 
 
@@ -5491,7 +5520,7 @@ const Screen2 = ({
   };
 
   const fetchDistinctTaxYears = () => {
-    return new Promise((resolve, reject) => {
+    return new Promise((resolve) => {
       setLoading(true);
       getDistinctYearsInTaxRef()
         .then((res) => {
@@ -5505,14 +5534,16 @@ const Screen2 = ({
             selectedYear: year,
           });
 
-          fetchFederalDBValues(year, getProvinceOfParty1()).then((res) => {
-            resolve(true);
-          });
+          fetchFederalDBValues(year, getProvinceOfParty1())
+            .then(() => resolve(true))
+            .catch(() => resolve(true));
         })
-        .catch((err) => {
-          console.log("err", err);
-          // alert("Error Fetching Tax Years");
-          reject(false);
+        .catch(() => {
+          setDistinctYears({
+            allYears: [{ year: 2025 }],
+            selectedYear: 2025,
+          });
+          resolve(true);
         });
     });
   };
@@ -5999,11 +6030,8 @@ const Screen2 = ({
 
       setCount((prev: any) => prev + 1);
       setLoading(false);
-      // setTimeout(() => {
-      //   calculateAllOperationsForParty1();
-
-      //   calculateAllOperationsForParty2();
-      // }, 2000);
+    }).catch(() => {
+      setLoading(false);
     });
 
     syncUpSpecialExpensesWithBenefitAndDeduction();
@@ -7417,6 +7445,23 @@ const Screen2 = ({
     );
   };
 
+  const ApiErrorModal = () => {
+    return (
+      <ModalInputCenter
+        heading="Calculation Failed"
+        handleClick={() => setShowApiError(false)}
+        changeShow={() => setShowApiError(false)}
+        show={showApiError}
+        action="Ok"
+        cancelOption="Cancel"
+      >
+        <p className="heading-5">
+          The spousal support calculation could not be completed. Please check your connection and try again.
+        </p>
+      </ModalInputCenter>
+    );
+  };
+
   const getvaluewithoutSpousalSupport = () => {
 
     settaxeswithAddSupport({
@@ -8207,6 +8252,7 @@ const Screen2 = ({
                 of each party to get the s7 child special expenses support
               </span>
               {showAlertFillAllDetails && AlertFillAllDetails()}
+              {showApiError && ApiErrorModal()}
               <div className="row">
                 <div className="col-md-6">
                   {specialExpensesArr.party1.map((e: any, index: number) => {

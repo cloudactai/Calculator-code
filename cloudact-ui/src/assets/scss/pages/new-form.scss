@@ -134,12 +134,16 @@
           }
         }
         .img {
-          width: 500px;
-          height: 500px;
+          width: 380px;
+          height: 380px;
+          background-size: contain;
+          background-repeat: no-repeat;
+          background-position: top center;
         }
       }
 
       .action {
+        margin-top: -40px;
         button {
           float: right;
         }

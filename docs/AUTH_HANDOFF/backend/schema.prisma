@@ -1,0 +1,36 @@
+// Personal-only auth schema. This is the ENTIRE database for the sign-in /
+// create-account system: one User table. No Subscriber/law-firm, no Clio/QBO
+// token columns, no Microsoft-connection columns, no webhook columns.
+//
+// Postgres via the pg adapter (see prismaClient.js). DATABASE_URL is supplied
+// through prisma.config.ts + the runtime adapter, so the datasource block has no
+// inline url.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id                         String    @id @default(uuid())
+  email                      String    @unique
+  name                       String?
+  jobTitle                   String?
+  profilePic                 String?   // optional base64 data URL for an avatar
+  passwordHash               String
+
+  // Email verification
+  emailVerifiedAt            DateTime?
+  emailVerificationTokenHash String?
+  emailVerificationExpiresAt DateTime?
+
+  // Password reset
+  resetPasswordTokenHash     String?
+  resetPasswordExpiresAt     DateTime?
+
+  createdAt                  DateTime  @default(now())
+  updatedAt                  DateTime  @updatedAt
+}

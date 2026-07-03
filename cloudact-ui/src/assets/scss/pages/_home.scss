@@ -1515,6 +1515,11 @@ ol {
           font-weight: 700;
           color: $primary;
           text-decoration: none;
+          &:hover,
+          &:focus {
+            color: $black !important;
+            text-decoration: none;
+          }
         }
       }
 
@@ -1528,6 +1533,11 @@ ol {
           font-weight: 700;
           color: $primary;
           text-decoration: none;
+          &:hover,
+          &:focus {
+            color: $black !important;
+            text-decoration: none;
+          }
         }
       }
 
@@ -1539,6 +1549,12 @@ ol {
         margin-bottom: 10px;
         font-size: 20px;
         height: 60px;
+        &:hover,
+        &:focus {
+          background-color: $black;
+          border-color: $black;
+          color: $white;
+        }
       }
 
       .form-group {

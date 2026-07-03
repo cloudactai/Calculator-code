@@ -69,14 +69,21 @@ export enum AUTH_ROUTES {
 }
 
 export enum UN_AUTH_ROUTES {
+  LOGIN = "/login",
   SIGNIN = "/signIn",
+  SIGNUP = "/signup",
   CREATE_ACCOUNT = "/createAccount",
   CONFIRM_ACTIVATE = "/confirm/activate",
   OAUTH_APPROVAL = "/oauth/approval",
   CREATE_CLIENT = "/create/client",
   CREATE_CLIENT_AND_ASSOCIATE = "/create/clientAssociation",
   ACTIVATE_CLIENT_ACCOUNT = "/activate/client/account",
+  FORGOT_PASSWORD = "/forgot-password",
   FORGET_PASSWORD = "/forgetpassword",
+  CHECK_EMAIL = "/check-email",
   RESET_PASSWORD = "/resetpassword",
   NEW_PASSWORD_SET = "/newPasswordSet",
+  // Personal auth (auth-server) email-link landing pages
+  VERIFY_EMAIL = "/verify-email",
+  SET_NEW_PASSWORD = "/reset-password",
 }

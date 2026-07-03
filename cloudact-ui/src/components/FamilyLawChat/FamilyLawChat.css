@@ -92,6 +92,26 @@
   color: #fff;
 }
 
+.flc-icon-btn svg {
+  display: block;
+}
+
+/* Header button group (full-screen toggle + close) */
+.flc-header-btns {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+/* Full-screen mode — expand the panel to (nearly) fill the viewport.
+   Stays anchored bottom-right so the launcher remains reachable. */
+.flc-panel.is-fullscreen {
+  width: calc(100vw - 48px);
+  height: calc(100vh - 110px);
+  max-width: none;
+  max-height: none;
+}
+
 /* Calculator selector tabs */
 .flc-tabs {
   display: flex;
@@ -105,34 +125,24 @@
   border: none;
   border-bottom: 2px solid transparent;
   color: #9aa3c4;
-  font-size: 0.74rem;
+  font-size: 0.72rem;
+  line-height: 1.25;
   font-weight: 600;
   font-family: inherit;
-  padding: 8px 4px;
+  padding: 8px 2px;
   cursor: pointer;
   position: relative;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 2px;
+  text-align: center;
+  transition: color 0.12s ease;
+}
+
+.flc-tab:hover {
+  color: #cdd6f5;
 }
 
 .flc-tab.is-active {
   color: #fff;
   border-bottom-color: #307ff4;
-}
-
-.flc-tab.is-disabled {
-  cursor: not-allowed;
-  opacity: 0.55;
-}
-
-.flc-soon {
-  font-size: 0.55rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  color: #73c3fd;
 }
 
 /* Message window */
@@ -330,4 +340,202 @@
 
 .flc-reset:hover {
   color: #307ff4;
+}
+
+/* ── Spousal Support form ─────────────────────────────────────────────── */
+.flc-form-window {
+  gap: 14px;
+}
+
+.flc-form-intro {
+  font-size: 0.82rem;
+  color: #5b6480;
+  line-height: 1.45;
+  margin: 0;
+}
+
+.flc-form-group {
+  background: #fff;
+  border: 1px solid #e4e9f4;
+  border-radius: 12px;
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.flc-form-label {
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #307ff4;
+}
+
+.flc-field {
+  width: 100%;
+  border: 1px solid #d4ddee;
+  border-radius: 9px;
+  padding: 9px 11px;
+  font-size: 0.84rem;
+  font-family: inherit;
+  color: #171d34;
+  outline: none;
+  transition: border-color 0.12s ease;
+}
+
+.flc-field:focus {
+  border-color: #73c3fd;
+}
+
+.flc-form-hint {
+  font-size: 0.72rem;
+  color: #9aa3c4;
+  line-height: 1.4;
+  margin: 0;
+}
+
+.flc-form-error {
+  background: #fdecea;
+  border-left: 3px solid #e0533f;
+  border-radius: 0 8px 8px 0;
+  padding: 9px 12px;
+  color: #c0392b;
+  font-size: 0.78rem;
+  line-height: 1.4;
+}
+
+.flc-calc-btn {
+  width: 100%;
+  padding: 12px;
+  background: #171d34;
+  color: #fff;
+  border: none;
+  border-radius: 11px;
+  font-size: 0.88rem;
+  font-weight: 700;
+  font-family: inherit;
+  letter-spacing: 0.02em;
+  cursor: pointer;
+  transition: background 0.12s ease;
+}
+
+.flc-calc-btn:hover:not(:disabled) {
+  background: #2c2c4e;
+}
+
+.flc-calc-btn:disabled {
+  background: #9aa3c4;
+  cursor: not-allowed;
+}
+
+/* ── Spousal Support result ───────────────────────────────────────────── */
+.flc-result {
+  background: #fff;
+  border: 1px solid #e4e9f4;
+  border-radius: 12px;
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.flc-result-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.flc-meta-item {
+  flex: 1 1 calc(50% - 8px);
+  background: #f4f6fb;
+  border-radius: 8px;
+  padding: 8px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.flc-meta-item span {
+  font-size: 0.62rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #9aa3c4;
+}
+
+.flc-meta-item strong {
+  font-size: 0.9rem;
+  color: #171d34;
+}
+
+.flc-range {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.78rem;
+}
+
+.flc-range th {
+  text-align: left;
+  font-size: 0.62rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #9aa3c4;
+  padding: 0 6px 8px 0;
+}
+
+.flc-range td {
+  padding: 7px 6px 7px 0;
+  border-top: 1px solid #eef1f7;
+  color: #171d34;
+  font-weight: 500;
+}
+
+.flc-tag {
+  font-size: 0.6rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 2px 7px;
+  border-radius: 20px;
+}
+
+.flc-tag.flc-low {
+  background: #e8f5e9;
+  color: #2e7d32;
+}
+
+.flc-tag.flc-med {
+  background: #fff8e1;
+  color: #f57f17;
+}
+
+.flc-tag.flc-high {
+  background: #fce4ec;
+  color: #c62828;
+}
+
+.flc-verdict {
+  background: #eef3ff;
+  border-left: 3px solid #307ff4;
+  border-radius: 0 8px 8px 0;
+  padding: 11px 13px;
+  font-size: 0.8rem;
+  line-height: 1.5;
+  color: #171d34;
+}
+
+.flc-verdict strong {
+  display: block;
+  font-size: 0.86rem;
+  margin-bottom: 5px;
+}
+
+.flc-disclaimer {
+  font-size: 0.7rem;
+  color: #9aa3c4;
+  text-align: center;
+  line-height: 1.5;
+  margin: 0;
 }

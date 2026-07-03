@@ -32,6 +32,13 @@
   color: #171d34;
 }
 
+.btn.btnPrimary:hover,
+.btn.btnPrimary:focus {
+  background-color: #171d34;
+  border-color: #171d34;
+  color: white;
+}
+
 .btn.btnDanger {
   background-color: #fb554a;
   color: white;
@@ -1641,6 +1648,12 @@ ol.text {
   text-decoration: none;
 }
 
+.loginSection > .login .loginFields .control a:hover,
+.loginSection > .login .loginFields .control a:focus {
+  color: #171d34 !important;
+  text-decoration: none;
+}
+
 .loginSection > .login .loginFields .text {
   font-size: 16px;
   text-align: center;
@@ -1654,6 +1667,12 @@ ol.text {
   text-decoration: none;
 }
 
+.loginSection > .login .loginFields .text a:hover,
+.loginSection > .login .loginFields .text a:focus {
+  color: #171d34 !important;
+  text-decoration: none;
+}
+
 .loginSection > .login .loginFields .btn {
   width: 100%;
   background-color: #73c3fd;
@@ -1664,6 +1683,13 @@ ol.text {
   margin-bottom: 10px;
   font-size: 20px;
   height: 60px;
+}
+
+.loginSection > .login .loginFields .btn:hover,
+.loginSection > .login .loginFields .btn:focus {
+  background-color: #171d34;
+  border-color: #171d34;
+  color: white;
 }
 
 .loginSection > .login .loginFields .form-group {

@@ -15,6 +15,12 @@
     &.btnPrimary{
         background-color: $secondary;
         color: $black;
+        &:hover,
+        &:focus{
+            background-color: $black;
+            border-color: $black;
+            color: $white;
+        }
     }
     &.btnSecondary{
         border: #73C3FD solid 1px;

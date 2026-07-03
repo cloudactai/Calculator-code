@@ -16,6 +16,7 @@ export const AuthUser: React.FC<{
   const history = useHistory();
 
   if (!userInfo) {
+    // Not signed in: clear any stale session state and land on sign-in.
     return <Logout />;
   } else if (
     usersAuth.includes(getCurrentUserFromCookies().role) &&

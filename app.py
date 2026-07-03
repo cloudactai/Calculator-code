@@ -11,17 +11,12 @@ import json
 import math
 import os
 import sys
-from datetime import date
-from flask import Flask, request, jsonify, render_template, send_from_directory
+from datetime import date, datetime, timezone
+from flask import Flask, request, jsonify, render_template
 from flask_cors import CORS
 import anthropic
-from spousal_support import (
-    calculate_spousal_support_no_children,
-    calculate_spousal_support_with_children,
-    calculate_spousal_support_iterative,
-    SpousalSupportResult,
-    IterativeResult,
-)
+from spousal_support import calculate_spousal_support_no_children, calculate_spousal_support_with_children, SpousalSupportResult, calculate_spousal_support_iterative
+from tax import ChildInfo as TaxChildInfo
 
 def calculate_spousal_support(
     party1_name:                    str,
@@ -81,8 +76,8 @@ def compute_child_counts(children: list) -> dict:
     counts = {"party1": 0, "party2": 0, "shared": 0,
               "party1WithAdultChild": 0, "party2WithAdultChild": 0}
     for c in children:
-        adult = c.get("is_adult", False)
-        custody = c.get("custody_arrangement", "")
+        adult   = c.get("is_adult") or c.get("isAdult", False)
+        custody = c.get("custody_arrangement") or c.get("custodyArrangement", "")
         if custody == "Party 1":
             if adult:
                 counts["party1WithAdultChild"] += 1
@@ -434,54 +429,139 @@ def chat():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
+def _parse_dob(dob) -> str:
+    """Normalise a date-of-birth value to 'YYYY-MM-DD'.
+
+    Handles:
+      - None / missing          → '2000-01-01'
+      - ISO string 'YYYY-MM-DD' → unchanged
+      - JS timestamp (ms int)   → converted via datetime
+    """
+    if dob is None:
+        return "2000-01-01"
+    if isinstance(dob, (int, float)):
+        try:
+            return datetime.fromtimestamp(dob / 1000, tz=timezone.utc).strftime("%Y-%m-%d")
+        except Exception:
+            return "2000-01-01"
+    return str(dob)[:10]
+
+
 @app.route("/spousal-calculate", methods=["POST"])
 def spousal_calculate():
     try:
         data = request.get_json(force=True)
 
-        party1_name            = data.get("party1_name", "Party 1")
-        party2_name            = data.get("party2_name", "Party 2")
-        party1_net_income      = float(data["party1_net_income"])
-        party2_net_income      = float(data["party2_net_income"])
-        years                  = float(data["years"])
-        recipient_age          = float(data["recipient_age"])
-        children                       = bool(data.get("children", False))
-        monthly_child_support          = float(data.get("monthly_child_support", 0.0))
-        monthly_notional_child_support = float(data.get("monthly_notional_child_support", 0.0))
-        youngest_child_age             = float(data.get("youngest_child_age", 0.0))
+        party1_gross      = float(data["party1_net_income"])   # frontend sends gross as "net_income"
+        party2_gross      = float(data["party2_net_income"])
+        party1_age        = int(data.get("party1_age", 35))
+        recipient_age     = int(data["recipient_age"])
+        years             = float(data["years"])
+        province          = data.get("province", "ON")
+        year              = int(data.get("year", 2025))
+        youngest_child_age = float(data.get("youngest_child_age", 0.0))
 
-        result = calculate_spousal_support(
-            party1_name=party1_name,
-            party2_name=party2_name,
-            party1_net_income=party1_net_income,
-            party2_net_income=party2_net_income, 
-            years=years,
-            recipient_age=recipient_age,
-            children=children,
-            monthly_child_support=monthly_child_support,
-            monthly_notional_child_support=monthly_notional_child_support,
-            youngest_child_age=youngest_child_age,
+        # --- Build children list and child_counts ---
+        raw_children  = data.get("children_list", []) or []
+        has_children  = bool(data.get("children", False)) or len(raw_children) > 0
+
+        tax_children = [
+            TaxChildInfo(
+                date_of_birth       = _parse_dob(c.get("dateOfBirth") or c.get("date_of_birth")),
+                custody_arrangement = c.get("custodyArrangement") or c.get("custody_arrangement", "Party 1"),
+                child_has_disability = "Yes" if c.get("hasDisability") or c.get("child_has_disability") else "No",
+            )
+            for c in raw_children
+        ]
+
+        if raw_children:
+            child_counts = compute_child_counts(raw_children)
+            minor_total  = child_counts["party1"] + child_counts["party2"] + child_counts["shared"]
+        else:
+            child_counts = {"party1": 0, "party2": 0, "shared": 0,
+                            "party1WithAdultChild": 0, "party2WithAdultChild": 0}
+            minor_total  = 0
+
+        # --- CS amounts: pass -1 to let the function compute from children ---
+        monthly_cs_paid  = float(data["monthly_child_support"])  if "monthly_child_support"  in data else -1
+        monthly_notional = float(data["monthly_notional_child_support"]) if "monthly_notional_child_support" in data else -1
+
+        # --- Determine payor/recipient for response label ---
+        payor_gross     = party1_gross if party1_gross >= party2_gross else party2_gross
+        recipient_gross = party2_gross if party1_gross >= party2_gross else party1_gross
+        payor_name      = data.get("party1_name", "Party 1") if party1_gross >= party2_gross else data.get("party2_name", "Party 2")
+        recipient_name  = data.get("party2_name", "Party 2") if party1_gross >= party2_gross else data.get("party1_name", "Party 1")
+        payor_age       = party1_age if party1_gross >= party2_gross else recipient_age
+
+        # --- No-children path: without-child formula (1.5%/1.75%/2% × income diff) ---
+        if not has_children:
+            result_nc = calculate_spousal_support_no_children(
+                party1_name         = payor_name,
+                party2_name         = recipient_name,
+                party1_gross_income = payor_gross,
+                party2_gross_income = recipient_gross,
+                years               = years,
+                recipient_age       = recipient_age,
+            )
+            return jsonify({
+                "payor":               payor_name,
+                "recipient":           recipient_name,
+                "monthly_low":         result_nc.monthly_low,
+                "monthly_med":         result_nc.monthly_med,
+                "monthly_high":        result_nc.monthly_high,
+                "annual_low":          result_nc.annual_low,
+                "annual_med":          result_nc.annual_med,
+                "annual_high":         result_nc.annual_high,
+                "payor_indi_low":      0, "payor_indi_mid":      0, "payor_indi_high":      0,
+                "recipient_indi_low":  0, "recipient_indi_mid":  0, "recipient_indi_high":  0,
+                "iterations_low":      0, "iterations_mid":      0, "iterations_high":      0,
+                "duration_low":        result_nc.duration_low,
+                "duration_high":       result_nc.duration_high,
+            })
+
+        # --- Run iterative calculation (computes CS internally if -1) ---
+        result = calculate_spousal_support_iterative(
+            payor_gross          = payor_gross,
+            recipient_gross      = recipient_gross,
+            payor_age            = payor_age,
+            recipient_age        = recipient_age,
+            years                = years,
+            children             = tax_children,
+            child_counts         = child_counts,
+            monthly_cs_paid      = monthly_cs_paid,
+            monthly_notional_cs  = monthly_notional,
+            youngest_child_age   = youngest_child_age,
+            province             = province,
+            year                 = year,
+            payor_is_party1      = (party1_gross >= party2_gross),
         )
-
         return jsonify({
-            "payor":            result.payor,
-            "recipient":        result.recipient,
-            "net_income_diff":  result.net_income_diff,
-            "pct_low":          result.pct_low,
-            "pct_med":          result.pct_med,
-            "pct_high":         result.pct_high,
-            "monthly_low":      result.monthly_low,
-            "monthly_med":      result.monthly_med,
-            "monthly_high":     result.monthly_high,
-            "annual_low":       result.annual_low,
-            "annual_med":       result.annual_med,
-            "annual_high":      result.annual_high,
-            "duration_label":   result.duration_label,
+            "payor":              payor_name,
+            "recipient":          recipient_name,
+            "monthly_low":        result.monthly_low,
+            "monthly_med":        result.monthly_mid,   # IterativeResult uses monthly_mid
+            "monthly_high":       result.monthly_high,
+            "annual_low":         result.annual_low,
+            "annual_med":         result.annual_mid,
+            "annual_high":        result.annual_high,
+            "payor_indi_low":     result.payor_indi_low,
+            "payor_indi_mid":     result.payor_indi_mid,
+            "payor_indi_high":    result.payor_indi_high,
+            "recipient_indi_low":  result.recipient_indi_low,
+            "recipient_indi_mid":  result.recipient_indi_mid,
+            "recipient_indi_high": result.recipient_indi_high,
+            "iterations_low":     result.iterations_low,
+            "iterations_mid":     result.iterations_mid,
+            "iterations_high":    result.iterations_high,
+            "duration_low":       result.duration_low,
+            "duration_high":      result.duration_high,
         })
 
     except KeyError as e:
+        import traceback; traceback.print_exc()
         return jsonify({"error": f"Missing field: {e}"}), 400
     except Exception as e:
+        import traceback; traceback.print_exc()
         return jsonify({"error": str(e)}), 400
     
 # ── /tax-chat ─────────────────────────────────────────────────────────────────

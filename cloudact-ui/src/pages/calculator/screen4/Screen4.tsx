@@ -254,8 +254,14 @@ const Screen4 = ({
   }, []);
 
   const downloadReports = async (id: number) => {
-    const data = await apiCalculatorById.get_value(id);
- 
+    if (!id || isNaN(id)) return;
+    let data: any;
+    try {
+      data = await apiCalculatorById.get_value(id);
+    } catch {
+      return;
+    }
+    if (!data?.report_data) return;
     const ExtractedData = JSON.parse(data.report_data);
     // setRestructioring(ExtractedData.restructioring)
     console.log("ExtractedData",ExtractedData.restructioring)
@@ -830,8 +836,8 @@ const Screen4 = ({
 
   const ChildSpecialExpenseArrow = ({ amount, givenTo }: ArrowDetails) => {
     return (
-      <div className="arrow">
-        <span>
+      <div className="arrow" style={givenTo ? { transform: 'scaleX(-1)' } : {}}>
+        <span style={givenTo ? { transform: 'scaleX(-1)' } : {}}>
           {formatNumberInThousands(amount)
             .toString()
             .replace(/(\.00|\.0+)$/, "")}{" "}
@@ -857,8 +863,8 @@ const Screen4 = ({
 
   const LumpsumArrow = ({ amount, givenTo }: ArrowDetails) => {
     return (
-      <div className="arrow">
-        <span>
+      <div className="arrow" style={givenTo ? { transform: 'scaleX(-1)' } : {}}>
+        <span style={givenTo ? { transform: 'scaleX(-1)' } : {}}>
           {amount} {""}
           Lump Sum Amount
         </span>
@@ -882,8 +888,8 @@ const Screen4 = ({
 
   const LifeinsurenceArrow = ({ amount, givenTo }: ArrowDetails) => {
     return (
-      <div className="arrow">
-        <span>
+      <div className="arrow" style={givenTo ? { transform: 'scaleX(-1)' } : {}}>
+        <span style={givenTo ? { transform: 'scaleX(-1)' } : {}}>
           {amount} {""}
           Lump Sum Amount
         </span>
@@ -907,7 +913,7 @@ const Screen4 = ({
 
   const SpousalSupportArrow = ({ amount, givenTo }: ArrowDetails) =>
     typeOfCalculatorSelected !== "CHILD_SUPPORT_CAL" && (
-      <div className="arrow">
+      <div className="arrow" style={givenTo ? { transform: 'scaleX(-1)' } : {}}>
         <svg
           width="345"
           height="51"
@@ -922,7 +928,7 @@ const Screen4 = ({
             fill="#F6BD3D"
           />{" "}
         </svg>
-        <span>
+        <span style={givenTo ? { transform: 'scaleX(-1)' } : {}}>
           {formatNumberInThousands(amount)
             .toString()
             .replace(/(\.00|\.0+)$/, "")}{" "}
@@ -932,7 +938,7 @@ const Screen4 = ({
     );
 
   const ChildSupportArrow = ({ amount, givenTo }: ArrowDetails) => (
-    <div className="arrow">
+    <div className="arrow" style={givenTo ? { transform: 'scaleX(-1)' } : {}}>
       <svg
         width="345"
         height="51"
@@ -947,7 +953,7 @@ const Screen4 = ({
           fill="#73C3FD"
         />{" "}
       </svg>
-      <span>
+      <span style={givenTo ? { transform: 'scaleX(-1)' } : {}}>
         {formatNumberInThousands(amount)
           .toString()
           .replace(/(\.00|\.0+)$/, "")}{" "}
@@ -1625,7 +1631,7 @@ const Screen4ApiComponent=({apiData})=>{
   console.log('apiDataRepose',apiData)
 
 
-  const SpousalSupportArrow = ({ amount, givenTo }: ArrowDetails) => <div className="arrow">
+  const SpousalSupportArrow = ({ amount, givenTo }: ArrowDetails) => <div className="arrow" style={givenTo ? { transform: 'scaleX(-1)' } : {}}>
       <svg
         width="345"
         height="51"
@@ -1640,15 +1646,15 @@ const Screen4ApiComponent=({apiData})=>{
           fill="#F6BD3D"
         />{" "}
       </svg>
-      <span>
+      <span style={givenTo ? { transform: 'scaleX(-1)' } : {}}>
        87654321
         Spousal Support
       </span>
     </div>
-  
+
 
 const ChildSupportArrow = ({ amount, givenTo }: ArrowDetails) => (
-  <div className="arrow">
+  <div className="arrow" style={givenTo ? { transform: 'scaleX(-1)' } : {}}>
     <svg
       width="345"
       height="51"
@@ -1663,7 +1669,7 @@ const ChildSupportArrow = ({ amount, givenTo }: ArrowDetails) => (
         fill="#73C3FD"
       />{" "}
     </svg>
-    <span>
+    <span style={givenTo ? { transform: 'scaleX(-1)' } : {}}>
       1234567
       Child Support (Table Amount)
     </span>
@@ -1672,8 +1678,8 @@ const ChildSupportArrow = ({ amount, givenTo }: ArrowDetails) => (
 
 const ChildSpecialExpenseArrow = ({ amount, givenTo }: ArrowDetails) => {
   return (
-    <div className="arrow">
-      <span>
+    <div className="arrow" style={givenTo ? { transform: 'scaleX(-1)' } : {}}>
+      <span style={givenTo ? { transform: 'scaleX(-1)' } : {}}>
         123123
         Child Special Expense Support
       </span>

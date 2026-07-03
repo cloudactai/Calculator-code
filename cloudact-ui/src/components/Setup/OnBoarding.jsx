@@ -26,6 +26,7 @@ import InputCustom from "../InputCustom";
 import ModalInputCenter from "../ModalInputCenter";
 import DoubleInput from "./DoubleInput";
 import OnboardingSteps from "./OnboardingSteps";
+import { isPersonalAuthUser } from "../../utils/personalAuthSession";
 
 const OnBoarding = ({ isQBOConnected, familyLawTools, complianceReports }) => {
   const [activeStep, setActiveStep] = useState(1);
@@ -369,6 +370,11 @@ const OnBoarding = ({ isQBOConnected, familyLawTools, complianceReports }) => {
         console.log("Checking user role and fetching company data...");
         const user = getCurrentUserFromCookies();
 
+        if (isPersonalAuthUser(user)) {
+          console.log("Personal auth user detected; skipping legacy company data fetch.");
+          return;
+        }
+
         if (user.role !== "SUPERADMIN") {
           try {
             const sid = getUserSID();
@@ -400,7 +406,9 @@ const OnBoarding = ({ isQBOConnected, familyLawTools, complianceReports }) => {
             }
           } catch (error) {
             console.error("Error fetching company data:", error);
-            toast.error("Failed to fetch company data.");
+            if (error?.response?.status !== 401) {
+              toast.error("Failed to fetch company data.");
+            }
           }
         }
       };
