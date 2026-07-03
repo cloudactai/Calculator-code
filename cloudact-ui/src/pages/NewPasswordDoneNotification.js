@@ -15,8 +15,8 @@ const NewPasswordDoneNotification = () => {
         <div className="loginFields">
           <span className="h3 justify-content-center">Please sign in</span>
           <span className="h5 justify-content-center text-center email">Password for your account has been reset. <br></br> Sign in to continue</span>
-          <Link to="/login" className="btn btnPrimary">Sign in</Link>
-          <span className="text justify-content-center text-center mt-4"><Link to="/login" className="text-primary-color heading-6 fw-bold"><i className="fas fa-angle-left"></i> Back to log in</Link></span>
+          <Link to="/signin" className="btn btnPrimary">Sign in</Link>
+          <span className="text justify-content-center text-center mt-4"><Link to="/signin" className="text-primary-color heading-6 fw-bold"><i className="fas fa-angle-left"></i> Back to log in</Link></span>
         </div>
       </div>
       <div className="loginGraphic"><img src={ResetPasswordImage} alt="email notification"></img></div>
