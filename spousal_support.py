@@ -367,17 +367,23 @@ def _duration_with_children(
 # ===========================================================================
 
 def _compute_net_indi(
-    gross_income:           float,
-    age:                    int,
-    party_num:              int,
-    children:               list,   # list of TaxChildInfo
-    child_counts:           dict,   # {"party1": int, "party2": int, "shared": int}
-    both_gross:             dict,   # {"party1": float, "party2": float}
-    ss_paid_annual:         float,  # SS deduction for payor (0 for recipient)
-    ss_received_annual:     float,  # SS income for recipient (0 for payor)
-    cs_adjustment_annual:   float,  # actual CS paid (payor) OR notional CS (recipient)
-    province:               str = "ON",
-    year:                   int = 2025,
+    gross_income:            float,
+    age:                     int,
+    party_num:               int,
+    children:                list,   # list of TaxChildInfo
+    child_counts:            dict,   # {"party1": int, "party2": int, "shared": int}
+    both_gross:              dict,   # {"party1": float, "party2": float}
+    ss_paid_annual:          float,  # SS deduction for payor (0 for recipient)
+    ss_received_annual:      float,  # SS income for recipient (0 for payor)
+    cs_adjustment_annual:    float,  # actual CS paid (payor) OR notional CS (recipient)
+    province:                str   = "ON",
+    year:                    int   = 2025,
+    # Deduction / income-type fields — default to 0 so existing callers are unaffected
+    self_employed_income:    float = 0.0,
+    other_income:            float = 0.0,
+    child_care_expenses:     float = 0.0,
+    other_deductions:        float = 0.0,
+    eligible_for_disability: str   = "No",
 ) -> float:
     """
     Compute one party's INDI for one iteration step.
@@ -387,19 +393,23 @@ def _compute_net_indi(
     Spousal support is tax-deductible for the payor and taxable for the
     recipient (post-1997 Ontario agreements).  Child support is NOT
     deductible / taxable — it affects INDI directly as a cash subtraction.
+
+    Deduction fields default to 0, preserving the original behaviour when
+    not supplied.  Pass non-zero values when the party has RRSP contributions,
+    child care expenses, or other deductions that affect their net income.
     """
     inp = TaxInput(
         party_num               = party_num,
         province                = province,
         age                     = age,
-        eligible_for_disability = "No",
+        eligible_for_disability = eligible_for_disability,
         employed_income         = gross_income,
-        self_employed_income    = 0.0,
-        other_income            = 0.0,
+        self_employed_income    = self_employed_income,
+        other_income            = other_income,
         support_received        = ss_received_annual,
         deductible_support_paid = ss_paid_annual,
-        child_care_expenses     = 0.0,
-        other_deductions        = 0.0,
+        child_care_expenses     = child_care_expenses,
+        other_deductions        = other_deductions,
         children                = children,
         type_of_splitting       = "SOLE",
         child_counts            = child_counts,
@@ -667,31 +677,41 @@ def calculate_spousal_support_iterative(
             ss_annual = ss * 12
 
             payor_indi = _compute_net_indi(
-                gross_income         = payor_gross,
-                age                  = payor_age,
-                party_num            = 1,
-                children             = children,
-                child_counts         = child_counts,
-                both_gross           = both_gross,
-                ss_paid_annual       = ss_annual,
-                ss_received_annual   = 0.0,
-                cs_adjustment_annual = cs_annual,
-                province             = province,
-                year                 = year,
+                gross_income             = payor_gross,
+                age                      = payor_age,
+                party_num                = 1,
+                children                 = children,
+                child_counts             = child_counts,
+                both_gross               = both_gross,
+                ss_paid_annual           = ss_annual,
+                ss_received_annual       = 0.0,
+                cs_adjustment_annual     = cs_annual,
+                province                 = province,
+                year                     = year,
+                self_employed_income     = payor_self_employed_income,
+                other_income             = payor_other_income,
+                child_care_expenses      = payor_child_care_expenses,
+                other_deductions         = payor_other_deductions,
+                eligible_for_disability  = payor_eligible_for_disability,
             )
 
             recip_indi = _compute_net_indi(
-                gross_income         = recipient_gross,
-                age                  = recipient_age,
-                party_num            = 2,
-                children             = children,
-                child_counts         = child_counts,
-                both_gross           = both_gross,
-                ss_paid_annual       = 0.0,
-                ss_received_annual   = ss_annual,
-                cs_adjustment_annual = notional_annual,
-                province             = province,
-                year                 = year,
+                gross_income             = recipient_gross,
+                age                      = recipient_age,
+                party_num                = 2,
+                children                 = children,
+                child_counts             = child_counts,
+                both_gross               = both_gross,
+                ss_paid_annual           = 0.0,
+                ss_received_annual       = ss_annual,
+                cs_adjustment_annual     = notional_annual,
+                province                 = province,
+                year                     = year,
+                self_employed_income     = recip_self_employed_income,
+                other_income             = recip_other_income,
+                child_care_expenses      = recip_child_care_expenses,
+                other_deductions         = recip_other_deductions,
+                eligible_for_disability  = recip_eligible_for_disability,
             )
 
             new_ss = spousal_support_formula_by_rate(payor_indi, recip_indi, rate)

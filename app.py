@@ -99,6 +99,16 @@ def compute_child_counts(children: list) -> dict:
 def index():
     return render_template("calculator.html")
 
+FRONTEND_DIR = os.path.join(THIS_DIR, "frontend")
+
+@app.route("/spousal-chat-ui")
+def spousal_chat_ui():
+    return send_from_directory(FRONTEND_DIR, "spousal-chat.html")
+
+@app.route("/frontend/<path:filename>")
+def frontend_static(filename):
+    return send_from_directory(FRONTEND_DIR, filename)
+
 
 @app.route("/calculate", methods=["POST"])
 def calculate():
@@ -888,6 +898,413 @@ def tax_chat():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
+
+SPOUSAL_CHAT_SYSTEM = """
+You are a spousal support intake assistant for CloudAct (Ontario).
+
+Your job is to collect all the information needed to calculate Ontario SSAG
+spousal support by asking questions one at a time, then call the
+calculate_spousal_support tool. Do not do any math yourself.
+
+Ask one question at a time. If the user volunteers multiple pieces of
+information at once, extract all of it and only ask about what is still missing.
+
+───────────────────────────────────────────────
+STEP 1 — Ask first: are there dependent children from the relationship?
+This determines which income type and which formula to use.
+───────────────────────────────────────────────
+
+══════════════════════════════════════════════
+PATH A — NO CHILDREN
+══════════════════════════════════════════════
+Collect:
+- Names of each party (optional)
+- Party 1 annual GROSS (before-tax) income in CAD
+- Party 2 annual GROSS (before-tax) income in CAD
+- Years of marriage or common-law cohabitation
+- Age of the lower-income spouse at separation
+
+The no-children SSAG formula applies a percentage directly to the gross
+income difference — no tax calculation is needed and deductions do not
+affect the result. Do NOT ask about deductions on this path.
+
+Set children=false. Call the tool immediately once you have all of the above.
+
+══════════════════════════════════════════════
+PATH B — CHILDREN (uses iterative tax-converging formula)
+══════════════════════════════════════════════
+Collect:
+- Names of each party (optional)
+- Party 1 annual GROSS (before-tax) income in CAD
+- Party 2 annual GROSS (before-tax) income in CAD
+- Age of Party 1 at separation
+- Age of Party 2 at separation
+- Years of marriage or common-law cohabitation
+
+For each child:
+- Name
+- Date of birth (YYYY-MM-DD)
+- Custody: who do they primarily live with? ("Party 1", "Party 2", or "Shared")
+- Does the child have a disability? (Yes / No)
+
+Also collect:
+- Monthly table child support paid by the higher-income spouse (CAD)
+- Monthly notional child support — what the recipient would owe if roles
+  were reversed. Say "use 0 if unknown."
+- Age of the youngest child at separation
+
+DEDUCTIONS — ask this question exactly once, after collecting incomes:
+"Does either party have significant tax deductions — such as RRSP
+contributions, child care expenses, union dues, or other deductions?"
+
+  • If NEITHER has deductions:
+    Set all deduction fields to 0 and call the tool.
+
+  • If PARTY 1 has deductions, collect:
+    - RRSP contributions / other deductions (combined, annual CAD)
+    - Child care expenses (annual CAD)
+    Party 1's result will be fully accurate.
+
+  • If PARTY 2 has deductions, collect ONLY:
+    - RRSP contributions / other deductions (combined, annual CAD)
+    - Child care expenses (annual CAD)
+    Note in your reply that Party 2's tax position is approximate
+    (simplified income model; self-employment and other income not captured).
+
+  • If BOTH have deductions, collect the above for each party.
+
+Set children=true. Call the tool once you have everything.
+
+───────────────────────────────────────────────
+RESULT FORMAT (always include after the tool returns)
+───────────────────────────────────────────────
+After the result, explain in plain language who pays and why, then show:
+
+Payor:              [name]
+Recipient:          [name]
+Monthly support:    $X,XXX – $X,XXX  (low to high)
+Annual support:     $X,XXX – $X,XXX
+Duration:           [label]
+
+If the children path was used, also show:
+Payor INDI (mid):   $X,XXX / month
+Recipient INDI (mid): $X,XXX / month
+
+Ontario SSAG only. Politely decline questions about other provinces.
+"""
+
+SPOUSAL_CALC_TOOL = {
+    "name": "calculate_spousal_support",
+    "description": (
+        "Calculate Ontario SSAG spousal support. "
+        "Both paths use gross (before-tax) incomes. "
+        "Use children=false for the no-children formula (pct × gross income difference). "
+        "Use children=true for the iterative tax-converging formula."
+    ),
+    "input_schema": {
+        "type": "object",
+        "required": ["years", "recipient_age", "children"],
+        "properties": {
+
+            # ── Party names ───────────────────────────────────────────────
+            "party1_name": {
+                "type": "string",
+                "description": "Name of Party 1 (optional)"
+            },
+            "party2_name": {
+                "type": "string",
+                "description": "Name of Party 2 (optional)"
+            },
+
+            # ── Relationship ──────────────────────────────────────────────
+            "years": {
+                "type": "number",
+                "description": "Years of marriage or common-law cohabitation"
+            },
+            "recipient_age": {
+                "type": "number",
+                "description": "Age of the lower-income spouse at separation"
+            },
+            "children": {
+                "type": "boolean",
+                "description": "True if there are dependent children. Determines which formula is used."
+            },
+
+            # ── Incomes — gross (before-tax) for BOTH paths ───────────────
+            "party1_gross_income": {
+                "type": "number",
+                "description": "Party 1 annual gross (before-tax) income (CAD). Required for both paths."
+            },
+            "party2_gross_income": {
+                "type": "number",
+                "description": "Party 2 annual gross (before-tax) income (CAD). Required for both paths."
+            },
+            "party1_age": {
+                "type": "integer",
+                "description": "Age of Party 1 at separation. Required when children=true."
+            },
+            "party2_age": {
+                "type": "integer",
+                "description": "Age of Party 2 at separation. Required when children=true."
+            },
+
+            # ── Children details (children=true only) ─────────────────────
+            "children_list": {
+                "type": "array",
+                "description": "List of children. Required when children=true.",
+                "items": {
+                    "type": "object",
+                    "required": ["date_of_birth", "custody_arrangement", "child_has_disability"],
+                    "properties": {
+                        "date_of_birth": {
+                            "type": "string",
+                            "description": "Child's date of birth in YYYY-MM-DD format."
+                        },
+                        "custody_arrangement": {
+                            "type": "string",
+                            "enum": ["Party 1", "Party 2", "Shared"],
+                            "description": "Who the child primarily lives with."
+                        },
+                        "child_has_disability": {
+                            "type": "string",
+                            "enum": ["Yes", "No"],
+                            "description": "Does the child have a disability?"
+                        }
+                    }
+                }
+            },
+            "monthly_child_support": {
+                "type": "number",
+                "description": "Monthly table child support paid by the higher-income spouse (CAD). Required when children=true."
+            },
+            "monthly_notional_child_support": {
+                "type": "number",
+                "description": "Monthly notional child support (what the recipient would owe if roles reversed). Use 0 if unknown.",
+                "default": 0
+            },
+            "youngest_child_age": {
+                "type": "number",
+                "description": "Age of the youngest child at separation. Required when children=true."
+            },
+
+            # ── Deductions — Party 1 (children=true path only) ────────────
+            "party1_other_deductions": {
+                "type": "number",
+                "description": "Party 1 annual RRSP contributions + other deductions (CAD). Use 0 if none.",
+                "default": 0
+            },
+            "party1_child_care_expenses": {
+                "type": "number",
+                "description": "Party 1 annual child care expenses (CAD). Use 0 if none.",
+                "default": 0
+            },
+
+            # ── Deductions — Party 2 (children=true path only) ────────────
+            "party2_other_deductions": {
+                "type": "number",
+                "description": "Party 2 annual RRSP contributions + other deductions (CAD). Use 0 if none. Result is approximate if non-zero.",
+                "default": 0
+            },
+            "party2_child_care_expenses": {
+                "type": "number",
+                "description": "Party 2 annual child care expenses (CAD). Use 0 if none. Result is approximate if non-zero.",
+                "default": 0
+            },
+        }
+    }
+}
+
+
+def run_spousal_calc_tool(tool_input: dict) -> dict:
+    """
+    Routes to:
+      - calculate_spousal_support_no_children  when children=False  (gross incomes, pct × diff formula)
+      - calculate_spousal_support_iterative    when children=True   (gross incomes + deductions, tax-converging)
+    """
+    has_children = bool(tool_input["children"])
+    p1_name = tool_input.get("party1_name", "Party 1")
+    p2_name = tool_input.get("party2_name", "Party 2")
+    years         = float(tool_input["years"])
+    recipient_age = float(tool_input["recipient_age"])
+
+    # ── PATH A: no children ──────────────────────────────────────────────────
+    if not has_children:
+        result = calculate_spousal_support_no_children(
+            party1_name=p1_name,
+            party2_name=p2_name,
+            party1_gross_income=float(tool_input["party1_gross_income"]),
+            party2_gross_income=float(tool_input["party2_gross_income"]),
+            years=years,
+            recipient_age=recipient_age,
+        )
+        return {
+            "formula":        "no_children",
+            "payor":          result.payor,
+            "recipient":      result.recipient,
+            "pct_low":        result.pct_low,
+            "pct_med":        result.pct_med,
+            "pct_high":       result.pct_high,
+            "monthly_low":    result.monthly_low,
+            "monthly_med":    result.monthly_med,
+            "monthly_high":   result.monthly_high,
+            "annual_low":     result.annual_low,
+            "annual_med":     result.annual_med,
+            "annual_high":    result.annual_high,
+            "duration_label": result.duration_label,
+        }
+
+    # ── PATH B: with children (iterative) ────────────────────────────────────
+    today = date.today()
+    children_raw = tool_input.get("children_list", [])
+
+    child_counts = {"party1": 0, "party2": 0, "shared": 0,
+                    "party1WithAdultChild": 0, "party2WithAdultChild": 0}
+    child_infos = []
+
+    for c in children_raw:
+        dob_str = c["date_of_birth"]
+        try:
+            dob = date.fromisoformat(dob_str)
+            age = today.year - dob.year - ((today.month, today.day) < (dob.month, dob.day))
+            is_adult = age >= 18
+        except (ValueError, KeyError):
+            is_adult = False
+
+        arrangement = c["custody_arrangement"]
+        if arrangement == "Party 1":
+            if is_adult:
+                child_counts["party1WithAdultChild"] += 1
+            else:
+                child_counts["party1"] += 1
+        elif arrangement == "Party 2":
+            if is_adult:
+                child_counts["party2WithAdultChild"] += 1
+            else:
+                child_counts["party2"] += 1
+        elif arrangement == "Shared":
+            child_counts["shared"] += 1
+
+        child_infos.append(ChildInfo(
+            date_of_birth=dob_str,
+            custody_arrangement=arrangement,
+            child_has_disability=c.get("child_has_disability", "No"),
+        ))
+
+    # Determine payor/recipient by gross income to label the result
+    p1_gross = float(tool_input["party1_gross_income"])
+    p2_gross = float(tool_input["party2_gross_income"])
+    p1_age   = int(tool_input["party1_age"])
+    p2_age   = int(tool_input["party2_age"])
+
+    if p1_gross >= p2_gross:
+        payor_gross, payor_age, payor_name = p1_gross, p1_age, p1_name
+        recip_gross, recip_age, recip_name = p2_gross, p2_age, p2_name
+        payor_deductions = {
+            "other_deductions":    float(tool_input.get("party1_other_deductions", 0.0)),
+            "child_care_expenses": float(tool_input.get("party1_child_care_expenses", 0.0)),
+        }
+        recip_deductions = {
+            "other_deductions":    float(tool_input.get("party2_other_deductions", 0.0)),
+            "child_care_expenses": float(tool_input.get("party2_child_care_expenses", 0.0)),
+        }
+    else:
+        payor_gross, payor_age, payor_name = p2_gross, p2_age, p2_name
+        recip_gross, recip_age, recip_name = p1_gross, p1_age, p1_name
+        payor_deductions = {
+            "other_deductions":    float(tool_input.get("party2_other_deductions", 0.0)),
+            "child_care_expenses": float(tool_input.get("party2_child_care_expenses", 0.0)),
+        }
+        recip_deductions = {
+            "other_deductions":    float(tool_input.get("party1_other_deductions", 0.0)),
+            "child_care_expenses": float(tool_input.get("party1_child_care_expenses", 0.0)),
+        }
+
+    result = calculate_spousal_support_iterative(
+        payor_gross=payor_gross,
+        recipient_gross=recip_gross,
+        payor_age=payor_age,
+        recipient_age=recip_age,
+        years=years,
+        children=child_infos,
+        child_counts=child_counts,
+        monthly_cs_paid=float(tool_input.get("monthly_child_support", 0.0)),
+        monthly_notional_cs=float(tool_input.get("monthly_notional_child_support", 0.0)),
+        youngest_child_age=float(tool_input.get("youngest_child_age", 0.0)),
+        payor_other_deductions=payor_deductions["other_deductions"],
+        payor_child_care_expenses=payor_deductions["child_care_expenses"],
+        recip_other_deductions=recip_deductions["other_deductions"],
+        recip_child_care_expenses=recip_deductions["child_care_expenses"],
+    )
+
+    has_approx = any([
+        tool_input.get("party2_other_deductions", 0),
+        tool_input.get("party2_child_care_expenses", 0),
+    ])
+
+    return {
+        "formula":              "iterative_with_children",
+        "payor":                payor_name,
+        "recipient":            recip_name,
+        "monthly_low":          result.monthly_low,
+        "monthly_mid":          result.monthly_mid,
+        "monthly_high":         result.monthly_high,
+        "annual_low":           result.annual_low,
+        "annual_mid":           result.annual_mid,
+        "annual_high":          result.annual_high,
+        "payor_indi_mid":       result.payor_indi_mid,
+        "recipient_indi_mid":   result.recipient_indi_mid,
+        "duration_label":       f"{result.duration_low} – {result.duration_high} years",
+        "approximate":          has_approx,
+    }
+
+@app.route("/spousal-chat", methods=["POST"])
+def spousal_chat():
+    try:
+        body = request.get_json(force=True)
+        messages = body.get("messages", [])
+
+        client = anthropic.Anthropic()
+
+        for _ in range(10):
+            response = client.messages.create(
+                model=os.getenv("CLAUDE_MODEL", "claude-sonnet-4-6"),
+                max_tokens=1024,
+                system=SPOUSAL_CHAT_SYSTEM,
+                tools=[SPOUSAL_CALC_TOOL],
+                messages=messages,
+            )
+
+            assistant_content = []
+            for block in response.content:
+                if hasattr(block, "model_dump"):
+                    assistant_content.append(block.model_dump())
+                else:
+                    assistant_content.append(block)
+
+            messages.append({"role": "assistant", "content": assistant_content})
+
+            if response.stop_reason != "tool_use":
+                reply = "".join(
+                    b["text"] for b in assistant_content if b.get("type") == "text"
+                )
+                return jsonify({"reply": reply, "messages": messages})
+
+            tool_results = []
+            for block in assistant_content:
+                if block.get("type") == "tool_use":
+                    result = run_spousal_calc_tool(block["input"])
+                    tool_results.append({
+                        "type":        "tool_result",
+                        "tool_use_id": block["id"],
+                        "content":     json.dumps(result),
+                    })
+
+            messages.append({"role": "user", "content": tool_results})
+
+        return jsonify({"error": "Reached iteration limit without a final reply."}), 500
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
 # ── Entry point ───────────────────────────────────────────────────────────────
 
