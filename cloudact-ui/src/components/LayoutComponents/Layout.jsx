@@ -6,7 +6,6 @@ import { getUserSID, getUserId, getCurrentUserFromCookies, updateInfoInCurrentUs
 import toast from "react-hot-toast";
 import React, { useEffect } from "react";
 import { Roles } from "../../routes/Role.types";
-import { isPersonalAuthUser } from "../../utils/personalAuthSession";
 
 const Layout = ({ children, title }) => {
   const { sidebarCollapse } = useSelector((state) => state.userChange);
@@ -88,11 +87,6 @@ const Layout = ({ children, title }) => {
     const fetchData = async () => {
       console.log("Checking user role and fetching company data...");
       const user = getCurrentUserFromCookies();
-
-      if (isPersonalAuthUser(user)) {
-        console.log("Personal auth user detected; skipping legacy company data fetch.");
-        return;
-      }
 
       if (user.role !== "SUPERADMIN") {
         try {

@@ -1,9 +1,10 @@
-import React, { useState } from "react";
-import { Image } from "react-bootstrap";
+import React, { useEffect, useState } from "react";
+import { Col, Row, Container, Image } from "react-bootstrap";
 import { useHistory, useLocation, Link } from "react-router-dom";
 import Footer from "../components/Footer";
+import Nav from "../components/Nav";
 import PasswordStrength from "../components/PasswordStrength";
-import { resetPassword } from "../utils/Apis/auth/authApi";
+import axios from "../utils/axios";
 import { determineStrengthPassword } from "../utils/helpers";
 import ResetPasswordImage from "../assets/images/Reset password.svg"
 import Logo from "../assets/images/CloudAct-Accounting-Taxation-logo-1 3.png";
@@ -15,58 +16,46 @@ const NewPasswordPage = () => {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [confirmPasswordError, setConfirmPasswordError] = useState("");
   const [StrengthPass, setStrengthPass] = useState("Weak");
+  const [code, setCode] = useState("");
 
   const history = useHistory();
-  const search = useLocation().search;
-  // The auth-server emails links as /reset-password?token=…; the legacy email
-  // format was ?<rawcode>, so fall back to the raw query string.
-  const token = new URLSearchParams(search).get("token") || search.substring(1);
+  const location = useLocation().search;
+
+  useEffect(() => {
+    const extractCode = () => {
+      const code = location.substring(1);
+
+      console.log("code", code);
+      setCode(code);
+      return code;
+    };
+
+    extractCode();
+    console.log("extract code", code);
+  });
 
   const handleSubmit = (e) => {
     e.preventDefault();
 
     if (password === "" || confirmPassword === "") {
       setPasswordError("Please Enter the new password");
-    } else if (password.length < 8) {
-      setPasswordError("Password must be at least 8 characters.");
-    } else if (password !== confirmPassword) {
-      setConfirmPasswordError("Passwords do not match");
-    } else {
-      resetPassword({ token, password })
-        .then(({ ok, data }) => {
-          if (ok) {
-            history.push("/login", { passwordReset: true });
+    } else if (password === confirmPassword) {
+      axios
+        .post(`/reset/password?code=${code}`, { password: password })
+        .then((res) => {
+          console.log("res", res);
+          if (res.data.data.code === 200) {
+            history.push("/newPasswordSet");
           } else {
-            setPasswordError(
-              data?.message || "Reset link is invalid or expired."
-            );
+            throw res.data.data.message;
           }
         })
         .catch((err) => {
           console.log("err", err);
-          setPasswordError("Unable to reach the password service. Try again.");
+          //   history.push("/createAccount");
         });
     }
   };
-
-  if (!token) {
-    return (
-      <div className="loginSection">
-        <div className="login">
-          <Link className="brand" to="/"><Image src={Logo} /></Link>
-          <div className="loginFields">
-            <span className="h3">Reset link is invalid</span>
-            <span className="h5">Please request a new password reset link.</span>
-            <Link to="/forgot-password" className="btn btnPrimary">
-              Request new link
-            </Link>
-          </div>
-        </div>
-        <div className="loginGraphic"><img src={ResetPasswordImage} alt="forgot your password"></img></div>
-        <Footer />
-      </div>
-    );
-  }
 
   return (
     <div className="loginSection">
