@@ -12,8 +12,11 @@ const instance = axios.create({
     REACT_APP_ENVIRONMENT === 'QA' ? APIS.QA : 
     REACT_APP_ENVIRONMENT === 'PROD' ? APIS.prod : 
      REACT_APP_ENVIRONMENT === 'LOCAL' ? APIS.local :
-     APIS.local, 
-  withCredentials: true, 
+     APIS.local,
+  withCredentials: true,
+  // Fail fast instead of hanging the UI when the legacy /v1 backend is
+  // unreachable. Without a timeout, a dead host spins loaders forever.
+  timeout: 20000,
 });
 
 instance.interceptors.request.use(
