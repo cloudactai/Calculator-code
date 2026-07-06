@@ -3,6 +3,7 @@ import InfoHeader from "../Dashboard/InfoHeader";
 import { useSelector } from "react-redux";
 import axios from "../../utils/axios";
 import { getUserSID, getUserId, getCurrentUserFromCookies, updateInfoInCurrentUser } from "../../utils/helpers";
+import { isPersonalAuthUser } from "../../utils/personalAuthSession";
 import toast from "react-hot-toast";
 import React, { useEffect } from "react";
 import { Roles } from "../../routes/Role.types";
@@ -87,6 +88,15 @@ const Layout = ({ children, title }) => {
     const fetchData = async () => {
       console.log("Checking user role and fetching company data...");
       const user = getCurrentUserFromCookies();
+
+      // PERSONAL AUTH: the company/province sync below talks to the legacy
+      // /v1 firm backend, which has no record for personal accounts — it only
+      // produces "Failed to fetch company data." toasts. Skip it for personal
+      // users; firm accounts still run it. Reversible: delete this block.
+      if (isPersonalAuthUser(user)) {
+        console.log("Personal auth user — skipping legacy company data sync.");
+        return;
+      }
 
       if (user.role !== "SUPERADMIN") {
         try {

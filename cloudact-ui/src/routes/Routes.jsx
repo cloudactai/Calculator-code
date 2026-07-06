@@ -43,6 +43,7 @@ import TasksPage from "../pages/TasksPage";
 import MatterDashboard from "../pages/matters/matterDashboard.jsx";
 
 import { IaccessPagesAuthData, Store } from "../store/store";
+import { isPersonalAuthUser } from "../utils/personalAuthSession";
 import clioIntuitRefresh from "../utils/Apis/clioIntuitRefresh/clioIntuitRefresh";
 import {
   clioConnectedOrNot,
@@ -100,7 +101,11 @@ const Routes = () => {
   );
 
    useEffect(() => {
-    if(userInfo && !userInfo?.userProfile){
+    // PERSONAL AUTH: /profile/info lives on the legacy /v1 firm backend and
+    // fails (raw axios error toast) for personal accounts — their profile is
+    // seeded from the auth-server via personalAuthSession cookies instead.
+    // Reversible: drop the isPersonalAuthUser condition.
+    if(userInfo && !userInfo?.userProfile && !isPersonalAuthUser(userInfo)){
       dispatch(userProfileInfoAction());
     }
     const tooltipTriggerList = document.querySelectorAll(

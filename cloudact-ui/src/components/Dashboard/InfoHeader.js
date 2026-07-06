@@ -19,6 +19,7 @@ import Monthly_Form_Created from "../../assets/images/Monthly_Form_Created.png";
 import Monthly_SignOff_Preparer from "../../assets/images/Monthly_SignOff_Preparer.png";
 import Monthly_SignOff_Reviewer from "../../assets/images/Monthly_SignOff_Reviewer.png";
 import { changeInfoInUserInfo } from "../../actions/userActions";
+import { isPersonalAuthUser } from "../../utils/personalAuthSession";
 import {
   clioConnectedOrNot,
   getCurrentUserFromCookies,
@@ -203,6 +204,9 @@ const InfoHeader = ({ title }) => {
   // Fetch notifications dynamically based on the user's role and uid
   useEffect(() => {
     const fetchNotifications = async () => {
+      // PERSONAL AUTH: notifications live on the legacy /v1 firm backend —
+      // nothing to fetch for personal accounts. Reversible: delete this guard.
+      if (isPersonalAuthUser(getCurrentUserFromCookies())) return;
       try {
         // setLoading(true); // Uncomment if you handle loading state
 
@@ -406,6 +410,10 @@ const InfoHeader = ({ title }) => {
   };
 
   const getRefreshState = (OptionalChange = null) => {
+    // PERSONAL AUTH: /services/status is legacy Clio/QBO firm state; personal
+    // accounts have authClio/authIntuit forced true by personalAuthSession.
+    // Reversible: delete this guard.
+    if (isPersonalAuthUser(getCurrentUserFromCookies())) return;
     axios
       .get(`/services/status/${getUserSID()}`)
       .then((res) => {
