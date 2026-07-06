@@ -13,6 +13,7 @@ were reversed).
 from spousal_support import (
     calculate_spousal_support_no_children,
     calculate_spousal_support_with_children,
+    calculate_spousal_support_iterative,
     INDEFINITE_SENTINEL,
 )
 
@@ -23,10 +24,10 @@ from spousal_support import (
 
 nc_party1_name         = "Husband"
 nc_party2_name         = "Wife"
-nc_party1_gross_income = 50_000   # gross annual income, CAD
-nc_party2_gross_income = 20_000   # gross annual income, CAD
-nc_years               = 6       # years of marriage / cohabitation
-nc_recipient_age       = 26       # age of the lower-income spouse at separation
+nc_party1_gross_income = 90000   # gross annual income, CAD
+nc_party2_gross_income = 0   # gross annual income, CAD
+nc_years               = 10       # years of marriage / cohabitation
+nc_recipient_age       = 35       # age of the lower-income spouse at separation
 
 
 # ===========================================================================
@@ -35,8 +36,8 @@ nc_recipient_age       = 26       # age of the lower-income spouse at separation
 
 wc_party1_name                    = "Husband"
 wc_party2_name                    = "Wife"
-wc_party1_net_income              = 66535.18   # after-tax annual income (before CS adjustment), CAD
-wc_party2_net_income              =33006.25   # after-tax annual income (before CS adjustment), CAD
+wc_party1_net_income              = 90000   # after-tax annual income (before CS adjustment), CAD
+wc_party2_net_income              =20000   # after-tax annual income (before CS adjustment), CAD
 wc_monthly_child_support          = 841    # Table CS paid by payor (monthly)
 wc_monthly_notional_child_support = 128      # Hypothetical CS recipient would owe if roles reversed (monthly)
 wc_years                          = 10       # years of marriage / cohabitation

@@ -4,13 +4,8 @@
  * Seeds the encrypted auth cookies the app normally gets from the backend on
  * login, so the calculator UI can be explored locally without any backend running.
  *
- * Enable: put REACT_APP_DEV_BYPASS_AUTH=true in cloudact-ui/.env, run npm start.
- * Disable: remove the variable (or just don't set it). With the personal
- * sign-in system live (auth-server/), the normal dev path is a real login —
- * this bypass is only for exploring the UI with no backend at all.
- *
- * Guarded by NODE_ENV — this is dead code in production builds even if the
- * env var were set, so it can never bypass auth on a deployed site.
+ * Always active in development builds. Safe in production — NODE_ENV guard
+ * makes this dead code in any production bundle.
  *
  * Pages will render and navigation works, but anything that fetches data
  * (matters, tasks, reports) will show empty/error states — there's no API.
@@ -18,23 +13,7 @@
 import Cookies from "js-cookie";
 import { encrypt } from "./Encrypted";
 
-const BYPASS_ENABLED =
-  process.env.NODE_ENV === "development" &&
-  process.env.REACT_APP_DEV_BYPASS_AUTH === "true";
-
-const DEV_COOKIE_NAMES = [
-  "allUserInfo",
-  "currentUserRole",
-  "access_pages",
-  "companyInfo",
-  "userProfile",
-  "authClio",
-  "authIntuit",
-  "province",
-  "AccessToken",
-  "RefreshToken",
-  "calculatorLabel",
-];
+const BYPASS_ENABLED = process.env.NODE_ENV === "development";
 
 const DEV_USER = {
   id: 1,
@@ -107,16 +86,14 @@ if (BYPASS_ENABLED) {
   Cookies.set("authIntuit", "true", opts);
   Cookies.set("province", JSON.stringify("ON"), opts);
   Cookies.set("AccessToken", "dev-bypass-token", opts);
+  Cookies.set(
+    "calculatorLabel",
+    JSON.stringify({ label: "Dev Calculator", description: "" }),
+    opts
+  );
 
   console.warn(
     "[devBypass] Auth bypass active — signed in as Dev User (ADMIN). " +
-      "API-backed pages will show empty data. Remove REACT_APP_DEV_BYPASS_AUTH to disable."
+      "API-backed pages will show empty data."
   );
-} else if (
-  process.env.NODE_ENV === "development" &&
-  Cookies.get("AccessToken") === "dev-bypass-token"
-) {
-  const opts = { path: "/" };
-  DEV_COOKIE_NAMES.forEach((name) => Cookies.remove(name, opts));
-  console.warn("[devBypass] Removed stale Dev User cookies because auth bypass is disabled.");
 }

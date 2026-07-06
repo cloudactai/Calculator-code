@@ -7,9 +7,6 @@ import { getAllUserInfo } from "../utils/helpers";
 import { Link } from "react-router-dom";
 
 const ProfilePage = () => {
-  const userInfo = getAllUserInfo() || {};
-  const displayName = userInfo.username || userInfo.name || userInfo.email || "";
-
   return (
     <Layout title="My Profile">
       <Container style={{ textAlign: "center" }}>
@@ -24,8 +21,8 @@ const ProfilePage = () => {
           />
 
           <div className="profile_info my-5">
-            <div className="heading-4">{displayName}</div>
-            <div className="heading-6">{userInfo.province}</div>
+            <div className="heading-4">{getAllUserInfo().username}</div>
+            <div className="heading-6">{getAllUserInfo().province}</div>
             <Link to="/profile/edit">
               <button className="btn_primary_empty py-4 my-3 px-5">
                 Edit Profile

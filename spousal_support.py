@@ -112,6 +112,7 @@ class IterativeResult:
     iterations_low:       int
     iterations_mid:       int
     iterations_high:      int
+    monthly_cs_paid:      int
 
 
 # ===========================================================================
@@ -366,17 +367,23 @@ def _duration_with_children(
 # ===========================================================================
 
 def _compute_net_indi(
-    gross_income:           float,
-    age:                    int,
-    party_num:              int,
-    children:               list,   # list of TaxChildInfo
-    child_counts:           dict,   # {"party1": int, "party2": int, "shared": int}
-    both_gross:             dict,   # {"party1": float, "party2": float}
-    ss_paid_annual:         float,  # SS deduction for payor (0 for recipient)
-    ss_received_annual:     float,  # SS income for recipient (0 for payor)
-    cs_adjustment_annual:   float,  # actual CS paid (payor) OR notional CS (recipient)
-    province:               str = "ON",
-    year:                   int = 2025,
+    gross_income:            float,
+    age:                     int,
+    party_num:               int,
+    children:                list,   # list of TaxChildInfo
+    child_counts:            dict,   # {"party1": int, "party2": int, "shared": int}
+    both_gross:              dict,   # {"party1": float, "party2": float}
+    ss_paid_annual:          float,  # SS deduction for payor (0 for recipient)
+    ss_received_annual:      float,  # SS income for recipient (0 for payor)
+    cs_adjustment_annual:    float,  # actual CS paid (payor) OR notional CS (recipient)
+    province:                str   = "ON",
+    year:                    int   = 2025,
+    # Deduction / income-type fields — default to 0 so existing callers are unaffected
+    self_employed_income:    float = 0.0,
+    other_income:            float = 0.0,
+    child_care_expenses:     float = 0.0,
+    other_deductions:        float = 0.0,
+    eligible_for_disability: str   = "No",
 ) -> float:
     """
     Compute one party's INDI for one iteration step.
@@ -386,19 +393,23 @@ def _compute_net_indi(
     Spousal support is tax-deductible for the payor and taxable for the
     recipient (post-1997 Ontario agreements).  Child support is NOT
     deductible / taxable — it affects INDI directly as a cash subtraction.
+
+    Deduction fields default to 0, preserving the original behaviour when
+    not supplied.  Pass non-zero values when the party has RRSP contributions,
+    child care expenses, or other deductions that affect their net income.
     """
     inp = TaxInput(
         party_num               = party_num,
         province                = province,
         age                     = age,
-        eligible_for_disability = "No",
+        eligible_for_disability = eligible_for_disability,
         employed_income         = gross_income,
-        self_employed_income    = 0.0,
-        other_income            = 0.0,
+        self_employed_income    = self_employed_income,
+        other_income            = other_income,
         support_received        = ss_received_annual,
         deductible_support_paid = ss_paid_annual,
-        child_care_expenses     = 0.0,
-        other_deductions        = 0.0,
+        child_care_expenses     = child_care_expenses,
+        other_deductions        = other_deductions,
         children                = children,
         type_of_splitting       = "SOLE",
         child_counts            = child_counts,
@@ -581,21 +592,191 @@ def calculate_spousal_support_with_children(
 # Public API — with-child formula (iterative, full tax convergence)
 # ===========================================================================
 
+def calculate_spousal_support_iterative(
+    payor_gross:            float,
+    recipient_gross:        float,
+    payor_age:              int,
+    recipient_age:          int,
+    years:                  float,
+    children:               list,            # list of TaxChildInfo
+    child_counts:           dict,            # {"party1": int, "party2": int, "shared": int}
+    monthly_cs_paid:        float  = -1,     # -1 = compute from children via Schedule I
+    monthly_notional_cs:    float  = -1,     # -1 = compute from children via Schedule I
+    youngest_child_age:     float  = 0.0,
+    province:               str    = "ON",
+    year:                   int    = 2025,
+    max_iter:               int    = 50,
+    tol:                    float  = 0.01,
+    payor_is_party1:        bool   = True,   # True when payor is the original UI "Party 1"
+) -> IterativeResult:
+    """
+    SSAG with-children spousal support via iterative INDI convergence.
+
+    For each rate (40%, 43%, 46%) independently:
+      Step 0  — start with SS = 0
+      Step N  — compute both INDIs at current SS level (SS affects taxes)
+              — recompute SS from spousal_support_formula_by_rate(INDI1, INDI2, rate)
+              — stop when |new_SS − old_SS| < tol (dollars/month)
+
+    Uses damped fixed-point iteration (alpha=0.5) to prevent oscillation.
+    Converges in ~6 steps per rate for typical inputs.
+
+    Because each rate converges to a different SS amount (which produces
+    different tax positions), the INDI values differ across the three
+    scenarios — matching the Excel iterative behaviour.
+    """
+    if monthly_cs_paid == -1 or monthly_notional_cs == -1:
+        minor_total       = child_counts["party1"] + child_counts["party2"] + child_counts["shared"]
+        type_of_splitting = determine_type_of_splitting(child_counts, minor_total) if minor_total > 0 else "SEPARATED"
+        # Convert TaxChildInfo → CSChildInfo so calculate_child_support can access .csg_table etc.
+        cs_children = [
+            CSChildInfo(
+                name                  = getattr(c, "name", ""),
+                csg_table             = getattr(c, "csg_table", "No"),
+                child_support_override= float(getattr(c, "child_support_override", 0)),
+                custody_arrangement   = c.custody_arrangement,
+            )
+            for c in children
+        ]
+        # Pass incomes in ORIGINAL party order so custody_arrangement
+        # ("Party 1" / "Party 2") lines up with the correct income.
+        p1_income = payor_gross     if payor_is_party1 else recipient_gross
+        p2_income = recipient_gross if payor_is_party1 else payor_gross
+        cs_result         = calculate_child_support(
+            children=cs_children,
+            party1_guideline_income=p1_income,
+            party2_guideline_income=p2_income,
+            party1_province=province,
+            party2_province=province,
+            type_of_splitting=type_of_splitting,
+            child_counts=child_counts,
+            schedule_i_data=_SCHEDULE_I,
+        )
+        cs_ref       = cs_result["child_support_ref"]
+        notional_ref = cs_result["notional_amount_ref"]
+        # Pick the payor's CS obligation from the result using the original party key
+        payor_party_key = "party1" if payor_is_party1 else "party2"
+        recip_party_key = "party2" if payor_is_party1 else "party1"
+        if monthly_cs_paid == -1:
+            monthly_cs_paid  = cs_ref[payor_party_key]
+        if monthly_notional_cs == -1:
+            monthly_notional_cs = notional_ref[recip_party_key]
+    cs_annual       = monthly_cs_paid    * 12
+    notional_annual = monthly_notional_cs * 12
+    both_gross      = {"party1": payor_gross, "party2": recipient_gross}
+
+    rate_results: dict = {}
+
+    for rate, label in [(0.40, "low"), (0.43, "mid"), (0.46, "high")]:
+        ss         = 0.0
+        payor_indi = 0.0
+        recip_indi = 0.0
+        iters      = 0
+
+        for i in range(max_iter):
+            ss_annual = ss * 12
+
+            payor_indi = _compute_net_indi(
+                gross_income             = payor_gross,
+                age                      = payor_age,
+                party_num                = 1,
+                children                 = children,
+                child_counts             = child_counts,
+                both_gross               = both_gross,
+                ss_paid_annual           = ss_annual,
+                ss_received_annual       = 0.0,
+                cs_adjustment_annual     = cs_annual,
+                province                 = province,
+                year                     = year,
+                self_employed_income     = payor_self_employed_income,
+                other_income             = payor_other_income,
+                child_care_expenses      = payor_child_care_expenses,
+                other_deductions         = payor_other_deductions,
+                eligible_for_disability  = payor_eligible_for_disability,
+            )
+
+            recip_indi = _compute_net_indi(
+                gross_income             = recipient_gross,
+                age                      = recipient_age,
+                party_num                = 2,
+                children                 = children,
+                child_counts             = child_counts,
+                both_gross               = both_gross,
+                ss_paid_annual           = 0.0,
+                ss_received_annual       = ss_annual,
+                cs_adjustment_annual     = notional_annual,
+                province                 = province,
+                year                     = year,
+                self_employed_income     = recip_self_employed_income,
+                other_income             = recip_other_income,
+                child_care_expenses      = recip_child_care_expenses,
+                other_deductions         = recip_other_deductions,
+                eligible_for_disability  = recip_eligible_for_disability,
+            )
+
+            new_ss = spousal_support_formula_by_rate(payor_indi, recip_indi, rate)
+
+            iters = i + 1
+            if abs(new_ss - ss) < tol:
+                ss = new_ss
+                break
+            # Damped update: average old and new estimate to prevent oscillation.
+            # Without damping the loop alternates high/low (derivative ≈ -1) and
+            # takes ~200 steps; damping converges in ~6 steps.
+            ss = 0.5 * ss + 0.5 * new_ss
+
+        rate_results[label] = {
+            "monthly":    round(ss, 2),
+            "payor_indi": round(payor_indi, 2),
+            "recip_indi": round(recip_indi, 2),
+            "iters":      iters,
+        }
+
+    dur = formula_for_calculating_duration_of_support(
+        years_living_together        = years,
+        has_children                 = True,
+        youngest_child_age           = youngest_child_age,
+        person_age_receiving_support = recipient_age,
+        party1_age                   = payor_age,
+    )
+
+    return IterativeResult(
+        monthly_low          = rate_results["low"]["monthly"],
+        monthly_mid          = rate_results["mid"]["monthly"],
+        monthly_high         = rate_results["high"]["monthly"],
+        annual_low           = round(rate_results["low"]["monthly"]  * 12, 2),
+        annual_mid           = round(rate_results["mid"]["monthly"]  * 12, 2),
+        annual_high          = round(rate_results["high"]["monthly"] * 12, 2),
+        payor_indi_low       = rate_results["low"]["payor_indi"],
+        recipient_indi_low   = rate_results["low"]["recip_indi"],
+        payor_indi_mid       = rate_results["mid"]["payor_indi"],
+        recipient_indi_mid   = rate_results["mid"]["recip_indi"],
+        payor_indi_high      = rate_results["high"]["payor_indi"],
+        recipient_indi_high  = rate_results["high"]["recip_indi"],
+        duration_low         = dur[0],
+        duration_high        = dur[1],
+        iterations_low       = rate_results["low"]["iters"],
+        iterations_mid       = rate_results["mid"]["iters"],
+        iterations_high      = rate_results["high"]["iters"],
+        monthly_cs_paid      = monthly_cs_paid,
+    )
+
+
 # def calculate_spousal_support_iterative(
 #     payor_gross:            float,
 #     recipient_gross:        float,
 #     payor_age:              int,
 #     recipient_age:          int,
 #     years:                  float,
-#     children:               list,            # list of TaxChildInfo
-#     child_counts:           dict,            # {"party1": int, "party2": int, "shared": int}
-#     monthly_cs_paid:        float  = -1,     # -1 = compute from children via Schedule I
-#     monthly_notional_cs:    float  = -1,     # -1 = compute from children via Schedule I
-#     youngest_child_age:     float  = 0.0,
-#     province:               str    = "ON",
-#     year:                   int    = 2025,
-#     max_iter:               int    = 50,
-#     tol:                    float  = 0.01,
+#     children:               list,   # list of TaxChildInfo
+#     child_counts:           dict,   # {"party1": int, "party2": int, "shared": int}
+#     monthly_cs_paid:        float,  # Table CS paid by payor
+#     monthly_notional_cs:    float,  # Notional CS (what recipient would owe)
+#     youngest_child_age:     float,
+#     province:               str = "ON",
+#     year:                   int = 2025,
+#     max_iter:               int = 50,
+#     tol:                    float = 0.01,
 # ) -> IterativeResult:
 #     """
 #     SSAG with-children spousal support via iterative INDI convergence.
@@ -613,36 +794,6 @@ def calculate_spousal_support_with_children(
 #     different tax positions), the INDI values differ across the three
 #     scenarios — matching the Excel iterative behaviour.
 #     """
-#     if monthly_cs_paid == -1 or monthly_notional_cs == -1:
-#         minor_total       = child_counts["party1"] + child_counts["party2"] + child_counts["shared"]
-#         type_of_splitting = determine_type_of_splitting(child_counts, minor_total) if minor_total > 0 else "SEPARATED"
-#         # Convert TaxChildInfo → CSChildInfo so calculate_child_support can access .csg_table etc.
-#         cs_children = [
-#             CSChildInfo(
-#                 name                  = getattr(c, "name", ""),
-#                 csg_table             = getattr(c, "csg_table", "No"),
-#                 child_support_override= float(getattr(c, "child_support_override", 0)),
-#                 custody_arrangement   = c.custody_arrangement,
-#             )
-#             for c in children
-#         ]
-#         cs_result         = calculate_child_support(
-#             children=cs_children,
-#             party1_guideline_income=payor_gross,
-#             party2_guideline_income=recipient_gross,
-#             party1_province=province,
-#             party2_province=province,
-#             type_of_splitting=type_of_splitting,
-#             child_counts=child_counts,
-#             schedule_i_data=_SCHEDULE_I,
-#         )
-#         cs_ref       = cs_result["child_support_ref"]
-#         notional_ref = cs_result["notional_amount_ref"]
-#         if monthly_cs_paid == -1:
-#             monthly_cs_paid  = cs_ref["party1"] if payor_gross >= recipient_gross else cs_ref["party2"]
-#         if monthly_notional_cs == -1:
-#             monthly_notional_cs = notional_ref["party2"] if payor_gross >= recipient_gross else notional_ref["party1"]
-#     print(monthly_notional_cs)
 #     cs_annual       = monthly_cs_paid    * 12
 #     notional_annual = monthly_notional_cs * 12
 #     both_gross      = {"party1": payor_gross, "party2": recipient_gross}
@@ -732,124 +883,3 @@ def calculate_spousal_support_with_children(
 #         iterations_high      = rate_results["high"]["iters"],
 #     )
 
-
-def calculate_spousal_support_iterative(
-    payor_gross:            float,
-    recipient_gross:        float,
-    payor_age:              int,
-    recipient_age:          int,
-    years:                  float,
-    children:               list,   # list of TaxChildInfo
-    child_counts:           dict,   # {"party1": int, "party2": int, "shared": int}
-    monthly_cs_paid:        float,  # Table CS paid by payor
-    monthly_notional_cs:    float,  # Notional CS (what recipient would owe)
-    youngest_child_age:     float,
-    province:               str = "ON",
-    year:                   int = 2025,
-    max_iter:               int = 50,
-    tol:                    float = 0.01,
-) -> IterativeResult:
-    """
-    SSAG with-children spousal support via iterative INDI convergence.
-
-    For each rate (40%, 43%, 46%) independently:
-      Step 0  — start with SS = 0
-      Step N  — compute both INDIs at current SS level (SS affects taxes)
-              — recompute SS from spousal_support_formula_by_rate(INDI1, INDI2, rate)
-              — stop when |new_SS − old_SS| < tol (dollars/month)
-
-    Uses damped fixed-point iteration (alpha=0.5) to prevent oscillation.
-    Converges in ~6 steps per rate for typical inputs.
-
-    Because each rate converges to a different SS amount (which produces
-    different tax positions), the INDI values differ across the three
-    scenarios — matching the Excel iterative behaviour.
-    """
-    cs_annual       = monthly_cs_paid    * 12
-    notional_annual = monthly_notional_cs * 12
-    both_gross      = {"party1": payor_gross, "party2": recipient_gross}
-
-    rate_results: dict = {}
-
-    for rate, label in [(0.40, "low"), (0.43, "mid"), (0.46, "high")]:
-        ss         = 0.0
-        payor_indi = 0.0
-        recip_indi = 0.0
-        iters      = 0
-
-        for i in range(max_iter):
-            ss_annual = ss * 12
-
-            payor_indi = _compute_net_indi(
-                gross_income         = payor_gross,
-                age                  = payor_age,
-                party_num            = 1,
-                children             = children,
-                child_counts         = child_counts,
-                both_gross           = both_gross,
-                ss_paid_annual       = ss_annual,
-                ss_received_annual   = 0.0,
-                cs_adjustment_annual = cs_annual,
-                province             = province,
-                year                 = year,
-            )
-
-            recip_indi = _compute_net_indi(
-                gross_income         = recipient_gross,
-                age                  = recipient_age,
-                party_num            = 2,
-                children             = children,
-                child_counts         = child_counts,
-                both_gross           = both_gross,
-                ss_paid_annual       = 0.0,
-                ss_received_annual   = ss_annual,
-                cs_adjustment_annual = notional_annual,
-                province             = province,
-                year                 = year,
-            )
-
-            new_ss = spousal_support_formula_by_rate(payor_indi, recip_indi, rate)
-
-            iters = i + 1
-            if abs(new_ss - ss) < tol:
-                ss = new_ss
-                break
-            # Damped update: average old and new estimate to prevent oscillation.
-            # Without damping the loop alternates high/low (derivative ≈ -1) and
-            # takes ~200 steps; damping converges in ~6 steps.
-            ss = 0.5 * ss + 0.5 * new_ss
-
-        rate_results[label] = {
-            "monthly":    round(ss, 2),
-            "payor_indi": round(payor_indi, 2),
-            "recip_indi": round(recip_indi, 2),
-            "iters":      iters,
-        }
-
-    dur = formula_for_calculating_duration_of_support(
-        years_living_together        = years,
-        has_children                 = True,
-        youngest_child_age           = youngest_child_age,
-        person_age_receiving_support = recipient_age,
-        party1_age                   = payor_age,
-    )
-
-    return IterativeResult(
-        monthly_low          = rate_results["low"]["monthly"],
-        monthly_mid          = rate_results["mid"]["monthly"],
-        monthly_high         = rate_results["high"]["monthly"],
-        annual_low           = round(rate_results["low"]["monthly"]  * 12, 2),
-        annual_mid           = round(rate_results["mid"]["monthly"]  * 12, 2),
-        annual_high          = round(rate_results["high"]["monthly"] * 12, 2),
-        payor_indi_low       = rate_results["low"]["payor_indi"],
-        recipient_indi_low   = rate_results["low"]["recip_indi"],
-        payor_indi_mid       = rate_results["mid"]["payor_indi"],
-        recipient_indi_mid   = rate_results["mid"]["recip_indi"],
-        payor_indi_high      = rate_results["high"]["payor_indi"],
-        recipient_indi_high  = rate_results["high"]["recip_indi"],
-        duration_low         = dur[0],
-        duration_high        = dur[1],
-        iterations_low       = rate_results["low"]["iters"],
-        iterations_mid       = rate_results["mid"]["iters"],
-        iterations_high      = rate_results["high"]["iters"],
-    )

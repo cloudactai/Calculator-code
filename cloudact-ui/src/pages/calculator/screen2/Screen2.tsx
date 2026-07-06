@@ -5709,12 +5709,26 @@ const Screen2 = ({
       console.log('[Flask] refs before override - low:', spousalSupportLow.current, 'med:', spousalSupportMed.current, 'high:', spousalSupportHigh.current);
 
       if (flaskResult) {
-        spousalSupportLow.current.party1  = flaskResult.monthly_low;
-        spousalSupportLow.current.party2  = 0;
-        spousalSupportMed.current.party1  = flaskResult.monthly_med;
-        spousalSupportMed.current.party2  = 0;
-        spousalSupportHigh.current.party1 = flaskResult.monthly_high;
-        spousalSupportHigh.current.party2 = 0;
+        // Store amount in the RECIPIENT's slot so spousalSupportGivenTo()
+        // returns the correct party name and the arrow points the right way.
+        const payorIsParty1 = p1Income >= p2Income;
+        if (payorIsParty1) {
+          // Party 1 pays → support given to Party 2
+          spousalSupportLow.current.party1  = 0;
+          spousalSupportLow.current.party2  = flaskResult.monthly_low;
+          spousalSupportMed.current.party1  = 0;
+          spousalSupportMed.current.party2  = flaskResult.monthly_med;
+          spousalSupportHigh.current.party1 = 0;
+          spousalSupportHigh.current.party2 = flaskResult.monthly_high;
+        } else {
+          // Party 2 pays → support given to Party 1
+          spousalSupportLow.current.party1  = flaskResult.monthly_low;
+          spousalSupportLow.current.party2  = 0;
+          spousalSupportMed.current.party1  = flaskResult.monthly_med;
+          spousalSupportMed.current.party2  = 0;
+          spousalSupportHigh.current.party1 = flaskResult.monthly_high;
+          spousalSupportHigh.current.party2 = 0;
+        }
         console.log('[Flask] refs after override - low:', spousalSupportLow.current, 'med:', spousalSupportMed.current, 'high:', spousalSupportHigh.current);
       } else {
         setLoading(false);

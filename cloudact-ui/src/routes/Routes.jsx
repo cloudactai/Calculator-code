@@ -14,7 +14,6 @@ import WelcomeScreen from "../pages/calculator/WelcomeScreen/WelcomeScreen.jsx";
 import ComplianceForm from "../pages/complianceForms/ComplianceForm.tsx";
 import Confirmation from "../pages/Confirmation";
 import CreateAccount from "../pages/CreateAccount";
-import VerifyEmail from "../pages/VerifyEmail";
 import CreateClientAndAssociatePage from "../pages/CreateClientAndAssociatePage";
 import CreateClientPage from "../pages/CreateClientPage";
 import CreateTaskPage from "../pages/CreateTaskPage";
@@ -53,7 +52,6 @@ import {
 } from "../utils/helpers";
 import { Roles } from "./Role.types";
 import { AUTH_ROUTES, UN_AUTH_ROUTES } from "./Routes.types";
-import { FEATURES } from "../config/features";
 import FreCal from "../pages/freeCalculator/Calculator.tsx";
 import FreeCalApi from "../pages/freeCalculatorApi/Calculator.tsx";
 import InProgressCalc from "../pages/InProgressCalc/index";
@@ -87,7 +85,7 @@ import Home from "../pages/Home.js";
 
 const Routes = () => {
   //tooltip embadded
- 
+
 
   const dispatch = useDispatch();
   const { userInfo } = useSelector((state: Store) => state.userLogin);
@@ -413,10 +411,7 @@ const Routes = () => {
         </AuthUser>
       </Route>
 
-      <Route
-        path={[UN_AUTH_ROUTES.CREATE_ACCOUNT, UN_AUTH_ROUTES.SIGNUP]}
-        exact
-      >
+      <Route path={UN_AUTH_ROUTES.CREATE_ACCOUNT} exact>
         <CreateAccount />
       </Route>
 
@@ -479,33 +474,22 @@ const Routes = () => {
         </AuthUser>
       </Route>
 
-      {/* Saved-calculation reports + the matter-picker welcome screen call
-          the legacy law-firm backend — hidden until they get a new backend
-          home (see src/config/features.ts). */}
       <Route path={AUTH_ROUTES.CALCULATOR_REPORTS}>
-        {FEATURES.SAVED_CALCULATIONS ? (
-          <AuthUser
-            usersAuth={rl_all}
-            sidAccess={accessPagesState?.auth_calculator}
-          >
-            <CalculatorReports />
-          </AuthUser>
-        ) : (
-          <Redirect to={AUTH_ROUTES.CALCULATOR} />
-        )}
+        <AuthUser
+          usersAuth={rl_all}
+          sidAccess={accessPagesState?.auth_calculator}
+        >
+          <CalculatorReports />
+        </AuthUser>
       </Route>
 
       <Route path={AUTH_ROUTES.SUPPORT_CALCULATOR}>
-        {FEATURES.SAVED_CALCULATIONS ? (
-          <AuthUser
-            usersAuth={rl_all}
-            sidAccess={accessPagesState?.auth_calculator}
-          >
-            <WelcomeScreen currentUserRole={userChangeState.userRole} />
-          </AuthUser>
-        ) : (
-          <Redirect to={AUTH_ROUTES.CALCULATOR} />
-        )}
+        <AuthUser
+          usersAuth={rl_all}
+          sidAccess={accessPagesState?.auth_calculator}
+        >
+          <WelcomeScreen currentUserRole={userChangeState.userRole} />
+        </AuthUser>
       </Route>
 
       <Route path={UN_AUTH_ROUTES.CREATE_CLIENT}>
@@ -520,7 +504,7 @@ const Routes = () => {
         <ActivateClientAccount changeLinkConfirmed={changeLinkConfirmed} />
       </Route>
 
-      <Route path={[UN_AUTH_ROUTES.SIGNIN, UN_AUTH_ROUTES.LOGIN]}>
+      <Route path={UN_AUTH_ROUTES.SIGNIN}>
         <SignUser
           isLinkConfirmed={isLinkConfirmed}
           changeLinkConfirmed={changeLinkConfirmed}
@@ -533,20 +517,11 @@ const Routes = () => {
       <Route path={AUTH_ROUTES.LOGOUT}>
         {userInfo ? <Logout /> : <Redirect to={UN_AUTH_ROUTES.SIGNIN} />}
       </Route>
-      <Route
-        path={[UN_AUTH_ROUTES.FORGET_PASSWORD, UN_AUTH_ROUTES.FORGOT_PASSWORD]}
-      >
+      <Route path={UN_AUTH_ROUTES.FORGET_PASSWORD}>
         <ForgetPassword />
       </Route>
-      <Route path={[UN_AUTH_ROUTES.RESET_PASSWORD, UN_AUTH_ROUTES.CHECK_EMAIL]}>
+      <Route path={UN_AUTH_ROUTES.RESET_PASSWORD}>
         <ResetPassNotification />
-      </Route>
-      {/* Personal auth email-link landing pages (auth-server) */}
-      <Route path={UN_AUTH_ROUTES.VERIFY_EMAIL}>
-        <VerifyEmail />
-      </Route>
-      <Route path={UN_AUTH_ROUTES.SET_NEW_PASSWORD}>
-        <NewPasswordPage />
       </Route>
       <Route path={AUTH_ROUTES.SETTINGS}>
         <NewPasswordPage />
@@ -586,9 +561,9 @@ const Routes = () => {
       {
         console.log('checkFJF0',userInfo?.role[0])
       }
-        { userInfo && userInfo?.role[0].role == Roles.SUPERADMIN && 
+        { userInfo && userInfo?.role[0].role == Roles.SUPERADMIN &&
         <Redirect to={AUTH_ROUTES.SUPERADMINDB} />}
-         
+
         {
         userInfo ? (
           clioConnectedOrNot() && intuitConnectedOrNot() ? (
@@ -604,13 +579,7 @@ const Routes = () => {
       </Route> */}
 
       <Route path="/" exact>
-        {/* Signed in -> straight into the app; signed out -> sign-in page.
-            No firm/Clio onboarding in the personal build. */}
-        {userInfo ? (
-          <Redirect to={AUTH_ROUTES.CALCULATOR} />
-        ) : (
-          <Redirect to={UN_AUTH_ROUTES.SIGNIN} />
-        )}
+        <Redirect to={AUTH_ROUTES.CALCULATOR} />
       </Route>
 
       <Route path={AUTH_ROUTES.HOME}>
@@ -647,7 +616,7 @@ const Routes = () => {
       </Route>
 
       <Route path="**">
-        {userInfo ? <NotFound /> : <Redirect to={UN_AUTH_ROUTES.SIGNIN} />}
+        <NotFound />
       </Route>
     </Switch>
   );

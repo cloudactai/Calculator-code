@@ -162,12 +162,7 @@ const MatterDashboard = () => {
 
   const handleOpenMatter = (matter) => {
     if (!matter) return;
-    if (matter && !matter.firstflag) {
-      setSelectedData(matter);
-      setMatterModalShow(true);
-    } else {
-      history.push(`/single-matter/${matter.matterNumber}`);
-    }
+    history.push(`/single-matter/${matter.matterNumber}`);
   };
 
   return (

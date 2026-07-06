@@ -30,48 +30,82 @@ import {
 } from "../constants/userConstants";
 import store from "../store";
 import axios from "../utils/axios";
-import { getAllUserInfo, getUserId, getUserSID, updateCookiesInfo } from "../utils/helpers";
+import { getUserId, getUserSID, updateCookiesInfo } from "../utils/helpers";
 import { companyInfoAction } from "./companyActions";
 import { persistAuthTokens } from "../utils/authToken";
 import CookiesParser from "../utils/cookieParser/Cookies";
 import toast from "react-hot-toast"
-import * as authApi from "../utils/Apis/auth/authApi";
-import {
-  clearClientSessionCookies,
-  establishSession,
-  isPersonalAuthUser,
-  updatePersonalSessionProfile,
-} from "../utils/personalAuthSession";
 
-// Personal login: POST /api/login on the auth-server. The server sets httpOnly
-// session cookies; establishSession() seeds the legacy client cookies the rest
-// of the UI reads. No law-firm/OTP/2FA branches — that backend is gone.
 export const userLoginAction = (email, password) => async (dispatch) => {
   try {
     dispatch({ type: USER_LOGIN_REQUEST });
-    clearClientSessionCookies();
 
-    const { ok, status, data } = await authApi.login({ email, password });
+    const { data } = await axios.post("/login", { email, password });
 
-    if (!ok) {
+    console.log("xxxxxxx", data);
+
+    if (
+      data.data.code === 200 &&
+      data.data.status !== "error" &&
+      !data.data.body.hasOwnProperty("authkey")
+    ) {
+
+      persistAuthTokens(data.data);
+
+      const roleData = data.data.body.role;
+      const baseCookieName = "allUserInfo";
+
+       const updateRole=(data,starting , ending)=>{
+
+       let updatedData = JSON.parse(JSON.stringify(data));;
+        updatedData.body.role = updatedData.body.role.slice(starting , ending)
+
+        return updatedData
+      }
+
+
+      const chunkSize = 9;
+      const totalCookies = Math.ceil(roleData.length / chunkSize);
+
+
+      for (let i = 0; i < totalCookies; i++) {
+        const start = i * chunkSize;
+        const end = start + chunkSize;
+
+        const cookieName = i === 0 ? baseCookieName : `${baseCookieName}${i + 1}`;
+        CookiesParser.set(cookieName, updateRole(data.data, start, end).body, { path: "/" });
+      }
+
+      // CookiesParser.set("allUserInfo", data.data.body, { path: "/" });
+
+      dispatch(userChangeAction(data.data.body.role[0]));
+
+
+      dispatch({ type: USER_LOGIN_SUCCESS, payload: data.data.body });
+    } else if (
+      data.data.code === 200 &&
+      data.data.status !== "error" &&
+      data.data.body.hasOwnProperty("authkey")
+    ) {
+      console.log("contains authkey", data.data.body);
+      Cookies.set("authKey", JSON.stringify(data.data.body), {
+        path: "/",
+      });
+
+      dispatch({ type: USER_LOGIN_AUTH_SUCCESS, payload: data.data.body });
+    } else {
       dispatch({
         type: USER_LOGIN_FAIL,
-        payload:
-          status === 403
-            ? "Please verify your email before signing in. Check your inbox."
-            : data?.message || "Invalid email or password.",
+        payload: data.data.message ? data.data : "",
       });
-      return;
     }
-
-    const userInfo = establishSession(data.user, data.accessToken);
-
-    dispatch({ type: USER_CHANGE_SUCCESS, payload: userInfo.role[0] });
-    dispatch({ type: USER_LOGIN_SUCCESS, payload: userInfo });
   } catch (error) {
     dispatch({
       type: USER_LOGIN_FAIL,
-      payload: "Unable to reach the sign-in service. Please try again.",
+      payload:
+        error.message && error.response.data.message
+          ? error.response.data.message
+          : error.message,
     });
   }
 };
@@ -80,18 +114,6 @@ export const userLoginAction = (email, password) => async (dispatch) => {
 export const userProfileInfoAction = () => async (dispatch) => {
   try {
     dispatch({ type: USER_PROFILE_INFO_REQUEST });
-    const personalUser = getAllUserInfo();
-
-    if (isPersonalAuthUser(personalUser)) {
-      const profile = {
-        ...personalUser,
-        TFA: personalUser.TFA ?? 0,
-        username: personalUser.username || personalUser.name || personalUser.email,
-      };
-      CookiesParser.set("userProfile", profile, { path: "/" });
-      dispatch({ type: USER_PROFILE_INFO_SUCCESS, payload: profile });
-      return;
-    }
 
     const {
       data: { data },
@@ -118,28 +140,6 @@ export const userProfileInfoAction = () => async (dispatch) => {
 export const userProfileInfoChangeAction = (obj) => async (dispatch) => {
   try {
     dispatch({ type: USER_PROFILE_INFO_CHANGE_REQUEST });
-    const personalUser = getAllUserInfo();
-
-    if (isPersonalAuthUser(personalUser)) {
-      const updatedProfile = updatePersonalSessionProfile(obj);
-      const updatedUser = getAllUserInfo();
-      dispatch({
-        type: USER_PROFILE_INFO_CHANGE_SUCCESS,
-        payload: updatedProfile || obj,
-      });
-      dispatch({
-        type: USER_PROFILE_INFO_SUCCESS,
-        payload: updatedProfile || obj,
-      });
-      if (updatedProfile) {
-        dispatch({ type: USER_CHANGE_SUCCESS, payload: updatedProfile });
-      }
-      if (updatedUser) {
-        dispatch({ type: USER_LOGIN_SUCCESS, payload: updatedUser });
-      }
-      toast.success("Profile updated");
-      return;
-    }
 
     const {
       data: { data },
@@ -217,19 +217,20 @@ export const userLogoutAction = () => async (dispatch) => {
     Cookies.remove(cookie, { path: "/" });
   });
 
-  // Clear the httpOnly session cookies on the auth-server. Local logout must
-  // succeed even if the API call fails (offline, server down), so this is
-  // best-effort.
   try {
-    await authApi.logout();
+    const response = await axios.post("/logout");
+
+    if (response.data && response.data.status === 'success') {
+      dispatch({ type: USER_LOGOUT });
+      dispatch({ type: USER_LOGIN_AUTH_EMPTY });
+
+      window.location.href = "/signIn";
+    } else {
+      console.error("Logout failed: ", response.data);
+    }
   } catch (error) {
     console.error("Logout API call failed", error);
   }
-
-  dispatch({ type: USER_LOGOUT });
-  dispatch({ type: USER_LOGIN_AUTH_EMPTY });
-
-  window.location.href = "/signIn";
 };
 
 
@@ -254,41 +255,26 @@ export const userChangeAction = (newUser) => (dispatch) => {
   dispatch({ type: USER_CHANGE_SUCCESS, payload: newUser });
 };
 
-// Personal signup: POST /api/signup on the auth-server. Creates the account
-// unverified and emails a verification link; the success message drives the
-// "check your email" alert in SignNewUser.
 export const userRegisterAction =
   (userNameEmailPassword) => async (dispatch) => {
     try {
       dispatch({ type: USER_REGISTER_REQUEST });
-      const { user_name, name, email, password } = JSON.parse(
-        userNameEmailPassword
-      );
+      // console.log("data st", userNameEmailPassword);
+      const { data } = await axios.post("/signup", JSON.parse(userNameEmailPassword));
 
-      const { ok, data } = await authApi.signup({
-        name: name || user_name,
-        email,
-        password,
-      });
-
-      if (ok) {
-        dispatch({
-          type: USER_REGISTER_SUCCESS,
-          payload:
-            data?.message ||
-            "Account created. Please check your email to verify your account.",
-        });
+      if (data.data.code === 200 && data.data.status !== "error") {
+        dispatch({ type: USER_REGISTER_SUCCESS, payload: data.data.message });
       } else {
-        dispatch({
-          type: USER_REGISTER_FAIL,
-          payload: data?.message || "Registration failed.",
-        });
+        console.log("res error", data);
+        dispatch({ type: USER_REGISTER_FAIL, payload: data.data.message });
       }
     } catch (error) {
       console.log("error", error);
       dispatch({
         type: USER_REGISTER_FAIL,
         payload:
+          error?.response?.data?.data?.message ||
+          error?.response?.data?.message ||
           "Registration failed. Please check your connection and try again.",
       });
     }

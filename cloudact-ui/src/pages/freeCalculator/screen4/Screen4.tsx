@@ -570,8 +570,8 @@ const Screen4 = ({
 
   const ChildSpecialExpenseArrow = ({ amount, givenTo }: ArrowDetails) => {
     return (
-      <div className="arrow">
-        <span>
+      <div className="arrow" style={givenTo ? { transform: 'scaleX(-1)' } : {}}>
+        <span style={givenTo ? { transform: 'scaleX(-1)' } : {}}>
           {formatNumberInThousands(amount)} Child Special Expense Support
         </span>
         <svg
@@ -594,7 +594,7 @@ const Screen4 = ({
 
   const SpousalSupportArrow = ({ amount, givenTo }: ArrowDetails) => {
     return typeOfCalculatorSelected !== "CHILD_SUPPORT_CAL" && (
-      <div className="arrow">
+      <div className="arrow" style={givenTo ? { transform: 'scaleX(-1)' } : {}}>
         <svg
           width="345"
           height="51"
@@ -609,14 +609,14 @@ const Screen4 = ({
             fill="#F6BD3D"
           />{" "}
         </svg>
-        <span>{formatNumberInThousands(amount).toString().replace(/(\.00|\.0+)$/, '')} Spousal Support</span>
+        <span style={givenTo ? { transform: 'scaleX(-1)' } : {}}>{formatNumberInThousands(amount).toString().replace(/(\.00|\.0+)$/, '')} Spousal Support</span>
       </div>
     );
   }
-  
+
 
   const ChildSupportArrow = ({ amount, givenTo }: ArrowDetails) => (
-    <div className="arrow">
+    <div className="arrow" style={givenTo ? { transform: 'scaleX(-1)' } : {}}>
       <svg
         width="345"
         height="51"
@@ -631,8 +631,8 @@ const Screen4 = ({
           fill="#73C3FD"
         />{" "}
       </svg>
-      <span>
-     
+      <span style={givenTo ? { transform: 'scaleX(-1)' } : {}}>
+
         {formatNumberInThousands(amount).toString().replace(/(\.00|\.0+)$/, '')} Child Support (Table Amount)
       </span>
     </div>
