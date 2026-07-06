@@ -2,10 +2,15 @@ import React, { useEffect, useRef, useState } from "react";
 import { Alert, Col, Row, Container, Image } from "react-bootstrap";
 import { useDispatch, useSelector } from "react-redux";
 import { Link, useHistory } from "react-router-dom";
+import { userOPTMatchAction } from "../../actions/userActions";
 import {
-  userLoginAction,
-  userOPTMatchAction,
-} from "../../actions/userActions";
+  USER_CHANGE_SUCCESS,
+  USER_LOGIN_FAIL,
+  USER_LOGIN_REQUEST,
+  USER_LOGIN_SUCCESS,
+} from "../../constants/userConstants";
+import { login } from "../../utils/Apis/auth/authApi";
+import { establishSession } from "../../utils/personalAuthSession";
 
 import SignInSVG from "../../assets/images/sign in.svg";
 import ModalInputCenter from "../ModalInputCenter";
@@ -13,7 +18,7 @@ import ProfileNumberInput from "../Profile/ProfileNumberInput";
 import Logo from "../../assets/images/CloudAct-Accounting-Taxation-logo-1 3.png";
 import InvalidUsernameOrPasswordImage from "../../assets/images/invalid username or password.png";
 import { Roles } from "../../routes/Role.types";
-import { AUTH_ROUTES } from "../../routes/Routes.types";
+import { AUTH_ROUTES, UN_AUTH_ROUTES } from "../../routes/Routes.types";
 
 const SignIn = ({
   isUserLogged,
@@ -120,6 +125,47 @@ const SignIn = ({
     }
   };
 
+  // Signs in against the personal auth-server (/api/login) and seeds the
+  // legacy client cookies the rest of the UI reads — same flow VerifyEmail.js
+  // uses after the emailed link. The legacy /v1 userLoginAction is gone.
+  const submitLogin = async () => {
+    dispatch({ type: USER_LOGIN_REQUEST });
+    try {
+      const { ok, status, data } = await login({ email, password });
+
+      if (ok) {
+        const userInfo = establishSession(data.user, data.accessToken);
+        dispatch({ type: USER_CHANGE_SUCCESS, payload: userInfo.role[0] });
+        dispatch({ type: USER_LOGIN_SUCCESS, payload: userInfo });
+        return; // redirect handled by the userInfo effect above
+      }
+
+      if (status === 403) {
+        // Account exists but the email was never verified — send them to the
+        // check-email page where they can resend the verification link.
+        dispatch({
+          type: USER_LOGIN_FAIL,
+          payload: data?.message || "Please verify your email before signing in.",
+        });
+        history.push({
+          pathname: UN_AUTH_ROUTES.VERIFY_EMAIL,
+          state: { email },
+        });
+        return;
+      }
+
+      dispatch({
+        type: USER_LOGIN_FAIL,
+        payload: data?.message || "Invalid email or password.",
+      });
+    } catch (err) {
+      dispatch({
+        type: USER_LOGIN_FAIL,
+        payload: "Unable to reach the sign-in service. Please try again.",
+      });
+    }
+  };
+
   const handleSubmit = (e) => {
     e.preventDefault();
 
@@ -131,7 +177,7 @@ const SignIn = ({
     }
 
     if (email !== "" && password !== "") {
-      dispatch(userLoginAction(email, password));
+      submitLogin();
     }
   };
 

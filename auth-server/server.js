@@ -66,6 +66,18 @@ app.use(express.json({ limit: REQUEST_SIZE_LIMIT }));
 app.use("/api", authRoutes);
 app.get("/api/health", (req, res) => res.json({ status: "ok" }));
 
+// ── Error handler ────────────────────────────────────────────────────────────
+// Without this, a CORS rejection (or any middleware throw) falls through to
+// Express's default handler and returns an opaque HTML 500 page.
+// eslint-disable-next-line no-unused-vars
+app.use((err, req, res, next) => {
+  if (err && err.message === "Origin not allowed by CORS") {
+    return res.status(403).json({ ok: false, message: "Origin not allowed." });
+  }
+  console.error("Unhandled error:", err?.message || err);
+  return res.status(500).json({ ok: false, message: "Internal server error." });
+});
+
 const PORT = process.env.PORT || 8080;
 app.listen(PORT, () => {
   console.log(`API listening on ${PORT}`);
