@@ -82,6 +82,7 @@ import WorkflowLayout from "../pages/Workflow/WorkflowLayout";
 import CreateWorkflowPage from "../pages/Workflow/CreateWorkflowPage";
 import WorkflowListPage from "../pages/Workflow/WorkflowListPage.jsx";
 import Home from "../pages/Home.js";
+import VerifyEmail from "../pages/VerifyEmail";
 
 const Routes = () => {
   //tooltip embadded
@@ -411,8 +412,15 @@ const Routes = () => {
         </AuthUser>
       </Route>
 
-      <Route path={UN_AUTH_ROUTES.CREATE_ACCOUNT} exact>
+      <Route
+        path={[UN_AUTH_ROUTES.CREATE_ACCOUNT, UN_AUTH_ROUTES.SIGNUP]}
+        exact
+      >
         <CreateAccount />
+      </Route>
+
+      <Route path={UN_AUTH_ROUTES.VERIFY_EMAIL} exact>
+        <VerifyEmail />
       </Route>
 
       <Route path={UN_AUTH_ROUTES.CONFIRM_ACTIVATE}>
@@ -504,7 +512,7 @@ const Routes = () => {
         <ActivateClientAccount changeLinkConfirmed={changeLinkConfirmed} />
       </Route>
 
-      <Route path={UN_AUTH_ROUTES.SIGNIN}>
+      <Route path={[UN_AUTH_ROUTES.SIGNIN, UN_AUTH_ROUTES.LOGIN]}>
         <SignUser
           isLinkConfirmed={isLinkConfirmed}
           changeLinkConfirmed={changeLinkConfirmed}
@@ -517,10 +525,10 @@ const Routes = () => {
       <Route path={AUTH_ROUTES.LOGOUT}>
         {userInfo ? <Logout /> : <Redirect to={UN_AUTH_ROUTES.SIGNIN} />}
       </Route>
-      <Route path={UN_AUTH_ROUTES.FORGET_PASSWORD}>
+      <Route path={[UN_AUTH_ROUTES.FORGET_PASSWORD, UN_AUTH_ROUTES.FORGOT_PASSWORD]}>
         <ForgetPassword />
       </Route>
-      <Route path={UN_AUTH_ROUTES.RESET_PASSWORD}>
+      <Route path={[UN_AUTH_ROUTES.RESET_PASSWORD, UN_AUTH_ROUTES.CHECK_EMAIL]}>
         <ResetPassNotification />
       </Route>
       <Route path={AUTH_ROUTES.SETTINGS}>
