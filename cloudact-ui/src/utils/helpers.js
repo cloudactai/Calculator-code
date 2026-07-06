@@ -392,7 +392,6 @@ console.log('✌️valXXXXXXue --->', value);
 
 const getCurrentUserFromCookies = () => {
   let currentUserRole =  CookiesParser.get("currentUserRole")
-  console.log('✌️currentUserRole --->', currentUserRole ? decrypt(currentUserRole) : null);
   return currentUserRole
     ? decrypt(currentUserRole)
     : null;

@@ -115,7 +115,10 @@ const Dashboard = ({ userInfo, currentUserRole }) => {
 
   useEffect(() => {
     clearCookieForCalculatorLabel();
-    if (!accessPagesStateLoading) dispatch(accessPagesAction());
+    // Skip API call in dev mode — devBypass.js already seeds access_pages
+    if (process.env.NODE_ENV !== "development" && !accessPagesStateLoading) {
+      dispatch(accessPagesAction());
+    }
     dispatch(userProfileInfoAction());
   }, []);
 
