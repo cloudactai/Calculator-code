@@ -22,6 +22,10 @@ import {
   saveMatterReset,
 } from "../../utils/Apis/matters/saveMatterInformation/saveMattersActions";
 import {
+  getSingleMatter,
+} from "../../utils/Apis/matters/getSingleMatter/getSingleMattersActions";
+import { selectSingleMatterData } from "../../utils/Apis/matters/getSingleMatter/getSingleMattersSelectors";
+import {
   requiredFields,
   validateForm,
 } from "../../utils/matterValidations/formValidations";
@@ -36,8 +40,27 @@ import toast from "react-hot-toast";
 const FiveStepsPage = () => {
   const { id } = useParams();
   const location = useLocation();
-  const matterData = location.state;
+  const locationMatterData = location.state;
   const { response } = useSelector((state) => state.userProfileInfo);
+  const singleMatterRedux = useSelector(selectSingleMatterData);
+
+  // If we arrived without location.state (e.g. from Task List), fetch the matter
+  useEffect(() => {
+    if (!locationMatterData) {
+      dispatch(getSingleMatter(id));
+    }
+  }, [dispatch, id, locationMatterData]);
+
+  // Build matterData from either location state or the fetched single matter
+  const matterData = locationMatterData || (singleMatterRedux?.body?.[0]
+    ? {
+        province: singleMatterRedux.body[0].province,
+        clientName: singleMatterRedux.body[0].client_id,
+        matterNumber: singleMatterRedux.body[0].matterNumber,
+        clientRole: singleMatterRedux.body[0].clientRole,
+        childrenInvolved: singleMatterRedux.body[0].childrenInvolved,
+      }
+    : null);
   const [progress, setProgress] = useState({});
   const [whichOpen, setWhichOpen] = useState("Background");
   const dispatch = useDispatch();
@@ -449,6 +472,13 @@ const FiveStepsPage = () => {
                     </div>
                   </div>
 
+                  <button
+                    onClick={() => history.push(`/single-matter/${id}`)}
+                    className="btn btnPrimary rounded-pill"
+                    style={{ marginBottom: "10px", backgroundColor: "#6c757d", borderColor: "#6c757d" }}
+                  >
+                    Back to Workflow
+                  </button>
                   <button
                     onClick={handleFinish}
                     className="btn btnPrimary rounded-pill"

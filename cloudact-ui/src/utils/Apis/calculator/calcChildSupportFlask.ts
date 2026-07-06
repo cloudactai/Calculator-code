@@ -51,7 +51,13 @@ const calcChildSupportFlask = async (
     });
 
     if (!res.ok) return null;
-    return await res.json();
+    const data = await res.json();
+    // Flask may return {"error": "..."} with status 200
+    if (data.error) {
+      console.error('[Flask CS] error:', data.error);
+      return null;
+    }
+    return data;
   } catch {
     return null;
   }

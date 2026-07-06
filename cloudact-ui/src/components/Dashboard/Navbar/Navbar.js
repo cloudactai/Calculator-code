@@ -56,7 +56,7 @@ interface InavLinksInfo {
 // (Matter, Calculator, Forms) and the bottom menu (Settings/Logout). Hides
 // Dashboard, Reports, Tasks, Archive, and Operational Dashboard. Set to false
 // to restore the full sidebar.
-const TRIMMED_SIDEBAR = true;
+const TRIMMED_SIDEBAR = false;
 
 const Navbar = () => {
   const dispatch = useDispatch();
@@ -407,11 +407,7 @@ const Navbar = () => {
                     eachLink={{
                       name: "Calculator",
                       type: "CHILD",
-                      // The welcome/matter-picker screen needs the legacy
-                      // backend; go straight to the calculator without it.
-                      linkTo: FEATURES.SAVED_CALCULATIONS
-                        ? AUTH_ROUTES.SUPPORT_CALCULATOR
-                        : AUTH_ROUTES.CALCULATOR,
+                      linkTo: AUTH_ROUTES.SUPPORT_CALCULATOR,
                       icon: <HiOutlineCalculator color="#171d34" size={24} />,
                       auth: accessPagesState?.auth_calculator,
                       accessTo: r_all,

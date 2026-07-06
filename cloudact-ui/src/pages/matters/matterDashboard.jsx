@@ -155,7 +155,7 @@ const MatterDashboard = () => {
     ) {
       // setMatterNumber(matter_number)
       dispatch(createMatter(formData));
-      history.push(`/5-steps/${matter_number}`, formData);
+      history.push(`/single-matter/${matter_number}`);
     }
     setMatterModalShow(false);
   };

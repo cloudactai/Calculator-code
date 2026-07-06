@@ -55,15 +55,30 @@ const SingleMatter = () => {
   const [view, setView] = useState("tasks"); // tasks | intake_choice | intake_chat | support_choice | child_support
   const [matterData, setMatterData] = useState(null);
   const [taskStatuses, setTaskStatuses] = useState(() => {
+    // Load persisted statuses from localStorage, falling back to not_started
+    const storageKey = `matterTaskStatuses_${id}`;
+    let saved = {};
+    try {
+      const raw = localStorage.getItem(storageKey);
+      if (raw) saved = JSON.parse(raw);
+    } catch (e) {
+      // ignore corrupt data
+    }
     const initial = {};
     TASK_DEFS.forEach((t) => {
-      initial[t.id] = "not_started";
+      initial[t.id] = saved[t.id] || "not_started";
     });
     return initial;
   });
 
   // Aggregated matter data for the chat context
   const [fullMatterData, setFullMatterData] = useState(null);
+
+  // Persist task statuses to localStorage whenever they change
+  useEffect(() => {
+    const storageKey = `matterTaskStatuses_${id}`;
+    localStorage.setItem(storageKey, JSON.stringify(taskStatuses));
+  }, [taskStatuses, id]);
 
   const { response } = useSelector((state) => state.userProfileInfo);
   const selectSingleMatter = useSelector(selectSingleMatterData);
@@ -142,22 +157,26 @@ const SingleMatter = () => {
     };
   });
 
+  // Helper: update a task status in both React state and localStorage
+  function persistTaskStatus(taskId, status) {
+    const storageKey = `matterTaskStatuses_${id}`;
+    setTaskStatuses((s) => {
+      const updated = { ...s, [taskId]: status };
+      localStorage.setItem(storageKey, JSON.stringify(updated));
+      return updated;
+    });
+  }
+
   function handleTaskStart(taskId) {
     if (taskId === "matter_intake") {
-      setTaskStatuses((s) => ({
-        ...s,
-        matter_intake:
-          s.matter_intake === "not_started" ? "in_progress" : s.matter_intake,
-      }));
-      setView("intake_choice");
+      if (taskStatuses.matter_intake === "not_started") {
+        persistTaskStatus("matter_intake", "in_progress");
+      }
+      history.push(`/5-steps/${id}`);
     } else if (taskId === "child_spousal_support") {
-      setTaskStatuses((s) => ({
-        ...s,
-        child_spousal_support:
-          s.child_spousal_support === "not_started"
-            ? "in_progress"
-            : s.child_spousal_support,
-      }));
+      if (taskStatuses.child_spousal_support === "not_started") {
+        persistTaskStatus("child_spousal_support", "in_progress");
+      }
       setView("support_choice");
     } else if (taskId === "general_query") {
       // Future: open general query chat
@@ -177,8 +196,9 @@ const SingleMatter = () => {
     if (choice === "ai") {
       setView("child_support");
     } else if (choice === "manual") {
-      // Navigate to existing calculator
-      history.push("/calculator");
+      // Store the matter number so the calculator welcome screen pre-selects it
+      localStorage.setItem('selectedCalculatorMatterNumber', JSON.stringify(id));
+      history.push("/SupportCalculator", { from: "matters" });
     }
   }
 

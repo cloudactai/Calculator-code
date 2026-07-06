@@ -608,6 +608,17 @@ def calculate_spousal_support_iterative(
     max_iter:               int    = 50,
     tol:                    float  = 0.01,
     payor_is_party1:        bool   = True,   # True when payor is the original UI "Party 1"
+    # Deduction / income-type fields for each party — default to 0/No
+    payor_self_employed_income:    float = 0.0,
+    payor_other_income:            float = 0.0,
+    payor_child_care_expenses:     float = 0.0,
+    payor_other_deductions:        float = 0.0,
+    payor_eligible_for_disability: str   = "No",
+    recip_self_employed_income:    float = 0.0,
+    recip_other_income:            float = 0.0,
+    recip_child_care_expenses:     float = 0.0,
+    recip_other_deductions:        float = 0.0,
+    recip_eligible_for_disability: str   = "No",
 ) -> IterativeResult:
     """
     SSAG with-children spousal support via iterative INDI convergence.

@@ -3442,8 +3442,9 @@ const Screen2 = ({
   };
 
   const calculateChildSupport = () => {
-    // Flask has already set childSupportRef — don't overwrite with stale JS values.
-    if (childSupportLockedByFlask.current) return;
+    // All child support calculations are handled by the Flask backend.
+    // Skip the JS calculator entirely.
+    return;
 
     //For Party 1
     //declare variable notionalChildSupport1 = 0;

@@ -14,7 +14,7 @@ const CourtInformation = ({ CourtInformationData, MatterData }) => {
     const dispatch = useDispatch();
 
     useEffect(() => {
-        dispatch(getAllCourts(MatterData.province))
+        dispatch(getAllCourts(MatterData?.province))
     },[])
 
     const courtsData = useSelector(selectCourtsData);

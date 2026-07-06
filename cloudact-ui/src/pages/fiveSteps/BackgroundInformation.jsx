@@ -73,7 +73,7 @@ const BackgroundInformation = ({ BackgroundInformationData, MatterData }) => {
   const dispatch = useDispatch()
   useEffect(() => {
     // dispatch(getAllMunicipalities(MatterData.province))
-    dispatch(getAllMunicipalities(MatterData.province))
+    dispatch(getAllMunicipalities(MatterData?.province))
   }, [])
 
   const getMunicipalities = useSelector(selectMunicipaltiesData)
