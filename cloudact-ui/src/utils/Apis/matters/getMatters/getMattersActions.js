@@ -29,7 +29,7 @@ export const getAllMatters = () => {
         dispatch(fetchDataRequest());
         try {
         const { data } = await fetchRequest("get", `get_matters/${getUserSID()}`);
-        // const data = await response.json();
+        console.log("[CLOUDACT-MATTER] getAllMatters API response:", JSON.stringify(data.data?.body?.map(m => ({ id: m.id, matterNumber: m.matterNumber, client_id: m.client_id })), null, 2));
 
         dispatch(fetchDataSuccess(data.data));
         } catch (error) {

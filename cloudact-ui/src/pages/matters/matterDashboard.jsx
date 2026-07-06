@@ -108,6 +108,8 @@ const MatterDashboard = () => {
     }) || [];
 
   const currentItems = filteredMatters.slice(indexOfFirstItem, indexOfLastItem);
+  console.log("[CLOUDACT-MATTER] userMatters.body count:", userMatters?.body?.length, "filteredMatters count:", filteredMatters.length, "currentItems count:", currentItems.length);
+  console.log("[CLOUDACT-MATTER] currentItems matterNumbers:", currentItems.map(i => i.matterNumber));
 
   const selectMatterLoading = useSelector(selectMattersLoading);
 
@@ -161,7 +163,9 @@ const MatterDashboard = () => {
   };
 
   const handleOpenMatter = (matter) => {
+    console.log("[CLOUDACT-MATTER] handleOpenMatter called with:", JSON.stringify({ id: matter?.id, matterNumber: matter?.matterNumber, client_id: matter?.client_id }));
     if (!matter) return;
+    console.log("[CLOUDACT-MATTER] navigating to:", `/single-matter/${matter.matterNumber}`);
     history.push(`/single-matter/${matter.matterNumber}`);
   };
 
@@ -314,7 +318,9 @@ const MatterDashboard = () => {
                     </tr>
                   </thead>
                   <tbody>
-                    {currentItems.map((item, key) => (
+                    {currentItems.map((item, key) => {
+                      console.log("[CLOUDACT-MATTER] rendering row", key, "matterNumber:", item.matterNumber, "client_id:", item.client_id, "full item keys:", Object.keys(item));
+                      return (
                       <tr key={key}>
                         <td>{item.matterNumber}</td>
                         <td>{item.client_id}</td>
@@ -340,7 +346,8 @@ const MatterDashboard = () => {
                           </div>
                         </td>
                       </tr>
-                    ))}
+                    );
+                    })}
                   </tbody>
                 </table>
                 <Container className="container mt-3 pt-2">
