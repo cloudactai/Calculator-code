@@ -49,6 +49,7 @@ const TASK_DEFS = [
 
 const SingleMatter = () => {
   const { id } = useParams();
+  console.log("[CLOUDACT-MATTER] SingleMatter mounted with id from URL params:", id);
   const dispatch = useDispatch();
   const history = useHistory();
 
