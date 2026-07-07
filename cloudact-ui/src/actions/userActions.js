@@ -30,11 +30,20 @@ import {
 } from "../constants/userConstants";
 import store from "../store";
 import axios from "../utils/axios";
-import { getUserId, getUserSID, updateCookiesInfo } from "../utils/helpers";
+import {
+  getCurrentUserFromCookies,
+  getUserId,
+  getUserSID,
+  updateCookiesInfo,
+} from "../utils/helpers";
 import { companyInfoAction } from "./companyActions";
 import { persistAuthTokens } from "../utils/authToken";
 import CookiesParser from "../utils/cookieParser/Cookies";
 import toast from "react-hot-toast"
+import {
+  buildPersonalProfileInfo,
+  isPersonalAuthUser,
+} from "../utils/personalAuthSession";
 
 export const userLoginAction = (email, password) => async (dispatch) => {
   try {
@@ -114,6 +123,14 @@ export const userLoginAction = (email, password) => async (dispatch) => {
 export const userProfileInfoAction = () => async (dispatch) => {
   try {
     dispatch({ type: USER_PROFILE_INFO_REQUEST });
+
+    const currentUser = getCurrentUserFromCookies();
+    if (isPersonalAuthUser(currentUser)) {
+      const profile = buildPersonalProfileInfo(currentUser);
+      CookiesParser.set("userProfile", profile, { path: "/" });
+      dispatch({ type: USER_PROFILE_INFO_SUCCESS, payload: profile });
+      return;
+    }
 
     const {
       data: { data },
