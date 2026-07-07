@@ -162,8 +162,10 @@ const MatterDashboard = () => {
       // setMatterNumber(matter_number)
       const createdMatter = await dispatch(createMatter(formData));
       if (createdMatter) {
+        setMatterModalShow(false);
         history.push(`/single-matter/${matter_number}`);
       }
+      return;
     }
     setMatterModalShow(false);
   };

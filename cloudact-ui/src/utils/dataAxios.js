@@ -8,15 +8,23 @@ function trimValue(value) {
   return String(value || "").trim();
 }
 
+function toDataApiBase(value) {
+  const base = trimValue(value).replace(/\/+$/, "");
+  if (!base) return "";
+
+  if (base.endsWith("/api/v1")) return base.replace(/\/api\/v1$/, "/v1");
+  if (base.endsWith("/api")) return base.replace(/\/api$/, "/v1");
+  if (base.endsWith("/v1")) return base;
+
+  return `${base}/v1`;
+}
+
 function resolveDataApiBase() {
   const dataApiOverride = trimValue(process.env.REACT_APP_API_BACKEND_URL_DATA);
-  if (dataApiOverride) return dataApiOverride;
+  if (dataApiOverride) return toDataApiBase(dataApiOverride);
 
-  const authApiBase = trimValue(process.env.REACT_APP_API_BASE_URL).replace(
-    /\/+$/,
-    ""
-  );
-  if (authApiBase) return `${authApiBase}/v1`;
+  const authApiBase = trimValue(process.env.REACT_APP_API_BASE_URL);
+  if (authApiBase) return toDataApiBase(authApiBase);
 
   return process.env.NODE_ENV === "production"
     ? DEFAULT_PRODUCTION_DATA_API
