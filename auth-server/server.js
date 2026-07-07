@@ -15,6 +15,7 @@ const dotenv = require("dotenv");
 dotenv.config({ path: path.join(__dirname, ".env") });
 
 const authRoutes = require("./src/routes/authRoutes");
+const mattersRoutes = require("./src/routes/mattersRoutes");
 
 const app = express();
 const REQUEST_SIZE_LIMIT = "5mb"; // room for base64 avatar uploads
@@ -64,6 +65,9 @@ app.use((req, res, next) => {
 app.use(express.json({ limit: REQUEST_SIZE_LIMIT }));
 
 app.use("/api", authRoutes);
+// Legacy-compatible per-user data routes (matters + saved calculations); the
+// frontend's old /v1 modules point here now instead of the law-firm backend.
+app.use("/v1", mattersRoutes);
 app.get("/api/health", (req, res) => res.json({ status: "ok" }));
 
 // ── Error handler ────────────────────────────────────────────────────────────

@@ -1,6 +1,6 @@
-// Personal-only auth schema. This is the ENTIRE database for the sign-in /
-// create-account system: one User table. No Subscriber/law-firm, no Clio/QBO
-// token columns, no Microsoft-connection columns, no webhook columns.
+// Personal-build schema: auth (User) + per-user app data (matters and saved
+// calculations, migrated off the legacy law-firm /v1 backend into this
+// Postgres). No Subscriber/law-firm, no Clio/QBO token columns.
 //
 // Postgres via the pg adapter (see prismaClient.js). DATABASE_URL supplies the
 // connection string for both the CLI (below) and the runtime adapter.
@@ -33,4 +33,79 @@ model User {
 
   createdAt                  DateTime  @default(now())
   updatedAt                  DateTime  @updatedAt
+
+  matters                    Matter[]
+  savedCalculations          SavedCalculation[]
+}
+
+// A family-law matter. Mirrors the legacy f_ca_matters row shape the UI
+// expects (clientName is returned as client_id, checkedItems is a JSON
+// string) - see auth-server/src/routes/mattersRoutes.js.
+model Matter {
+  id                   Int      @id @default(autoincrement())
+  userId               String
+  clientName           String
+  matterNumber         String
+  clientRole           String?
+  childrenInvolved     String?
+  province             String?
+  checkedItems         String?
+  source               String   @default("Internal")
+  informationCompleted Int      @default(0)
+  status               Int      @default(0)
+  firstflag            Int      @default(1)
+  valuationDate        String?
+  fyIncomeBenefits     String?
+  fyExpenses           String?
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+
+  user                 User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  records              MatterRecord[]
+
+  @@unique([userId, matterNumber])
+  @@index([userId])
+}
+
+// One JSON document per (matter, dataType): the row arrays the five-steps
+// save produces (background, children, court, relationship, employment,
+// income_benefits, expenses, special_expenses, debts_liabilities, opih,
+// assets) plus folders/files metadata and per-file form data
+// (file_data:<folderId>:<fileId>).
+model MatterRecord {
+  id        Int      @id @default(autoincrement())
+  matterId  Int
+  dataType  String
+  data      Json
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  matter    Matter   @relation(fields: [matterId], references: [id], onDelete: Cascade)
+
+  @@unique([matterId, dataType])
+}
+
+// A saved calculator run. Mirrors legacy tbl_calculator_values: `data` is the
+// JSON string the calculator stores and re-parses on load.
+model SavedCalculation {
+  id             Int      @id @default(autoincrement())
+  userId         String
+  label          String
+  description    String?
+  taxYear        String?
+  status         String?
+  type           String?
+  calculatorType String?
+  matterId       String?
+  data           String?
+  reportUrl      String?
+  reportData     String?
+  createdBy      String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, label])
+  @@index([userId])
 }
