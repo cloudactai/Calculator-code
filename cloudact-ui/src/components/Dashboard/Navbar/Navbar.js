@@ -58,6 +58,9 @@ interface InavLinksInfo {
 // to restore the full sidebar.
 const TRIMMED_SIDEBAR = false;
 
+// Hide Reports, Tasks, and Archive from the sidebar. Set to true to restore them.
+const SHOW_REPORTS_TASKS_ARCHIVE = false;
+
 const Navbar = () => {
   const dispatch = useDispatch();
   const { userRole } = useSelector((state) => state.userChange);
@@ -217,7 +220,9 @@ const Navbar = () => {
               ? navLinksInfo_1.map((e) => Render_link(e))
               : null}
 
-            {!TRIMMED_SIDEBAR && accessPagesState?.auth_reports ? (
+            {!TRIMMED_SIDEBAR &&
+            SHOW_REPORTS_TASKS_ARCHIVE &&
+            accessPagesState?.auth_reports ? (
               <a
                 href="javascript:void(0)"
                 className="1"
@@ -242,7 +247,7 @@ const Navbar = () => {
               </a>
             ) : null}
 
-            {!TRIMMED_SIDEBAR && isReportsOpen && (
+            {!TRIMMED_SIDEBAR && SHOW_REPORTS_TASKS_ARCHIVE && isReportsOpen && (
               <>
                 {accessPagesState?.auth_run_report ? (
                   <NavbarLinkCustom
@@ -279,7 +284,9 @@ const Navbar = () => {
               </>
             )}
 
-            {!TRIMMED_SIDEBAR && accessPagesState?.auth_tasks ? (
+            {!TRIMMED_SIDEBAR &&
+            SHOW_REPORTS_TASKS_ARCHIVE &&
+            accessPagesState?.auth_tasks ? (
               <a
                 href="javascript:void(0)"
                 onClick={() => setIsTasksOpen(!isTasksOpen)}
@@ -303,7 +310,7 @@ const Navbar = () => {
               </a>
             ) : null}
 
-            {!TRIMMED_SIDEBAR && isTasksOpen && (
+            {!TRIMMED_SIDEBAR && SHOW_REPORTS_TASKS_ARCHIVE && isTasksOpen && (
               <>
                 {accessPagesState?.auth_monthly_checklists ? (
                   <NavbarLinkCustom
@@ -432,7 +439,9 @@ const Navbar = () => {
               </>
             )}
 
-            {!TRIMMED_SIDEBAR && accessPagesState?.auth_archive
+            {!TRIMMED_SIDEBAR &&
+            SHOW_REPORTS_TASKS_ARCHIVE &&
+            accessPagesState?.auth_archive
               ? navLinksArchive.map((e) => Render_link(e))
               : null}
 
