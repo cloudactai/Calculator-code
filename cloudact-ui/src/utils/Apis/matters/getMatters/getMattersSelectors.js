@@ -1,4 +1,5 @@
 // selectors.js
-export const selectMattersData = (state) => state.getAllMatters.response;
+export const selectMattersData = (state) =>
+  state.getAllMatters.response || { code: 200, status: "success", body: [] };
 export const selectMattersLoading = (state) => state.getAllMatters.loading;
 export const selectMattersError = (state) => state.getAllMatters.error;
