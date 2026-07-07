@@ -14,11 +14,12 @@ import App from "./App";
 import { Provider } from "react-redux";
 import store from "./store/index";
 
-// TEMPORARY deploy test — shows in the BROWSER DevTools console (not Vercel's
-// Logs tab; this is a static frontend, logs run client-side). Revert freely.
-console.log(
-  "[vercel-console-test] cloudact-ui bundle is live — deployed 2026-07-07 from main"
-);
+// Wake the auth/data backend as soon as the app loads. The Render free tier
+// spins the service down when idle and takes ~30-60s to cold-start; pinging
+// health here means it is usually awake by the time the user hits a data
+// page (matters, saved calculations) instead of timing out their first call.
+import { warmUpDataApi } from "./utils/dataAxios";
+warmUpDataApi();
 
 ReactDOM.render(
   <Provider store={store}>

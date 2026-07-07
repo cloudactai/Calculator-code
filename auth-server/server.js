@@ -78,6 +78,10 @@ app.use((err, req, res, next) => {
   if (err && err.message === "Origin not allowed by CORS") {
     return res.status(403).json({ ok: false, message: "Origin not allowed." });
   }
+  // express.json() throws on unparseable bodies — client error, not ours.
+  if (err && (err.type === "entity.parse.failed" || err.status === 400)) {
+    return res.status(400).json({ ok: false, message: "Invalid JSON body." });
+  }
   console.error("Unhandled error:", err?.message || err);
   return res.status(500).json({ ok: false, message: "Internal server error." });
 });

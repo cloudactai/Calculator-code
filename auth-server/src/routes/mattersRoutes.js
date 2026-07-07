@@ -758,4 +758,58 @@ router.delete("/calculator/delete_value/:id", async (req, res) => {
   }
 });
 
+// Calculator welcome screen: client + matter pickers. The personal build has
+// no separate clients table (legacy f_ca_clients) - clients are derived from
+// the user's matters, so the pickers show exactly what the user created.
+router.get("/clients", async (req, res) => {
+  try {
+    const matters = await prisma.matter.findMany({
+      where: { userId: req.user.id },
+      orderBy: { createdAt: "asc" },
+    });
+    const seen = new Set();
+    const clients = [];
+    for (const matter of matters) {
+      const name = matter.clientName || "";
+      if (!name || seen.has(name)) continue;
+      seen.add(name);
+      clients.push({
+        id: clients.length + 1,
+        client_id: name,
+        client_name: name,
+        client_type: matter.clientRole || "Client",
+        sid: matter.userId,
+      });
+    }
+    return res.json(ok(clients));
+  } catch (err) {
+    console.log("GET /v1/clients failed:", err?.message || err);
+    return res.status(500).json(errorBody("Could not list clients.", 500));
+  }
+});
+
+router.get("/matterdisplayNumber/:sid/:clientId", async (req, res) => {
+  try {
+    const matters = await prisma.matter.findMany({
+      where: { userId: req.user.id, clientName: String(req.params.clientId) },
+      orderBy: { createdAt: "asc" },
+    });
+    return res.json(
+      ok(
+        matters.map((matter) => ({
+          id: matter.id,
+          matter_display_nbr: matter.matterNumber,
+          matterNumber: matter.matterNumber,
+          client_id: matter.clientName,
+        }))
+      )
+    );
+  } catch (err) {
+    console.log("GET /v1/matterdisplayNumber failed:", err?.message || err);
+    return res
+      .status(500)
+      .json(errorBody("Could not list matter numbers.", 500));
+  }
+});
+
 module.exports = router;

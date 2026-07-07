@@ -36,8 +36,17 @@ const dataApiBase = resolveDataApiBase();
 const instance = axios.create({
   baseURL: dataApiBase,
   withCredentials: true,
-  timeout: 20000,
+  // The Render free-tier backend cold-starts in ~30-60s after idle; a 20s
+  // timeout made the first matters/saved-calc call after a quiet period fail.
+  timeout: 75000,
 });
+
+// Fire-and-forget wake-up call (see src/index.tsx). Uses the sibling /api
+// health endpoint on the same host as the /v1 data routes.
+export function warmUpDataApi() {
+  const healthUrl = `${dataApiBase.replace(/\/v1$/, "")}/api/health`;
+  axios.get(healthUrl, { timeout: 75000 }).catch(() => {});
+}
 
 instance.interceptors.request.use(
   function (config) {
