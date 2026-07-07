@@ -131,7 +131,7 @@ const MatterDashboard = () => {
    * @param {string} state.childrenInvolved - Whether children are involved ("Yes"/"No")
    * @param {string} state.province - Province where matter is filed
    */
-  const handleContinue = (state) => {
+  const handleContinue = async (state) => {
     const mattersCount = matterRows.length; // Ensure mattersCount is defined
     let matter_number = null;
     if(state && state.matterNumber){
@@ -160,8 +160,10 @@ const MatterDashboard = () => {
       state.province
     ) {
       // setMatterNumber(matter_number)
-      dispatch(createMatter(formData));
-      history.push(`/single-matter/${matter_number}`);
+      const createdMatter = await dispatch(createMatter(formData));
+      if (createdMatter) {
+        history.push(`/single-matter/${matter_number}`);
+      }
     }
     setMatterModalShow(false);
   };

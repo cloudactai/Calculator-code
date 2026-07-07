@@ -14,7 +14,11 @@ import {
   getSingleMatter,
   getSingleMatterReset,
 } from "../../utils/Apis/matters/getSingleMatter/getSingleMattersActions";
-import { selectSingleMatterData } from "../../utils/Apis/matters/getSingleMatter/getSingleMattersSelectors";
+import {
+  selectSingleMatterData,
+  selectSingleMatterError,
+  selectSingleMatterLoading,
+} from "../../utils/Apis/matters/getSingleMatter/getSingleMattersSelectors";
 import {
   getSingleMatterData,
   getSingleMatterDataReset,
@@ -83,6 +87,8 @@ const SingleMatter = () => {
 
   const { response } = useSelector((state) => state.userProfileInfo);
   const selectSingleMatter = useSelector(selectSingleMatterData);
+  const singleMatterLoading = useSelector(selectSingleMatterLoading);
+  const singleMatterError = useSelector(selectSingleMatterError);
 
   // Redux slices for matter sub-data
   const backgroundData = useSelector((state) => state.backgroundData?.data);
@@ -102,10 +108,13 @@ const SingleMatter = () => {
 
   // Set matter data from Redux
   useEffect(() => {
-    if (selectSingleMatter?.body?.[0] && !matterData) {
-      setMatterData(selectSingleMatter.body[0]);
+    const loadedMatter = selectSingleMatter?.body?.[0];
+    if (loadedMatter && matterData?.matterNumber !== loadedMatter.matterNumber) {
+      setMatterData(loadedMatter);
+    } else if (!singleMatterLoading && !matterData) {
+      setMatterData({ client_id: "", matterNumber: id });
     }
-  }, [selectSingleMatter, matterData]);
+  }, [selectSingleMatter, matterData, singleMatterLoading, id]);
 
   // Once we have basic matter data, fetch the sub-data for chat context
   useEffect(() => {
@@ -141,7 +150,8 @@ const SingleMatter = () => {
     }
   }, [matterData, id, backgroundData, childrenData, relationshipData, incomeBenefitsData, employmentData, assetsData, expenseData, debtData, courtData]);
 
-  const matterName = matterData?.client_id || "";
+  const matterName = matterData?.client_id || "Matter";
+  const matterWasNotFound = !singleMatterLoading && !selectSingleMatter?.body?.[0];
 
   // Build task list with statuses and disabled states
   // Only Matter Intake and Child & Spousal Support are enabled for now
@@ -224,11 +234,12 @@ const SingleMatter = () => {
       dispatch(getSingleMatterDataReset("children"));
       dispatch(getSingleMatterDataReset("incomeBenefits"));
       dispatch(getSingleMatterDataReset("expenses"));
+      dispatch(getSingleMatterDataReset("debt"));
       dispatch(getSingleMatterReset());
     };
   }, [dispatch]);
 
-  const matterLoading = !selectSingleMatter;
+  const matterLoading = singleMatterLoading && !matterData;
 
   return (
     <Layout title={`Welcome ${response?.username ? response.username : ""} `}>
@@ -253,6 +264,14 @@ const SingleMatter = () => {
           </div>
 
           <div className="pBody">
+            {matterWasNotFound && (
+              <div className="alert alert-warning" role="alert">
+                {singleMatterError
+                  ? "Matter details could not be loaded. You can still continue, or go back to Matters and refresh."
+                  : "Matter details are still being created. You can continue, or go back to Matters and refresh."}
+              </div>
+            )}
+
             {/* Task list view (default) */}
             {view === "tasks" && (
               <MatterTaskList
