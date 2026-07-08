@@ -22,6 +22,7 @@ import { apiCalculatorById } from "../../../utils/Apis/calculator/Calculator_val
 import { SaveAllCalculatorValuesByID } from "../../../utils/Apis/calculator/SaveAllCalculatorValuesByID";
 import { fetchAllCalculatorDatawithTaxs } from "../../../utils/Apis/calculator/fetchAllCalculatorDatawithTaxs";
 import { calcSpousalSupportFlask } from "../../../utils/Apis/calculator/calcSpousalSupportFlask";
+import { calcChildSupportFlask } from "../../../utils/Apis/calculator/calcChildSupportFlask";
 import { fetchSpecificTaxandDeductionforAmount } from "../../../utils/Apis/calculator/fetchSpecificTaxandDeductionforAmount";
 import { getDistinctYearsInTaxRef } from "../../../utils/Apis/getDistinctYearsInTaxRef";
 import {
@@ -59,7 +60,6 @@ import {
   formulaEnhancedCPPdeduction,
   formulaForCalculatingDurationOfSupport,
   formulaForCanadaChildBenefit,
-  formulaForChildSupport,
   formulaForGSTHSTBenefits,
   formulaForOntarioSalesTax,
   formulaForProvincialCredits,
@@ -95,7 +95,6 @@ import {
 } from "../screen4/Screen4";
 import {
   childSupportValuesFor,
-  fetchChildSupportDetails,
 } from "./childInfo.service";
 import {
   climateActionIncentiveAB,
@@ -123,7 +122,6 @@ import {
   filterPositiveValuesAndSum,
   filterProvincialCreditsAndSum,
   filterSelfEmployedIncomeAndSum,
-  findRateForFederalTax,
   getCalculatorLabelFromCookies,
   guidelineIncomeTypeDropdown,
   IFixedValues,
@@ -3257,290 +3255,67 @@ const Screen2 = ({
     }
   };
 
-  const calculateChildSupport = () => {
-    //For Party 1
-    //declare variable notionalChildSupport1 = 0;
-    //if split case, then totalNumberofchildren - noOfChildrenOfTheParty2
-    //find child support using above data (res).
-    //notionalChildSupport1 = res;
-
-    //For {data.party2Name()}
-    //declare variable notionalChildSupport2 = 0;
-    //if split case, then totalNumberofchildren - noOfChildrenOfTheParty1
-    //find child support using above data (res).
-    //notionalChildSupport2 = res;
-
-    //add childSupportTotal = notionalSupport + actualChildSupport in case of split
-    //then use this childSupportTotal in household income.
-
-    //actual Child support = notional child support when shared,
-
-    // for understanding this deeply, please refer the excel sheet.
-    const CSGOverrideValuesParty1 = CSGOverrideValues(
-      screen1.aboutTheChildren,
-      screen1.background,
-      1
-    );
-
-  
-    const CSGOverrideValuesParty2 = CSGOverrideValues(
-      screen1.aboutTheChildren,
-      screen1.background,
-      2
-    );
-
-
+  const calculateChildSupport = async () => {
+    // Build guideline incomes (regular + schedule III + non-taxable)
     const totalIncomeParty1WithGuideline = totalIncomeByIncomeState([
       ...income.party1,
       ...guidelineIncome.party1,
       ...nonTaxableincome.party1
-    ]).toString();
+    ]);
 
     const totalIncomeParty2WithGuideline = totalIncomeByIncomeState([
       ...income.party2,
       ...guidelineIncome.party2,
       ...nonTaxableincome.party2
-    ]).toString();
+    ]);
 
+    // Map frontend child objects to Flask payload format
+    const childrenPayload = (screen1.aboutTheChildren.childrenInfo || []).map((child: any) => ({
+      name: child.name || "",
+      csg_table: child.CSGTable || "No",
+      child_support_override: Number(child.ChildSupportOverride) || 0,
+      custody_arrangement: child.custodyArrangement || "Party 1",
+    }));
 
-    //finding the notional and child support for each party.
-    const childSupportFilteredValues = {
-      res1: fetchChildSupportDetails(
-        fetchedChildSupportValues,
-        totalIncomeParty1WithGuideline,
-        numberOfChildrenForCalculatingChildSupport(1) -
-        CSGOverrideValuesParty1.length,
-        getProvinceOfParty1()
-      )[0],
+    const flaskResult = await calcChildSupportFlask({
+      party1_income: totalIncomeParty1WithGuideline,
+      party2_income: totalIncomeParty2WithGuideline,
+      party1_name: screen1.background.party1FirstName || "Party 1",
+      party2_name: screen1.background.party2FirstName || "Party 2",
+      party1_province: getProvinceOfParty1(),
+      party2_province: getProvinceOfParty2(),
+      children: childrenPayload,
+    });
 
-      res2: fetchChildSupportDetails(
-        fetchedChildSupportValues,
-        totalIncomeParty2WithGuideline,
-        numberOfChildrenForCalculatingChildSupport(2) -
-        CSGOverrideValuesParty2.length,
-        getProvinceOfParty2()
-      )[0],
-
-      notionalAmount1: fetchChildSupportDetails(
-        fetchedChildSupportValues,
-        totalIncomeParty1WithGuideline,
-        numberOfChildrenForCalculatingChildSupport(2),
-        getProvinceOfParty1()
-      )[0],
-
-      notionalAmount2: fetchChildSupportDetails(
-        fetchedChildSupportValues,
-        totalIncomeParty2WithGuideline,
-        numberOfChildrenForCalculatingChildSupport(1),
-        getProvinceOfParty2()
-      )[0],
-    };
-
-
-    const party1ChildSupportParams = {
-      ...childSupportFilteredValues.res1,
-      totalIncomeParty: Number(totalIncomeParty1WithGuideline),
-    };
-
-    const party2ChildSupportParams = {
-      ...childSupportFilteredValues.res2,
-      totalIncomeParty: Number(totalIncomeParty2WithGuideline),
-    };
-
-    const notionalAmount1Params = {
-      ...childSupportFilteredValues.notionalAmount1,
-      totalIncomeParty: Number(totalIncomeParty1WithGuideline),
-    };
-
-    const notionalAmount2Params = {
-      ...childSupportFilteredValues.notionalAmount2,
-      totalIncomeParty: Number(totalIncomeParty2WithGuideline),
-    };
-
-
-
-    // Calculating the child support for each party
-    const party1ChildSupport = formulaForChildSupport(party1ChildSupportParams);
-    ChildSupportInitValue.current.party1 = party1ChildSupport*12;
-
-    const party2ChildSupport = formulaForChildSupport(party2ChildSupportParams);
-    ChildSupportInitValue.current.party2 = party2ChildSupport*12;
-
-    // 4th screen child Shared case set in 2nd screen in child is share then support1-2 (vise versa) and use this value on set Support ref
-    let childSupportpaidby = 0;
-
-    if (party1ChildSupport > party2ChildSupport) {
-      childSupportpaidby = party1ChildSupport - party2ChildSupport;
-      
-    } else {
-      childSupportpaidby = party2ChildSupport - party1ChildSupport;
+    if (!flaskResult) {
+      console.error("[calculateChildSupport] Flask /calculate returned null");
+      return { party1: 0, party2: 0 };
     }
 
-
-
-
-
-
-    const party1NotionalAmount = formulaForChildSupport(notionalAmount1Params);
-
-    const party2NotionalAmount = formulaForChildSupport(notionalAmount2Params);
-
-
-    // maximumChildLivesWith function tells which party will get notional amount and other credits.
-    const childLivesWithParty1 = maximumChildLivesWith(
-      getParamsForCalculatingAllCredits(1)
-    );
-
-
-    const childLivesWithParty2 = maximumChildLivesWith(
-      getParamsForCalculatingAllCredits(2)
-    );
-
-    const incomes = {
-      totalIncomeParty1: totalIncomeByIncomeState(income.party1) + nonTaxableIncomeParty1(),
-      totalIncomeParty2: totalIncomeByIncomeState(income.party2) + nonTaxableIncomeParty2(),
+    // Populate all refs from the Flask response
+    ChildSupportInitValue.current = {
+      party1: flaskResult.child_support_init.party1_annual,
+      party2: flaskResult.child_support_init.party2_annual,
     };
 
+    childSupportRef.current = {
+      party1: flaskResult.child_support_ref.party1_annual,
+      party2: flaskResult.child_support_ref.party2_annual,
+    };
 
-    //** High Case conditions and calculation.
-    if ((totalNumberOfChildren(screen1.aboutTheChildren) === 0 || determineWhichPartyHasGreaterIncomeAndChild(screen1.aboutTheChildren, incomes)) && fetchedONMrateTaxDB.length > 0) {
+    notionalAmountRef.current = {
+      party1: flaskResult.notional_amount_ref.party1_annual,
+      party2: flaskResult.notional_amount_ref.party2_annual,
+    };
 
-      const calculateMarginalTax1 = findRateForFederalTax(
-        fetchedONMrateTaxDB,
-        getTaxableIncomeAfterSupportParty1()
-      )[0];
-      const calculateMarginalTax2 = findRateForFederalTax(
-        fetchedONMrateTaxDB,
-        getTaxableIncomeAfterSupportParty2()
-      )[0];
-
-
-      if (calculateMarginalTax1 && calculateMarginalTax2) {
-        const marginalReciprocalTaxParty1 =
-          Number(1 - calculateMarginalTax1.Rate) || 0;
-        const marginalReciprocalTaxParty2 =
-          Number(1 - calculateMarginalTax2.Rate) || 0;
-
-        marginalTax.current = {
-          party1: Number(calculateMarginalTax1.Rate),
-          party2: Number(calculateMarginalTax2.Rate),
-        };
-
-        marginalReciprocalTax.current = {
-          party1: marginalReciprocalTaxParty1,
-          party2: marginalReciprocalTaxParty2,
-        };
-
-        notionalAmountRef.current = {
-          party1:
-            childLivesWithParty1 === 1
-              ? Number(party1NotionalAmount * 12) / marginalReciprocalTaxParty1
-              : 0,
-          party2:
-            childLivesWithParty2 === 2
-              ? Number(party2NotionalAmount * 12) / marginalReciprocalTaxParty2
-              : 0,
-        };
-
-
-
-        childSupportRef.current = {
-          party1:
-            childLivesWithParty2 === 2
-              ? (Number(party1ChildSupport * 12) +
-                addAllNumbersInArr(CSGOverrideValuesParty1) * 12) /
-              marginalReciprocalTaxParty1
-              : 0,
-          party2:
-            childLivesWithParty1 === 1
-              ? (Number(party2ChildSupport * 12) +
-                addAllNumbersInArr(CSGOverrideValuesParty2) * 12) /
-              marginalReciprocalTaxParty2
-              : 0,
-        };
-
- 
-      }
-    }
-    else {
-      //for shared case we need to assign child support in this manner.
-      if (typeOfSplitting === "SHARED") {
-        notionalAmountRef.current = {
-          party1: 0,
-          party2: 0,
-        };
-
-        // this part is used for perivious for set child support in shared case and support1-support2 on 4th screen.
-
-        // childSupportRef.current = {
-        //   party1:
-        //     Number(party1ChildSupport * 12) +
-        //     addAllNumbersInArr(CSGOverrideValuesParty1) * 12,
-
-        //   party2:
-        //     Number(party2ChildSupport * 12) +
-        //     addAllNumbersInArr(CSGOverrideValuesParty2) * 12,
-        // };
-
-        //we change this cause we want netamount and do this in highcase(50%)
-
-        childSupportRef.current = {
-          party1:
-            Number(childSupportpaidby * 12) +
-            addAllNumbersInArr(CSGOverrideValuesParty1) * 12,
-
-          party2:
-            -(Number(childSupportpaidby * 12) +
-              addAllNumbersInArr(CSGOverrideValuesParty2) * 12),
-        };
-
-      } else {
-        //For SPLIT | HYBRID cases
-
-        //   //if party has child, then notional support will be there but actual support will be zero
-        notionalAmountRef.current = {
-          party1:
-            childLivesWithParty1 === 1
-              ? Number(party1NotionalAmount * 12)
-              : // + addAllNumbersInArr(CSGOverrideValuesParty1) * 12
-              0,
-          party2:
-            childLivesWithParty2 === 2
-              ? Number(party2NotionalAmount * 12)
-              : // + addAllNumbersInArr(CSGOverrideValuesParty2) * 12
-              0,
-        };
-
-        const obj = {
-          party1:
-            Number(party1ChildSupport * 12) +
-            addAllNumbersInArr(CSGOverrideValuesParty1) * 12,
-          party2:
-            Number(party2ChildSupport * 12) +
-            addAllNumbersInArr(CSGOverrideValuesParty2) * 12,
-        };
-        //do not modify this. Setting child support based upon if child is living with party
-        //party 2 has two children > party 1 has one child.
-
-        childSupportReadOnly.current = obj;
-        childSupportRef.current = {
-          party1: childLivesWithParty2 === 2 ? obj.party1 : 0,
-          party2: childLivesWithParty1 === 1 ? obj.party2 : 0,
-        };
-
-      }
-    }
-
-
-
+    childSupportReadOnly.current = {
+      party1: flaskResult.party1_annual,
+      party2: flaskResult.party2_annual,
+    };
 
     return {
-      party1:
-        Number(party1ChildSupport * 12) +
-        addAllNumbersInArr(CSGOverrideValuesParty1) * 12,
-      party2:
-        Number(party2ChildSupport * 12) +
-        addAllNumbersInArr(CSGOverrideValuesParty2) * 12,
+      party1: flaskResult.party1_annual,
+      party2: flaskResult.party2_annual,
     };
   };
 
@@ -5366,7 +5141,7 @@ const Screen2 = ({
       storeBasicValues();
       // Child support must run first — the iterative spousal formula needs CS
       // amounts (payor's Table CS and recipient's notional CS) as inputs.
-      calculateChildSupport();
+      await calculateChildSupport();
 
       // Gross annual incomes — sent directly to the Python iterative API.
       // The backend (calculate_spousal_support_iterative) accepts gross income
@@ -6021,12 +5796,12 @@ const Screen2 = ({
   useEffect(() => {
     setLoading(true);
     determineAndSetTypeOfSplitting();
-    fetchDistinctTaxYears().then((response) => {
+    fetchDistinctTaxYears().then(async (response) => {
       calculateDurationOfSupport();
       checkIfScreen1OptionsFilled();
       modifyScreen1PropIfChildIsAbove18();
       modifyScreen1PropsIfChildShared();
-      calculateChildSupport();
+      await calculateChildSupport();
 
       setCount((prev: any) => prev + 1);
       setLoading(false);

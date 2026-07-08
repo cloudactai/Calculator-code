@@ -118,6 +118,8 @@ def calculate():
         p1_income = float(data["party1_income"])
         p2_income = float(data["party2_income"])
         children  = data.get("children", [])
+        p1_province = data.get("party1_province", "ON")
+        p2_province = data.get("party2_province", "ON")
 
         if not children:
             return jsonify({"error": "At least one child is required."})
@@ -144,8 +146,8 @@ def calculate():
             children=children,
             party1_guideline_income=p1_income,
             party2_guideline_income=p2_income,
-            party1_province="ON",
-            party2_province="ON",
+            party1_province=p1_province,
+            party2_province=p2_province,
             type_of_splitting=type_of_splitting,
             child_counts=child_counts,
             schedule_i_data=SCHEDULE_I,
@@ -182,6 +184,16 @@ def calculate():
                 "party2_monthly":  result["child_support_ref"]["party2"],
                 "party1_annual":   result["child_support_ref"]["party1"] * 12,
                 "party2_annual":   result["child_support_ref"]["party2"] * 12,
+            },
+            "notional_amount_ref": {
+                "party1_monthly":  result["notional_amount_ref"]["party1"],
+                "party2_monthly":  result["notional_amount_ref"]["party2"],
+                "party1_annual":   result["notional_amount_ref"]["party1"] * 12,
+                "party2_annual":   result["notional_amount_ref"]["party2"] * 12,
+            },
+            "child_support_init": {
+                "party1_annual":   result["party1"] * 12,
+                "party2_annual":   result["party2"] * 12,
             },
             "net_payer":    net_payer,
             "net_monthly":  net_monthly,

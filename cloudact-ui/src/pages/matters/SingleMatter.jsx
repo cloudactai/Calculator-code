@@ -9,6 +9,7 @@ import Loader from "../../components/Loader";
 import MatterTaskList from "../../components/MatterWorkflow/MatterTaskList";
 import MatterIntakeChoice from "../../components/MatterWorkflow/MatterIntakeChoice";
 import ChildSupportChatPanel from "../../components/MatterWorkflow/ChildSupportChatPanel";
+import SpousalSupportChatPanel from "../../components/MatterWorkflow/SpousalSupportChatPanel";
 
 import {
   getSingleMatter,
@@ -53,7 +54,7 @@ const SingleMatter = () => {
   const dispatch = useDispatch();
   const history = useHistory();
 
-  const [view, setView] = useState("tasks"); // tasks | intake_choice | intake_chat | support_choice | child_support
+  const [view, setView] = useState("tasks"); // tasks | intake_choice | intake_chat | support_choice | child_support | spousal_support
   const [matterData, setMatterData] = useState(null);
   const [taskStatuses, setTaskStatuses] = useState(() => {
     // Load persisted statuses from localStorage, falling back to not_started
@@ -195,11 +196,19 @@ const SingleMatter = () => {
 
   function handleSupportChoice(choice) {
     if (choice === "ai") {
-      setView("child_support");
+      setView("support_type_choice");
     } else if (choice === "manual") {
       // Store the matter number so the calculator welcome screen pre-selects it
       localStorage.setItem('selectedCalculatorMatterNumber', JSON.stringify(id));
       history.push("/SupportCalculator", { from: "matters" });
+    }
+  }
+
+  function handleSupportTypeChoice(type) {
+    if (type === "child") {
+      setView("child_support");
+    } else if (type === "spousal") {
+      setView("spousal_support");
     }
   }
 
@@ -312,6 +321,35 @@ const SingleMatter = () => {
               />
             )}
 
+            {/* Support type choice: Child or Spousal */}
+            {view === "support_type_choice" && (
+              <MatterIntakeChoice
+                matterName={matterName}
+                onChoose={handleSupportTypeChoice}
+                onBack={() => setView("support_choice")}
+                title="AI Support Calculator"
+                subtitle="Which type of support do you want to calculate?"
+                aiLabel="Child Support"
+                aiCta="Start Child Support Chat"
+                aiFeatures={[
+                  "Federal Child Support Guidelines",
+                  "Handles sole, shared & split custody",
+                  "Schedule I table lookups",
+                  "Explains results in plain language",
+                ]}
+                manualLabel="Spousal Support"
+                manualCta="Start Spousal Support Chat"
+                manualFeatures={[
+                  "SSAG without-child & with-child formulas",
+                  "AI picks the correct formula automatically",
+                  "Iterative tax-converging calculation",
+                  "Duration under Rule of 65",
+                ]}
+                aiValue="child"
+                manualValue="spousal"
+              />
+            )}
+
             {/* Child Support chat */}
             {view === "child_support" && (
               <ChildSupportChatPanel
@@ -319,6 +357,22 @@ const SingleMatter = () => {
                 matterId={id}
                 onBack={handleBackToTasks}
                 onComplete={handleChildSupportComplete}
+              />
+            )}
+
+            {/* Spousal Support chat */}
+            {view === "spousal_support" && (
+              <SpousalSupportChatPanel
+                matterData={fullMatterData}
+                matterId={id}
+                onBack={handleBackToTasks}
+                onComplete={() => {
+                  setTaskStatuses((s) => ({
+                    ...s,
+                    child_spousal_support: "completed",
+                  }));
+                  setView("tasks");
+                }}
               />
             )}
           </div>

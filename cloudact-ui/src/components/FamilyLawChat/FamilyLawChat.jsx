@@ -50,27 +50,22 @@ const CALCULATORS = [
   {
     id: "spousal",
     label: "Spousal Support",
-    kind: "form",
-    endpoint: "/spousal-calculate",
-    title: "Spousal Support Calculator",
+    kind: "chat",
+    endpoint: "/spousal-chat",
+    title: "Ontario Spousal Support Calculator",
     intro:
-      "Estimate spousal support ranges under the Spousal Support Advisory Guidelines (SSAG) without-child formula.",
+      "I'll ask a few questions and calculate spousal support under Ontario's Spousal Support Advisory Guidelines (SSAG). I'll determine the correct formula based on whether there are dependent children. Nothing is stored.",
+    starters: [
+      "I need to calculate spousal support",
+      "How does having children affect spousal support?",
+      "What info do you need from me?",
+    ],
   },
 ];
 
 const EMPTY_CHAT = { bubbles: [], messages: [] };
 
-const EMPTY_SPOUSAL = {
-  p1Name: "",
-  p1Income: "",
-  p2Name: "",
-  p2Income: "",
-  years: "",
-  age: "",
-  result: null,
-  error: "",
-  loading: false,
-};
+// Spousal support is now an AI chat — no form state needed.
 
 // Minimal, safe formatting: escape HTML, then render **bold** and newlines.
 function renderText(text) {
@@ -83,14 +78,6 @@ function renderText(text) {
     .replace(/\n/g, "<br/>");
 }
 
-function fmtCAD(n) {
-  return new Intl.NumberFormat("en-CA", {
-    style: "currency",
-    currency: "CAD",
-    maximumFractionDigits: 2,
-  }).format(Number(n) || 0);
-}
-
 export default function FamilyLawChat() {
   const [signedIn, setSignedIn] = useState(hasSession());
   const [open, setOpen] = useState(false);
@@ -101,13 +88,14 @@ export default function FamilyLawChat() {
   const [chats, setChats] = useState({
     child: { ...EMPTY_CHAT },
     tax: { ...EMPTY_CHAT },
+    spousal: { ...EMPTY_CHAT },
   });
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [loadingCalc, setLoadingCalc] = useState(null); // which calc is awaiting a reply
   const [warming, setWarming] = useState(false);
 
-  const [spousal, setSpousal] = useState({ ...EMPTY_SPOUSAL });
+  // Spousal form state removed — now using AI chat.
 
   const windowRef = useRef(null);
   const inputRef = useRef(null);
@@ -119,7 +107,7 @@ export default function FamilyLawChat() {
     if (windowRef.current) {
       windowRef.current.scrollTop = windowRef.current.scrollHeight;
     }
-  }, [activeCalc, chats, loading, warming, spousal.result, spousal.error]);
+  }, [activeCalc, chats, loading, warming]);
 
   useEffect(() => {
     if (open && calc.kind === "chat" && inputRef.current) inputRef.current.focus();
@@ -223,61 +211,6 @@ export default function FamilyLawChat() {
     setInput("");
   }
 
-  async function calcSpousal() {
-    const p1Income = parseFloat(spousal.p1Income);
-    const p2Income = parseFloat(spousal.p2Income);
-    const years = parseFloat(spousal.years);
-    const age = parseFloat(spousal.age);
-
-    let error = "";
-    if (isNaN(p1Income) || isNaN(p2Income))
-      error = "Please enter gross annual incomes for both parties.";
-    else if (p1Income === p2Income)
-      error = "Incomes are equal — no spousal support would be payable.";
-    else if (isNaN(years) || years <= 0) error = "Please enter a valid number of years.";
-    else if (isNaN(age) || age < 18) error = "Please enter the recipient's age (minimum 18).";
-
-    if (error) {
-      setSpousal((s) => ({ ...s, error, result: null }));
-      return;
-    }
-
-    setSpousal((s) => ({ ...s, error: "", loading: true }));
-
-    try {
-      const res = await fetch(`${CALCULATOR_API}/spousal-calculate`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        // The backend computes the SSAG without-child quantum from gross income.
-        // Its route key has historically flip-flopped between *_net_income and
-        // *_gross_income, so we send both (same gross value) to stay compatible.
-        body: JSON.stringify({
-          party1_name: spousal.p1Name.trim() || "Party 1",
-          party2_name: spousal.p2Name.trim() || "Party 2",
-          party1_net_income: p1Income,
-          party2_net_income: p2Income,
-          party1_gross_income: p1Income,
-          party2_gross_income: p2Income,
-          years,
-          recipient_age: age,
-          children: false,
-        }),
-      });
-      const data = await res.json();
-      if (data.error) {
-        setSpousal((s) => ({ ...s, error: data.error, result: null, loading: false }));
-      } else {
-        setSpousal((s) => ({ ...s, result: data, error: "", loading: false }));
-      }
-    } catch (err) {
-      setSpousal((s) => ({
-        ...s,
-        error: "Could not reach the calculator service. Please try again.",
-        loading: false,
-      }));
-    }
-  }
-
   const showTyping = loading && loadingCalc === activeCalc;
 
   if (!signedIn) return null;
@@ -336,157 +269,72 @@ export default function FamilyLawChat() {
             </div>
           </div>
 
-          {calc.kind === "chat" ? (
-            <>
-              <div className="flc-window" ref={windowRef}>
-                {chat.bubbles.length === 0 && (
-                  <div className="flc-welcome">
-                    <h3>{calc.title}</h3>
-                    <p>{calc.intro}</p>
-                    <div className="flc-starters">
-                      {calc.starters.map((s) => (
-                        <button key={s} className="flc-chip" onClick={() => send(s)}>
-                          {s}
-                        </button>
-                      ))}
-                    </div>
+          <>
+            <div className="flc-window" ref={windowRef}>
+              {chat.bubbles.length === 0 && (
+                <div className="flc-welcome">
+                  <h3>{calc.title}</h3>
+                  <p>{calc.intro}</p>
+                  <div className="flc-starters">
+                    {calc.starters.map((s) => (
+                      <button key={s} className="flc-chip" onClick={() => send(s)}>
+                        {s}
+                      </button>
+                    ))}
                   </div>
-                )}
+                </div>
+              )}
 
-                {chat.bubbles.map((b, i) => (
-                  <div key={i} className={`flc-row flc-${b.role}`}>
-                    <div
-                      className="flc-bubble"
-                      dangerouslySetInnerHTML={{ __html: renderText(b.text) }}
-                    />
+              {chat.bubbles.map((b, i) => (
+                <div key={i} className={`flc-row flc-${b.role}`}>
+                  <div
+                    className="flc-bubble"
+                    dangerouslySetInnerHTML={{ __html: renderText(b.text) }}
+                  />
+                </div>
+              ))}
+
+              {showTyping && (
+                <div className="flc-row flc-assistant">
+                  <div className="flc-bubble flc-typing">
+                    {warming ? (
+                      "Warming up the server — first reply can take ~30s…"
+                    ) : (
+                      <>
+                        <span className="flc-dot" />
+                        <span className="flc-dot" />
+                        <span className="flc-dot" />
+                      </>
+                    )}
                   </div>
-                ))}
-
-                {showTyping && (
-                  <div className="flc-row flc-assistant">
-                    <div className="flc-bubble flc-typing">
-                      {warming ? (
-                        "Warming up the server — first reply can take ~30s…"
-                      ) : (
-                        <>
-                          <span className="flc-dot" />
-                          <span className="flc-dot" />
-                          <span className="flc-dot" />
-                        </>
-                      )}
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              <div className="flc-input-bar">
-                <textarea
-                  ref={inputRef}
-                  rows={1}
-                  placeholder="Type a message…"
-                  value={input}
-                  onChange={(e) => setInput(e.target.value)}
-                  onKeyDown={handleKeyDown}
-                />
-                <button
-                  className="flc-send"
-                  onClick={() => send()}
-                  disabled={loading || !input.trim()}
-                  aria-label="Send"
-                >
-                  ➤
-                </button>
-              </div>
-              <div className="flc-footer">
-                <button className="flc-reset" onClick={resetActiveChat}>
-                  New conversation
-                </button>
-              </div>
-            </>
-          ) : (
-            <div className="flc-window flc-form-window" ref={windowRef}>
-              <p className="flc-form-intro">{calc.intro}</p>
-
-              <div className="flc-form-group">
-                <div className="flc-form-label">Party 1</div>
-                <input
-                  className="flc-field"
-                  type="text"
-                  placeholder="Name (optional)"
-                  value={spousal.p1Name}
-                  onChange={(e) => setSpousal((s) => ({ ...s, p1Name: e.target.value }))}
-                />
-                <input
-                  className="flc-field"
-                  type="number"
-                  min="0"
-                  placeholder="Gross annual income ($)"
-                  value={spousal.p1Income}
-                  onChange={(e) => setSpousal((s) => ({ ...s, p1Income: e.target.value }))}
-                />
-              </div>
-
-              <div className="flc-form-group">
-                <div className="flc-form-label">Party 2</div>
-                <input
-                  className="flc-field"
-                  type="text"
-                  placeholder="Name (optional)"
-                  value={spousal.p2Name}
-                  onChange={(e) => setSpousal((s) => ({ ...s, p2Name: e.target.value }))}
-                />
-                <input
-                  className="flc-field"
-                  type="number"
-                  min="0"
-                  placeholder="Gross annual income ($)"
-                  value={spousal.p2Income}
-                  onChange={(e) => setSpousal((s) => ({ ...s, p2Income: e.target.value }))}
-                />
-              </div>
-
-              <div className="flc-form-group">
-                <div className="flc-form-label">Relationship</div>
-                <input
-                  className="flc-field"
-                  type="number"
-                  min="0"
-                  step="0.5"
-                  placeholder="Years of marriage / cohabitation"
-                  value={spousal.years}
-                  onChange={(e) => setSpousal((s) => ({ ...s, years: e.target.value }))}
-                />
-                <input
-                  className="flc-field"
-                  type="number"
-                  min="18"
-                  placeholder="Recipient's current age"
-                  value={spousal.age}
-                  onChange={(e) => setSpousal((s) => ({ ...s, age: e.target.value }))}
-                />
-                <p className="flc-form-hint">
-                  The recipient is the lower-income spouse. Age is used to determine duration
-                  under the Rule of 65.
-                </p>
-              </div>
-
-              {spousal.error && <div className="flc-form-error">{spousal.error}</div>}
-
-              <button
-                className="flc-calc-btn"
-                onClick={calcSpousal}
-                disabled={spousal.loading}
-              >
-                {spousal.loading ? "Calculating…" : "Calculate Spousal Support"}
-              </button>
-
-              {spousal.result && <SpousalResult d={spousal.result} />}
-
-              <p className="flc-disclaimer">
-                Based on the SSAG without-child formula. Estimates only — not legal advice.
-              </p>
+                </div>
+              )}
             </div>
-          )}
+
+            <div className="flc-input-bar">
+              <textarea
+                ref={inputRef}
+                rows={1}
+                placeholder="Type a message…"
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                onKeyDown={handleKeyDown}
+              />
+              <button
+                className="flc-send"
+                onClick={() => send()}
+                disabled={loading || !input.trim()}
+                aria-label="Send"
+              >
+                ➤
+              </button>
+            </div>
+            <div className="flc-footer">
+              <button className="flc-reset" onClick={resetActiveChat}>
+                New conversation
+              </button>
+            </div>
+          </>
         </div>
       )}
 
@@ -509,74 +357,6 @@ export default function FamilyLawChat() {
           </svg>
         )}
       </button>
-    </div>
-  );
-}
-
-function SpousalResult({ d }) {
-  const incomeDiff = d.net_income_diff != null ? d.net_income_diff : d.gross_income_diff;
-  const rows = [
-    { label: "Low", cls: "low", pct: d.pct_low, mo: d.monthly_low, yr: d.annual_low },
-    { label: "Medium", cls: "med", pct: d.pct_med, mo: d.monthly_med, yr: d.annual_med },
-    { label: "High", cls: "high", pct: d.pct_high, mo: d.monthly_high, yr: d.annual_high },
-  ];
-
-  return (
-    <div className="flc-result">
-      <div className="flc-result-meta">
-        <div className="flc-meta-item">
-          <span>Payor</span>
-          <strong>{d.payor}</strong>
-        </div>
-        <div className="flc-meta-item">
-          <span>Recipient</span>
-          <strong>{d.recipient}</strong>
-        </div>
-        {incomeDiff != null && (
-          <div className="flc-meta-item">
-            <span>Income difference</span>
-            <strong>{fmtCAD(incomeDiff)}/yr</strong>
-          </div>
-        )}
-        {d.duration_label && (
-          <div className="flc-meta-item">
-            <span>Duration</span>
-            <strong>{d.duration_label}</strong>
-          </div>
-        )}
-      </div>
-
-      <table className="flc-range">
-        <thead>
-          <tr>
-            <th>Scenario</th>
-            <th>%</th>
-            <th>Monthly</th>
-            <th>Annual</th>
-          </tr>
-        </thead>
-        <tbody>
-          {rows.map((r) => (
-            <tr key={r.label}>
-              <td>
-                <span className={`flc-tag flc-${r.cls}`}>{r.label}</span>
-              </td>
-              <td>{r.pct}%</td>
-              <td>{fmtCAD(r.mo)}</td>
-              <td>{fmtCAD(r.yr)}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-
-      <div className="flc-verdict">
-        <strong>
-          {d.payor} pays {d.recipient}
-        </strong>
-        Between {fmtCAD(d.monthly_low)}/mo (low) and {fmtCAD(d.monthly_high)}/mo (high), with a
-        midpoint of {fmtCAD(d.monthly_med)}/mo
-        {d.duration_label ? ` — for ${String(d.duration_label).toLowerCase()}.` : "."}
-      </div>
     </div>
   );
 }
