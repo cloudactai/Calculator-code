@@ -1599,19 +1599,8 @@ const Screen4 = ({
       </div>    
 
 
-      <div className="d-flex justify-content-end mb-4">
-
-       {/* <button onClick={()=>history.push('/cal_demo')}>Click to open new tab</button> */}
-       <button className="btn btnPrimary rounded-pill">
-
-       <Link to="/cal_demo" style={{ textDecoration:"none" , color:"#171D34" }} target="_blank"  >
-        Api Calculator
-        </Link>
-       </button>
 
 
-     
-      </div>
 
       {reportData.data && (
         <div>
