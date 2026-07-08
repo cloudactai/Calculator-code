@@ -43,7 +43,9 @@ import toast from "react-hot-toast"
 import {
   buildPersonalProfileInfo,
   isPersonalAuthUser,
+  updatePersonalSessionProfile,
 } from "../utils/personalAuthSession";
+import { updateProfile } from "../utils/Apis/auth/authApi";
 
 export const userLoginAction = (email, password) => async (dispatch) => {
   try {
@@ -157,6 +159,44 @@ export const userProfileInfoAction = () => async (dispatch) => {
 export const userProfileInfoChangeAction = (obj) => async (dispatch) => {
   try {
     dispatch({ type: USER_PROFILE_INFO_CHANGE_REQUEST });
+
+    // Personal-auth users persist to the auth-server DB (PUT /api/profile), not
+    // the legacy /v1 backend. The profile photo is saved separately on select,
+    // so this text-fields save omits it.
+    const currentUser = getCurrentUserFromCookies();
+    if (isPersonalAuthUser(currentUser)) {
+      const { ok, data: resp } = await updateProfile({
+        displayName: obj.username,
+        firstName: obj.first_name,
+        lastName: obj.last_name,
+        description: obj.description,
+        phoneNumber: obj.phone_number,
+        street: obj.street,
+        addressProvince: obj.province,
+        country: obj.country,
+      });
+
+      if (!ok) {
+        toast.error(resp?.message || "Could not save profile");
+        dispatch({ type: USER_PROFILE_INFO_CHANGE_FAIL, payload: resp });
+        return;
+      }
+
+      const profile = resp.profile || resp.user || {};
+      updatePersonalSessionProfile({
+        first_name: profile.firstName ?? obj.first_name,
+        last_name: profile.lastName ?? obj.last_name,
+        username: profile.name ?? obj.username,
+        description: profile.description ?? obj.description,
+        phone_number: profile.phoneNumber ?? obj.phone_number,
+        street: profile.street ?? obj.street,
+        address_province: profile.addressProvince ?? obj.province,
+        country: profile.country ?? obj.country,
+      });
+      toast.success("Profile updated");
+      dispatch({ type: USER_PROFILE_INFO_CHANGE_SUCCESS, payload: profile });
+      return;
+    }
 
     const {
       data: { data },

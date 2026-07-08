@@ -80,5 +80,14 @@ export const updateProfile = (body) =>
     body,
   });
 
+export const changePassword = ({ currentPassword, newPassword, confirmPassword }) =>
+  request(
+    apiPath(
+      process.env.REACT_APP_API_BACKEND_URL_PROFILE_PASSWORD,
+      "/api/profile/password"
+    ),
+    { body: { currentPassword, newPassword, confirmPassword } }
+  );
+
 export const logout = () =>
   request(apiPath(process.env.REACT_APP_API_BACKEND_URL_LOGOUT, "/api/logout"));

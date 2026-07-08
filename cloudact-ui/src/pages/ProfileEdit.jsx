@@ -3,7 +3,6 @@ import { Col, Container, Row } from "react-bootstrap";
 import { useDispatch, useSelector } from "react-redux";
 import Layout from "../components/LayoutComponents/Layout";
 import ProfilePic from "../assets/images/profile_pic.jpeg";
-import axios from "../utils/axios";
 import Spinner from 'react-bootstrap/Spinner';
 import  "./profile.css";
 
@@ -29,10 +28,9 @@ import {
 } from "../actions/userActions";
 import { useHistory } from "react-router-dom";
 import { USER_PROFILE_INFO_CHANGE_EMPTY } from "../constants/userConstants";
-import { updateProfile } from "../utils/Apis/auth/authApi";
+import { updateProfile, changePassword as changePasswordApi } from "../utils/Apis/auth/authApi";
 import { updatePersonalSessionProfile } from "../utils/personalAuthSession";
 import { fileToResizedDataUrl } from "../utils/imageResize";
-import CookiesParser from "../utils/cookieParser/Cookies";
 import { AUTH_ROUTES } from "../routes/Routes.types";
 import toast from "react-hot-toast";
 
@@ -143,38 +141,28 @@ const ProfileEdit = () => {
     }
   };
 
-  const handleSignatureUpload = (event) => {
-    console.log("Singature", event.target.files[0]);
-    if (event.target.files && event.target.files[0]) {
-      const formData = new FormData();
-
-      formData.append(
-        "signature",
-        event.target.files[0],
-        event.target.files[0].name
-      );
-
-      const data = {
-        uid: getUserId(),
-        photo: formData,
-      };
-       axios.post(`/signature/${data.uid}`, 
-        data.photo
-       ).then((res) => {
-        let userProfileInfoAction = getUserProfileInfo();
-        userProfileInfoAction.signature = res.data.data.body.profileUrl.location;
-        CookiesParser.set("userProfile", userProfileInfoAction);
-        
-        setSignature(res.data.data.body.profileUrl.location);
-       }).catch((err) => {
-        toast.error('Something went wrong')
-         console.log("err", err);
-       })
-     
-
-     
+  const handleSignatureUpload = async (event) => {
+    const file = event.target.files && event.target.files[0];
+    if (!file) return;
+    try {
+      // Signatures are wide/short; allow more width than an avatar for legibility.
+      const dataUrl = await fileToResizedDataUrl(file, { maxDimension: 800 });
+      const { ok, data } = await updateProfile({ signature: dataUrl });
+      if (!ok) {
+        throw new Error(data?.message || "Failed to save signature.");
+      }
+      const nextSignature =
+        data?.profile?.signature ?? data?.user?.signature ?? dataUrl;
+      setSignature(nextSignature);
+      updatePersonalSessionProfile({ signature: nextSignature });
+      toast.success("Signature updated");
+    } catch (err) {
+      console.log("err", err);
+      toast.error(err.message || "Could not update signature");
+    } finally {
+      event.target.value = "";
     }
-  }
+  };
 
   useEffect(() => {
     if (userProfileChange.response && !userProfileChange.loading) {
@@ -241,7 +229,10 @@ const ProfileEdit = () => {
       lastName,
       phone,
       profilePhoto,
-      username
+      username,
+      street,
+      province,
+      Country,
     } = profileInfo;
     const obj = {
       TFA: verificationDone,
@@ -252,6 +243,9 @@ const ProfileEdit = () => {
       profile_pic: profilePhoto,
       email: email,
       description: bio,
+      street: street,
+      province: province,
+      country: Country,
       // username: getAllUserInfo().username,
     };
 
@@ -290,34 +284,37 @@ const ProfileEdit = () => {
 
         try {
           setLoader((prev)=>({
-            ...prev , 
+            ...prev ,
             updatePassword : true
           }))
-          const res = await axios.post(`/updatePassword`, {
-            oldPassword : changePassword.oldPassword , 
-            newPassword : changePassword.newPassword,
-            confirmPassword :changePassword.confirmNewPassword
+          // Auth-server clears the session on a successful change, so we log the
+          // user out and bounce them to sign in again with the new password.
+          const { ok, status, data } = await changePasswordApi({
+            currentPassword: changePassword.oldPassword,
+            newPassword: changePassword.newPassword,
+            confirmPassword: changePassword.confirmNewPassword,
           });
 
-          if(res.status == 200){
-
+          if (ok) {
             history.push(AUTH_ROUTES.LOGOUT)
             return ;
+          }
 
-
+          const message = data?.message || "Could not update password";
+          if (status === 401) {
+            setProfileErrors((prev) => ({ ...prev, oldPassword: message }));
+          } else if (/match/i.test(message)) {
+            setProfileErrors((prev) => ({ ...prev, confirmPassword: message }));
+          } else {
+            setProfileErrors((prev) => ({ ...prev, oldPassword: message }));
           }
 
         } catch (error) {
-          console.log("error",error.response.data.message)
-          if(error?.response?.status ==  400){
-            setProfileErrors((prev)=>({
-              ...prev,
-              oldPassword : error.response.data.message
-            }))
-          }
+          console.log("error", error)
+          toast.error("Could not update password")
         } finally {
           setLoader((prev)=>({
-            ...prev , 
+            ...prev ,
             updatePassword : false
           }))
         }

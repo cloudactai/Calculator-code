@@ -46,9 +46,10 @@ export function buildPersonalCompanyInfo(userInfo = {}) {
     short_firmname:
       userInfo.short_firmname || userInfo.username || userInfo.email || "Personal Account",
     legaladdress: {
-      Line1: "",
-      CountrySubDivisionCode: userInfo.province || "ON",
-      Country: "Canada",
+      Line1: userInfo.street || "",
+      CountrySubDivisionCode:
+        userInfo.address_province || userInfo.province || "ON",
+      Country: userInfo.country || "Canada",
     },
   };
 }
@@ -122,6 +123,9 @@ export function buildLegacyUserInfo(user) {
     phone_number: user?.phone_number || user?.phoneNumber || "",
     profile_pic: user?.profilePic || user?.profile_pic || "",
     signature: user?.signature || "",
+    street: user?.street || "",
+    address_province: user?.addressProvince || user?.address_province || "",
+    country: user?.country || "",
     province: "ON",
     region: "ON",
     // No Clio/QBO in the personal build — marked connected so nothing tries
@@ -191,6 +195,10 @@ export function updatePersonalSessionProfile(profile) {
     description: profile.description ?? current.description,
     phone_number: profile.phone_number ?? current.phone_number,
     profile_pic: profile.profile_pic ?? current.profile_pic,
+    signature: profile.signature ?? current.signature,
+    street: profile.street ?? current.street,
+    address_province: profile.address_province ?? current.address_province,
+    country: profile.country ?? current.country,
     TFA: profile.TFA ?? current.TFA,
   };
 
@@ -204,6 +212,9 @@ export function updatePersonalSessionProfile(profile) {
   Cookies.set("allUserInfo", encrypt(nextUserInfo), opts);
   Cookies.set("currentUserRole", encrypt(currentRole), opts);
   Cookies.set("userProfile", encrypt(currentRole), opts);
+  // The Address panel reads from companyInfo, so refresh it too — otherwise a
+  // saved address wouldn't show until the next login rebuilds the cookie.
+  Cookies.set("companyInfo", encrypt(buildPersonalCompanyInfo(nextUserInfo)), opts);
   return currentRole;
 }
 
