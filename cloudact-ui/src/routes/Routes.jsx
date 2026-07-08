@@ -587,7 +587,11 @@ const Routes = () => {
       </Route> */}
 
       <Route path="/" exact>
-        <Redirect to={AUTH_ROUTES.CALCULATOR} />
+        {userInfo ? (
+          <Redirect to={AUTH_ROUTES.HOME} />
+        ) : (
+          <Redirect to={UN_AUTH_ROUTES.SIGNIN} />
+        )}
       </Route>
 
       <Route path={AUTH_ROUTES.HOME}>
