@@ -530,20 +530,27 @@ router.get("/profile", authMiddleware, async (req, res) => {
 
 router.put("/profile", authMiddleware, async (req, res) => {
   try {
-    const name = normalizeProfileText(req.body?.displayName || req.body?.name || req.body?.username);
-    const jobTitle = normalizeProfileText(req.body?.jobTitle || req.body?.job_title);
-    const hasProfilePic =
-      Object.prototype.hasOwnProperty.call(req.body || {}, "profilePic") ||
-      Object.prototype.hasOwnProperty.call(req.body || {}, "profile_pic");
+    const body = req.body || {};
+    const has = (...keys) =>
+      keys.some((key) => Object.prototype.hasOwnProperty.call(body, key));
+    // Partial update: only touch a column when the request actually carries it.
+    // Otherwise a photo-only save (which sends just profilePic) would blank out
+    // the user's name and job title.
+    const hasName = has("displayName", "name", "username");
+    const hasJobTitle = has("jobTitle", "job_title");
+    const hasProfilePic = has("profilePic", "profile_pic");
+
+    const name = normalizeProfileText(body.displayName || body.name || body.username);
+    const jobTitle = normalizeProfileText(body.jobTitle || body.job_title);
     const profilePic = hasProfilePic
-      ? normalizeProfileImage(req.body?.profilePic || req.body?.profile_pic)
+      ? normalizeProfileImage(body.profilePic || body.profile_pic)
       : undefined;
 
     const user = await prisma.user.update({
       where: { id: req.user.id },
       data: {
-        name: name || null,
-        jobTitle: jobTitle || null,
+        ...(hasName ? { name: name || null } : {}),
+        ...(hasJobTitle ? { jobTitle: jobTitle || null } : {}),
         ...(hasProfilePic ? { profilePic } : {}),
       },
       select: PUBLIC_AUTH_USER_SELECT,

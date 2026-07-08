@@ -29,7 +29,9 @@ import {
 } from "../actions/userActions";
 import { useHistory } from "react-router-dom";
 import { USER_PROFILE_INFO_CHANGE_EMPTY } from "../constants/userConstants";
-import { uploadProfilePic } from "../utils/Apis/uploadProfilePhoto";
+import { updateProfile } from "../utils/Apis/auth/authApi";
+import { updatePersonalSessionProfile } from "../utils/personalAuthSession";
+import { fileToResizedDataUrl } from "../utils/imageResize";
 import CookiesParser from "../utils/cookieParser/Cookies";
 import { AUTH_ROUTES } from "../routes/Routes.types";
 import toast from "react-hot-toast";
@@ -94,48 +96,50 @@ const ProfileEdit = () => {
     confirmNewPassword: "",
   });
 
-  const onDeletePhone = (event) => {
-    event.preventDefault();
+  // Persist a profile-photo change (upload or removal) to the auth server and
+  // mirror it into the session cookies so the avatar updates everywhere in the
+  // app, not just on this page.
+  const persistProfilePhoto = async (dataUrl) => {
+    const { ok, data } = await updateProfile({ profilePic: dataUrl });
+    if (!ok) {
+      throw new Error(data?.message || "Failed to save profile photo.");
+    }
+    const nextPic =
+      data?.profile?.profilePic ?? data?.user?.profilePic ?? dataUrl;
+    setProfileInfo((prev) => ({ ...prev, profilePhoto: nextPic }));
+    updatePersonalSessionProfile({ profile_pic: nextPic });
+    return nextPic;
+  };
 
-    setProfileInfo((prev) => ({ ...prev, profilePhoto: "" }));
-    setActive(false)
+  const onDeletePhone = async (event) => {
+    event.preventDefault();
+    try {
+      await persistProfilePhoto("");
+      toast.success("Profile photo removed");
+    } catch (err) {
+      console.log("err", err);
+      toast.error(err.message || "Could not remove photo");
+    } finally {
+      setActive(false);
+    }
   };
   const toggleClass = () => {
     setActive(!isActive);
   };
-  const editPhoto = (event) => {
-    console.log("event", event.target.files[0]);
-    if (event.target.files && event.target.files[0]) {
-      const formData = new FormData();
-
-      formData.append(
-        "profile_pic",
-        event.target.files[0],
-        event.target.files[0].name
-      );
-
-      console.log("edit photo event", event.target);
-
-      const data = {
-        uid: getUserId(),
-        photo: formData,
-      };
-
-      uploadProfilePic(data)
-        .then((res) => {
-          console.log("res", res);
-          setProfileInfo((prev) => ({
-            ...prev,
-            profilePhoto: res.profileUrl.location,
-          }));
-        })
-        .catch((err) => {
-          console.log("err", err);
-          toast.error(`Something went wrong ${err}`);
-          alert("Error ", err);
-        }).finally((res)=>{
-          setActive(false)
-        })
+  const editPhoto = async (event) => {
+    const file = event.target.files && event.target.files[0];
+    if (!file) return;
+    try {
+      const dataUrl = await fileToResizedDataUrl(file);
+      await persistProfilePhoto(dataUrl);
+      toast.success("Profile photo updated");
+    } catch (err) {
+      console.log("err", err);
+      toast.error(err.message || "Could not update photo");
+    } finally {
+      setActive(false);
+      // Reset so re-selecting the same file still fires onChange.
+      event.target.value = "";
     }
   };
 

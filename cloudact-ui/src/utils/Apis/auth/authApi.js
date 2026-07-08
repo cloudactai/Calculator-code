@@ -66,5 +66,19 @@ export const me = () =>
     method: "GET",
   });
 
+export const getProfile = () =>
+  request(apiPath(process.env.REACT_APP_API_BACKEND_URL_PROFILE, "/api/profile"), {
+    method: "GET",
+  });
+
+// Partial profile update against the auth server. Send only the fields you want
+// to change (e.g. { profilePic } for a photo-only update); the backend leaves
+// omitted columns untouched.
+export const updateProfile = (body) =>
+  request(apiPath(process.env.REACT_APP_API_BACKEND_URL_PROFILE, "/api/profile"), {
+    method: "PUT",
+    body,
+  });
+
 export const logout = () =>
   request(apiPath(process.env.REACT_APP_API_BACKEND_URL_LOGOUT, "/api/logout"));
