@@ -20,6 +20,8 @@ type ChildSupportFlaskPayload = {
   party2_income: number;
   party1_name: string;
   party2_name: string;
+  party1_province?: string;
+  party2_province?: string;
   children: ChildPayload[];
 };
 
@@ -32,6 +34,16 @@ export type ChildSupportFlaskResult = {
   child_support_ref: {
     party1_monthly: number;
     party2_monthly: number;
+    party1_annual: number;
+    party2_annual: number;
+  };
+  notional_amount_ref: {
+    party1_monthly: number;
+    party2_monthly: number;
+    party1_annual: number;
+    party2_annual: number;
+  };
+  child_support_init: {
     party1_annual: number;
     party2_annual: number;
   };

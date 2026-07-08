@@ -15,6 +15,10 @@ import "./MatterWorkflow.css";
  *   manualFeatures – string[] (bullet points for Manual card)
  *   aiCta        – string (default "Start Chat")
  *   manualCta    – string (default "Open Forms")
+ *   aiLabel      – string (card title, default "Via AI Agent")
+ *   manualLabel  – string (card title, default "Manual Calculator")
+ *   aiValue      – string (value passed to onChoose, default "ai")
+ *   manualValue  – string (value passed to onChoose, default "manual")
  */
 
 const DEFAULT_AI_FEATURES = [
@@ -41,6 +45,10 @@ export default function MatterIntakeChoice({
   manualFeatures = DEFAULT_MANUAL_FEATURES,
   aiCta = "Start Chat",
   manualCta = "Open Forms",
+  aiLabel = "Via AI Agent",
+  manualLabel = "Manual Calculator",
+  aiValue = "ai",
+  manualValue = "manual",
 }) {
   return (
     <div className="mw-intake-choice">
@@ -72,10 +80,10 @@ export default function MatterIntakeChoice({
         {/* AI Agent card */}
         <div
           className="mw-intake-card"
-          onClick={() => onChoose("ai")}
+          onClick={() => onChoose(aiValue)}
           role="button"
           tabIndex={0}
-          onKeyDown={(e) => e.key === "Enter" && onChoose("ai")}
+          onKeyDown={(e) => e.key === "Enter" && onChoose(aiValue)}
         >
           <div className="mw-intake-card__icon">
             <svg
@@ -91,7 +99,7 @@ export default function MatterIntakeChoice({
               <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z" />
             </svg>
           </div>
-          <h4 className="mw-intake-card__title">Via AI Agent</h4>
+          <h4 className="mw-intake-card__title">{aiLabel}</h4>
           <ul className="mw-intake-card__features">
             {aiFeatures.map((f, i) => (
               <li key={i}>{f}</li>
@@ -103,10 +111,10 @@ export default function MatterIntakeChoice({
         {/* Manual card */}
         <div
           className="mw-intake-card"
-          onClick={() => onChoose("manual")}
+          onClick={() => onChoose(manualValue)}
           role="button"
           tabIndex={0}
-          onKeyDown={(e) => e.key === "Enter" && onChoose("manual")}
+          onKeyDown={(e) => e.key === "Enter" && onChoose(manualValue)}
         >
           <div className="mw-intake-card__icon">
             <svg
@@ -126,7 +134,7 @@ export default function MatterIntakeChoice({
               <polyline points="10 9 9 9 8 9" />
             </svg>
           </div>
-          <h4 className="mw-intake-card__title">Manual Calculator</h4>
+          <h4 className="mw-intake-card__title">{manualLabel}</h4>
           <ul className="mw-intake-card__features">
             {manualFeatures.map((f, i) => (
               <li key={i}>{f}</li>
