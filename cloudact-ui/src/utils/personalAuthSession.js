@@ -19,7 +19,7 @@ import { decrypt, encrypt } from "./Encrypted";
 
 // Routes.jsx gates pages on these flags (state.accessPages.response.auth_*).
 // A personal account gets everything.
-const ALL_ACCESS = {
+export const ALL_ACCESS = {
   auth_archive: true,
   auth_calculator: true,
   auth_compliance_billing: true,
@@ -39,6 +39,30 @@ const ALL_ACCESS = {
   auth_trust_deposit_slip: true,
   auth_workflow: true,
 };
+
+export function buildPersonalCompanyInfo(userInfo = {}) {
+  return {
+    company_name: userInfo.company_name || "Personal Account",
+    short_firmname:
+      userInfo.short_firmname || userInfo.username || userInfo.email || "Personal Account",
+    legaladdress: {
+      Line1: "",
+      CountrySubDivisionCode: userInfo.province || "ON",
+      Country: "Canada",
+    },
+  };
+}
+
+export function buildPersonalProfileInfo(userInfo = {}) {
+  return {
+    ...userInfo,
+    first_name: userInfo.first_name || userInfo.firstName || userInfo.name || "",
+    last_name: userInfo.last_name || userInfo.lastName || "",
+    username: userInfo.username || userInfo.name || userInfo.email || "CloudAct User",
+    email: userInfo.email || "",
+    profile_pic: userInfo.profile_pic || userInfo.profilePic || "",
+  };
+}
 
 const SESSION_COOKIE_NAMES = [
   "token",
@@ -126,17 +150,7 @@ export function seedSessionCookies(userInfo, accessToken) {
   Cookies.set("currentUserRole", encrypt(role), opts);
   Cookies.set("access_pages", encrypt(ALL_ACCESS), opts);
   Cookies.set("userProfile", encrypt(role), opts);
-  Cookies.set(
-    "companyInfo",
-    encrypt({
-      legaladdress: {
-        Line1: "",
-        CountrySubDivisionCode: userInfo.province || "ON",
-        Country: "Canada",
-      },
-    }),
-    opts
-  );
+  Cookies.set("companyInfo", encrypt(buildPersonalCompanyInfo(userInfo)), opts);
   Cookies.set("authClio", "true", opts);
   Cookies.set("authIntuit", "true", opts);
   Cookies.set("province", JSON.stringify(userInfo.province || "ON"), opts);

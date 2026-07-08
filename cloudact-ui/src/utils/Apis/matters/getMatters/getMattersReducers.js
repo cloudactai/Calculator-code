@@ -2,7 +2,7 @@ import * as types from './getMattersConstants';
 
 const initialState = {
     loading: true,
-    response: null,
+    response: { code: 200, status: "success", body: [] },
     error: null,
   };
 
@@ -18,10 +18,14 @@ export const getMattersReducer = (state = initialState, action) => {
 
         case types.GET_MATTERS_FAIL:
             console.log(action.type)
-            return {...state, loading: false, response:null, error: null};
+            return {
+                ...state,
+                loading: false,
+                response: { code: 200, status: "success", body: [] },
+                error: action.payload || "Error"
+            };
 
         default:
             return state;
     }
 }
-

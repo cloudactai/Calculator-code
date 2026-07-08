@@ -2,6 +2,9 @@ import { fetchRequest } from '../../../fetchRequest'
 import { getUserSID } from '../../../helpers'
 import * as types from './getSingleMattersDataConstants'
 
+const normalizeDataType = dataType =>
+  dataType === 'debt' ? 'debtsLiabilities' : dataType
+
 export const fetchMatterDataRequest = () => ({
   type: types.GET_SINGLE_MATTERS_DATA_REQUEST
 })
@@ -22,81 +25,84 @@ export const fetchMatterDataReset = () => ({
 
 export const getSingleMatterData = (getData, dataType) => {
   return async dispatch => {
-    dispatch(fetchSingleMatterDataRequest(dataType))
+    const normalizedDataType = normalizeDataType(dataType)
+    dispatch(fetchSingleMatterDataRequest(normalizedDataType))
     try {
       const { data } = await fetchRequest(
         'get',
-        `get_single_matter_data/${getUserSID()}/${getData}/${dataType}`
+        `get_single_matter_data/${getUserSID()}/${getData}/${normalizedDataType}`
       )
 
-      if (dataType === 'court') {
+      if (normalizedDataType === 'court') {
         dispatch({ type: types.GET_SINGLE_MATTERS_COURT_DATA_SUCCESS, payload: data.data})
       }
-      if (dataType === 'background') {
+      if (normalizedDataType === 'background') {
         dispatch({ type: types.GET_SINGLE_MATTERS_BACKGROUND_DATA_SUCCESS, payload: data.data})
       }
-      if (dataType === 'relationship') {
+      if (normalizedDataType === 'relationship') {
         dispatch({ type: types.GET_SINGLE_MATTERS_RELATIONSHIP_DATA_SUCCESS, payload: data.data})
       }
-      if (dataType === 'children') {
+      if (normalizedDataType === 'children') {
         dispatch({ type: types.GET_SINGLE_MATTERS_CHILDREN_DATA_SUCCESS, payload: data.data})
       }
-      if (dataType === 'employment') {
+      if (normalizedDataType === 'employment') {
         dispatch({ type: types.GET_SINGLE_MATTERS_EMPLOYMENT_DATA_SUCCESS, payload: data.data})
       }
-      if (dataType === 'incomeBenefits') {
+      if (normalizedDataType === 'incomeBenefits') {
         dispatch({ type: types.GET_SINGLE_MATTERS_INCOMEBENEFITS_DATA_SUCCESS, payload: data.data})
       }
-      if (dataType === 'assets') {
+      if (normalizedDataType === 'assets') {
         dispatch({ type: types.GET_SINGLE_MATTERS_ASSETS_DATA_SUCCESS, payload: data.data})
       }
-      if (dataType === 'expenses') {
+      if (normalizedDataType === 'expenses') {
         dispatch({ type: types.GET_SINGLE_MATTERS_EXPENSE_DATA_SUCCESS, payload: data.data})
       }
-      if (dataType === 'debtsLiabilities') {
+      if (normalizedDataType === 'debtsLiabilities') {
         
         dispatch({ type: types.GET_SINGLE_MATTERS_DEBT_DATA_SUCCESS, payload: data.data})
       }
-      if (dataType === 'otherPersons') {
+      if (normalizedDataType === 'otherPersons') {
         dispatch({ type: types.GET_SINGLE_MATTERS_OTHER_PERSONS_DATA_SUCCESS, payload: data.data})
       }
       // dispatch(fetchMatterDataSuccess(data.data))
     } catch (error) {
+      dispatch(getSingleMatterDataFail(normalizedDataType))
       dispatch(fetchMatterDataFailure(error))
     }
   }
 }
 
 export const fetchSingleMatterDataRequest  = dataType =>  async dispatch =>  {
+  const normalizedDataType = normalizeDataType(dataType)
 
-  if (dataType === 'court') {
+  if (normalizedDataType === 'court') {
     dispatch({ type: types.GET_SINGLE_MATTERS_COURT_DATA_REQUEST})
   }
-  if (dataType === 'background') {
+  if (normalizedDataType === 'background') {
     dispatch({ type: types.GET_SINGLE_MATTERS_BACKGROUND_DATA_REQUEST})
   }
-  if (dataType === 'relationship') {
+  if (normalizedDataType === 'relationship') {
     dispatch({ type: types.GET_SINGLE_MATTERS_RELATIONSHIP_DATA_REQUEST})
   }
-  if (dataType === 'children') {
+  if (normalizedDataType === 'children') {
     dispatch({ type: types.GET_SINGLE_MATTERS_CHILDREN_DATA_REQUEST})
   }
-  if (dataType === 'employment') {
+  if (normalizedDataType === 'employment') {
     dispatch({ type: types.GET_SINGLE_MATTERS_EMPLOYMENT_DATA_REQUEST})
   }
-  if (dataType === 'incomeBenefits') {
+  if (normalizedDataType === 'incomeBenefits') {
     dispatch({ type: types.GET_SINGLE_MATTERS_INCOMEBENEFITS_DATA_REQUEST})
   }
-  if (dataType === 'assets') {
+  if (normalizedDataType === 'assets') {
     dispatch({ type: types.GET_SINGLE_MATTERS_ASSETS_DATA_REQUEST})
   }
-  if (dataType === 'expenses') {
+  if (normalizedDataType === 'expenses') {
     dispatch({ type: types.GET_SINGLE_MATTERS_EXPENSE_DATA_REQUEST})
   }
-  if (dataType === 'debtsLiabilities') {
+  if (normalizedDataType === 'debtsLiabilities') {
     dispatch({ type: types.GET_SINGLE_MATTERS_DEBT_DATA_REQUEST})
   }
-  if (dataType === 'otherPersons') {
+  if (normalizedDataType === 'otherPersons') {
     dispatch({ type: types.GET_SINGLE_MATTERS_OTHER_PERSONS_DATA_REQUEST})
   }
 
@@ -104,31 +110,32 @@ export const fetchSingleMatterDataRequest  = dataType =>  async dispatch =>  {
 
 export const getSingleMatterDataReset = (dataType) => async dispatch => {
   // console.log('Single Matter Reset', dataType)
-  if (dataType === 'relationship') {
+  const normalizedDataType = normalizeDataType(dataType)
+  if (normalizedDataType === 'relationship') {
     dispatch({ type: types.GET_SINGLE_MATTERS_RELATIONSHIP_DATA_RESET})
   }
-  if (dataType === 'background') {
+  if (normalizedDataType === 'background') {
     dispatch({ type: types.GET_SINGLE_MATTERS_BACKGROUND_DATA_RESET})
   }
-  if (dataType === 'employment') {
+  if (normalizedDataType === 'employment') {
     dispatch({ type: types.GET_SINGLE_MATTERS_EMPLOYMENT_DATA_RESET})
   }
-  if (dataType === 'assets') {
+  if (normalizedDataType === 'assets') {
     dispatch({ type: types.GET_SINGLE_MATTERS_ASSETS_DATA_RESET})
   }
-  if (dataType === 'children') {
+  if (normalizedDataType === 'children') {
     dispatch({ type: types.GET_SINGLE_MATTERS_CHILDREN_DATA_RESET})
   }
-  if (dataType === 'incomeBenefits') {
+  if (normalizedDataType === 'incomeBenefits') {
     dispatch({ type: types.GET_SINGLE_MATTERS_INCOMEBENEFITS_DATA_RESET})
   }
-  if (dataType === 'expenses') {
+  if (normalizedDataType === 'expenses') {
     dispatch({ type: types.GET_SINGLE_MATTERS_EXPENSE_DATA_RESET})
   }
-  if (dataType === 'debtsLiabilities') {
+  if (normalizedDataType === 'debtsLiabilities') {
     dispatch({ type: types.GET_SINGLE_MATTERS_DEBT_DATA_RESET})
   }
-  if (dataType === 'otherPersons') {
+  if (normalizedDataType === 'otherPersons') {
     dispatch({ type: types.GET_SINGLE_MATTERS_OTHER_PERSONS_DATA_RESET})
   }
   // dispatch(ResetMatterSingleData(dataType))
@@ -136,31 +143,32 @@ export const getSingleMatterDataReset = (dataType) => async dispatch => {
 
 export const getSingleMatterDataFail = (dataType) => async dispatch => {
   // console.log('Single Matter Reset', dataType)
-  if (dataType === 'relationship') {
+  const normalizedDataType = normalizeDataType(dataType)
+  if (normalizedDataType === 'relationship') {
     dispatch({ type: types.GET_SINGLE_MATTERS_RELATIONSHIP_DATA_FAIL})
   }
-  if (dataType === 'background') {
+  if (normalizedDataType === 'background') {
     dispatch({ type: types.GET_SINGLE_MATTERS_BACKGROUND_DATA_FAIL})
   }
-  if (dataType === 'employment') {
+  if (normalizedDataType === 'employment') {
     dispatch({ type: types.GET_SINGLE_MATTERS_EMPLOYMENT_DATA_FAIL})
   }
-  if (dataType === 'assets') {
+  if (normalizedDataType === 'assets') {
     dispatch({ type: types.GET_SINGLE_MATTERS_ASSETS_DATA_FAIL})
   }
-  if (dataType === 'children') {
+  if (normalizedDataType === 'children') {
     dispatch({ type: types.GET_SINGLE_MATTERS_CHILDREN_DATA_FAIL})
   }
-  if (dataType === 'incomeBenefits') {
+  if (normalizedDataType === 'incomeBenefits') {
     dispatch({ type: types.GET_SINGLE_MATTERS_INCOMEBENEFITS_DATA_FAIL})
   }
-  if (dataType === 'expenses') {
+  if (normalizedDataType === 'expenses') {
     dispatch({ type: types.GET_SINGLE_MATTERS_EXPENSE_DATA_FAIL})
   }
-  if (dataType === 'debtsLiabilities') {
+  if (normalizedDataType === 'debtsLiabilities') {
     dispatch({ type: types.GET_SINGLE_MATTERS_DEBT_DATA_FAIL})
   }
-  if (dataType === 'otherPersons') {
+  if (normalizedDataType === 'otherPersons') {
     dispatch({ type: types.GET_SINGLE_MATTERS_OTHER_PERSONS_DATA_FAIL})
   }
   // dispatch(ResetMatterSingleData(dataType))

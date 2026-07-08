@@ -70,13 +70,18 @@ export enum AUTH_ROUTES {
 
 export enum UN_AUTH_ROUTES {
   SIGNIN = "/signIn",
+  LOGIN = "/login",
   CREATE_ACCOUNT = "/createAccount",
+  SIGNUP = "/signup",
   CONFIRM_ACTIVATE = "/confirm/activate",
   OAUTH_APPROVAL = "/oauth/approval",
   CREATE_CLIENT = "/create/client",
   CREATE_CLIENT_AND_ASSOCIATE = "/create/clientAssociation",
   ACTIVATE_CLIENT_ACCOUNT = "/activate/client/account",
   FORGET_PASSWORD = "/forgetpassword",
+  FORGOT_PASSWORD = "/forgot-password",
   RESET_PASSWORD = "/resetpassword",
+  CHECK_EMAIL = "/check-email",
+  VERIFY_EMAIL = "/verify-email",
   NEW_PASSWORD_SET = "/newPasswordSet",
 }

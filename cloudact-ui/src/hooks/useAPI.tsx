@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import axios from '../utils/axios';
+import axios from '../utils/dataAxios';
 import { getBodyStatusCode } from '../utils/helpers';
 
 type IProps = {

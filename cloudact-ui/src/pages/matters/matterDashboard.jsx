@@ -8,6 +8,7 @@ import { getAllMatters } from "../../utils/Apis/matters/getMatters/getMattersAct
 import { createMatter } from "../../utils/Apis/matters/createMatters/createMattersActions";
 import {
   selectMattersData,
+  selectMattersError,
   selectMattersLoading,
 } from "../../utils/Apis/matters/getMatters/getMattersSelectors";
 import Loader from "../../components/Loader";
@@ -42,7 +43,7 @@ const MatterDashboard = () => {
   };
 
   const handleNextClick = () => {
-    if (currentPage < Math.ceil(userMatters.body.length / itemsPerPage)) {
+    if (currentPage < totalPages) {
       paginate(currentPage + 1);
     }
   };
@@ -93,25 +94,28 @@ const MatterDashboard = () => {
    * This is a selector to get the user matters from the redux store
    */
   const userMatters = useSelector(selectMattersData);
+  const matterRows = Array.isArray(userMatters?.body) ? userMatters.body : [];
 
   // Calculate the indices of the first and last items on the current page
   const indexOfLastItem = currentPage * itemsPerPage;
   const indexOfFirstItem = indexOfLastItem - itemsPerPage;
   const filteredMatters =
-    userMatters?.body?.filter((item) => {
+    matterRows.filter((item) => {
       const term = searchTerm.toLowerCase();
       return (
-        item.matterNumber.toLowerCase().includes(term) ||
-        item.client_id.toLowerCase().includes(term) ||
-        item.source.toLowerCase().includes(term)
+        String(item.matterNumber || "").toLowerCase().includes(term) ||
+        String(item.client_id || "").toLowerCase().includes(term) ||
+        String(item.source || "").toLowerCase().includes(term)
       );
     }) || [];
 
   const currentItems = filteredMatters.slice(indexOfFirstItem, indexOfLastItem);
-  console.log("[CLOUDACT-MATTER] userMatters.body count:", userMatters?.body?.length, "filteredMatters count:", filteredMatters.length, "currentItems count:", currentItems.length);
+  const totalPages = Math.max(1, Math.ceil(filteredMatters.length / itemsPerPage));
+  console.log("[CLOUDACT-MATTER] userMatters.body count:", matterRows.length, "filteredMatters count:", filteredMatters.length, "currentItems count:", currentItems.length);
   console.log("[CLOUDACT-MATTER] currentItems matterNumbers:", currentItems.map(i => i.matterNumber));
 
   const selectMatterLoading = useSelector(selectMattersLoading);
+  const selectMatterError = useSelector(selectMattersError);
 
   /**
    * Create a New Matter
@@ -127,8 +131,8 @@ const MatterDashboard = () => {
    * @param {string} state.childrenInvolved - Whether children are involved ("Yes"/"No")
    * @param {string} state.province - Province where matter is filed
    */
-  const handleContinue = (state) => {
-    const mattersCount = userMatters?.body.length || 0; // Ensure mattersCount is defined
+  const handleContinue = async (state) => {
+    const mattersCount = matterRows.length; // Ensure mattersCount is defined
     let matter_number = null;
     if(state && state.matterNumber){
       matter_number = state.matterNumber
@@ -156,8 +160,12 @@ const MatterDashboard = () => {
       state.province
     ) {
       // setMatterNumber(matter_number)
-      dispatch(createMatter(formData));
-      history.push(`/single-matter/${matter_number}`);
+      const createdMatter = await dispatch(createMatter(formData));
+      if (createdMatter) {
+        setMatterModalShow(false);
+        history.push(`/single-matter/${matter_number}`);
+      }
+      return;
     }
     setMatterModalShow(false);
   };
@@ -318,7 +326,15 @@ const MatterDashboard = () => {
                     </tr>
                   </thead>
                   <tbody>
-                    {currentItems.map((item, key) => {
+                    {currentItems.length === 0 ? (
+                      <tr>
+                        <td colSpan="6" className="text-center py-4">
+                          {selectMatterError
+                            ? "Unable to load matters. Please refresh and try again."
+                            : "No matters yet."}
+                        </td>
+                      </tr>
+                    ) : currentItems.map((item, key) => {
                       console.log("[CLOUDACT-MATTER] rendering row", key, "matterNumber:", item.matterNumber, "client_id:", item.client_id, "full item keys:", Object.keys(item));
                       return (
                       <tr key={key}>
@@ -363,7 +379,7 @@ const MatterDashboard = () => {
                         {/* Page Numbers with Slicing */}
                         {[
                           ...Array(
-                            Math.ceil(userMatters.body.length / itemsPerPage)
+                            totalPages
                           ),
                         ]
                           .map((_, index) => index + 1) // Generate page numbers
@@ -384,8 +400,7 @@ const MatterDashboard = () => {
                         {/* Next Button */}
                         <PaginationBStrap.Next
                           disabled={
-                            currentPage ===
-                            Math.ceil(userMatters.body.length / itemsPerPage)
+                            currentPage === totalPages
                           }
                           onClick={handleNextClick}
                         />

@@ -1,4 +1,4 @@
-import axios from '../../axios'
+import axios from '../../dataAxios'
 import { getBodyStatusCode } from "../../helpers";
 
 const fetchCalculatorDataByID = async(id: number) => {

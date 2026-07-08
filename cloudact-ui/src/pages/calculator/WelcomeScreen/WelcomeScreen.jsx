@@ -4,7 +4,7 @@ import Layout from "../../../components/LayoutComponents/Layout";
 import RadioInput from "../../../components/LayoutComponents/RadioInput";
 import { getAllUserInfo, getUserSID } from "../../../utils/helpers";
 import calculationImg from "../../../assets/images/calculationImg.svg";
-import axios from "../../../utils/axios";
+import axios from "../../../utils/dataAxios";
 import {
   CHILD_SUPPORT_CAL,
   SPOUSAL_SUPPORT_CAL,

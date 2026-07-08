@@ -15,6 +15,7 @@ const dotenv = require("dotenv");
 dotenv.config({ path: path.join(__dirname, ".env") });
 
 const authRoutes = require("./src/routes/authRoutes");
+const mattersRoutes = require("./src/routes/mattersRoutes");
 
 const app = express();
 const REQUEST_SIZE_LIMIT = "5mb"; // room for base64 avatar uploads
@@ -64,7 +65,26 @@ app.use((req, res, next) => {
 app.use(express.json({ limit: REQUEST_SIZE_LIMIT }));
 
 app.use("/api", authRoutes);
+// Legacy-compatible per-user data routes (matters + saved calculations); the
+// frontend's old /v1 modules point here now instead of the law-firm backend.
+app.use("/v1", mattersRoutes);
 app.get("/api/health", (req, res) => res.json({ status: "ok" }));
+
+// ── Error handler ────────────────────────────────────────────────────────────
+// Without this, a CORS rejection (or any middleware throw) falls through to
+// Express's default handler and returns an opaque HTML 500 page.
+// eslint-disable-next-line no-unused-vars
+app.use((err, req, res, next) => {
+  if (err && err.message === "Origin not allowed by CORS") {
+    return res.status(403).json({ ok: false, message: "Origin not allowed." });
+  }
+  // express.json() throws on unparseable bodies — client error, not ours.
+  if (err && (err.type === "entity.parse.failed" || err.status === 400)) {
+    return res.status(400).json({ ok: false, message: "Invalid JSON body." });
+  }
+  console.error("Unhandled error:", err?.message || err);
+  return res.status(500).json({ ok: false, message: "Internal server error." });
+});
 
 const PORT = process.env.PORT || 8080;
 app.listen(PORT, () => {

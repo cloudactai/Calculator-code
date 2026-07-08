@@ -1,12 +1,23 @@
-import Cookies from "js-cookie";
 import { COMPANY_INFO_FAIL, COMPANY_INFO_REQUEST, COMPANY_INFO_SUCCESS } from "../constants/companyConstants";
 import { fetchRequest } from "../utils/fetchRequest";
-import { getUserSID } from "../utils/helpers";
+import { getCurrentUserFromCookies, getUserSID } from "../utils/helpers";
 import CookiesParser from "../utils/cookieParser/Cookies";
 import axios from "../utils/axios";
+import {
+    buildPersonalCompanyInfo,
+    isPersonalAuthUser,
+} from "../utils/personalAuthSession";
 
 export const companyInfoAction = (state = {}, action) => async (dispatch) => {
     try {
+        const currentUser = getCurrentUserFromCookies();
+        if (isPersonalAuthUser(currentUser)) {
+            const companyDataBody = buildPersonalCompanyInfo(currentUser);
+            CookiesParser.set("companyInfo", companyDataBody, { path: "/" });
+            dispatch({ type: COMPANY_INFO_SUCCESS, payload: companyDataBody });
+            return;
+        }
+
         const sid = getUserSID();
         const companyDataResponse = await axios.get(`/getcompanydata/${sid}`);
         console.log("Company Data Response:", companyDataResponse.data);

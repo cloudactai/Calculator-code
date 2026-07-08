@@ -6,6 +6,10 @@ import { getUserSID, getUserId, getCurrentUserFromCookies, updateInfoInCurrentUs
 import toast from "react-hot-toast";
 import React, { useEffect } from "react";
 import { Roles } from "../../routes/Role.types";
+import {
+  buildPersonalCompanyInfo,
+  isPersonalAuthUser,
+} from "../../utils/personalAuthSession";
 
 const Layout = ({ children, title }) => {
   const { sidebarCollapse } = useSelector((state) => state.userChange);
@@ -46,6 +50,12 @@ const Layout = ({ children, title }) => {
   const fetchCompanyData = async () => {
     try {
       console.log("Fetching company data...");
+      const currentUser = getCurrentUserFromCookies();
+      if (isPersonalAuthUser(currentUser)) {
+        updateInfoInCurrentUser({ province: currentUser.province || "ON" });
+        return buildPersonalCompanyInfo(currentUser);
+      }
+
       const sid = getUserSID();
 
       const res = await axios.get(`/companyinfo/${sid}`);
@@ -87,6 +97,14 @@ const Layout = ({ children, title }) => {
     const fetchData = async () => {
       console.log("Checking user role and fetching company data...");
       const user = getCurrentUserFromCookies();
+
+      if (!user) {
+        return;
+      }
+
+      if (isPersonalAuthUser(user)) {
+        return;
+      }
 
       if (user.role !== "SUPERADMIN") {
         try {

@@ -24,6 +24,7 @@ import {
   getCurrentUserFromCookies,
   getCompanyInfo,
   getAccessPagesInfo,
+  getUserProfileInfo,
 } from "../utils/helpers";
 import { companyInformationReducer } from "../reducers/companyReducer";
 import { dynamicValuesReducer } from "../reducers/dynamicValuesReducer";
@@ -107,7 +108,7 @@ const initialState = {
   accessPages: { loading: false, response: getAccessPagesInfo() },
   userProfileInfo: {
     loading: false,
-    response: {
+    response: getUserProfileInfo() || {
       first_name: "",
       last_name: "",
     },

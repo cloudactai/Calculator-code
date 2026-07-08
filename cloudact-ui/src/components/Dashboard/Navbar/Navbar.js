@@ -58,6 +58,9 @@ interface InavLinksInfo {
 // to restore the full sidebar.
 const TRIMMED_SIDEBAR = false;
 
+// Hide Reports, Tasks, and Archive from the sidebar. Set to true to restore them.
+const SHOW_REPORTS_TASKS_ARCHIVE = false;
+
 const Navbar = () => {
   const dispatch = useDispatch();
   const { userRole } = useSelector((state) => state.userChange);
@@ -115,7 +118,9 @@ const Navbar = () => {
       name: "Dashboard",
       linkTo: AUTH_ROUTES.DASHBOARD,
       icon: <LuLayoutDashboard color="#171d34" size={20} />,
-      auth: accessPagesState?.auth_dashboard,
+      // Always available. accessPages flags aren't populated on first login
+      // (they load only after visiting Home), so don't gate on them.
+      auth: true,
       accessTo: r_all,
     },
   ];
@@ -213,11 +218,13 @@ const Navbar = () => {
             {userRole.role == Roles.SUPERADMIN &&
               navLinksInfoSuperAdmin_1.map((e) => Render_link(e))}
             {navLinkHome.map((e) => Render_link(e))}
-            {!TRIMMED_SIDEBAR && accessPagesState?.auth_dashboard
+            {!TRIMMED_SIDEBAR
               ? navLinksInfo_1.map((e) => Render_link(e))
               : null}
 
-            {!TRIMMED_SIDEBAR && accessPagesState?.auth_reports ? (
+            {!TRIMMED_SIDEBAR &&
+            SHOW_REPORTS_TASKS_ARCHIVE &&
+            accessPagesState?.auth_reports ? (
               <a
                 href="javascript:void(0)"
                 className="1"
@@ -242,7 +249,7 @@ const Navbar = () => {
               </a>
             ) : null}
 
-            {!TRIMMED_SIDEBAR && isReportsOpen && (
+            {!TRIMMED_SIDEBAR && SHOW_REPORTS_TASKS_ARCHIVE && isReportsOpen && (
               <>
                 {accessPagesState?.auth_run_report ? (
                   <NavbarLinkCustom
@@ -279,7 +286,9 @@ const Navbar = () => {
               </>
             )}
 
-            {!TRIMMED_SIDEBAR && accessPagesState?.auth_tasks ? (
+            {!TRIMMED_SIDEBAR &&
+            SHOW_REPORTS_TASKS_ARCHIVE &&
+            accessPagesState?.auth_tasks ? (
               <a
                 href="javascript:void(0)"
                 onClick={() => setIsTasksOpen(!isTasksOpen)}
@@ -303,7 +312,7 @@ const Navbar = () => {
               </a>
             ) : null}
 
-            {!TRIMMED_SIDEBAR && isTasksOpen && (
+            {!TRIMMED_SIDEBAR && SHOW_REPORTS_TASKS_ARCHIVE && isTasksOpen && (
               <>
                 {accessPagesState?.auth_monthly_checklists ? (
                   <NavbarLinkCustom
@@ -365,7 +374,9 @@ const Navbar = () => {
               </>
             )}
 
-            {accessPagesState?.auth_law_tools ? (
+            {/* Family Law Tools always visible: accessPages flags load only
+                after Home mounts, so gating here hides it on first login. */}
+            {true ? (
               <a
                 href="javascript:void(0)"
                 onClick={() => setIsToolsOpen((prev) => !prev)}
@@ -390,49 +401,43 @@ const Navbar = () => {
 
             {isToolsOpen && (
               <>
-                {accessPagesState?.auth_matters ? (
-                  <NavbarLinkCustom
-                    classes={`inner`}
-                    eachLink={{
-                      name: "Matter",
-                      linkTo: AUTH_ROUTES.MATTER_DASHBOARD,
-                      type: "CHILD",
-                      auth: accessPagesState?.auth_matters,
-                    }}
-                  />
-                ) : null}
-                {accessPagesState?.auth_calculator ? (
-                  <NavbarLinkCustom
-                    classes={`inner`}
-                    eachLink={{
-                      name: "Calculator",
-                      type: "CHILD",
-                      linkTo: AUTH_ROUTES.SUPPORT_CALCULATOR,
-                      icon: <HiOutlineCalculator color="#171d34" size={24} />,
-                      auth: accessPagesState?.auth_calculator,
-                      accessTo: r_all,
-                    }}
-                  />
-                ) : null}
-                {accessPagesState?.auth_forms ? (
-                  <NavbarLinkCustom
-                    classes={`inner`}
-                    eachLink={{
-                      name: "Forms",
-                      type: "CHILD",
-                      linkTo: AUTH_ROUTES.FORMS_CREATE_NEW,
-                      icon: (
-                        <HiOutlineClipboardList color="#171d34" size={24} />
-                      ),
-                      auth: accessPagesState?.auth_forms,
-                      accessTo: r_all,
-                    }}
-                  />
-                ) : null}
+                <NavbarLinkCustom
+                  classes={`inner`}
+                  eachLink={{
+                    name: "Matter",
+                    linkTo: AUTH_ROUTES.MATTER_DASHBOARD,
+                    type: "CHILD",
+                    auth: true,
+                  }}
+                />
+                <NavbarLinkCustom
+                  classes={`inner`}
+                  eachLink={{
+                    name: "Calculator",
+                    type: "CHILD",
+                    linkTo: AUTH_ROUTES.SUPPORT_CALCULATOR,
+                    icon: <HiOutlineCalculator color="#171d34" size={24} />,
+                    auth: true,
+                    accessTo: r_all,
+                  }}
+                />
+                <NavbarLinkCustom
+                  classes={`inner`}
+                  eachLink={{
+                    name: "Forms",
+                    type: "CHILD",
+                    linkTo: AUTH_ROUTES.FORMS_CREATE_NEW,
+                    icon: <HiOutlineClipboardList color="#171d34" size={24} />,
+                    auth: true,
+                    accessTo: r_all,
+                  }}
+                />
               </>
             )}
 
-            {!TRIMMED_SIDEBAR && accessPagesState?.auth_archive
+            {!TRIMMED_SIDEBAR &&
+            SHOW_REPORTS_TASKS_ARCHIVE &&
+            accessPagesState?.auth_archive
               ? navLinksArchive.map((e) => Render_link(e))
               : null}
 

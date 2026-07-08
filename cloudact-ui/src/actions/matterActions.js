@@ -10,13 +10,16 @@ import {
   CLEAR_CLIENT_DETAILS_FROM_FILE_FAIL,
 } from "../constants/matterConstants";
 import axios from "../utils/axios";
+import dataAxios from "../utils/dataAxios";
 import { getUserSID } from "../utils/helpers";
 
 export const matterClientsAction = () => async (dispatch) => {
   try {
     dispatch({ type: MATTER_CLIENT_REQUEST });
 
-    const { data } = await axios.get(`/clients?sid=${getUserSID()}`);
+    // Clients now come from the personal auth-server (derived from the
+    // user's own matters), not the legacy law-firm backend.
+    const { data } = await dataAxios.get(`/clients?sid=${getUserSID()}`);
     if (data.data.code === 200 && data.data.status !== "error") {
       const {
         data: { body },

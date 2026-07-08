@@ -2,7 +2,7 @@ import {GET_SINGLE_MATTERS_REQUEST,GET_SINGLE_MATTERS_SUCCESS,GET_SINGLE_MATTERS
 
 const initialState = {
     loading: true,
-    data: null,
+    data: { code: 200, status: "success", body: [] },
     error: null,
   };
 
@@ -15,6 +15,7 @@ const initialState = {
         return {
           ...state,
           loading: true,
+          data: { code: 200, status: "success", body: [] },
           error: null,
         };
       case GET_SINGLE_MATTERS_SUCCESS:
@@ -29,12 +30,13 @@ const initialState = {
         return {
           ...state,
           loading: false,
-          data: null,
+          data: { code: 200, status: "success", body: [] },
         };
       case GET_SINGLE_MATTERS_FAIL:
         return {
           ...state,
           loading: false,
+          data: { code: 200, status: "success", body: [] },
           error: action.payload,
         };
       default:
@@ -44,4 +46,3 @@ const initialState = {
 
   
  
-
