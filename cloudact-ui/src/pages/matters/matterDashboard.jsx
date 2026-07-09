@@ -174,7 +174,11 @@ const MatterDashboard = () => {
     console.log("[CLOUDACT-MATTER] handleOpenMatter called with:", JSON.stringify({ id: matter?.id, matterNumber: matter?.matterNumber, client_id: matter?.client_id }));
     if (!matter) return;
     console.log("[CLOUDACT-MATTER] navigating to:", `/single-matter/${matter.matterNumber}`);
-    history.push(`/single-matter/${matter.matterNumber}`);
+    // Carry the client name so the single-matter header can show it even if the
+    // get_single_matter response omits client_id.
+    history.push(`/single-matter/${matter.matterNumber}`, {
+      clientName: matter.client_id,
+    });
   };
 
   return (

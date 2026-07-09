@@ -152,7 +152,8 @@ const SingleMatter = () => {
     }
   }, [matterData, id, backgroundData, childrenData, relationshipData, incomeBenefitsData, employmentData, assetsData, expenseData, debtData, courtData]);
 
-  const matterName = matterData?.client_id || "Matter";
+  const matterName =
+    matterData?.client_id || history.location?.state?.clientName || "Matter";
   const matterWasNotFound = !singleMatterLoading && !selectSingleMatter?.body?.[0];
 
   // Build task list with statuses and disabled states
@@ -260,6 +261,39 @@ const SingleMatter = () => {
         <div className="single-matter panel trans">
           {/* Matter header */}
           <div className="pHead">
+            <button
+              type="button"
+              className="sm-back-btn"
+              onClick={() => history.push(AUTH_ROUTES.MATTER_DASHBOARD)}
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: "6px",
+                background: "transparent",
+                border: "none",
+                color: "inherit",
+                font: "inherit",
+                cursor: "pointer",
+                padding: "4px 0",
+                marginBottom: "12px",
+                opacity: 0.85,
+              }}
+            >
+              <svg
+                width="18"
+                height="18"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <path d="M19 12H5" />
+                <path d="M12 19l-7-7 7-7" />
+              </svg>
+              Back to Matters
+            </button>
             <div className="info-container">
               <div className="info-row">
                 <div className="label">Client Name:</div>
