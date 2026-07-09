@@ -22,6 +22,18 @@ model User {
   profilePic                 String?   // optional base64 data URL for an avatar
   passwordHash               String
 
+  // Personal profile fields edited on the Profile page.
+  firstName                  String?
+  lastName                   String?
+  phoneNumber                String?
+  description                String?   // the free-text "Job Title" on the profile page
+  signature                  String?   // optional base64 data URL for a signature image
+  // Mailing address (kept separate from the hard-coded calculator region so
+  // editing it here never affects family-law calculations).
+  street                     String?
+  addressProvince            String?
+  country                    String?
+
   // Email verification
   emailVerifiedAt            DateTime?
   emailVerificationTokenHash String?

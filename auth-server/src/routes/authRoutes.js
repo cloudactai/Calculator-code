@@ -150,6 +150,14 @@ function publicUser(user) {
     name: user.name,
     jobTitle: user.jobTitle || null,
     profilePic: user.profilePic || null,
+    firstName: user.firstName || null,
+    lastName: user.lastName || null,
+    phoneNumber: user.phoneNumber || null,
+    description: user.description || null,
+    signature: user.signature || null,
+    street: user.street || null,
+    addressProvince: user.addressProvince || null,
+    country: user.country || null,
     emailVerifiedAt: user.emailVerifiedAt || null,
     createdAt: user.createdAt,
     updatedAt: user.updatedAt,
@@ -163,6 +171,14 @@ const PUBLIC_AUTH_USER_SELECT = {
   name: true,
   jobTitle: true,
   profilePic: true,
+  firstName: true,
+  lastName: true,
+  phoneNumber: true,
+  description: true,
+  signature: true,
+  street: true,
+  addressProvince: true,
+  country: true,
   emailVerifiedAt: true,
   createdAt: true,
   updatedAt: true,
@@ -535,23 +551,47 @@ router.put("/profile", authMiddleware, async (req, res) => {
       keys.some((key) => Object.prototype.hasOwnProperty.call(body, key));
     // Partial update: only touch a column when the request actually carries it.
     // Otherwise a photo-only save (which sends just profilePic) would blank out
-    // the user's name and job title.
+    // the other profile fields.
     const hasName = has("displayName", "name", "username");
+    const hasFirstName = has("firstName", "first_name");
+    const hasLastName = has("lastName", "last_name");
     const hasJobTitle = has("jobTitle", "job_title");
+    const hasDescription = has("description", "bio");
+    const hasPhone = has("phoneNumber", "phone_number");
     const hasProfilePic = has("profilePic", "profile_pic");
+    const hasSignature = has("signature");
+    const hasStreet = has("street");
+    const hasProvince = has("addressProvince", "address_province");
+    const hasCountry = has("country");
 
     const name = normalizeProfileText(body.displayName || body.name || body.username);
+    const firstName = normalizeProfileText(body.firstName || body.first_name);
+    const lastName = normalizeProfileText(body.lastName || body.last_name);
     const jobTitle = normalizeProfileText(body.jobTitle || body.job_title);
+    const description = normalizeProfileText(body.description || body.bio, 500);
+    const phoneNumber = normalizeProfileText(body.phoneNumber || body.phone_number, 40);
+    const street = normalizeProfileText(body.street, 200);
+    const addressProvince = normalizeProfileText(body.addressProvince || body.address_province, 100);
+    const country = normalizeProfileText(body.country, 100);
     const profilePic = hasProfilePic
       ? normalizeProfileImage(body.profilePic || body.profile_pic)
       : undefined;
+    const signature = hasSignature ? normalizeProfileImage(body.signature) : undefined;
 
     const user = await prisma.user.update({
       where: { id: req.user.id },
       data: {
         ...(hasName ? { name: name || null } : {}),
+        ...(hasFirstName ? { firstName: firstName || null } : {}),
+        ...(hasLastName ? { lastName: lastName || null } : {}),
         ...(hasJobTitle ? { jobTitle: jobTitle || null } : {}),
+        ...(hasDescription ? { description: description || null } : {}),
+        ...(hasPhone ? { phoneNumber: phoneNumber || null } : {}),
+        ...(hasStreet ? { street: street || null } : {}),
+        ...(hasProvince ? { addressProvince: addressProvince || null } : {}),
+        ...(hasCountry ? { country: country || null } : {}),
         ...(hasProfilePic ? { profilePic } : {}),
+        ...(hasSignature ? { signature } : {}),
       },
       select: PUBLIC_AUTH_USER_SELECT,
     });

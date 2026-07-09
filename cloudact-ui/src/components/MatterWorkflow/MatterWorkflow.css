@@ -300,6 +300,15 @@
   border-color: #d1d5db;
 }
 
+/* Saved-sections indicator (matter intake) */
+.mw-chat-panel__saved {
+  padding: 8px 20px;
+  font-size: 13px;
+  color: #047857;
+  background: #ecfdf5;
+  border-bottom: 1px solid #d1fae5;
+}
+
 /* Chat window */
 .mw-chat-panel__window {
   flex: 1;

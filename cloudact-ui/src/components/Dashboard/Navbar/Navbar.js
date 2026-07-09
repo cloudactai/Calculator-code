@@ -153,7 +153,7 @@ const Navbar = () => {
     }
 
     if (eachLink.accessTo) {
-      return eachLink.accessTo.includes(userRole.role) ? link : <></>;
+      return eachLink.accessTo.includes(userRole?.role) ? link : <></>;
     } else if (!eachLink.auth) {
       return <></>;
     }
@@ -215,7 +215,7 @@ const Navbar = () => {
         </Link>
         {!accessPagesStateLoading && (
           <div className="sideMenu">
-            {userRole.role == Roles.SUPERADMIN &&
+            {userRole?.role == Roles.SUPERADMIN &&
               navLinksInfoSuperAdmin_1.map((e) => Render_link(e))}
             {navLinkHome.map((e) => Render_link(e))}
             {!TRIMMED_SIDEBAR
@@ -446,7 +446,7 @@ const Navbar = () => {
         )}
 
         <div className="sideMenu">
-          {userRole.role !== Roles.SUPERADMIN && (
+          {userRole?.role !== Roles.SUPERADMIN && (
             <NavbarLinkCustom
               eachLink={{
                 name: "Report issue",
@@ -456,7 +456,7 @@ const Navbar = () => {
             />
           )}
 
-          {userRole.role === Roles.ADMIN && (
+          {userRole?.role === Roles.ADMIN && (
             <NavbarLinkCustom
               eachLink={{
                 name: "Settings",

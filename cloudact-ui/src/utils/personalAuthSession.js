@@ -16,6 +16,12 @@
  */
 import Cookies from "js-cookie";
 import { decrypt, encrypt } from "./Encrypted";
+import {
+  getProfileMedia,
+  saveProfileMedia,
+  clearProfileMedia,
+  stripProfileMedia,
+} from "./profileMedia";
 
 // Routes.jsx gates pages on these flags (state.accessPages.response.auth_*).
 // A personal account gets everything.
@@ -46,9 +52,10 @@ export function buildPersonalCompanyInfo(userInfo = {}) {
     short_firmname:
       userInfo.short_firmname || userInfo.username || userInfo.email || "Personal Account",
     legaladdress: {
-      Line1: "",
-      CountrySubDivisionCode: userInfo.province || "ON",
-      Country: "Canada",
+      Line1: userInfo.street || "",
+      CountrySubDivisionCode:
+        userInfo.address_province || userInfo.province || "ON",
+      Country: userInfo.country || "Canada",
     },
   };
 }
@@ -122,6 +129,9 @@ export function buildLegacyUserInfo(user) {
     phone_number: user?.phone_number || user?.phoneNumber || "",
     profile_pic: user?.profilePic || user?.profile_pic || "",
     signature: user?.signature || "",
+    street: user?.street || "",
+    address_province: user?.addressProvince || user?.address_province || "",
+    country: user?.country || "",
     province: "ON",
     region: "ON",
     // No Clio/QBO in the personal build — marked connected so nothing tries
@@ -144,13 +154,22 @@ export function buildLegacyUserInfo(user) {
 // (also set as an httpOnly cookie server-side).
 export function seedSessionCookies(userInfo, accessToken) {
   const opts = { path: "/" };
-  const role = userInfo.role[0];
 
-  Cookies.set("allUserInfo", encrypt(userInfo), opts);
+  // Keep base64 avatar/signature OUT of cookies (see profileMedia.js): stash
+  // them in localStorage and write only the lean, image-free objects, or the
+  // oversized cookies get silently dropped and the session breaks.
+  saveProfileMedia({
+    profile_pic: userInfo.profile_pic,
+    signature: userInfo.signature,
+  });
+  const leanUserInfo = stripProfileMedia(userInfo);
+  const role = leanUserInfo.role[0];
+
+  Cookies.set("allUserInfo", encrypt(leanUserInfo), opts);
   Cookies.set("currentUserRole", encrypt(role), opts);
   Cookies.set("access_pages", encrypt(ALL_ACCESS), opts);
   Cookies.set("userProfile", encrypt(role), opts);
-  Cookies.set("companyInfo", encrypt(buildPersonalCompanyInfo(userInfo)), opts);
+  Cookies.set("companyInfo", encrypt(buildPersonalCompanyInfo(leanUserInfo)), opts);
   Cookies.set("authClio", "true", opts);
   Cookies.set("authIntuit", "true", opts);
   Cookies.set("province", JSON.stringify(userInfo.province || "ON"), opts);
@@ -162,6 +181,7 @@ export function seedSessionCookies(userInfo, accessToken) {
 export function clearClientSessionCookies() {
   const opts = { path: "/" };
   SESSION_COOKIE_NAMES.forEach((name) => Cookies.remove(name, opts));
+  clearProfileMedia();
 }
 
 export function updatePersonalSessionProfile(profile) {
@@ -190,9 +210,19 @@ export function updatePersonalSessionProfile(profile) {
     email: profile.email ?? current.email,
     description: profile.description ?? current.description,
     phone_number: profile.phone_number ?? current.phone_number,
-    profile_pic: profile.profile_pic ?? current.profile_pic,
+    street: profile.street ?? current.street,
+    address_province: profile.address_province ?? current.address_province,
+    country: profile.country ?? current.country,
     TFA: profile.TFA ?? current.TFA,
   };
+
+  // Media lives in localStorage, not the (stripped) cookie — so the fallback
+  // for an unchanged image is the stored media, never `current.*`.
+  const media = getProfileMedia();
+  saveProfileMedia({
+    profile_pic: profile.profile_pic ?? media.profile_pic,
+    signature: profile.signature ?? media.signature,
+  });
 
   nextUserInfo.role = (nextUserInfo.role || []).map((role) => ({
     ...role,
@@ -200,10 +230,14 @@ export function updatePersonalSessionProfile(profile) {
     role: role.role,
   }));
 
-  const currentRole = nextUserInfo.role[0] || nextUserInfo;
-  Cookies.set("allUserInfo", encrypt(nextUserInfo), opts);
+  const leanUserInfo = stripProfileMedia(nextUserInfo);
+  const currentRole = leanUserInfo.role[0] || leanUserInfo;
+  Cookies.set("allUserInfo", encrypt(leanUserInfo), opts);
   Cookies.set("currentUserRole", encrypt(currentRole), opts);
   Cookies.set("userProfile", encrypt(currentRole), opts);
+  // The Address panel reads from companyInfo, so refresh it too — otherwise a
+  // saved address wouldn't show until the next login rebuilds the cookie.
+  Cookies.set("companyInfo", encrypt(buildPersonalCompanyInfo(leanUserInfo)), opts);
   return currentRole;
 }
 

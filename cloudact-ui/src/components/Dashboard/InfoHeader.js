@@ -437,7 +437,7 @@ const InfoHeader = ({ title }) => {
       });
   };
 
-  const curClientList = userInfo.role;
+  const curClientList = userInfo?.role;
   const menuList = [
     {
       option: "Profile",
@@ -495,7 +495,7 @@ const InfoHeader = ({ title }) => {
             <text>
               Clio & QuickBooks were last refreshed on:{" "}
               <span>
-                {userInfo.updated_at
+                {userInfo?.updated_at
                   ? momentFunction.formatDate(
                       userInfo.updated_at,
                       "MMM D, YYYY hh:mm A"
@@ -508,7 +508,7 @@ const InfoHeader = ({ title }) => {
         <div className="controls">
           <Dropdown
             type={
-              getCurrentUserFromCookies().role == Roles.SUPERADMIN
+              getCurrentUserFromCookies()?.role == Roles.SUPERADMIN
                 ? "CloudAct"
                 : "Firmname"
             }
@@ -1280,7 +1280,7 @@ const InfoHeader = ({ title }) => {
 
           <div
             onClick={
-              getCurrentUserFromCookies().role === Roles.SUPERADMIN
+              getCurrentUserFromCookies()?.role === Roles.SUPERADMIN
                 ? undefined // Disables the onClick if the user is SUPERADMIN
                 : (e) => {
                     setOpenMenu((state) => !state);
@@ -1289,7 +1289,7 @@ const InfoHeader = ({ title }) => {
             className="dropdown profile"
           >
             <button className="dropdownBtn">
-              <img src={userInfo.profile_pic || ProfilePic} alt="unknown" />
+              <img src={userInfo?.profile_pic || ProfilePic} alt="unknown" />
               <span>
                 <strong>
                   {" "}

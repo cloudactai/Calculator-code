@@ -10,6 +10,7 @@ import MatterTaskList from "../../components/MatterWorkflow/MatterTaskList";
 import MatterIntakeChoice from "../../components/MatterWorkflow/MatterIntakeChoice";
 import ChildSupportChatPanel from "../../components/MatterWorkflow/ChildSupportChatPanel";
 import SpousalSupportChatPanel from "../../components/MatterWorkflow/SpousalSupportChatPanel";
+import MatterIntakeChatPanel from "../../components/MatterWorkflow/MatterIntakeChatPanel";
 
 import {
   getSingleMatter,
@@ -184,7 +185,8 @@ const SingleMatter = () => {
       if (taskStatuses.matter_intake === "not_started") {
         persistTaskStatus("matter_intake", "in_progress");
       }
-      history.push(`/5-steps/${id}`);
+      // Show the AI-vs-manual choice screen (handleIntakeChoice routes from there).
+      setView("intake_choice");
     } else if (taskId === "child_spousal_support") {
       if (taskStatuses.child_spousal_support === "not_started") {
         persistTaskStatus("child_spousal_support", "in_progress");
@@ -301,16 +303,17 @@ const SingleMatter = () => {
 
             {/* Matter Intake via AI chat */}
             {view === "intake_chat" && (
-              <ChildSupportChatPanel
+              <MatterIntakeChatPanel
                 matterData={fullMatterData}
                 matterId={id}
                 onBack={handleBackToTasks}
                 onComplete={() => {
-                  setTaskStatuses((s) => ({
-                    ...s,
-                    matter_intake: "completed",
-                  }));
-                  setView("tasks");
+                  // Fires on each incremental section save — mark the task underway
+                  // (there is no reliable "all sections done" signal yet). The user
+                  // stays in the chat and returns via "Back to Tasks".
+                  if (taskStatuses.matter_intake !== "completed") {
+                    persistTaskStatus("matter_intake", "in_progress");
+                  }
                 }}
               />
             )}
