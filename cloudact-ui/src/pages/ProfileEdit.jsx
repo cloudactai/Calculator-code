@@ -71,7 +71,10 @@ const ProfileEdit = () => {
     // location: getAllUserInfo().province,
     bio: getAllUserInfo()?.description ?? '',
     areInputDisabled: parseInt(getAllUserInfo().TFA) ?? '',
-    multiVerification: getAllUserInfo()?.TFA === 0 ? false : true,
+    // Phone/SMS 2FA is not wired up yet (the Verify button still posts to the
+    // retired /v1 backend), so keep the whole MFA/phone block hidden for now.
+    // Re-enable by restoring: getAllUserInfo()?.TFA === 0 ? false : true
+    multiVerification: false,
     phone: getAllUserInfo()?.phone_number ?? '',
     verificationRequested: false,
     verificationDone: false,
