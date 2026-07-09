@@ -7,6 +7,7 @@ import { REACT_APP_ENVIRONMENT } from "../config";
 import { decrypt, encrypt,userRole,updatedecrypt } from "./Encrypted";
 import CookiesParser from "./cookieParser/Cookies";
 import toast from "react-hot-toast"
+import { attachProfileMedia } from "./profileMedia";
 
 const determineColor = (e) => {
   return e === "processed" ? "green" : e === "pending" ? "orange" : "red";
@@ -82,8 +83,7 @@ const getAllUserInfo = () => {
 
     i++;
   }
-  console.log('✌️mergedObj --->', mergedObj);
-  return Object.keys(mergedObj).length > 0 ? mergedObj : null; // Return mergedObj if it has keys, otherwise null
+  return Object.keys(mergedObj).length > 0 ? attachProfileMedia(mergedObj) : null; // Return mergedObj if it has keys, otherwise null
 };
 
 
@@ -94,7 +94,7 @@ const getAllUserInfo = () => {
 const getUserProfileInfo = () => {
   let userProfile = CookiesParser.get('userProfile')
   return userProfile
-    ? decrypt(userProfile)
+    ? attachProfileMedia(decrypt(userProfile))
     : null;
 };
 
@@ -155,7 +155,8 @@ const getUserId = () => {
 
 const getUserSID = () => {
   let getSide = CookiesParser.get("currentUserRole")
-  const { sid } = decrypt(getSide)
+  if (!getSide) return undefined;
+  const { sid } = decrypt(getSide) || {};
   return sid;
 };
 
@@ -393,7 +394,7 @@ console.log('✌️valXXXXXXue --->', value);
 const getCurrentUserFromCookies = () => {
   let currentUserRole =  CookiesParser.get("currentUserRole")
   return currentUserRole
-    ? decrypt(currentUserRole)
+    ? attachProfileMedia(decrypt(currentUserRole))
     : null;
 };
 
