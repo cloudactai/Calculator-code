@@ -7,6 +7,7 @@ import {
   getUserProvince,
 } from "../../utils/helpers";
 import "./MatterWorkflow.css";
+import refreshIcon from "../../assets/images/refresh-icon.png";
 
 /**
  * Full-page inline child support AI chat panel.
@@ -330,8 +331,18 @@ export default function ChildSupportChatPanel({
         <h3 className="mw-chat-panel__title">
           Child Support Calculator — AI Assistant
         </h3>
-        <button className="mw-chat-panel__reset" onClick={resetChat}>
-          New conversation
+        <button
+          className="mw-chat-panel__reset"
+          onClick={resetChat}
+          aria-label="New conversation"
+          title="New conversation"
+        >
+          <img
+            src={refreshIcon}
+            alt=""
+            aria-hidden="true"
+            className="mw-chat-panel__reset-icon"
+          />
         </button>
       </div>
 

@@ -253,12 +253,17 @@ const SingleMatter = () => {
 
   const matterLoading = singleMatterLoading && !matterData;
 
+  // Chat views lock the page to the viewport so only the chat window scrolls.
+  const isChatView = ["intake_chat", "child_support", "spousal_support"].includes(
+    view
+  );
+
   return (
     <Layout title={`Welcome ${response?.username ? response.username : ""} `}>
       {matterLoading ? (
         <Loader isLoading={matterLoading} />
       ) : (
-        <div className="single-matter panel trans">
+        <div className={`single-matter panel trans${isChatView ? " has-chat" : ""}`}>
           {/* Matter header */}
           <div className="pHead">
             <button

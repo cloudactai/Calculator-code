@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from "react";
 import { useDispatch } from "react-redux";
 import { CALCULATOR_API } from "../../config";
 import { saveMatter } from "../../utils/Apis/matters/saveMatterInformation/saveMattersActions";
+import refreshIcon from "../../assets/images/refresh-icon.png";
 import {
   getAllUserInfo,
   getCurrentUserFromCookies,
@@ -273,8 +274,18 @@ export default function MatterIntakeChatPanel({
           Back to Tasks
         </button>
         <h3 className="mw-chat-panel__title">Matter Intake — AI Assistant</h3>
-        <button className="mw-chat-panel__reset" onClick={resetChat}>
-          New conversation
+        <button
+          className="mw-chat-panel__reset"
+          onClick={resetChat}
+          aria-label="New conversation"
+          title="New conversation"
+        >
+          <img
+            src={refreshIcon}
+            alt=""
+            aria-hidden="true"
+            className="mw-chat-panel__reset-icon"
+          />
         </button>
       </div>
 
