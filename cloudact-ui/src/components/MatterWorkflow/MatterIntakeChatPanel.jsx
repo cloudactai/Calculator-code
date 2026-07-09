@@ -23,7 +23,6 @@ import "./MatterWorkflow.css";
  * Props:
  *   matterData   – aggregated matter object (snake_case) used for pre-load context
  *   matterId     – string
- *   onBack       – () => void   returns to the task list
  *   onComplete   – () => void   called once intake data has been saved
  */
 
@@ -132,7 +131,6 @@ function buildContextMessage(matterData) {
 export default function MatterIntakeChatPanel({
   matterData,
   matterId,
-  onBack,
   onComplete,
 }) {
   const dispatch = useDispatch();
@@ -256,39 +254,6 @@ export default function MatterIntakeChatPanel({
 
   return (
     <div className="mw-chat-panel">
-      <div className="mw-chat-panel__header">
-        <button className="mw-chat-panel__back" onClick={onBack}>
-          <svg
-            width="20"
-            height="20"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          >
-            <path d="M19 12H5" />
-            <path d="M12 19l-7-7 7-7" />
-          </svg>
-          Back to Tasks
-        </button>
-        <h3 className="mw-chat-panel__title">Matter Intake — AI Assistant</h3>
-        <button
-          className="mw-chat-panel__reset"
-          onClick={resetChat}
-          aria-label="New conversation"
-          title="New conversation"
-        >
-          <img
-            src={refreshIcon}
-            alt=""
-            aria-hidden="true"
-            className="mw-chat-panel__reset-icon"
-          />
-        </button>
-      </div>
-
       {savedSections.length > 0 && (
         <div className="mw-chat-panel__saved">
           Saved:{" "}
@@ -377,6 +342,19 @@ export default function MatterIntakeChatPanel({
             <line x1="22" y1="2" x2="11" y2="13" />
             <polygon points="22 2 15 22 11 13 2 9 22 2" />
           </svg>
+        </button>
+        <button
+          className="mw-chat-panel__reset"
+          onClick={resetChat}
+          aria-label="New conversation"
+          title="New conversation"
+        >
+          <img
+            src={refreshIcon}
+            alt=""
+            aria-hidden="true"
+            className="mw-chat-panel__reset-icon"
+          />
         </button>
       </div>
     </div>

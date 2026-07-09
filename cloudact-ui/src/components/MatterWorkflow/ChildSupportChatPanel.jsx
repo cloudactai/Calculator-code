@@ -19,7 +19,6 @@ import refreshIcon from "../../assets/images/refresh-icon.png";
  * Props:
  *   matterData   – the matter object from the DB (client name, incomes, children, etc.)
  *   matterId     – string
- *   onBack       – () => void   returns to the task list
  *   onComplete   – () => void   called when computation is generated
  */
 
@@ -210,7 +209,6 @@ function buildContextMessage(matterData) {
 export default function ChildSupportChatPanel({
   matterData,
   matterId,
-  onBack,
   onComplete,
 }) {
   const [bubbles, setBubbles] = useState([]);
@@ -311,40 +309,6 @@ export default function ChildSupportChatPanel({
 
   return (
     <div className="mw-chat-panel">
-      <div className="mw-chat-panel__header">
-        <button className="mw-chat-panel__back" onClick={onBack}>
-          <svg
-            width="20"
-            height="20"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          >
-            <path d="M19 12H5" />
-            <path d="M12 19l-7-7 7-7" />
-          </svg>
-          Back to Tasks
-        </button>
-        <h3 className="mw-chat-panel__title">
-          Child Support Calculator — AI Assistant
-        </h3>
-        <button
-          className="mw-chat-panel__reset"
-          onClick={resetChat}
-          aria-label="New conversation"
-          title="New conversation"
-        >
-          <img
-            src={refreshIcon}
-            alt=""
-            aria-hidden="true"
-            className="mw-chat-panel__reset-icon"
-          />
-        </button>
-      </div>
 
       <div className="mw-chat-panel__window" ref={windowRef}>
         {bubbles.length === 0 && !loading && (
@@ -437,6 +401,19 @@ export default function ChildSupportChatPanel({
             <line x1="22" y1="2" x2="11" y2="13" />
             <polygon points="22 2 15 22 11 13 2 9 22 2" />
           </svg>
+        </button>
+        <button
+          className="mw-chat-panel__reset"
+          onClick={resetChat}
+          aria-label="New conversation"
+          title="New conversation"
+        >
+          <img
+            src={refreshIcon}
+            alt=""
+            aria-hidden="true"
+            className="mw-chat-panel__reset-icon"
+          />
         </button>
       </div>
     </div>

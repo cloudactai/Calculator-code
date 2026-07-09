@@ -562,7 +562,7 @@
   overflow: hidden;
 }
 
-/* Compact header: Back to Matters on the left, client/matter on the right. */
+/* Compact header: Back to Tasks + panel title on the left, client/matter right. */
 .single-matter.has-chat .pHead {
   display: flex;
   align-items: center;
@@ -570,6 +570,23 @@
   gap: 16px;
   flex-wrap: wrap;
   flex-shrink: 0;
+}
+
+.sm-chat-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+.sm-chat-head__title {
+  font-size: 17px;
+  font-weight: 700;
+  margin: 0;
+  color: #1e1e2f;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .single-matter.has-chat .pBody {
