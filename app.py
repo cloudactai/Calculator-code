@@ -441,6 +441,195 @@ def chat():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
+
+# ── /intake-chat ────────────────────────────────────────────────────────────────
+
+INTAKE_SYSTEM = """
+You are a matter-intake assistant for CloudAct, an Ontario family-law platform.
+
+Your job is to collect a family-law client's intake information through
+conversation and save it, section by section, exactly as the manual 5-step intake
+form would. Do not do any calculations — just gather and structure the information.
+
+Ask questions ONE AT A TIME. Do not dump a list of questions on the user. But if
+the user volunteers several facts at once, extract all of them and only ask about
+what is still missing.
+
+Work through the sections below in order. As soon as a section has enough
+information, call the save_matter_section tool for that section, then continue to
+the next one. Saving as you go lets the user pause and resume without losing work.
+
+Some information may already be on file (it is provided at the start of the
+conversation). Treat that as already-known — confirm it briefly rather than
+re-asking, and only fill the gaps.
+
+Never invent data. Leave unknown fields as empty strings. Optional sections
+(Expenses, Assets, DebtsAndLiabilities, Court) can be skipped if the user has
+nothing to add.
+
+SECTIONS AND THEIR EXACT DATA SHAPES
+(use these field names verbatim — they must match the intake form):
+
+1. section="Background"
+   data: {
+     "client":        { "role", "province", "name", "postalCode", "dateOfBirth",
+                        "phone", "address", "email", "municipality", "representedBy",
+                        "lawyerName", "lawyerAddress", "lawyerEmail", "lawyerPhone",
+                        "lawyerProvince", "lawyerPostalCode", "lawyerMunicipality" },
+     "opposingParty": { ...same fields... }
+   }
+   - "role" is the party's role in the matter (e.g. Applicant / Respondent).
+   - "representedBy" is the lawyer's name if represented, otherwise "Self".
+   - Only fill lawyer* fields when the party is represented.
+
+2. section="Relationship"
+   data: { "dateOfMarriage", "placeOfMarriage", "startedLivingTogether",
+           "neverLivedTogether" ("Yes"/"No"), "dateOfSeparation",
+           "stillLivingTogether" ("Yes"/"No") }
+   - Dates in YYYY-MM-DD.
+
+3. section="Children"   (array — one object per child; empty array if none)
+   data: [ { "childName", "dateOfBirth", "nowLivesWith" } ]
+   - "nowLivesWith" is who the child primarily lives with. Dates YYYY-MM-DD.
+
+4. section="IncomeAndBenefits"
+   data: {
+     "client":        { "income":  [ { "type", "yearlyAmount" } ],
+                        "benefit": [ { "type", "yearlyAmount", "incomeBenefit": "benefit" } ] },
+     "opposingParty": { ...same... }
+   }
+   - Amounts are annual CAD, as strings.
+
+5. section="EmploymentDetails"
+   data: {
+     "client":        { "employmentStatus", "employerName", "employerAddress",
+                        "employedSince", "businessName", "businessAddress",
+                        "lastEmployed", "role": "Client" },
+     "opposingParty": { ...same, "role": "Opposing Party" }
+   }
+
+6. section="Expenses"   (optional)
+   data: { "client": { ...monthly expense lines... }, "opposingParty": { ...same... } }
+
+7. section="Assets"   (optional; array — one object per asset)
+   data: [ { "description", "value" } ]
+
+8. section="DebtsAndLiabilities"   (optional; array — one object per debt)
+   data: [ { "category", "details", "on_date_of_marriage",
+             "on_valuation_date", "today" } ]
+
+9. section="Court"   (optional)
+   data: { "name", "fileNumber", "address" }
+   - Court name, court file number, and court address.
+
+When you have covered the sections the user has information for, briefly summarise
+what was captured and tell them the intake has been saved.
+"""
+
+SAVE_SECTION_TOOL = {
+    "name": "save_matter_section",
+    "description": (
+        "Save one section of the matter intake. Call this each time a section is "
+        "complete. 'section' must be one of the exact section names listed in the "
+        "system prompt and 'data' must match that section's documented shape exactly."
+    ),
+    "input_schema": {
+        "type": "object",
+        "required": ["section", "data"],
+        "properties": {
+            "section": {
+                "type": "string",
+                "enum": [
+                    "Background", "Relationship", "Children", "IncomeAndBenefits",
+                    "EmploymentDetails", "Expenses", "Assets", "DebtsAndLiabilities",
+                    "Court",
+                ],
+                "description": "Which intake section this data belongs to.",
+            },
+            "data": {
+                "description": (
+                    "The section payload. An object for Background, Relationship, "
+                    "IncomeAndBenefits, EmploymentDetails, Expenses and Court; an "
+                    "array for Children, Assets and DebtsAndLiabilities. Use the exact "
+                    "field names from the system prompt."
+                ),
+            },
+        },
+    },
+}
+
+
+@app.route("/intake-chat", methods=["POST"])
+def intake_chat():
+    """Matter-intake AI agent.
+
+    Same Claude message-loop pattern as /chat, but instead of computing anything the
+    tool records structured section data. This endpoint never writes to the matter
+    database itself — it returns the collected sections so the authenticated frontend
+    can persist them via its existing save_matter action.
+    """
+    try:
+        body = request.get_json(force=True)
+        messages = body.get("messages", [])
+
+        client = anthropic.Anthropic()  # reads ANTHROPIC_API_KEY from env
+
+        saved_sections = []  # [{ "section": str, "data": object|array }, ...]
+
+        # Loop — exits once Claude produces a reply with no further tool call.
+        for _ in range(12):
+
+            response = client.messages.create(
+                model=os.getenv("CLAUDE_MODEL", "claude-sonnet-4-6"),
+                max_tokens=2048,
+                system=INTAKE_SYSTEM,
+                tools=[SAVE_SECTION_TOOL],
+                messages=messages,
+            )
+
+            # Convert Claude's response content to plain dicts for JSON transport.
+            assistant_content = []
+            for block in response.content:
+                if hasattr(block, "model_dump"):
+                    assistant_content.append(block.model_dump())
+                else:
+                    assistant_content.append(block)
+
+            messages.append({"role": "assistant", "content": assistant_content})
+
+            # No tool call — we have the final reply for this turn.
+            if response.stop_reason != "tool_use":
+                reply = "".join(
+                    b["text"] for b in assistant_content if b.get("type") == "text"
+                )
+                return jsonify({
+                    "reply": reply,
+                    "messages": messages,
+                    "saved_sections": saved_sections,
+                })
+
+            # Claude saved one or more sections — record them and acknowledge so it
+            # can continue. The actual DB write happens on the frontend.
+            tool_results = []
+            for block in assistant_content:
+                if block.get("type") == "tool_use":
+                    section = block["input"].get("section")
+                    data = block["input"].get("data")
+                    saved_sections.append({"section": section, "data": data})
+                    tool_results.append({
+                        "type":        "tool_result",
+                        "tool_use_id": block["id"],
+                        "content":     json.dumps({"status": "saved", "section": section}),
+                    })
+
+            messages.append({"role": "user", "content": tool_results})
+
+        return jsonify({"error": "Reached iteration limit without a final reply."}), 500
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
 def _parse_dob(dob) -> str:
     """Normalise a date-of-birth value to 'YYYY-MM-DD'.
 
