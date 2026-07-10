@@ -21,7 +21,7 @@
 
     "A4_ON_CREDITS_COMMENT": "A4. Ontario provincial credit amounts. Source: Excel calculator / ON428.",
     "BASIC_PERSONAL_AMOUNT_ON": 12747.00,
-    "AMOUNT_FOR_ELIGIBLE_DEPENDENT_ON": 10971.00,
+    "AMOUNT_FOR_ELIGIBLE_DEPENDENT_ON": 10823.00,
     "DISABILITY_AMOUNT_ON": 10267.00,
     "ON_AGE_AMOUNT_BASE": 5461.00,
     "ON_AGE_AMOUNT_THRESHOLD": 40495.00,
@@ -112,31 +112,31 @@
     "CWB_DISAB_RED_THRESHOLD_FAMILY": 32136.00,
 
     "A15_CCB_COMMENT": "A15. Canada Child Benefit. Source: canada.ca/canada-child-benefit-overview. Indexed July 1. Phase-out rates fixed in ITA (Section B in tax.py).",
-    "CCB_CHILD_UNDER_6": 7787.00,
-    "CCB_CHILD_6_17": 6570.00,
-    "CCB_LOWER_THRESHOLD": 36503.00,
-    "CCB_UPPER_THRESHOLD": 79087.00,
+    "CCB_CHILD_UNDER_6": 7997.00,
+    "CCB_CHILD_6_17": 6748.00,
+    "CCB_LOWER_THRESHOLD": 37787.00,
+    "CCB_UPPER_THRESHOLD": 81222.00,
 
     "A16_GST_COMMENT": "A16. GST/HST benefit. Source: canada.ca/gst-hst-credit. Indexed quarterly/annually.",
-    "GST_BASE_CREDIT": 519.00,
-    "GST_ELIGIBLE_DEP": 340.00,
-    "GST_OTHER_DEP": 179.00,
+    "GST_BASE_CREDIT": 533.00,
+    "GST_ELIGIBLE_DEP": 349.00,
+    "GST_OTHER_DEP": 184.00,
     "GST_LOWER_THRESHOLD": 11039.00,
-    "GST_UPPER_THRESHOLD": 44324.00,
+    "GST_UPPER_THRESHOLD": 45421.00,
 
     "A17_OCB_COMMENT": "A17. Ontario Child Benefit. Source: Excel calculator / ontario.ca.",
-    "OCB_BASE": 1680.00,
-    "OCB_THRESHOLD": 25646.00,
+    "OCB_BASE": 1727.00,
+    "OCB_THRESHOLD": 26364.00,
 
     "A18_OSTC_COMMENT": "A18. Ontario Sales Tax Credit. Source: Excel calculator / ontario.ca.",
-    "OSTC_BASE": 366.00,
-    "OSTC_CHILD_UNDER_19": 366.00,
-    "OSTC_FAMILY_THRESHOLD": 34493.00,
-    "OSTC_SINGLE_THRESHOLD": 27585.00,
+    "OSTC_BASE": 378.00,
+    "OSTC_CHILD_UNDER_19": 380.00,
+    "OSTC_FAMILY_THRESHOLD": 29047.00,
+    "OSTC_SINGLE_THRESHOLD": 36309.00,
 
     "A19_CAI_COMMENT": "A19. Climate Action Incentive — Ontario amounts. Source: Excel calculator.",
-    "CAI_INDIVIDUAL": 560.00,
-    "CAI_FIRST_CHILD_SINGLE_PARENT": 280.00,
-    "CAI_PER_ADDITIONAL_CHILD": 140.00
+    "CAI_INDIVIDUAL": 604.00,
+    "CAI_FIRST_CHILD_SINGLE_PARENT": 302.00,
+    "CAI_PER_ADDITIONAL_CHILD": 151.00
   }
 }
