@@ -105,6 +105,10 @@ test("manual intake restores the editable Profile Summary and opens a hydrated s
   await within(dialog).findAllByText("Client");
   // ...the form hydrated the saved values into its dropdowns...
   expect(within(dialog).getAllByText("Ontario").length).toBeGreaterThan(0);
+  // ...municipality is now a free-text input (not a dropdown)...
+  expect(
+    within(dialog).getAllByPlaceholderText(/enter municipality/i).length
+  ).toBeGreaterThan(0);
   // ...the modal is titled for the section...
   expect(within(dialog).getByText("Background Information")).toBeInTheDocument();
   // ...and the per-section Save affordance is wired.
