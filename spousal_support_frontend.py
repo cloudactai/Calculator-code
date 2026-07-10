@@ -54,16 +54,16 @@ def run_iterative():
     child_counts = {"party1": 0, "party2": 1, "shared": 0}
     
     r = calculate_spousal_support_iterative(
-        payor_gross         = 90000,
-        recipient_gross     = 20000,
-        payor_age           = 35,
-        recipient_age       = 35,
-        years               = 15.0,
+        payor_gross         = 99000,
+        recipient_gross     = 60000,
+        payor_age           = 40,
+        recipient_age       = 40,
+        years               = 20.0,
         children            = children,
         child_counts        = child_counts,
         # monthly_cs_paid     = 841.0,
         # monthly_notional_cs = 128.0,
-        youngest_child_age  = 15.0,
+        youngest_child_age  = 4.0,
         province            = "ON",
         year                = year,
         payor_is_party1     = True,  # payor ($170k) is UI Party 2

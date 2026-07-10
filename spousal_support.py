@@ -384,19 +384,27 @@ def _compute_net_indi(
     child_care_expenses:     float = 0.0,
     other_deductions:        float = 0.0,
     eligible_for_disability: str   = "No",
+    special_expenses_annual: float = 0.0,
 ) -> float:
     """
     Compute one party's INDI for one iteration step.
 
-    INDI = net_income_after_tax − cs_adjustment
+    INDI = gross_income − total_taxes + total_benefits − cs_adjustment − special_expenses
 
-    Spousal support is tax-deductible for the payor and taxable for the
-    recipient (post-1997 Ontario agreements).  Child support is NOT
-    deductible / taxable — it affects INDI directly as a cash subtraction.
+    Per the Excel reference model (Screen 2 -WithoutSplexp), INDI starts
+    from RAW gross income (employment + self-employment + other), NOT from
+    taxable income.  Spousal support amounts (paid/received) and other tax
+    deductions (enhanced CPP, child care, etc.) affect INDI only INDIRECTLY
+    through their impact on total_taxes and total_benefits.  They are NOT
+    subtracted from the gross base.
 
-    Deduction fields default to 0, preserving the original behaviour when
-    not supplied.  Pass non-zero values when the party has RRSP contributions,
-    child care expenses, or other deductions that affect their net income.
+    This avoids double-counting: the tax calculator already computes taxes
+    on taxable_income (which includes support and deductions), so starting
+    from gross_income and subtracting those taxes correctly captures the
+    cash-flow effect without also subtracting the deduction itself.
+
+    Child support is NOT deductible / taxable — it affects INDI directly
+    as a cash subtraction.
     """
     inp = TaxInput(
         party_num               = party_num,
@@ -420,7 +428,14 @@ def _compute_net_indi(
     # Suppress debug print statements inside tax.py
     with contextlib.redirect_stdout(io.StringIO()):
         result = calculate_taxes(inp)
-    return result["net_income_after_tax"] - cs_adjustment_annual
+
+    # INDI = gross (no support/deductions) − taxes + benefits − CS − special expenses
+    raw_gross = gross_income + self_employed_income + other_income
+    return (raw_gross
+            - result["total_taxes"]
+            + result["total_benefits"]
+            - cs_adjustment_annual
+            - special_expenses_annual)
 
 
 # ===========================================================================
@@ -619,6 +634,9 @@ def calculate_spousal_support_iterative(
     recip_child_care_expenses:     float = 0.0,
     recip_other_deductions:        float = 0.0,
     recip_eligible_for_disability: str   = "No",
+    # Special expenses (s. 7 of the Guidelines) — annual amounts
+    payor_special_expenses_annual: float = 0.0,
+    recip_special_expenses_annual: float = 0.0,
 ) -> IterativeResult:
     """
     SSAG with-children spousal support via iterative INDI convergence.
@@ -628,6 +646,13 @@ def calculate_spousal_support_iterative(
       Step N  — compute both INDIs at current SS level (SS affects taxes)
               — recompute SS from spousal_support_formula_by_rate(INDI1, INDI2, rate)
               — stop when |new_SS − old_SS| < tol (dollars/month)
+
+    INDI calculation (per Excel reference model "Screen 2 -WithoutSplexp"):
+      INDI = gross_income − total_taxes + total_benefits − CS − special_expenses
+    where gross_income is employment + self-employment + other income (no
+    support amounts, no deductions in the base).  Spousal support paid/received
+    and other tax deductions affect INDI only through their impact on taxes
+    and benefits — they are NOT subtracted from the gross base.
 
     Uses damped fixed-point iteration (alpha=0.5) to prevent oscillation.
     Converges in ~6 steps per rate for typical inputs.
@@ -704,6 +729,7 @@ def calculate_spousal_support_iterative(
                 child_care_expenses      = payor_child_care_expenses,
                 other_deductions         = payor_other_deductions,
                 eligible_for_disability  = payor_eligible_for_disability,
+                special_expenses_annual  = payor_special_expenses_annual,
             )
 
             recip_indi = _compute_net_indi(
@@ -723,6 +749,7 @@ def calculate_spousal_support_iterative(
                 child_care_expenses      = recip_child_care_expenses,
                 other_deductions         = recip_other_deductions,
                 eligible_for_disability  = recip_eligible_for_disability,
+                special_expenses_annual  = recip_special_expenses_annual,
             )
 
             new_ss = spousal_support_formula_by_rate(payor_indi, recip_indi, rate)
@@ -731,10 +758,7 @@ def calculate_spousal_support_iterative(
             if abs(new_ss - ss) < tol:
                 ss = new_ss
                 break
-            # Damped update: average old and new estimate to prevent oscillation.
-            # Without damping the loop alternates high/low (derivative ≈ -1) and
-            # takes ~200 steps; damping converges in ~6 steps.
-            ss = 0.5 * ss + 0.5 * new_ss
+            ss = new_ss  # no damping — direct substitution
 
         rate_results[label] = {
             "monthly":    round(ss, 2),

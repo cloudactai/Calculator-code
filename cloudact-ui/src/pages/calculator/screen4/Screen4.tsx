@@ -1,6 +1,9 @@
 import React, { useEffect, useRef, useState } from "react";
 import { useHistory , Link} from "react-router-dom";
-import ReactToPrint from "react-to-print";
+import html2canvas from "html2canvas";
+import { jsPDF } from "jspdf";
+import moment from "moment";
+import toast from "react-hot-toast";
 import InputCustom from "../../../components/InputCustom";
 import useQuery from "../../../hooks/useQuery";
 import { AUTH_ROUTES } from "../../../routes/Routes.types";
@@ -1564,35 +1567,50 @@ const Screen4 = ({
           </button>
           {query.get("saveValues") === "true" && (
             <button
-              onClick={() => {
+              onClick={async () => {
                 changeReportIncompleteToComplete(
                   getCalculatorIdFromQuery(query)
                 );
+                const element = calculator_report.current;
+                if (!element) {
+                  toast.error("Report content not ready");
+                  return;
+                }
+                const pages = element.querySelectorAll(".pagePDF");
+                if (pages.length === 0) {
+                  toast.error("No report pages found");
+                  return;
+                }
+                try {
+                  const pdf = new jsPDF("p", "mm", "letter");
+                  const pdfWidth = pdf.internal.pageSize.getWidth();
+                  const pdfHeight = pdf.internal.pageSize.getHeight();
+                  for (let i = 0; i < pages.length; i++) {
+                    const canvas = await html2canvas(pages[i] as HTMLElement, {
+                      scale: 2,
+                      useCORS: true,
+                      logging: false,
+                      backgroundColor: "#ffffff",
+                    });
+                    const imgData = canvas.toDataURL("image/jpeg", 0.95);
+                    const imgWidth = pdfWidth;
+                    const imgHeight = (canvas.height * pdfWidth) / canvas.width;
+                    if (i > 0) pdf.addPage();
+                    pdf.addImage(imgData, "JPEG", 0, 0, imgWidth, Math.min(imgHeight, pdfHeight));
+                  }
+                  const party1 = reportData?.data?.background?.party1FirstName || "Party1";
+                  const party2 = reportData?.data?.background?.party2FirstName || "Party2";
+                  const date = moment().format("YYYY-MM-DD");
+                  pdf.save(`CloudAct_Report_${party1}_${party2}_${date}.pdf`);
+                  toast.success("PDF downloaded successfully");
+                } catch (err) {
+                  console.error("PDF generation failed", err);
+                  toast.error("Failed to generate PDF");
+                }
               }}
               className="btn btnPrimary rounded-pill"
             >
-              <ReactToPrint
-                pageStyle={`@page {
-                  size: A4;
-                  margin: 0;
-                }
-                body {
-                  size: A4;
-                  margin: 0;
-                }`}
-                onBeforePrint={() => {
-                  const content = calculator_report.current;
-                  if (content) {
-                    content.style.height = "90%";
-                  }
-                }}
-                trigger={() => (
-                  <button className="btn btnPrimary rounded-pill">
-                    Download Report
-                  </button>
-                )}
-                content={() => calculator_report.current}
-              />
+              Download Report
             </button>
           )}
         </div>
@@ -1603,7 +1621,15 @@ const Screen4 = ({
 
 
       {reportData.data && (
-        <div>
+        <div style={{
+          position: "fixed",
+          left: "-9999px",
+          top: 0,
+          width: "816px",
+          height: "auto",
+          zIndex: -9999,
+          pointerEvents: "none",
+        }}>
           <Reports ref={calculator_report} data={reportData.data} />
         </div>
       )}

@@ -1,0 +1,36 @@
+from spousal_support import calculate_spousal_support_iterative, INDEFINITE_SENTINEL
+from tax import ChildInfo
+ 
+child = ChildInfo(date_of_birth="2022-01-01", custody_arrangement="Party 2", child_has_disability="No")
+
+r = calculate_spousal_support_iterative(
+    payor_gross=99000.0,
+    recipient_gross=60000.0,
+    payor_age=35,
+    recipient_age=35,
+    years=20,
+    children=[child],
+    child_counts={"party1": 0, "party2": 1, "shared": 0},
+    payor_is_party1=True,
+    province="ON",
+    year=2025,
+)
+
+print()
+print("=" * 60)
+print("  ITERATIVE WITH-CHILDREN FORMULA  (tax.py convergence)")
+print("=" * 60)
+print()
+print("  Results")
+print(f"  {'Rate':<12} {'Monthly':>10} {'Annual':>12}    {'Payor INDI':>12} {'Recip INDI':>12} {'Iters':>7}")
+print(f"  {'─'*12} {'─'*10} {'─'*12}    {'─'*12} {'─'*12} {'─'*7}")
+print(f"  {'Low 40%':<12} {r.monthly_low:>10,.0f} {r.annual_low:>12,.0f}    {r.payor_indi_low:>12,.0f} {r.recipient_indi_low:>12,.0f} {r.iterations_low:>7}")
+print(f"  {'Mid 43%':<12} {r.monthly_mid:>10,.0f} {r.annual_mid:>12,.0f}    {r.payor_indi_mid:>12,.0f} {r.recipient_indi_mid:>12,.0f} {r.iterations_mid:>7}")
+print(f"  {'High 46%':<12} {r.monthly_high:>10,.0f} {r.annual_high:>12,.0f}    {r.payor_indi_high:>12,.0f} {r.recipient_indi_high:>12,.0f} {r.iterations_high:>7}")
+print(f"  Monthly CS paid: {r.monthly_cs_paid}")
+print()
+if r.duration_low == INDEFINITE_SENTINEL:
+    print("  Duration        : Indefinite")
+else:
+    print(f"  Duration        : {r.duration_low:.1f} – {r.duration_high:.1f} years")
+print()
