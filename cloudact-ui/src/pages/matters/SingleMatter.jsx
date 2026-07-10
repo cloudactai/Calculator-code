@@ -1,6 +1,6 @@
 /* eslint-disable react/no-direct-mutation-state */
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useParams, useHistory } from "react-router";
 
@@ -134,6 +134,10 @@ const SingleMatter = () => {
   const [modalData, setModalData] = useState(null); // which section modal is open
   const [manualFormData, setManualFormData] = useState({}); // latest edits from the open form
   const [isSaving, setIsSaving] = useState(false);
+  const [autoSaved, setAutoSaved] = useState(false); // brief "Saved" flash after an auto-save
+  const saveModeRef = useRef("auto"); // "auto" (blur/change) vs "manual" (Save button)
+  const autoSaveTimer = useRef(null);
+  const touchedRef = useRef(false); // true once the user edits the open section
   // Per-form active tabs (Client / Opposing Party etc.) — owned here so they
   // survive the form re-mounting and are available for save context.
   const [bgInfoActiveTab, setBgInfoActiveTab] = useState("Client");
@@ -309,9 +313,10 @@ const SingleMatter = () => {
   }
 
   // Save the currently-open section via updateMatterData
-  // (POST update_matter/{sid}/{matterId}/{type}).
+  // (POST update_matter/{sid}/{matterId}/{type}). Explicit Save button.
   function handleManualSave() {
     if (!manualFormData?.type) return;
+    saveModeRef.current = "manual";
     setIsSaving(true);
     dispatch(
       updateMatterData({
@@ -326,27 +331,71 @@ const SingleMatter = () => {
     setModalData(null);
   }
 
-  // React to a completed save: toast, close the modal, mark intake underway.
+  // The user has interacted with the open section — allow auto-save to run.
+  function markTouched() {
+    touchedRef.current = true;
+  }
+
+  // Reset per-section dirty/indicator state when a different section opens.
   useEffect(() => {
-    if (updateMatterResult) {
-      setIsSaving(false);
-      setModalData(null);
-      if (taskStatuses.matter_intake !== "completed") {
-        persistTaskStatus("matter_intake", "in_progress");
-      }
-      // Refresh this section so reopening (and the chat context) show saved
-      // values. The court form saves under "courtInfo" but is fetched as "court".
-      if (manualFormData?.type) {
-        const refetchType =
-          manualFormData.type === "courtInfo" ? "court" : manualFormData.type;
-        dispatch(getSingleMatterData(id, refetchType));
-      }
-      toast.success("Data Successfully Saved", {
-        position: "top-right",
-        style: { borderRadius: "10px", background: "#FFF", color: "#000" },
-      });
-      dispatch(updateMatterReset());
+    touchedRef.current = false;
+    setAutoSaved(false);
+  }, [modalData]);
+
+  // Save-as-you-go: once the user has edited the open section, save it shortly
+  // after they stop typing / pick a dropdown option — silently, without closing.
+  useEffect(() => {
+    if (!modalData || !manualFormData?.type || !touchedRef.current) return;
+    clearTimeout(autoSaveTimer.current);
+    autoSaveTimer.current = setTimeout(() => {
+      saveModeRef.current = "auto";
+      dispatch(
+        updateMatterData({
+          type: manualFormData.type,
+          matter_id: id,
+          data: manualFormData,
+        })
+      );
+    }, 800);
+    return () => clearTimeout(autoSaveTimer.current);
+  }, [manualFormData, modalData, id, dispatch]);
+
+  // Fade the "Saved" flash after a moment.
+  useEffect(() => {
+    if (!autoSaved) return;
+    const t = setTimeout(() => setAutoSaved(false), 2000);
+    return () => clearTimeout(t);
+  }, [autoSaved]);
+
+  // React to a completed save. Auto-saves stay silent and keep the form open;
+  // an explicit Save closes the modal, refreshes, and toasts.
+  useEffect(() => {
+    if (!updateMatterResult) return;
+    setIsSaving(false);
+    const wasManual = saveModeRef.current === "manual";
+    saveModeRef.current = "auto";
+    dispatch(updateMatterReset());
+
+    if (!wasManual) {
+      setAutoSaved(true);
+      return;
     }
+
+    setModalData(null);
+    if (taskStatuses.matter_intake !== "completed") {
+      persistTaskStatus("matter_intake", "in_progress");
+    }
+    // Refresh this section so reopening (and the chat context) show saved
+    // values. The court form saves under "courtInfo" but is fetched as "court".
+    if (manualFormData?.type) {
+      const refetchType =
+        manualFormData.type === "courtInfo" ? "court" : manualFormData.type;
+      dispatch(getSingleMatterData(id, refetchType));
+    }
+    toast.success("Data Successfully Saved", {
+      position: "top-right",
+      style: { borderRadius: "10px", background: "#FFF", color: "#000" },
+    });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [updateMatterResult]);
 
@@ -568,6 +617,19 @@ const SingleMatter = () => {
                   dialogClassName="matterModal"
                   isLoading={isSaving}
                 >
+                  <div onInput={markTouched} onClick={markTouched}>
+                  {autoSaved && (
+                    <div
+                      style={{
+                        textAlign: "right",
+                        fontSize: "12px",
+                        color: "#22c55e",
+                        marginBottom: "4px",
+                      }}
+                    >
+                      ✓ Saved
+                    </div>
+                  )}
                   {modalData?.component === "BackgroundInformationSimple" && (
                     <BackgroundInformationSimple
                       matterId={id}
@@ -642,6 +704,7 @@ const SingleMatter = () => {
                       onUpdateFormData={onUpdateFormData}
                     />
                   )}
+                  </div>
                 </GeneralModal>
               </div>
             )}

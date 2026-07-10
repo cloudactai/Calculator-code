@@ -38,6 +38,9 @@ import SingleMatter from "./SingleMatter";
 // inside the mock factory before each test — so (re)apply it here. Returns a
 // Background record (Client + Opposing Party) so the hydrated form has values.
 beforeEach(() => {
+  // The page persists task statuses to localStorage; clear it so each test
+  // starts with matter-intake "not_started" (its button reads "Start").
+  localStorage.clear();
   fetchRequest.mockResolvedValue({
     data: {
       data: {
@@ -124,4 +127,35 @@ test("manual intake restores the editable Profile Summary and opens a hydrated s
       )
     ).toBe(true)
   );
+});
+
+test("auto-saves the open section after the user edits a field (no Save click)", async () => {
+  renderPage();
+
+  fireEvent.click((await screen.findAllByRole("button", { name: /^start$/i }))[0]);
+  fireEvent.click(await screen.findByText(/open forms/i));
+  await screen.findByText(/profile summary/i);
+  fireEvent.click(screen.getAllByText(/view \/ edit/i)[0]);
+
+  const dialog = await screen.findByRole("dialog");
+  await within(dialog).findAllByText("Client"); // wait for hydration
+
+  fetchRequest.mockClear();
+
+  // Edit a field — no Save click.
+  const nameInput = within(dialog).getAllByPlaceholderText(/enter name/i)[0];
+  fireEvent.input(nameInput, { target: { value: "Edited Name" } });
+
+  // The debounced auto-save posts to update_matter on its own...
+  await waitFor(
+    () =>
+      expect(
+        fetchRequest.mock.calls.some(
+          (c) => typeof c[1] === "string" && c[1].includes("update_matter")
+        )
+      ).toBe(true),
+    { timeout: 3000 }
+  );
+  // ...and the modal stays open (auto-save doesn't close it).
+  expect(screen.queryByRole("dialog")).toBeInTheDocument();
 });
