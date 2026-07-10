@@ -1,22 +1,20 @@
 import axios from "axios";
-import { APIS, REACT_APP_ENVIRONMENT } from "../config";
 import { getAuthToken } from "./authToken";
+import { DATA_API_BASE } from "./dataAxios";
 
 const shouldShowUnauthorizedModal = (error) => {
   return error.config?.showUnauthorizedModal === true;
 };
 
 const instance = axios.create({
-  baseURL: 
-    REACT_APP_ENVIRONMENT === 'DEV' ? APIS.dev : 
-    REACT_APP_ENVIRONMENT === 'QA' ? APIS.QA : 
-    REACT_APP_ENVIRONMENT === 'PROD' ? APIS.prod : 
-     REACT_APP_ENVIRONMENT === 'LOCAL' ? APIS.local :
-     APIS.local,
+  // Points at the auth-server (Postgres), same as dataAxios — the legacy
+  // law-firm /v1 backend is no longer contacted. Endpoints the auth-server
+  // doesn't implement return 404 (handled by callers) instead of hitting legacy.
+  baseURL: DATA_API_BASE,
   withCredentials: true,
-  // Fail fast instead of hanging the UI when the legacy /v1 backend is
-  // unreachable. Without a timeout, a dead host spins loaders forever.
-  timeout: 20000,
+  // Matches dataAxios: the Render backend cold-starts in ~30-60s after idle,
+  // so a short timeout would fail the first call after a quiet period.
+  timeout: 75000,
 });
 
 instance.interceptors.request.use(
