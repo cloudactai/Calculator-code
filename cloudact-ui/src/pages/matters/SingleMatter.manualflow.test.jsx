@@ -1,19 +1,13 @@
 /**
- * Smoke test for the restored manual matter-intake flow:
- *   Task list → "Manual" → editable Profile Summary → open a HYDRATED section form.
- *
- * The backend is mocked: fetchRequest returns a Background record with a Client
- * and an Opposing Party, and getUserSID is stubbed (no auth cookie in jsdom).
- * This verifies the restored wiring end-to-end at the render level — the manual
- * view, the section modal, the hydrated *Simple form and its dropdowns.
+ * Manual matter intake routes to the 5-step accordion page (/5-steps).
+ * (The earlier per-section modal view was replaced by the 5-step design.)
  */
 import React from "react";
 import "@testing-library/jest-dom";
-import { render, screen, fireEvent, within, waitFor } from "@testing-library/react";
+import { render, screen, fireEvent } from "@testing-library/react";
 import { Provider } from "react-redux";
 import { MemoryRouter, Route } from "react-router-dom";
 
-// No backend, no heavy page chrome.
 jest.mock("../../components/LayoutComponents/Layout", () => ({ children }) => (
   <div>{children}</div>
 ));
@@ -34,43 +28,9 @@ import { fetchRequest } from "../../utils/fetchRequest";
 import store from "../../store";
 import SingleMatter from "./SingleMatter";
 
-// CRA's jest preset sets resetMocks:true, which wipes any implementation given
-// inside the mock factory before each test — so (re)apply it here. Returns a
-// Background record (Client + Opposing Party) so the hydrated form has values.
 beforeEach(() => {
-  // The page persists task statuses to localStorage; clear it so each test
-  // starts with matter-intake "not_started" (its button reads "Start").
   localStorage.clear();
-  fetchRequest.mockResolvedValue({
-    data: {
-      data: {
-        body: [
-          {
-            role: "Client",
-            province: "Ontario",
-            name: "Jane Client",
-            postalCode: "A1A1A1",
-            phone: "5550001",
-            address: "1 King St",
-            email: "jane@example.com",
-            representedBy: "Self",
-            municipality: "Toronto",
-          },
-          {
-            role: "Opposing Party",
-            province: "Alberta",
-            name: "John Opposing",
-            postalCode: "B2B2B2",
-            phone: "5550002",
-            address: "2 Queen St",
-            email: "john@example.com",
-            representedBy: "Self",
-            municipality: "Calgary",
-          },
-        ],
-      },
-    },
-  });
+  fetchRequest.mockResolvedValue({ data: { data: { body: [] } } });
 });
 
 function renderPage() {
@@ -78,84 +38,17 @@ function renderPage() {
     <Provider store={store}>
       <MemoryRouter initialEntries={["/single-matter/TEST-1"]}>
         <Route path="/single-matter/:id" component={SingleMatter} />
+        <Route path="/5-steps/:id" render={() => <div>FIVE STEPS PAGE</div>} />
       </MemoryRouter>
     </Provider>
   );
 }
 
-test("manual intake restores the editable Profile Summary and opens a hydrated section form", async () => {
-  renderPage();
-
-  // Task list → start Matter Intake (first enabled "Start")
-  const startButtons = await screen.findAllByRole("button", { name: /^start$/i });
-  fireEvent.click(startButtons[0]);
-
-  // Intake choice → choose Manual entry
-  fireEvent.click(await screen.findByText(/open forms/i));
-
-  // Manual view: editable Profile Summary with all sections
-  expect(await screen.findByText(/profile summary/i)).toBeInTheDocument();
-  expect(screen.getByText("Background Information")).toBeInTheDocument();
-  expect(screen.getByText("Assets")).toBeInTheDocument();
-  expect(screen.getByText("Other Persons in Household")).toBeInTheDocument();
-
-  // Open the Background section → its modal opens, bound to the Background form
-  fireEvent.click(screen.getAllByText(/view \/ edit/i)[0]);
-  const dialog = await screen.findByRole("dialog");
-
-  // Wait for hydration to replace the spinner (the "Opposing Party" tab only
-  // exists once the form body renders), then assert the restored behaviour:
-  await within(dialog).findAllByText("Client");
-  // ...the form hydrated the saved values into its dropdowns...
-  expect(within(dialog).getAllByText("Ontario").length).toBeGreaterThan(0);
-  // ...municipality is now a free-text input (not a dropdown)...
-  expect(
-    within(dialog).getAllByPlaceholderText(/enter municipality/i).length
-  ).toBeGreaterThan(0);
-  // ...the modal is titled for the section...
-  expect(within(dialog).getByText("Background Information")).toBeInTheDocument();
-  // ...and the per-section Save affordance is wired.
-  const saveBtn = within(dialog).getByRole("button", { name: /save/i });
-  expect(saveBtn).toBeInTheDocument();
-
-  // Saving posts to the per-section update endpoint (save-as-you-go).
-  fireEvent.click(saveBtn);
-  await waitFor(() =>
-    expect(
-      fetchRequest.mock.calls.some(
-        (c) => typeof c[1] === "string" && c[1].includes("update_matter")
-      )
-    ).toBe(true)
-  );
-});
-
-test("auto-saves the open section after the user edits a field (no Save click)", async () => {
+test("manual intake routes to the 5-step accordion page", async () => {
   renderPage();
 
   fireEvent.click((await screen.findAllByRole("button", { name: /^start$/i }))[0]);
   fireEvent.click(await screen.findByText(/open forms/i));
-  await screen.findByText(/profile summary/i);
-  fireEvent.click(screen.getAllByText(/view \/ edit/i)[0]);
 
-  const dialog = await screen.findByRole("dialog");
-  await within(dialog).findAllByText("Client"); // wait for hydration
-
-  fetchRequest.mockClear();
-
-  // Edit a field — no Save click.
-  const nameInput = within(dialog).getAllByPlaceholderText(/enter name/i)[0];
-  fireEvent.input(nameInput, { target: { value: "Edited Name" } });
-
-  // The debounced auto-save posts to update_matter on its own...
-  await waitFor(
-    () =>
-      expect(
-        fetchRequest.mock.calls.some(
-          (c) => typeof c[1] === "string" && c[1].includes("update_matter")
-        )
-      ).toBe(true),
-    { timeout: 3000 }
-  );
-  // ...and the modal stays open (auto-save doesn't close it).
-  expect(screen.queryByRole("dialog")).toBeInTheDocument();
+  expect(await screen.findByText("FIVE STEPS PAGE")).toBeInTheDocument();
 });

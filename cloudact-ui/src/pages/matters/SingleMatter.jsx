@@ -271,8 +271,8 @@ const SingleMatter = () => {
     if (choice === "ai") {
       setView("intake_chat");
     } else if (choice === "manual") {
-      // Editable Profile Summary — hydrated forms that save per section.
-      setView("manual_forms");
+      // 5-step accordion intake (hydrated forms that save as you go).
+      history.push(`/5-steps/${id}`);
     }
   }
 
