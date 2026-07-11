@@ -1,6 +1,6 @@
 /* eslint-disable react/no-direct-mutation-state */
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useParams, useHistory } from "react-router";
 
@@ -11,39 +11,6 @@ import MatterIntakeChoice from "../../components/MatterWorkflow/MatterIntakeChoi
 import ChildSupportChatPanel from "../../components/MatterWorkflow/ChildSupportChatPanel";
 import SpousalSupportChatPanel from "../../components/MatterWorkflow/SpousalSupportChatPanel";
 import MatterIntakeChatPanel from "../../components/MatterWorkflow/MatterIntakeChatPanel";
-
-// --- Manual entry (editable Profile Summary forms) ---
-import toast from "react-hot-toast";
-import GeneralModal from "../../components/Matters/Modals/GeneralModal";
-import BackgroundInformationSimple from "../fiveSteps/BackgroundInformationSimple";
-import CourtInformationSimple from "../fiveSteps/CourtInformationSimple";
-import ChildrenInformationSimple from "../fiveSteps/ChildrenInformationSimple";
-import RelationshipInformationSimple from "../fiveSteps/RelationshipInformationSimple";
-import EmploymentDetailsSimple from "../fiveSteps/EmploymentDetailsSimple";
-import IncomeAndBenefitsSimple from "../fiveSteps/IncomeAndBenefitsSimple";
-import ExpensesSimple from "../fiveSteps/ExpensesSimple";
-import AssetsSimple from "../fiveSteps/AssetsSimple";
-import DebtsAndLiabilitiesSimple from "../fiveSteps/DebtsAndLiabilitiesSimple";
-import OtherPersonsInHouseholdSimple from "../fiveSteps/OtherPersonsInHouseholdSimple";
-import {
-  updateMatterData,
-  updateMatterReset,
-} from "../../utils/Apis/matters/updateMatters/updateMatterDataActions";
-import {
-  selectMatterUpdateData,
-  selectMatterUpdateError,
-} from "../../utils/Apis/matters/updateMatters/updateMatterDataSelectors";
-import profile_summary from "../../assets/images/profile_summary.svg";
-import background_information from "../../assets/images/background_information.svg";
-import court_information from "../../assets/images/court_information.svg";
-import children_information from "../../assets/images/children_information.svg";
-import relationship_information from "../../assets/images/relationship_information.svg";
-import employment_details from "../../assets/images/employment_details.svg";
-import income_and_benefits from "../../assets/images/income_and_benefits.svg";
-import expenses from "../../assets/images/expenses.svg";
-import assets from "../../assets/images/assets.svg";
-import debts_and_liabilities from "../../assets/images/debts_and_liabilities.svg";
-import other_persons_in_household from "../../assets/images/other_persons_in_household.svg";
 
 import {
   getSingleMatter,
@@ -86,22 +53,6 @@ const TASK_DEFS = [
   { id: "general_query", label: "GENERAL QUERY" },
 ];
 
-// Editable sections shown in the manual-entry "Profile Summary" list. Each opens
-// a modal with the corresponding hydrated *Simple form; saving dispatches
-// updateMatterData for that section.
-const PROFILE_SECTIONS = [
-  { title: "Background Information", icon: background_information, component: "BackgroundInformationSimple" },
-  { title: "Court Information", icon: court_information, component: "CourtInformationSimple" },
-  { title: "Children Information", icon: children_information, component: "ChildrenInformationSimple" },
-  { title: "Relationship Information", icon: relationship_information, component: "RelationshipInformationSimple" },
-  { title: "Employment Details", icon: employment_details, component: "EmploymentDetailsSimple" },
-  { title: "Income and Benefits", icon: income_and_benefits, component: "IncomeAndBenefitsSimple" },
-  { title: "Expenses", icon: expenses, component: "ExpensesSimple" },
-  { title: "Assets", icon: assets, component: "AssetsSimple" },
-  { title: "Debts and Liabilities", icon: debts_and_liabilities, component: "DebtsAndLiabilitiesSimple" },
-  { title: "Other Persons in Household", icon: other_persons_in_household, component: "OtherPersonsInHouseholdSimple" },
-];
-
 const SingleMatter = () => {
   const { id } = useParams();
   console.log("[CLOUDACT-MATTER] SingleMatter mounted with id from URL params:", id);
@@ -130,22 +81,6 @@ const SingleMatter = () => {
   // Aggregated matter data for the chat context
   const [fullMatterData, setFullMatterData] = useState(null);
 
-  // --- Manual entry (editable Profile Summary forms) ---
-  const [modalData, setModalData] = useState(null); // which section modal is open
-  const [manualFormData, setManualFormData] = useState({}); // latest edits from the open form
-  const [isSaving, setIsSaving] = useState(false);
-  const [autoSaved, setAutoSaved] = useState(false); // brief "Saved" flash after an auto-save
-  const saveModeRef = useRef("auto"); // "auto" (blur/change) vs "manual" (Save button)
-  const autoSaveTimer = useRef(null);
-  const touchedRef = useRef(false); // true once the user edits the open section
-  // Per-form active tabs (Client / Opposing Party etc.) — owned here so they
-  // survive the form re-mounting and are available for save context.
-  const [bgInfoActiveTab, setBgInfoActiveTab] = useState("Client");
-  const [childActiveTab, setChildActiveTab] = useState(null);
-  const [empActiveTab, setEmpActiveTab] = useState("Client");
-  const [incomeActiveTab, setIncomeActiveTab] = useState("Client");
-  const [expensesActiveTab, setExpensesActiveTab] = useState("Client");
-
   // Persist task statuses to localStorage whenever they change
   useEffect(() => {
     const storageKey = `matterTaskStatuses_${id}`;
@@ -156,10 +91,6 @@ const SingleMatter = () => {
   const selectSingleMatter = useSelector(selectSingleMatterData);
   const singleMatterLoading = useSelector(selectSingleMatterLoading);
   const singleMatterError = useSelector(selectSingleMatterError);
-
-  // Result of a per-section save (updateMatterData)
-  const updateMatterResult = useSelector(selectMatterUpdateData);
-  const updateMatterError = useSelector(selectMatterUpdateError);
 
   // Redux slices for matter sub-data
   const backgroundData = useSelector((state) => state.backgroundData?.data);
@@ -306,109 +237,6 @@ const SingleMatter = () => {
     setView("tasks");
   }
 
-  // --- Manual entry handlers ---
-  // Each *Simple form reports its current values up through here.
-  function onUpdateFormData(data) {
-    setManualFormData(data);
-  }
-
-  // Save the currently-open section via updateMatterData
-  // (POST update_matter/{sid}/{matterId}/{type}). Explicit Save button.
-  function handleManualSave() {
-    if (!manualFormData?.type) return;
-    saveModeRef.current = "manual";
-    setIsSaving(true);
-    dispatch(
-      updateMatterData({
-        type: manualFormData.type,
-        matter_id: id,
-        data: manualFormData,
-      })
-    );
-  }
-
-  function closeManualModal() {
-    setModalData(null);
-  }
-
-  // The user has interacted with the open section — allow auto-save to run.
-  function markTouched() {
-    touchedRef.current = true;
-  }
-
-  // Reset per-section dirty/indicator state when a different section opens.
-  useEffect(() => {
-    touchedRef.current = false;
-    setAutoSaved(false);
-  }, [modalData]);
-
-  // Save-as-you-go: once the user has edited the open section, save it shortly
-  // after they stop typing / pick a dropdown option — silently, without closing.
-  useEffect(() => {
-    if (!modalData || !manualFormData?.type || !touchedRef.current) return;
-    clearTimeout(autoSaveTimer.current);
-    autoSaveTimer.current = setTimeout(() => {
-      saveModeRef.current = "auto";
-      dispatch(
-        updateMatterData({
-          type: manualFormData.type,
-          matter_id: id,
-          data: manualFormData,
-        })
-      );
-    }, 800);
-    return () => clearTimeout(autoSaveTimer.current);
-  }, [manualFormData, modalData, id, dispatch]);
-
-  // Fade the "Saved" flash after a moment.
-  useEffect(() => {
-    if (!autoSaved) return;
-    const t = setTimeout(() => setAutoSaved(false), 2000);
-    return () => clearTimeout(t);
-  }, [autoSaved]);
-
-  // React to a completed save. Auto-saves stay silent and keep the form open;
-  // an explicit Save closes the modal, refreshes, and toasts.
-  useEffect(() => {
-    if (!updateMatterResult) return;
-    setIsSaving(false);
-    const wasManual = saveModeRef.current === "manual";
-    saveModeRef.current = "auto";
-    dispatch(updateMatterReset());
-
-    if (!wasManual) {
-      setAutoSaved(true);
-      return;
-    }
-
-    setModalData(null);
-    if (taskStatuses.matter_intake !== "completed") {
-      persistTaskStatus("matter_intake", "in_progress");
-    }
-    // Refresh this section so reopening (and the chat context) show saved
-    // values. The court form saves under "courtInfo" but is fetched as "court".
-    if (manualFormData?.type) {
-      const refetchType =
-        manualFormData.type === "courtInfo" ? "court" : manualFormData.type;
-      dispatch(getSingleMatterData(id, refetchType));
-    }
-    toast.success("Data Successfully Saved", {
-      position: "top-right",
-      style: { borderRadius: "10px", background: "#FFF", color: "#000" },
-    });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [updateMatterResult]);
-
-  // Don't leave the Save button stuck on "Saving…" if the request fails.
-  useEffect(() => {
-    if (updateMatterError) {
-      setIsSaving(false);
-      toast.error("Could not save. Please try again.", { position: "top-right" });
-      dispatch(updateMatterReset());
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [updateMatterError]);
-
   // Cleanup on unmount
   useEffect(() => {
     return () => {
@@ -547,167 +375,6 @@ const SingleMatter = () => {
               />
             )}
 
-            {/* Manual entry: editable Profile Summary with hydrated forms
-                that save per section (restored from the pre-migration app). */}
-            {view === "manual_forms" && (
-              <div className="manual-matter-forms">
-                <div className="mw-intake-choice__header">
-                  <button
-                    className="mw-chat-panel__back"
-                    onClick={() => setView("intake_choice")}
-                  >
-                    <svg
-                      width="20"
-                      height="20"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    >
-                      <path d="M19 12H5" />
-                      <path d="M12 19l-7-7 7-7" />
-                    </svg>
-                    Back
-                  </button>
-                  <h3 className="mw-intake-choice__title">
-                    Manual Entry{matterName ? ` — ${matterName}` : ""}
-                  </h3>
-                </div>
-
-                <div className="row matterType">
-                  <div className="col-12">
-                    <div className="summary-container">
-                      <div className="head">
-                        <img src={profile_summary} alt="" />
-                        <div>Profile Summary</div>
-                      </div>
-                      <div className="body">
-                        {PROFILE_SECTIONS.map((item) => (
-                          <div className="profile-menu" key={item.component}>
-                            <div className="info">
-                              <img src={item.icon} alt="" />
-                              <div>{item.title}</div>
-                            </div>
-                            <div className="actions">
-                              <span
-                                className="statusBadge"
-                                onClick={() => {
-                                  setManualFormData({});
-                                  setModalData(item);
-                                }}
-                              >
-                                View / Edit
-                              </span>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Section editor modal — hydrates + saves the chosen section */}
-                <GeneralModal
-                  show={!!modalData}
-                  changeShow={closeManualModal}
-                  handleContinue={handleManualSave}
-                  heading={modalData?.title}
-                  dialogClassName="matterModal"
-                  isLoading={isSaving}
-                >
-                  <div onInput={markTouched} onClick={markTouched}>
-                  {autoSaved && (
-                    <div
-                      style={{
-                        textAlign: "right",
-                        fontSize: "12px",
-                        color: "#22c55e",
-                        marginBottom: "4px",
-                      }}
-                    >
-                      ✓ Saved
-                    </div>
-                  )}
-                  {modalData?.component === "BackgroundInformationSimple" && (
-                    <BackgroundInformationSimple
-                      matterId={id}
-                      onUpdateFormData={onUpdateFormData}
-                      bgInfoActiveTab={bgInfoActiveTab}
-                      setBgInfoActiveTab={setBgInfoActiveTab}
-                    />
-                  )}
-                  {modalData?.component === "CourtInformationSimple" && (
-                    <CourtInformationSimple
-                      matterId={id}
-                      onUpdateFormData={onUpdateFormData}
-                      matterData={matterData}
-                    />
-                  )}
-                  {modalData?.component === "ChildrenInformationSimple" && (
-                    <ChildrenInformationSimple
-                      matterId={id}
-                      onUpdateFormData={onUpdateFormData}
-                      activeTab={childActiveTab}
-                      setActiveTab={setChildActiveTab}
-                    />
-                  )}
-                  {modalData?.component === "RelationshipInformationSimple" && (
-                    <RelationshipInformationSimple
-                      matterId={id}
-                      onUpdateFormData={onUpdateFormData}
-                    />
-                  )}
-                  {modalData?.component === "EmploymentDetailsSimple" && (
-                    <EmploymentDetailsSimple
-                      matterId={id}
-                      onUpdateFormData={onUpdateFormData}
-                      activeTab={empActiveTab}
-                      setActiveTab={setEmpActiveTab}
-                    />
-                  )}
-                  {modalData?.component === "IncomeAndBenefitsSimple" && (
-                    <IncomeAndBenefitsSimple
-                      matterId={id}
-                      onUpdateFormData={onUpdateFormData}
-                      matterData={matterData}
-                      activeTab={incomeActiveTab}
-                      setActiveTab={setIncomeActiveTab}
-                    />
-                  )}
-                  {modalData?.component === "ExpensesSimple" && (
-                    <ExpensesSimple
-                      matterId={id}
-                      onUpdateFormData={onUpdateFormData}
-                      matterData={matterData}
-                      activeTab={expensesActiveTab}
-                      setActiveTab={setExpensesActiveTab}
-                    />
-                  )}
-                  {modalData?.component === "AssetsSimple" && (
-                    <AssetsSimple
-                      matterId={id}
-                      onUpdateFormData={onUpdateFormData}
-                      matterData={matterData}
-                    />
-                  )}
-                  {modalData?.component === "DebtsAndLiabilitiesSimple" && (
-                    <DebtsAndLiabilitiesSimple
-                      matterId={id}
-                      onUpdateFormData={onUpdateFormData}
-                    />
-                  )}
-                  {modalData?.component === "OtherPersonsInHouseholdSimple" && (
-                    <OtherPersonsInHouseholdSimple
-                      matterId={id}
-                      onUpdateFormData={onUpdateFormData}
-                    />
-                  )}
-                  </div>
-                </GeneralModal>
-              </div>
-            )}
 
             {/* Matter Intake via AI chat */}
             {view === "intake_chat" && (
