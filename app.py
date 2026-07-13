@@ -1180,8 +1180,15 @@ After the result, explain in plain language who pays and why, then show:
 
 Payor:              [name]
 Recipient:          [name]
-Monthly support:    $X,XXX – $X,XXX  (low to high)
-Annual support:     $X,XXX – $X,XXX
+
+If the children path was used, show child support first:
+Child support:      $X,XXX / month
+
+Then show all three spousal support scenarios separately:
+Low (40%):          $X,XXX / month   ($X,XXX / year)
+Mid (43%):          $X,XXX / month   ($X,XXX / year)
+High (46%):         $X,XXX / month   ($X,XXX / year)
+
 Duration:           [label]
 
 If the children path was used, also show:
@@ -1201,7 +1208,7 @@ SPOUSAL_CALC_TOOL = {
     ),
     "input_schema": {
         "type": "object",
-        "required": ["years", "recipient_age", "children"],
+        "required": ["years", "children"],
         "properties": {
 
             # ── Party names ───────────────────────────────────────────────
@@ -1221,7 +1228,7 @@ SPOUSAL_CALC_TOOL = {
             },
             "recipient_age": {
                 "type": "number",
-                "description": "Age of the lower-income spouse at separation"
+                "description": "Age of the lower-income spouse at separation. Required when children=false. When children=true, derived from party1_age/party2_age."
             },
             "children": {
                 "type": "boolean",
@@ -1309,7 +1316,7 @@ def run_spousal_calc_tool(tool_input: dict) -> dict:
     p1_name = tool_input.get("party1_name", "Party 1")
     p2_name = tool_input.get("party2_name", "Party 2")
     years         = float(tool_input["years"])
-    recipient_age = float(tool_input["recipient_age"])
+    recipient_age = float(tool_input.get("recipient_age", 0))
 
     # ── PATH A: no children ──────────────────────────────────────────────────
     if not has_children:
