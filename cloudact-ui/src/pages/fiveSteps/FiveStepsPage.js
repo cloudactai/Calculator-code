@@ -165,16 +165,16 @@ const FiveStepsPage = () => {
 
   // The sections rendered in the timeline + accordion.
   const SECTIONS = [
-    { key: "Background", type: "background", title: "Background information", icon: background_information, Comp: BackgroundInformationSimple, extra: { bgInfoActiveTab, setBgInfoActiveTab } },
-    { key: "Court", type: "courtInfo", title: "Court information", icon: court_information, Comp: CourtInformationSimple, extra: {} },
-    { key: "Children", type: "children", title: "Children information", icon: children_information, Comp: ChildrenInformationSimple, extra: { activeTab: childActiveTab, setActiveTab: setChildActiveTab } },
-    { key: "Relationship", type: "relationship", title: "Relationship information", icon: relationship_information, Comp: RelationshipInformationSimple, extra: {} },
-    { key: "EmploymentDetails", type: "employment", title: "Employment details", icon: employment_details, Comp: EmploymentDetailsSimple, extra: { activeTab: empActiveTab, setActiveTab: setEmpActiveTab } },
-    { key: "IncomeAndBenefits", type: "incomeBenefits", title: "Income and benefits", icon: income_and_benefits, Comp: IncomeAndBenefitsSimple, extra: { activeTab: incomeActiveTab, setActiveTab: setIncomeActiveTab } },
-    { key: "Expenses", type: "expenses", title: "Expenses", icon: expenses_icon, Comp: ExpensesSimple, extra: { activeTab: expensesActiveTab, setActiveTab: setExpensesActiveTab } },
-    { key: "Assets", type: "assets", title: "Assets", icon: assets_icon, Comp: AssetsSimple, extra: {} },
-    { key: "DebtsAndLiabilities", type: "debtsLiabilities", title: "Debts and Liabilities", icon: debts_and_liabilities, Comp: DebtsAndLiabilitiesSimple, extra: {} },
-    { key: "OtherPersonsInHousehold", type: "otherPersons", title: "Other persons in Household", icon: other_persons_in_household, Comp: OtherPersonsInHouseholdSimple, extra: {} },
+    { key: "Background", label: "Background", type: "background", title: "Background information", icon: background_information, Comp: BackgroundInformationSimple, extra: { bgInfoActiveTab, setBgInfoActiveTab } },
+    { key: "Court", label: "Court", type: "courtInfo", title: "Court information", icon: court_information, Comp: CourtInformationSimple, extra: {} },
+    { key: "Children", label: "Children", type: "children", title: "Children information", icon: children_information, Comp: ChildrenInformationSimple, extra: { activeTab: childActiveTab, setActiveTab: setChildActiveTab } },
+    { key: "Relationship", label: "Relationship", type: "relationship", title: "Relationship information", icon: relationship_information, Comp: RelationshipInformationSimple, extra: {} },
+    { key: "EmploymentDetails", label: "Employment details", type: "employment", title: "Employment details", icon: employment_details, Comp: EmploymentDetailsSimple, extra: { activeTab: empActiveTab, setActiveTab: setEmpActiveTab } },
+    { key: "IncomeAndBenefits", label: "Income and benefits", type: "incomeBenefits", title: "Income and benefits", icon: income_and_benefits, Comp: IncomeAndBenefitsSimple, extra: { activeTab: incomeActiveTab, setActiveTab: setIncomeActiveTab } },
+    { key: "Expenses", label: "Expenses", type: "expenses", title: "Expenses", icon: expenses_icon, Comp: ExpensesSimple, extra: { activeTab: expensesActiveTab, setActiveTab: setExpensesActiveTab } },
+    { key: "Assets", label: "Assets", type: "assets", title: "Assets", icon: assets_icon, Comp: AssetsSimple, extra: {} },
+    { key: "DebtsAndLiabilities", label: "Debts and Liabilities", type: "debtsLiabilities", title: "Debts and Liabilities", icon: debts_and_liabilities, Comp: DebtsAndLiabilitiesSimple, extra: {} },
+    { key: "OtherPersonsInHousehold", label: "Other persons in Household", type: "otherPersons", title: "Other persons in Household", icon: other_persons_in_household, Comp: OtherPersonsInHouseholdSimple, extra: {} },
   ];
 
   // Required fields per section → { filled, total }. The header bar fills
@@ -236,14 +236,6 @@ const FiveStepsPage = () => {
     const { filled, total } = sectionStats(type);
     return total > 0 && filled >= total;
   };
-  // A timeline dot is "done" only if this section AND every section above it is
-  // complete — the steps fill in order.
-  const timelineDone = {};
-  let cumulative = true;
-  SECTIONS.forEach((s) => {
-    cumulative = cumulative && sectionComplete(s.type);
-    timelineDone[s.key] = cumulative;
-  });
 
   // Each *Simple form reports its section body here. Store it, and once the user
   // has actually interacted, auto-save that section (debounced).
@@ -391,10 +383,10 @@ const FiveStepsPage = () => {
                       {SECTIONS.map((s) => (
                         <div
                           key={s.key}
-                          className={`item ${timelineDone[s.key] ? "done" : ""}`}
+                          className={`item ${sectionComplete(s.type) ? "done" : ""}`}
                         >
                           <div className="circle" />
-                          <div className="text">{s.title}</div>
+                          <div className="text">{s.label}</div>
                         </div>
                       ))}
                       <div className="item">
