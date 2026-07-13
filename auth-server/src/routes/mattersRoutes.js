@@ -93,7 +93,13 @@ async function putRecord(matterId, dataType, data) {
 }
 
 // Save-side transforms (port of cloud-act-api saveMatter)
-const withRole = (obj, role) => ({ role, ...(obj || {}) });
+//
+// Party rows are split back apart on read by an EXACT role match of "Client" /
+// "Opposing Party" (see the five-steps Simple forms + DocumentViewDataUpdate hook).
+// `role` is forced AFTER the spread so an agent-supplied role (e.g. the matter
+// role "Applicant"/"Respondent" the intake bot puts on Background) can't clobber
+// the party discriminator the forms hydrate on.
+const withRole = (obj, role) => ({ ...(obj || {}), role });
 
 async function saveSections(matter, info) {
   const matterPatch = {};
@@ -103,14 +109,22 @@ async function saveSections(matter, info) {
       matter.id,
       "background",
       assignIds([
-        withRole(info.Background.client, "client"),
-        withRole(info.Background.opposingParty, "opposingParty"),
+        withRole(info.Background.client, "Client"),
+        withRole(info.Background.opposingParty, "Opposing Party"),
       ])
     );
   }
 
   if (info.Court) {
-    await putRecord(matter.id, "court", assignIds(toArray(info.Court)));
+    // The Court Simple form hydrates on court_name / file_number; the intake bot
+    // (and legacy save) speak name / fileNumber, so normalise to the form's names.
+    const courtRows = toArray(info.Court).map((c) => ({
+      ...c,
+      court_name: c.court_name ?? c.name ?? "",
+      file_number: c.file_number ?? c.fileNumber ?? "",
+      address: c.address ?? "",
+    }));
+    await putRecord(matter.id, "court", assignIds(courtRows));
   }
 
   if (info.Children) {
@@ -134,8 +148,8 @@ async function saveSections(matter, info) {
       matter.id,
       "employment",
       assignIds([
-        withRole(info.EmploymentDetails.client, "client"),
-        withRole(info.EmploymentDetails.opposingParty, "opposingParty"),
+        withRole(info.EmploymentDetails.client, "Client"),
+        withRole(info.EmploymentDetails.opposingParty, "Opposing Party"),
       ])
     );
   }
@@ -143,12 +157,17 @@ async function saveSections(matter, info) {
   if (info.IncomeAndBenefits) {
     const section = info.IncomeAndBenefits;
     const financialYear = section.financialYear;
-    const rows = ["client", "opposingParty"].flatMap((role) => {
-      const party = section[role] || {};
+    // Key indexes section.client / section.opposingParty; roleLabel is the exact
+    // discriminator the Income Simple form splits on ("Client"/"Opposing Party").
+    const rows = [
+      ["client", "Client"],
+      ["opposingParty", "Opposing Party"],
+    ].flatMap(([key, roleLabel]) => {
+      const party = section[key] || {};
       const tag = (items, incomeBenefit) =>
         toArray(items).map((item) => ({
           ...item,
-          role: item?.role || role,
+          role: roleLabel,
           incomeBenefit,
           financialYear,
         }));

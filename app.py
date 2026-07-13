@@ -459,6 +459,14 @@ Work through the sections below in order. As soon as a section has enough
 information, call the save_matter_section tool for that section, then continue to
 the next one. Saving as you go lets the user pause and resume without losing work.
 
+CRITICAL: Never end your turn with only a promise to save (e.g. "let me process
+and save this section by section"). When you have data to save, EMIT the
+save_matter_section tool call(s) in that same turn — do not describe the saving,
+just do it. If the user has given you information for several sections at once,
+call save_matter_section multiple times (one per section) before writing any
+summary. Only produce a plain text reply with no tool call when you are either
+asking the user a question or giving the final "intake is complete" summary.
+
 Some information may already be on file (it is provided at the start of the
 conversation). Treat that as already-known — confirm it briefly rather than
 re-asking, and only fill the gaps.
@@ -478,9 +486,10 @@ SECTIONS AND THEIR EXACT DATA SHAPES
                         "lawyerProvince", "lawyerPostalCode", "lawyerMunicipality" },
      "opposingParty": { ...same fields... }
    }
-   - "role" is the party's role in the matter (e.g. Applicant / Respondent).
-   - "representedBy" is the lawyer's name if represented, otherwise "Self".
-   - Only fill lawyer* fields when the party is represented.
+   - "role" identifies the party: use "Client" for the client and "Opposing Party"
+     for the opposing party (verbatim — the intake form splits parties on this).
+   - "representedBy" is "Lawyer" if the party has a lawyer, otherwise "Self".
+   - Only fill lawyer* fields when representedBy is "Lawyer".
 
 2. section="Relationship"
    data: { "dateOfMarriage", "placeOfMarriage", "startedLivingTogether",
@@ -494,11 +503,13 @@ SECTIONS AND THEIR EXACT DATA SHAPES
 
 4. section="IncomeAndBenefits"
    data: {
+     "financialYear": "<YYYY>",
      "client":        { "income":  [ { "type", "yearlyAmount" } ],
                         "benefit": [ { "type", "yearlyAmount", "incomeBenefit": "benefit" } ] },
      "opposingParty": { ...same... }
    }
    - Amounts are annual CAD, as strings.
+   - "financialYear" is the tax year the figures are for (e.g. the current year).
 
 5. section="EmploymentDetails"
    data: {
@@ -509,10 +520,50 @@ SECTIONS AND THEIR EXACT DATA SHAPES
    }
 
 6. section="Expenses"   (optional)
-   data: { "client": { ...monthly expense lines... }, "opposingParty": { ...same... } }
+   data: {
+     "financialYear": "<YYYY>",
+     "client":        { "expenses":            [ { "type", "monthlyAmount", "yearlyAmount" } ],
+                        "specialChildExpenses": [ { "type", "childName", "amount" } ] },
+     "opposingParty": { ...same two arrays... }
+   }
+   - Amounts as strings. Give monthlyAmount and/or yearlyAmount for each ordinary
+     expense line; specialChildExpenses are s.7 child expenses, each with a single
+     "amount" and the "childName" it applies to.
 
-7. section="Assets"   (optional; array — one object per asset)
-   data: [ { "description", "value" } ]
+7. section="Assets"   (optional)
+   data is an OBJECT keyed by asset category (NOT a flat array). Include only the
+   categories the party actually has; each is an array of asset items:
+   {
+     "valuation_date": "<YYYY-MM-DD>",
+     "lands":                                    [ <item> ],
+     "other_property":                           [ <item> ],
+     "business_interest":                        [ <item> ],
+     "general_household_items_and_vehicles":     [ <item> ],
+     "bank_accounts_savings_securities_pension": [ <item> ],
+     "life_and_disability_insurance":            [ <item> ],
+     "money_owed_to_you":                        [ <item> ]
+   }
+   Every <item> carries a market_value block plus the descriptive fields for its
+   category. The market_value block is identical across categories:
+     "market_value": {
+       "client":         { "on_date_of_marriage", "on_valuation_date", "today" },
+       "opposing_party": { "on_date_of_marriage", "on_valuation_date", "today" }
+     }
+   - "today" is the current value; the two date fields are historical values (leave
+     "" if unknown). Amounts as strings. Fill the client block; leave opposing_party
+     values "" unless the item belongs to the opposing party.
+   Descriptive fields BY category (use these names verbatim; leave "" if unknown):
+     lands:                                    property_status, address_of_property,
+                                               nature_and_type_of_ownership
+     other_property:                           property_status_op, category_op, details_op
+     business_interest:                        property_status_bi, firm_name, interest
+     general_household_items_and_vehicles:     property_status_ghiav, description_ghiav,
+                                               isInPossession
+     bank_accounts_savings_securities_pension: property_status_bassp, category_bassp,
+                                               description_bassp, institution, account_number
+     life_and_disability_insurance:            property_status_ladi, owner, beneficiary,
+                                               policy_no, face_amount
+     money_owed_to_you:                        property_status_moty, details_moty
 
 8. section="DebtsAndLiabilities"   (optional; array — one object per debt)
    data: [ { "category", "details", "on_date_of_marriage",
@@ -549,8 +600,8 @@ SAVE_SECTION_TOOL = {
             "data": {
                 "description": (
                     "The section payload. An object for Background, Relationship, "
-                    "IncomeAndBenefits, EmploymentDetails, Expenses and Court; an "
-                    "array for Children, Assets and DebtsAndLiabilities. Use the exact "
+                    "IncomeAndBenefits, EmploymentDetails, Expenses, Assets and Court; "
+                    "an array for Children and DebtsAndLiabilities. Use the exact "
                     "field names from the system prompt."
                 ),
             },
@@ -575,6 +626,7 @@ def intake_chat():
         client = anthropic.Anthropic()  # reads ANTHROPIC_API_KEY from env
 
         saved_sections = []  # [{ "section": str, "data": object|array }, ...]
+        nudges = 0           # how many times we've pushed a stalled "I'll save" turn
 
         # Loop — exits once Claude produces a reply with no further tool call.
         for _ in range(12):
@@ -597,11 +649,45 @@ def intake_chat():
 
             messages.append({"role": "assistant", "content": assistant_content})
 
-            # No tool call — we have the final reply for this turn.
+            # No tool call — normally the final reply for this turn.
             if response.stop_reason != "tool_use":
                 reply = "".join(
                     b["text"] for b in assistant_content if b.get("type") == "text"
                 )
+                # Guard against the "let me now save this section by section" stall:
+                # the model announces it will save but ends the turn without emitting
+                # any tool call, so nothing gets persisted. If it clearly intends to
+                # save, nudge it to actually call the tool instead of dead-ending on
+                # the user. Bounded so a genuine question/summary still returns.
+                low = reply.lower()
+                intends_to_save = any(
+                    phrase in low
+                    for phrase in (
+                        "save", "process", "section by section", "let me",
+                        "one moment", "i'll go", "i will go", "proceed",
+                    )
+                )
+                # Don't nudge the final wrap-up ("...has been saved / intake complete"),
+                # which also mentions "saved" but is legitimately tool-call-free.
+                looks_done = any(
+                    phrase in low
+                    for phrase in (
+                        "intake is complete", "complete and saved", "has been saved",
+                        "have been saved", "all sections", "everything is saved",
+                    )
+                )
+                if intends_to_save and not looks_done and nudges < 2:
+                    nudges += 1
+                    messages.append({
+                        "role": "user",
+                        "content": (
+                            "Go ahead now: call the save_matter_section tool for every "
+                            "section you already have information for — do not just "
+                            "describe what you will do. If you are still missing "
+                            "information for a section, ask your next question instead."
+                        ),
+                    })
+                    continue
                 return jsonify({
                     "reply": reply,
                     "messages": messages,
