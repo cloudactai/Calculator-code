@@ -629,11 +629,16 @@ def intake_chat():
         nudges = 0           # how many times we've pushed a stalled "I'll save" turn
 
         # Loop — exits once Claude produces a reply with no further tool call.
-        for _ in range(12):
+        # max_tokens must be roomy: a bulk paste makes the model emit many
+        # save_matter_section tool calls in ONE turn, and if it hits the token
+        # cap mid-flight the turn ends with stop_reason "max_tokens" on unanswered
+        # tool_use blocks — which 400s the next request. Higher cap + answering
+        # tool calls by PRESENCE (below) rather than stop_reason avoids that.
+        for _ in range(16):
 
             response = client.messages.create(
                 model=os.getenv("CLAUDE_MODEL", "claude-sonnet-4-6"),
-                max_tokens=2048,
+                max_tokens=8192,
                 system=INTAKE_SYSTEM,
                 tools=[SAVE_SECTION_TOOL],
                 messages=messages,
@@ -649,66 +654,69 @@ def intake_chat():
 
             messages.append({"role": "assistant", "content": assistant_content})
 
-            # No tool call — normally the final reply for this turn.
-            if response.stop_reason != "tool_use":
-                reply = "".join(
-                    b["text"] for b in assistant_content if b.get("type") == "text"
-                )
-                # Guard against the "let me now save this section by section" stall:
-                # the model announces it will save but ends the turn without emitting
-                # any tool call, so nothing gets persisted. If it clearly intends to
-                # save, nudge it to actually call the tool instead of dead-ending on
-                # the user. Bounded so a genuine question/summary still returns.
-                low = reply.lower()
-                intends_to_save = any(
-                    phrase in low
-                    for phrase in (
-                        "save", "process", "section by section", "let me",
-                        "one moment", "i'll go", "i will go", "proceed",
-                    )
-                )
-                # Don't nudge the final wrap-up ("...has been saved / intake complete"),
-                # which also mentions "saved" but is legitimately tool-call-free.
-                looks_done = any(
-                    phrase in low
-                    for phrase in (
-                        "intake is complete", "complete and saved", "has been saved",
-                        "have been saved", "all sections", "everything is saved",
-                    )
-                )
-                if intends_to_save and not looks_done and nudges < 2:
-                    nudges += 1
-                    messages.append({
-                        "role": "user",
-                        "content": (
-                            "Go ahead now: call the save_matter_section tool for every "
-                            "section you already have information for — do not just "
-                            "describe what you will do. If you are still missing "
-                            "information for a section, ask your next question instead."
-                        ),
-                    })
-                    continue
-                return jsonify({
-                    "reply": reply,
-                    "messages": messages,
-                    "saved_sections": saved_sections,
-                })
-
-            # Claude saved one or more sections — record them and acknowledge so it
-            # can continue. The actual DB write happens on the frontend.
-            tool_results = []
-            for block in assistant_content:
-                if block.get("type") == "tool_use":
-                    section = block["input"].get("section")
-                    data = block["input"].get("data")
+            # Answer EVERY tool_use with a tool_result, keyed off the blocks that are
+            # actually present (NOT response.stop_reason — a max_tokens cut-off leaves
+            # tool_use blocks with stop_reason "max_tokens", and skipping them here
+            # would leave them unpaired and 400 the next call). Then loop so the model
+            # can save the remaining sections and write its summary.
+            tool_uses = [b for b in assistant_content if b.get("type") == "tool_use"]
+            if tool_uses:
+                tool_results = []
+                for block in tool_uses:
+                    section = block.get("input", {}).get("section")
+                    data = block.get("input", {}).get("data")
                     saved_sections.append({"section": section, "data": data})
                     tool_results.append({
                         "type":        "tool_result",
                         "tool_use_id": block["id"],
                         "content":     json.dumps({"status": "saved", "section": section}),
                     })
+                messages.append({"role": "user", "content": tool_results})
+                continue
 
-            messages.append({"role": "user", "content": tool_results})
+            # No tool call this turn — a question, a stall, or the final summary.
+            reply = "".join(
+                b["text"] for b in assistant_content if b.get("type") == "text"
+            )
+            # Guard against the "let me now save this section by section" stall:
+            # the model announces it will save but ends the turn without emitting
+            # any tool call, so nothing gets persisted. If it clearly intends to
+            # save, nudge it to actually call the tool instead of dead-ending on
+            # the user. Bounded so a genuine question/summary still returns.
+            low = reply.lower()
+            intends_to_save = any(
+                phrase in low
+                for phrase in (
+                    "save", "process", "section by section", "let me",
+                    "one moment", "i'll go", "i will go", "proceed",
+                )
+            )
+            # Don't nudge the final wrap-up ("...has been saved / intake complete"),
+            # which also mentions "saved" but is legitimately tool-call-free.
+            looks_done = any(
+                phrase in low
+                for phrase in (
+                    "intake is complete", "complete and saved", "has been saved",
+                    "have been saved", "all sections", "everything is saved",
+                )
+            )
+            if intends_to_save and not looks_done and nudges < 2:
+                nudges += 1
+                messages.append({
+                    "role": "user",
+                    "content": (
+                        "Go ahead now: call the save_matter_section tool for every "
+                        "section you already have information for — do not just "
+                        "describe what you will do. If you are still missing "
+                        "information for a section, ask your next question instead."
+                    ),
+                })
+                continue
+            return jsonify({
+                "reply": reply,
+                "messages": messages,
+                "saved_sections": saved_sections,
+            })
 
         return jsonify({"error": "Reached iteration limit without a final reply."}), 500
 
