@@ -177,37 +177,73 @@ const FiveStepsPage = () => {
     { key: "OtherPersonsInHousehold", type: "otherPersons", title: "Other persons in Household", icon: other_persons_in_household, Comp: OtherPersonsInHouseholdSimple, extra: {} },
   ];
 
-  // Whether a section's required fields are filled (drives the "done" bar).
-  const partyComplete = (p) =>
-    !!p &&
-    ["role", "province", "name", "postalCode", "phone", "address", "email"].every(
-      (f) => p[f] && String(p[f]).trim()
-    );
-  const SECTION_COMPLETE = {
-    background: (b) =>
-      partyComplete(b?.background?.client) && partyComplete(b?.background?.opposingParty),
-    courtInfo: (b) => !!(b?.courtInfo?.name && String(b.courtInfo.name).trim()),
-    children: (b) =>
-      Array.isArray(b?.children) &&
-      b.children.some((c) => c?.childName && String(c.childName).trim()),
-    relationship: (b) =>
-      !!(b?.relationship?.data?.dateOfMarriage || b?.relationship?.data?.startedLivingTogether),
-    employment: (b) => !!b?.employment?.data?.client?.employmentStatus,
-    incomeBenefits: (b) => !!b?.incomeBenefits?.financialYear,
-    expenses: (b) => !!b?.expenses?.data?.financialYear,
-    assets: (b) => !!b?.assets?.valuation_date,
-    debtsLiabilities: (b) =>
-      Array.isArray(b?.debtsLiabilities) &&
-      b.debtsLiabilities.some((d) => d?.category && String(d.category).trim()),
-    otherPersons: (b) => !!b?.otherPersons?.live_alone,
+  // Required fields per section → { filled, total }. The header bar fills
+  // proportionally; a section is "complete" when filled === total.
+  const notEmpty = (v) => v != null && String(v).trim() !== "";
+  const REQUIRED = {
+    background: (b) => {
+      const fs = ["role", "province", "name", "postalCode", "phone", "address", "email"];
+      let filled = 0;
+      [b?.background?.client, b?.background?.opposingParty].forEach((p) =>
+        fs.forEach((f) => {
+          if (notEmpty(p?.[f])) filled += 1;
+        })
+      );
+      return { filled, total: fs.length * 2 };
+    },
+    courtInfo: (b) => ({ filled: notEmpty(b?.courtInfo?.name) ? 1 : 0, total: 1 }),
+    children: (b) => ({
+      filled:
+        Array.isArray(b?.children) && b.children.some((c) => notEmpty(c?.childName)) ? 1 : 0,
+      total: 1,
+    }),
+    relationship: (b) => ({
+      filled:
+        notEmpty(b?.relationship?.data?.dateOfMarriage) ||
+        notEmpty(b?.relationship?.data?.startedLivingTogether)
+          ? 1
+          : 0,
+      total: 1,
+    }),
+    employment: (b) => ({
+      filled: notEmpty(b?.employment?.data?.client?.employmentStatus) ? 1 : 0,
+      total: 1,
+    }),
+    incomeBenefits: (b) => ({ filled: notEmpty(b?.incomeBenefits?.financialYear) ? 1 : 0, total: 1 }),
+    expenses: (b) => ({ filled: notEmpty(b?.expenses?.data?.financialYear) ? 1 : 0, total: 1 }),
+    assets: (b) => ({ filled: notEmpty(b?.assets?.valuation_date) ? 1 : 0, total: 1 }),
+    debtsLiabilities: (b) => ({
+      filled:
+        Array.isArray(b?.debtsLiabilities) && b.debtsLiabilities.some((d) => notEmpty(d?.category))
+          ? 1
+          : 0,
+      total: 1,
+    }),
+    otherPersons: (b) => ({ filled: notEmpty(b?.otherPersons?.live_alone) ? 1 : 0, total: 1 }),
   };
-  const isComplete = (type) => {
+  const sectionStats = (type) => {
     try {
-      return !!SECTION_COMPLETE[type]?.(sectionData[type]);
+      return REQUIRED[type]?.(sectionData[type]) || { filled: 0, total: 1 };
     } catch {
-      return false;
+      return { filled: 0, total: 1 };
     }
   };
+  const sectionPct = (type) => {
+    const { filled, total } = sectionStats(type);
+    return total ? Math.round((filled / total) * 100) : 0;
+  };
+  const sectionComplete = (type) => {
+    const { filled, total } = sectionStats(type);
+    return total > 0 && filled >= total;
+  };
+  // A timeline dot is "done" only if this section AND every section above it is
+  // complete — the steps fill in order.
+  const timelineDone = {};
+  let cumulative = true;
+  SECTIONS.forEach((s) => {
+    cumulative = cumulative && sectionComplete(s.type);
+    timelineDone[s.key] = cumulative;
+  });
 
   // Each *Simple form reports its section body here. Store it, and once the user
   // has actually interacted, auto-save that section (debounced).
@@ -355,7 +391,7 @@ const FiveStepsPage = () => {
                       {SECTIONS.map((s) => (
                         <div
                           key={s.key}
-                          className={`item ${isComplete(s.type) ? "done" : ""}`}
+                          className={`item ${timelineDone[s.key] ? "done" : ""}`}
                         >
                           <div className="circle" />
                           <div className="text">{s.title}</div>
@@ -396,7 +432,7 @@ const FiveStepsPage = () => {
                 >
                   <Accordion defaultActiveKey="0">
                     {SECTIONS.map((s, i) => {
-                      const done = isComplete(s.type);
+                      const pct = sectionPct(s.type);
                       const SectionForm = s.Comp;
                       return (
                         <Accordion.Item eventKey={String(i)} key={s.key}>
@@ -408,11 +444,11 @@ const FiveStepsPage = () => {
                             >
                               <div className="d-flex justify-content-between">
                                 <div>{s.title}</div>
-                                <div>{done ? "Complete" : ""}</div>
+                                <div>{pct}%</div>
                               </div>
                               <div
-                                className={`progress-bar ${done ? "done" : ""}`}
-                                style={{ "--progress-width": done ? "100%" : "0%" }}
+                                className={`progress-bar ${pct === 100 ? "done" : ""}`}
+                                style={{ "--progress-width": `${pct}%` }}
                               ></div>
                             </div>
                           </Accordion.Header>
