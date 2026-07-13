@@ -1148,11 +1148,8 @@ For each child:
 - Custody: who do they primarily live with? ("Party 1", "Party 2", or "Shared")
 - Does the child have a disability? (Yes / No)
 
-Also collect:
-- Monthly table child support paid by the higher-income spouse (CAD)
-- Monthly notional child support — what the recipient would owe if roles
-  were reversed. Say "use 0 if unknown."
-- Age of the youngest child at separation
+Child support amounts (table CS and notional CS) are computed automatically
+from the children's details and incomes — do NOT ask the user for these.
 
 DEDUCTIONS — ask this question exactly once, after collecting incomes:
 "Does either party have significant tax deductions — such as RRSP
@@ -1188,8 +1185,8 @@ Annual support:     $X,XXX – $X,XXX
 Duration:           [label]
 
 If the children path was used, also show:
-Payor INDI (mid):   $X,XXX / month
-Recipient INDI (mid): $X,XXX / month
+Payor INDI (mid):   $X,XXX / year
+Recipient INDI (mid): $X,XXX / year
 
 Ontario SSAG only. Politely decline questions about other provinces.
 """
@@ -1274,20 +1271,6 @@ SPOUSAL_CALC_TOOL = {
                     }
                 }
             },
-            "monthly_child_support": {
-                "type": "number",
-                "description": "Monthly table child support paid by the higher-income spouse (CAD). Required when children=true."
-            },
-            "monthly_notional_child_support": {
-                "type": "number",
-                "description": "Monthly notional child support (what the recipient would owe if roles reversed). Use 0 if unknown.",
-                "default": 0
-            },
-            "youngest_child_age": {
-                "type": "number",
-                "description": "Age of the youngest child at separation. Required when children=true."
-            },
-
             # ── Deductions — Party 1 (children=true path only) ────────────
             "party1_other_deductions": {
                 "type": "number",
@@ -1420,6 +1403,18 @@ def run_spousal_calc_tool(tool_input: dict) -> dict:
             "child_care_expenses": float(tool_input.get("party1_child_care_expenses", 0.0)),
         }
 
+    # Compute youngest child age from DOBs
+    child_ages = []
+    for c in children_raw:
+        try:
+            dob = date.fromisoformat(c["date_of_birth"])
+            age = today.year - dob.year - ((today.month, today.day) < (dob.month, dob.day))
+            child_ages.append(age)
+        except (ValueError, KeyError):
+            pass
+    youngest_child_age = min(child_ages) if child_ages else 0.0
+
+    # CS amounts auto-computed from children + incomes (pass -1)
     result = calculate_spousal_support_iterative(
         payor_gross=payor_gross,
         recipient_gross=recip_gross,
@@ -1428,9 +1423,9 @@ def run_spousal_calc_tool(tool_input: dict) -> dict:
         years=years,
         children=child_infos,
         child_counts=child_counts,
-        monthly_cs_paid=float(tool_input.get("monthly_child_support", 0.0)),
-        monthly_notional_cs=float(tool_input.get("monthly_notional_child_support", 0.0)),
-        youngest_child_age=float(tool_input.get("youngest_child_age", 0.0)),
+        monthly_cs_paid=-1,
+        monthly_notional_cs=-1,
+        youngest_child_age=float(youngest_child_age),
         payor_other_deductions=payor_deductions["other_deductions"],
         payor_child_care_expenses=payor_deductions["child_care_expenses"],
         recip_other_deductions=recip_deductions["other_deductions"],
@@ -1446,6 +1441,7 @@ def run_spousal_calc_tool(tool_input: dict) -> dict:
         "formula":              "iterative_with_children",
         "payor":                payor_name,
         "recipient":            recip_name,
+        "monthly_cs_paid":      result.monthly_cs_paid,
         "monthly_low":          result.monthly_low,
         "monthly_mid":          result.monthly_mid,
         "monthly_high":         result.monthly_high,
