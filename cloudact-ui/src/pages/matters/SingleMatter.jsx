@@ -381,14 +381,8 @@ const SingleMatter = () => {
               <MatterIntakeChatPanel
                 matterData={fullMatterData}
                 matterId={id}
-                onComplete={() => {
-                  // Fires on each incremental section save — mark the task underway
-                  // (there is no reliable "all sections done" signal yet). The user
-                  // stays in the chat and returns via "Back to Tasks".
-                  if (taskStatuses.matter_intake !== "completed") {
-                    persistTaskStatus("matter_intake", "in_progress");
-                  }
-                }}
+                onComplete={() => persistTaskStatus("matter_intake", "completed")}
+                onBack={() => setView("tasks")}
               />
             )}
 
