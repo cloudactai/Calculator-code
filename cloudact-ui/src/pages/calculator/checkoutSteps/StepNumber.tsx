@@ -545,7 +545,8 @@ const ActiveForm1DataElement = ({ activeForm1Data }: any) => {
           ).year}{" "}
         year relationship
       </span>
-      {!!activeForm1Data?.aboutTheChildren?.childrenInfo.length &&
+      {activeForm1Data?.typeOfCalculatorSelected !== "SPOUSAL_SUPPORT" &&
+        !!activeForm1Data?.aboutTheChildren?.childrenInfo.length &&
         activeForm1Data?.aboutTheChildren?.childrenInfo.map((child: any) => (
           <>
             <OverlayTrigger

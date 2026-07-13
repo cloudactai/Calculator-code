@@ -423,6 +423,9 @@ const Screen2 = ({
       : [{ label: "", amount: "0", value: "", tolltip: "" }],
   });
 
+  // Counter to force re-render after ref-based calculations update
+  const [calcVersion, setCalcVersion] = useState(0);
+
 
 
   const [deductions, setDeductions] = useState({
@@ -6907,8 +6910,10 @@ const Screen2 = ({
     calculateTotalTaxes(2);
     calculateAllOperationsForParty1();
     calculateAllOperationsForParty2();
+    // Force re-render so RenderCalculationValues picks up fresh ref values
+    setCalcVersion((v) => v + 1);
     // }
-  }, [count, childCareExpenses]);
+  }, [count, childCareExpenses, income, nonTaxableincome, fetchedDynamicValues]);
 
  
 
@@ -7302,10 +7307,15 @@ const Screen2 = ({
       ...distinctYears,
       selectedYear: event.label,
     });
-    fetchFederalDBValues(event.label, getProvinceOfParty1()).then((res) => {
-      allValuesRefreshed();
-      setLoading(false);
-    });
+    fetchFederalDBValues(event.label, getProvinceOfParty1())
+      .then((res) => {
+        allValuesRefreshed();
+        setLoading(false);
+      })
+      .catch((err) => {
+        console.error("Error refreshing tax data for year:", err);
+        setLoading(false);
+      });
   };
 
   //need partyNum also
@@ -8135,7 +8145,9 @@ const Screen2 = ({
               <div className="controls">
                 <div className="form-group mb-0" style={{ width: "300px" }}>
                   <Dropdown
-                    options={distinctYears.allYears.map(({ year }) => year)}
+                    options={distinctYears.allYears.length > 0
+                      ? [Math.max(...distinctYears.allYears.map(y => y.year))]
+                      : []}
                     placeholder="Select Tax Year*"
                     value={`${distinctYears.selectedYear}`}
                     onChange={(event) => {
@@ -8500,8 +8512,6 @@ const Screen2 = ({
                             prefix={"$"}
                             onChange={(e) => {
                               changeParty1Amount(e, index);
-                              calculateAllOperationsForParty1();
-                              calculateAllOperationsForParty2();
                             }}
                             onBlur={() => {
                               calculateChildSupport();
@@ -8613,8 +8623,6 @@ const Screen2 = ({
                               e: React.SyntheticEvent<HTMLInputElement>
                             ) => {
                               changeParty2Amount(e, index);
-                              calculateAllOperationsForParty1();
-                              calculateAllOperationsForParty2();
                             }}
                             onBlur={() => {
                               calculateChildSupport();

@@ -2,6 +2,7 @@ import Cookies from "js-cookie";
 import { useEffect, useState, useRef } from "react";
 import { useSelector, useDispatch } from "react-redux";
 import { toggleSidebar } from "../../actions/userActions";
+import { clearClientDetailsFromFileAction } from "../../actions/matterActions";
 import Layout from "../../components/LayoutComponents/Layout";
 import Loader from "../../components/Loader";
 import useAPI from "../../hooks/useAPI";
@@ -802,6 +803,8 @@ const Calculator = () => {
     if (getCurrentIdFromQuery() === null) {
       return () => {
         dispatch(toggleSidebar());
+        dispatch(clearClientDetailsFromFileAction());
+        Cookies.remove("calculatorLabel");
       };
     }
 
@@ -888,6 +891,8 @@ const Calculator = () => {
 
     return () => {
       dispatch(toggleSidebar());
+      dispatch(clearClientDetailsFromFileAction());
+      Cookies.remove("calculatorLabel");
     };
   }, []);
 

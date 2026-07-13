@@ -2,7 +2,7 @@
   "name": "frontend",
   "version": "0.1.0",
   "private": true,
-  "proxy": "http://localhost:3000/v1",
+  "proxy": "http://localhost:8080",
   "dependencies": {
     "@cyntler/react-doc-viewer": "^1.15.0",
     "@emotion/react": "^11.11.1",

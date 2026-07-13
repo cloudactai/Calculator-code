@@ -1,13 +1,13 @@
 from spousal_support import calculate_spousal_support_iterative, INDEFINITE_SENTINEL
 from tax import ChildInfo
  
-child = ChildInfo(date_of_birth="2022-01-01", custody_arrangement="Party 2", child_has_disability="No")
+child = ChildInfo(date_of_birth="2020-01-01", custody_arrangement="Party 2", child_has_disability="No")
 
 r = calculate_spousal_support_iterative(
     payor_gross=99000.0,
-    recipient_gross=60000.0,
+    recipient_gross=120000.0,
     payor_age=35,
-    recipient_age=35,
+    recipient_age=36,
     years=20,
     children=[child],
     child_counts={"party1": 0, "party2": 1, "shared": 0},
