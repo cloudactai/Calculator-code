@@ -85,7 +85,7 @@ const IncomeAndBenefitsSimple = ({ matterId, onUpdateFormData, matterData, activ
 
         }
 
-    }, [selectIncomeData, selectIncomeDataLoading, totals, formData])
+    }, [selectIncomeData, selectIncomeDataLoading])
 
 
     const [formData, setFormData] = useState({
@@ -130,7 +130,7 @@ const IncomeAndBenefitsSimple = ({ matterId, onUpdateFormData, matterData, activ
 
     useEffect(() => {
         updateTotals()
-    }, [formData, totals])
+    }, [formData])
     
 
 

@@ -202,7 +202,7 @@ const SingleMatter = () => {
     if (choice === "ai") {
       setView("intake_chat");
     } else if (choice === "manual") {
-      // Navigate to existing 5-step form
+      // 5-step accordion intake (hydrated forms that save as you go).
       history.push(`/5-steps/${id}`);
     }
   }
@@ -375,19 +375,14 @@ const SingleMatter = () => {
               />
             )}
 
+
             {/* Matter Intake via AI chat */}
             {view === "intake_chat" && (
               <MatterIntakeChatPanel
                 matterData={fullMatterData}
                 matterId={id}
-                onComplete={() => {
-                  // Fires on each incremental section save — mark the task underway
-                  // (there is no reliable "all sections done" signal yet). The user
-                  // stays in the chat and returns via "Back to Tasks".
-                  if (taskStatuses.matter_intake !== "completed") {
-                    persistTaskStatus("matter_intake", "in_progress");
-                  }
-                }}
+                onComplete={() => persistTaskStatus("matter_intake", "completed")}
+                onBack={() => setView("tasks")}
               />
             )}
 

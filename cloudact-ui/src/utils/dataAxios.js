@@ -33,6 +33,11 @@ function resolveDataApiBase() {
 
 const dataApiBase = resolveDataApiBase();
 
+// Single source of truth for the backend base URL. The legacy `axios` client
+// imports this so ALL frontend traffic goes to the auth-server (Postgres),
+// never the retired law-firm /v1 backend.
+export const DATA_API_BASE = dataApiBase;
+
 const instance = axios.create({
   baseURL: dataApiBase,
   withCredentials: true,

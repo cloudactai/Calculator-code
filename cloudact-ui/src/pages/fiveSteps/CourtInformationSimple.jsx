@@ -2,16 +2,10 @@ import { useState, useEffect } from 'react'
 
 import InputCustom from "../../components/InputCustom";
 
-import { useDispatch, useSelector } from 'react-redux';
-import { getAllCourts } from '../../utils/Apis/matters/getCourts/getCourtsActions';
-import { selectCourtsData } from '../../utils/Apis/matters/getCourts/getCourtsSelectors';
-import CustomDropDown from '../../components/Matters/Form/CustomDropdown';
 import { CourtData } from '../../utils/Apis/matters/CustomHook/CourtData';
 import Loader from '../../components/Loader'
 
-const CourtInformationSimple = ({ matterId, onUpdateFormData, matterData }) => {
-
-    const dispatch = useDispatch();
+const CourtInformationSimple = ({ matterId, onUpdateFormData }) => {
 
     const [loading, setLoading] = useState(true)
     const { selectCourt, selectCourtLoading } = CourtData(matterId)
@@ -29,23 +23,6 @@ const CourtInformationSimple = ({ matterId, onUpdateFormData, matterData }) => {
         }
     }, [selectCourt, loading])
 
-    useEffect(() => {
-        if (matterData) {
-            dispatch(getAllCourts(matterData?.province))
-        }
-    }, [matterData])
-
-    const courtsData = useSelector(selectCourtsData);
-
-    const courtsList = courtsData?.body.map(item => {
-        let data = {
-            name: item.court_name,
-            value: item.id,
-        }
-        return data;
-    });
-
-
     const [formData, setFormData] = useState({
         name: "",
         fileNumber: "",
@@ -58,18 +35,6 @@ const CourtInformationSimple = ({ matterId, onUpdateFormData, matterData }) => {
             courtInfo: formData,
         })
     }, [formData])
-
-    const handleSelectChange = (e) => {
-
-        let address = courtsData?.body.find(court => court.court_name === e.name)
-
-        setFormData({
-            ...formData,
-            name: e.name,
-            address: address.address_1 + ', ' + address.address_2
-        })
-
-    }
 
     const handleFormDataChange = (e) => {
 
@@ -90,10 +55,12 @@ const CourtInformationSimple = ({ matterId, onUpdateFormData, matterData }) => {
                         <div className="col-12 col-xl-4">
                             <div className="form-group">
                                 <label className="form-label">Name*</label>
-                                <CustomDropDown
-                                    list={courtsList}
-                                    handleChange={(e, li) => handleSelectChange(li)}
-                                    curListItem={formData.name}
+                                <InputCustom
+                                    type="text"
+                                    placeholder="Enter Court Name"
+                                    name="name"
+                                    value={formData.name}
+                                    handleChange={handleFormDataChange}
                                 />
                             </div>
                         </div>

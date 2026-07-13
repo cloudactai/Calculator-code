@@ -586,20 +586,15 @@ const lifeInsurance = [
   },
 ];
 
-const financialYear = [
-  {
-    name: "2022",
-    value: "2022",
-  },
-  {
-    name: "2023",
-    value: "2023",
-  },
-  {
-    name: "2024",
-    value: "2024",
-  },
-];
+// Most-recent year first, back to 2019, generated so it always reaches the
+// current year (previously hard-stopped at 2024).
+const financialYear = Array.from(
+  { length: new Date().getFullYear() - 2019 + 1 },
+  (_, i) => {
+    const y = String(new Date().getFullYear() - i);
+    return { name: y, value: y };
+  }
+);
 
 export {
   incomeDetails,

@@ -91,7 +91,7 @@ const ExpensesSimple = ({ matterId, onUpdateFormData, matterData, activeTab, set
     } else {
       setLoading(true)
     }
-  }, [selectChildrenData, selectExpenseData, total, selectExpenseDataLoading])
+  }, [selectChildrenData, selectExpenseData, selectExpenseDataLoading])
 
 
 
@@ -145,7 +145,7 @@ const ExpensesSimple = ({ matterId, onUpdateFormData, matterData, activeTab, set
 
 
     updateTotals()
-  }, [formData, total])
+  }, [formData])
 
   const [total, setTotal] = useState({
     client: {

@@ -4,18 +4,13 @@ import Dropdown from "../../components/Matters/Form/Dropdown";
 import InputCustom from "../../components/InputCustom";
 
 import lawyer from "../../assets/images/lawyer.svg";
-import { useDispatch, useSelector } from "react-redux";
+import { useSelector } from "react-redux";
 import Loader from "../../components/Loader";
 import { selectSingleMatterData } from "../../utils/Apis/matters/getSingleMatter/getSingleMattersSelectors";
-import { getAllMunicipalities } from "../../utils/Apis/matters/getMunicipalities/getMunicipalitiesActions";
-import { selectMunicipaltiesData } from "../../utils/Apis/matters/getMunicipalities/getMunicipalitiesSelectors";
 import useSingleMatterData from "../../utils/Apis/matters/CustomHook/DocumentViewData";
-import CustomDropDown from "../../components/Matters/Form/CustomDropdown";
 
 const BackgroundInformationSimple = ({ matterId, onUpdateFormData, bgInfoActiveTab, setBgInfoActiveTab }) => {
   const [loading, setLoading] = useState(true);
-
-  const dispatch = useDispatch();
 
   const { selectBackground, selectBackgroundLoading } =
     useSingleMatterData(matterId);
@@ -103,19 +98,6 @@ const BackgroundInformationSimple = ({ matterId, onUpdateFormData, bgInfoActiveT
     "🚀 ~ BackgroundInformationSimple ~ selectSingleMatter:",
     selectSingleMatter
   );
-
-  useEffect(() => {
-    if (selectSingleMatter) {
-      dispatch(getAllMunicipalities(selectSingleMatter?.body[0]?.province));
-    }
-  }, [selectSingleMatter]);
-
-  const getMunicipalities = useSelector(selectMunicipaltiesData);
-
-  const municipalities = getMunicipalities?.body.map((item) => ({
-    name: item.municipality,
-    value: item.municipality,
-  }));
 
   const handleClientFormDataChange = (e) => {
     setClientFormData({
@@ -377,17 +359,12 @@ const BackgroundInformationSimple = ({ matterId, onUpdateFormData, bgInfoActiveT
                   <div className="inputs inputs-2-3">
                     <label className="form-label mb-0">Municipality</label>
 
-                    <CustomDropDown
-                      list={municipalities}
-                      label="name"
-                      id="id"
-                      handleChange={(e, li) =>
-                        setClientFormData({
-                          ...clientFormData,
-                          municipality: li.value,
-                        })
-                      }
-                      curListItem={clientFormData.municipality}
+                    <InputCustom
+                      type="text"
+                      placeholder="Enter Municipality"
+                      name="municipality"
+                      value={clientFormData.municipality}
+                      handleChange={handleClientFormDataChange}
                     />
                   </div>
                   <div className="inputs inputs-2-3">
@@ -461,15 +438,12 @@ const BackgroundInformationSimple = ({ matterId, onUpdateFormData, bgInfoActiveT
                     <div className="inputs-row labeled pb-20px">
                       <div className="inputs inputs-2-3">
                         <label className="form-label mb-0">Municipality</label>
-                        <CustomDropDown
-                          list={municipalities}
-                          handleChange={(e, li) =>
-                            setClientFormData({
-                              ...clientFormData,
-                              lawyerMunicipality: li.value,
-                            })
-                          }
-                          curListItem={clientFormData.lawyerMunicipality}
+                        <InputCustom
+                          type="text"
+                          placeholder="Enter Municipality"
+                          name="lawyerMunicipality"
+                          value={clientFormData.lawyerMunicipality}
+                          handleChange={handleClientFormDataChange}
                         />
                       </div>
                       <div className="inputs inputs-2-3">
@@ -599,16 +573,13 @@ const BackgroundInformationSimple = ({ matterId, onUpdateFormData, bgInfoActiveT
                 <div className="inputs-row labeled pb-20px">
                   <div className="inputs inputs-2-3">
                     <label className="form-label mb-0">Municipality</label>
-                    <Dropdown
-                      handleChange={(e, li) =>
-                        setOpposingPartyFormData({
-                          ...opposingPartyFormData,
-                          municipality: li.value,
-                        })
-                      }
-                      list={municipalities}
-                      curListItem={opposingPartyFormData.municipality}
-                    ></Dropdown>
+                    <InputCustom
+                      type="text"
+                      placeholder="Enter Municipality"
+                      name="municipality"
+                      value={opposingPartyFormData.municipality}
+                      handleChange={handleOpposingPartyFormDataChange}
+                    />
                   </div>
                   <div className="inputs inputs-2-3">
                     <label className="form-label mb-0">Represented by</label>
@@ -681,15 +652,12 @@ const BackgroundInformationSimple = ({ matterId, onUpdateFormData, bgInfoActiveT
                     <div className="inputs-row labeled pb-20px">
                       <div className="inputs inputs-2-3">
                         <label className="form-label mb-0">Municipality</label>
-                        <CustomDropDown
-                          list={municipalities}
-                          handleChange={(e, li) =>
-                            setOpposingPartyFormData({
-                              ...opposingPartyFormData,
-                              lawyerMunicipality: li.value,
-                            })
-                          }
-                          curListItem={opposingPartyFormData.lawyerMunicipality}
+                        <InputCustom
+                          type="text"
+                          placeholder="Enter Municipality"
+                          name="lawyerMunicipality"
+                          value={opposingPartyFormData.lawyerMunicipality}
+                          handleChange={handleOpposingPartyFormDataChange}
                         />
                         {/* <Dropdown
                         handleChange={(e, li) =>

@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 
 import Accordion from "react-bootstrap/Accordion";
 import { useHistory, useLocation, useParams } from "react-router-dom";
@@ -6,21 +6,40 @@ import { useDispatch, useSelector } from "react-redux";
 
 import Layout from "../../components/LayoutComponents/Layout";
 
-import BackgroundInformation from "./BackgroundInformation";
-import CourtInformation from "./CourtInformation";
-import ChildrenInformation from "./ChildrenInformation";
-import RelationshipInformation from "./RelationshipInformation";
-import EmploymentDetails from "./EmploymentDetails";
-import IncomeAndBenefits from "./IncomeAndBenefits";
-import Expenses from "./Expenses";
-import Assets from "./Assets";
-import DebtsAndLiabilities from "./DebtsAndLiabilities";
-import OtherPersonsInHousehold from "./OtherPersonsInHousehold";
+// The *Simple form components pre-fill saved data and emit the exact per-section
+// shapes the auth-server accepts — reused here so the intake accordion hydrates
+// and saves as you go.
+import BackgroundInformationSimple from "./BackgroundInformationSimple";
+import CourtInformationSimple from "./CourtInformationSimple";
+import ChildrenInformationSimple from "./ChildrenInformationSimple";
+import RelationshipInformationSimple from "./RelationshipInformationSimple";
+import EmploymentDetailsSimple from "./EmploymentDetailsSimple";
+import IncomeAndBenefitsSimple from "./IncomeAndBenefitsSimple";
+import ExpensesSimple from "./ExpensesSimple";
+import AssetsSimple from "./AssetsSimple";
+import DebtsAndLiabilitiesSimple from "./DebtsAndLiabilitiesSimple";
+import OtherPersonsInHouseholdSimple from "./OtherPersonsInHouseholdSimple";
 import FinancialSummary from "./FinancialSummary";
+
+import background_information from "../../assets/images/background_information.svg";
+import court_information from "../../assets/images/court_information.svg";
+import children_information from "../../assets/images/children_information.svg";
+import relationship_information from "../../assets/images/relationship_information.svg";
+import employment_details from "../../assets/images/employment_details.svg";
+import income_and_benefits from "../../assets/images/income_and_benefits.svg";
+import expenses_icon from "../../assets/images/expenses.svg";
+import assets_icon from "../../assets/images/assets.svg";
+import debts_and_liabilities from "../../assets/images/debts_and_liabilities.svg";
+import other_persons_in_household from "../../assets/images/other_persons_in_household.svg";
 import {
   saveMatter,
   saveMatterReset,
 } from "../../utils/Apis/matters/saveMatterInformation/saveMattersActions";
+import {
+  updateMatterData,
+  updateMatterReset,
+} from "../../utils/Apis/matters/updateMatters/updateMatterDataActions";
+import { selectMatterUpdateData } from "../../utils/Apis/matters/updateMatters/updateMatterDataSelectors";
 import {
   getSingleMatter,
 } from "../../utils/Apis/matters/getSingleMatter/getSingleMattersActions";
@@ -43,6 +62,7 @@ const FiveStepsPage = () => {
   const locationMatterData = location.state;
   const { response } = useSelector((state) => state.userProfileInfo);
   const singleMatterRedux = useSelector(selectSingleMatterData);
+  const dispatch = useDispatch();
 
   // If we arrived without location.state (e.g. from Task List), fetch the matter
   useEffect(() => {
@@ -63,10 +83,19 @@ const FiveStepsPage = () => {
     : null);
   const [progress, setProgress] = useState({});
   const [whichOpen, setWhichOpen] = useState("Background");
-  const dispatch = useDispatch();
   const [formErrors, setFormErrors] = useState({});
   const [isFinishDisabled, setIsFinishDisabled] = useState(true);
   const [formsData, setFormsData] = useState({});
+
+  // --- Save-as-you-go via the *Simple form components ---
+  const [sectionData, setSectionData] = useState({}); // latest emitted body, keyed by type
+  const [bgInfoActiveTab, setBgInfoActiveTab] = useState("Client");
+  const [childActiveTab, setChildActiveTab] = useState(null);
+  const [empActiveTab, setEmpActiveTab] = useState("Client");
+  const [incomeActiveTab, setIncomeActiveTab] = useState("Client");
+  const [expensesActiveTab, setExpensesActiveTab] = useState("Client");
+  const touchedRef = useRef(false); // true once the user edits anything
+  const saveTimers = useRef({});
 
   const [loading, setLoading] = useState(false);
   const history = useHistory();
@@ -120,113 +149,110 @@ const FiveStepsPage = () => {
     window.location.reload();
   }
 
+  // Each section auto-saves on its own, so Finish just returns to the matter.
   useEffect(() => {
-    const { errors, isValid } = validateForm(formsData);
-    setFormErrors(errors);
-    setIsFinishDisabled(!isValid);
-  }, [formsData]);
+    setIsFinishDisabled(false);
+  }, []);
 
-  const BackgroundInformationData = (data) => {
-    setProgress({ ...progress, Background: data.progress });
+  // Clear the auto-save result after each per-section save so a stale "saved"
+  // state doesn't leak back to the matter page (which would toast on return).
+  const updateMatterResult = useSelector(selectMatterUpdateData);
+  useEffect(() => {
+    if (updateMatterResult) {
+      dispatch(updateMatterReset());
+    }
+  }, [updateMatterResult, dispatch]);
 
-    //
-    setFormsData({ ...formsData, Background: data.data });
+  // The sections rendered in the timeline + accordion.
+  const SECTIONS = [
+    { key: "Background", label: "Background", type: "background", title: "Background information", icon: background_information, Comp: BackgroundInformationSimple, extra: { bgInfoActiveTab, setBgInfoActiveTab } },
+    { key: "Court", label: "Court", type: "courtInfo", title: "Court information", icon: court_information, Comp: CourtInformationSimple, extra: {} },
+    { key: "Children", label: "Children", type: "children", title: "Children information", icon: children_information, Comp: ChildrenInformationSimple, extra: { activeTab: childActiveTab, setActiveTab: setChildActiveTab } },
+    { key: "Relationship", label: "Relationship", type: "relationship", title: "Relationship information", icon: relationship_information, Comp: RelationshipInformationSimple, extra: {} },
+    { key: "EmploymentDetails", label: "Employment details", type: "employment", title: "Employment details", icon: employment_details, Comp: EmploymentDetailsSimple, extra: { activeTab: empActiveTab, setActiveTab: setEmpActiveTab } },
+    { key: "IncomeAndBenefits", label: "Income and benefits", type: "incomeBenefits", title: "Income and benefits", icon: income_and_benefits, Comp: IncomeAndBenefitsSimple, extra: { activeTab: incomeActiveTab, setActiveTab: setIncomeActiveTab } },
+    { key: "Expenses", label: "Expenses", type: "expenses", title: "Expenses", icon: expenses_icon, Comp: ExpensesSimple, extra: { activeTab: expensesActiveTab, setActiveTab: setExpensesActiveTab } },
+    { key: "Assets", label: "Assets", type: "assets", title: "Assets", icon: assets_icon, Comp: AssetsSimple, extra: {} },
+    { key: "DebtsAndLiabilities", label: "Debts and Liabilities", type: "debtsLiabilities", title: "Debts and Liabilities", icon: debts_and_liabilities, Comp: DebtsAndLiabilitiesSimple, extra: {} },
+    { key: "OtherPersonsInHousehold", label: "Other persons in Household", type: "otherPersons", title: "Other persons in Household", icon: other_persons_in_household, Comp: OtherPersonsInHouseholdSimple, extra: {} },
+  ];
 
-    setWhichOpen("Background");
-    //
+  // Required fields per section → { filled, total }. The header bar fills
+  // proportionally; a section is "complete" when filled === total.
+  const notEmpty = (v) => v != null && String(v).trim() !== "";
+  const REQUIRED = {
+    background: (b) => {
+      const fs = ["role", "province", "name", "postalCode", "phone", "address", "email"];
+      let filled = 0;
+      [b?.background?.client, b?.background?.opposingParty].forEach((p) =>
+        fs.forEach((f) => {
+          if (notEmpty(p?.[f])) filled += 1;
+        })
+      );
+      return { filled, total: fs.length * 2 };
+    },
+    courtInfo: (b) => ({ filled: notEmpty(b?.courtInfo?.name) ? 1 : 0, total: 1 }),
+    children: (b) => ({
+      filled:
+        Array.isArray(b?.children) && b.children.some((c) => notEmpty(c?.childName)) ? 1 : 0,
+      total: 1,
+    }),
+    relationship: (b) => ({
+      filled:
+        notEmpty(b?.relationship?.data?.dateOfMarriage) ||
+        notEmpty(b?.relationship?.data?.startedLivingTogether)
+          ? 1
+          : 0,
+      total: 1,
+    }),
+    employment: (b) => ({
+      filled: notEmpty(b?.employment?.data?.client?.employmentStatus) ? 1 : 0,
+      total: 1,
+    }),
+    incomeBenefits: (b) => ({ filled: notEmpty(b?.incomeBenefits?.financialYear) ? 1 : 0, total: 1 }),
+    expenses: (b) => ({ filled: notEmpty(b?.expenses?.data?.financialYear) ? 1 : 0, total: 1 }),
+    assets: (b) => ({ filled: notEmpty(b?.assets?.valuation_date) ? 1 : 0, total: 1 }),
+    debtsLiabilities: (b) => ({
+      filled:
+        Array.isArray(b?.debtsLiabilities) && b.debtsLiabilities.some((d) => notEmpty(d?.category))
+          ? 1
+          : 0,
+      total: 1,
+    }),
+    otherPersons: (b) => ({ filled: notEmpty(b?.otherPersons?.live_alone) ? 1 : 0, total: 1 }),
+  };
+  const sectionStats = (type) => {
+    try {
+      return REQUIRED[type]?.(sectionData[type]) || { filled: 0, total: 1 };
+    } catch {
+      return { filled: 0, total: 1 };
+    }
+  };
+  const sectionPct = (type) => {
+    const { filled, total } = sectionStats(type);
+    return total ? Math.round((filled / total) * 100) : 0;
+  };
+  const sectionComplete = (type) => {
+    const { filled, total } = sectionStats(type);
+    return total > 0 && filled >= total;
   };
 
-  const CourtInformationData = (data) => {
-    setProgress({ ...progress, Court: data.progress });
-    //
-    setFormsData({ ...formsData, Court: data.data });
-
-    setWhichOpen("Court");
-  };
-
-  const ChildrenInformationData = (data) => {
-    setProgress({ ...progress, Children: data.progress });
-    //
-    setFormsData({ ...formsData, Children: data.data });
-
-    setWhichOpen("Children");
-  };
-
-  const RelationshipInformationData = (data) => {
-    setProgress({ ...progress, Relationship: data.progress });
-    //
-    setFormsData({ ...formsData, Relationship: data.data });
-
-    setWhichOpen("Relationship");
-  };
-
-  const EmploymentDetailsData = (data) => {
-    setProgress({ ...progress, EmploymentDetails: data.progress });
-    //
-    setFormsData({ ...formsData, EmploymentDetails: data.data });
-
-    setWhichOpen("EmploymentDetails");
-  };
-
-  /**
-   * Income And Benefits Data
-   * This is the function to handle the income and benefits data
-   */
-  const IncomeAndBenefitsData = (data) => {
-    setProgress({ ...progress, IncomeAndBenefits: data.progress });
-    //
-    setFormsData({ ...formsData, IncomeAndBenefits: data.data });
-
-    setWhichOpen("IncomeAndBenefits");
-  };
-
-  /**
-   * Expenses Data
-   * This is the function to handle the expenses data
-   */
-  const ExpensesData = (data) => {
-    setProgress({ ...progress, Expenses: data.progress });
-    //
-    setFormsData({ ...formsData, Expenses: data.data });
-
-    setWhichOpen("Expenses");
-  };
-
-  /**
-   * Assets Data
-   * This is the function to handle the assets data
-   */
-  const AssetsData = (data) => {
-    setProgress({ ...progress, Assets: data.progress });
-    //
-    setFormsData({ ...formsData, Assets: data.data });
-
-    setWhichOpen("Assets");
-  };
-
-  /**
-   * Debts And Liabilities Data
-   * This is the function to handle the debts and liabilities data
-   */
-  const DebtsAndLiabilitiesData = (data) => {
-    setProgress({ ...progress, DebtsAndLiabilities: data.progress });
-    //
-    setFormsData({ ...formsData, DebtsAndLiabilities: data.data });
-
-    setWhichOpen("DebtsAndLiabilities");
-  };
-
-  /**
-   * Other Persons In Household Data
-   * This is the function to handle the other persons in household data
-   */
-  const OtherPersonsInHouseholdData = (data) => {
-    setProgress({ ...progress, OtherPersonsInHousehold: data.progress });
-    //
-    setFormsData({ ...formsData, OtherPersonsInHousehold: data.data });
-
-    setWhichOpen("OtherPersonsInHousehold");
-  };
+  // Each *Simple form reports its section body here. Store it, and once the user
+  // has actually interacted, auto-save that section (debounced).
+  // Stable identity (useCallback) is essential: several forms list this in their
+  // effect deps, so a new reference each render would loop infinitely.
+  const onUpdateFormData = useCallback(
+    (body) => {
+      if (!body?.type) return;
+      setSectionData((prev) => ({ ...prev, [body.type]: body }));
+      if (!touchedRef.current) return;
+      clearTimeout(saveTimers.current[body.type]);
+      saveTimers.current[body.type] = setTimeout(() => {
+        dispatch(updateMatterData({ type: body.type, matter_id: id, data: body }));
+      }, 800);
+    },
+    [dispatch, id]
+  );
 
   /**
    * Handle Accordion Open
@@ -242,13 +268,8 @@ const FiveStepsPage = () => {
    * This is the function to handle the finish button
    */
   const handleFinish = () => {
-    const data = {
-      matter_id: id,
-      data: formsData,
-    };
-
-    dispatch(saveMatter(data));
-    setLoading(true);
+    // Everything is already auto-saved per section; just go back to the matter.
+    history.push(`/single-matter/${id}`);
   };
 
   const selectSavedMatterData = useSelector(selectSaveMatterData);
@@ -359,113 +380,16 @@ const FiveStepsPage = () => {
                   <div className="timeline">
                     <div className="status-line"></div>
                     <div className="items">
-                      <div
-                        className={`item ${
-                          progress.Background === 100 ? "done" : ""
-                        } ${whichOpen === "Background" ? "active" : ""}`}
-                        onClick={handleAccordionOpen("Background")}
-                      >
-                        <div className="circle" />
-                        <div className="text">Background</div>
-                      </div>
-                      <div
-                        className={`item ${
-                          progress.Court === 100 ? "done" : ""
-                        } 
-                    ${whichOpen === "Court" ? "active" : ""}`}
-                        onClick={handleAccordionOpen("Court")}
-                      >
-                        <div className="circle" />
-                        <div className="text">Court</div>
-                      </div>
-                      <div
-                        className={`item ${
-                          progress.Children === 100 ? "done" : ""
-                        }
-                    ${whichOpen === "Children" ? "active" : ""}`}
-                        onClick={handleAccordionOpen("Children")}
-                      >
-                        <div className="circle" />
-                        <div className="text">Children</div>
-                      </div>
-                      <div
-                        className={`item ${
-                          progress.Relationship === 100 ? "done" : ""
-                        }
-                    ${whichOpen === "Relationship" ? "active" : ""}`}
-                        onClick={handleAccordionOpen("Relationship")}
-                      >
-                        <div className="circle" />
-                        <div className="text">Relationship</div>
-                      </div>
-                      <div
-                        className={`item ${
-                          progress.EmploymentDetails === 100 ? "done" : ""
-                        }
-                    ${whichOpen === "EmploymentDetails" ? "active" : ""}`}
-                        onClick={handleAccordionOpen("EmploymentDetails")}
-                      >
-                        <div className="circle" />
-                        <div className="text">Employment details</div>
-                      </div>
-                      <div
-                        className={`item ${
-                          progress.IncomeAndBenefits === 100 ? "done" : ""
-                        } ${whichOpen === "IncomeAndBenefits" ? "active" : ""}`}
-                        onClick={handleAccordionOpen("IncomeAndBenefits")}
-                      >
-                        <div className="circle" />
-                        <div className="text">Income and benefits</div>
-                      </div>
-                      <div
-                        className={`item ${
-                          progress.Expenses === 100 ? "done" : ""
-                        } ${whichOpen === "Expenses" ? "active" : ""}`}
-                        onClick={handleAccordionOpen("Expenses")}
-                      >
-                        <div className="circle" />
-                        <div className="text">Expenses</div>
-                      </div>
-                      <div
-                        className={`item ${
-                          progress.Assets === 100 ? "done" : ""
-                        }
-                        ${whichOpen === "Assets" ? "active" : ""}`}
-                        onClick={handleAccordionOpen("Assets")}
-                      >
-                        <div className="circle" />
-                        <div className="text">Assets</div>
-                      </div>
-                      <div
-                        className={`item ${
-                          progress.DebtsAndLiabilities === 100 ? "done" : ""
-                        } ${
-                          whichOpen === "DebtsAndLiabilities" ? "active" : ""
-                        }`}
-                        onClick={handleAccordionOpen("DebtsAndLiabilities")}
-                      >
-                        <div className="circle" />
-                        <div className="text">Debts and Liabilities</div>
-                      </div>
-                      <div
-                        className={`item ${
-                          progress.OtherPersonsInHousehold === 100 ? "done" : ""
-                        } ${
-                          whichOpen === "OtherPersonsInHousehold"
-                            ? "active"
-                            : ""
-                        }`}
-                        onClick={handleAccordionOpen("OtherPersonsInHousehold")}
-                      >
-                        <div className="circle" />
-                        <div className="text">Other persons in Household</div>
-                      </div>
-                      <div
-                        className={`item ${
-                          progress.FinancialSummary === 100 ? "done" : ""
-                        } ${whichOpen === "FinancialSummary" ? "active" : ""}`}
-                        onClick={handleAccordionOpen("FinancialSummary")}
-                      >
+                      {SECTIONS.map((s) => (
+                        <div
+                          key={s.key}
+                          className={`item ${sectionComplete(s.type) ? "done" : ""}`}
+                        >
+                          <div className="circle" />
+                          <div className="text">{s.label}</div>
+                        </div>
+                      ))}
+                      <div className="item">
                         <div className="circle" />
                         <div className="text">Financial summary</div>
                       </div>
@@ -489,48 +413,51 @@ const FiveStepsPage = () => {
                 </div>
 
                 {/* Accordion */}
-                <Accordion defaultActiveKey="0" className="col-12 col-md-9">
-                  <BackgroundInformation
-                    BackgroundInformationData={BackgroundInformationData}
-                    MatterData={matterData}
-                    formErrors={formErrors.Background}
-                  />
-
-                  <CourtInformation
-                    CourtInformationData={CourtInformationData}
-                    MatterData={matterData}
-                  />
-
-                  <ChildrenInformation
-                    ChildrenInformationData={ChildrenInformationData}
-                  />
-
-                  <RelationshipInformation
-                    RelationshipInformationData={RelationshipInformationData}
-                  />
-
-                  <EmploymentDetails
-                    EmploymentDetailsData={EmploymentDetailsData}
-                  />
-
-                  <IncomeAndBenefits
-                    IncomeAndBenefitsData={IncomeAndBenefitsData}
-                  />
-
-                  <Expenses ExpensesData={ExpensesData} />
-
-                  <Assets AssetsData={AssetsData} />
-
-                  <DebtsAndLiabilities
-                    DebtsAndLiabilitiesData={DebtsAndLiabilitiesData}
-                  />
-
-                  <OtherPersonsInHousehold
-                    OtherPersonsInHouseholdData={OtherPersonsInHouseholdData}
-                  />
-
-                  <FinancialSummary />
-                </Accordion>
+                <div
+                  className="col-12 col-md-9"
+                  onInput={() => {
+                    touchedRef.current = true;
+                  }}
+                  onClick={() => {
+                    touchedRef.current = true;
+                  }}
+                >
+                  <Accordion defaultActiveKey="0">
+                    {SECTIONS.map((s, i) => {
+                      const pct = sectionPct(s.type);
+                      const SectionForm = s.Comp;
+                      return (
+                        <Accordion.Item eventKey={String(i)} key={s.key}>
+                          <Accordion.Header>
+                            <img src={s.icon} alt="" />
+                            <div
+                              className="w-100 px-2"
+                              style={{ marginRight: "8%" }}
+                            >
+                              <div className="d-flex justify-content-between">
+                                <div>{s.title}</div>
+                                <div>{pct}%</div>
+                              </div>
+                              <div
+                                className={`progress-bar ${pct === 100 ? "done" : ""}`}
+                                style={{ "--progress-width": `${pct}%` }}
+                              ></div>
+                            </div>
+                          </Accordion.Header>
+                          <Accordion.Body>
+                            <SectionForm
+                              matterId={id}
+                              onUpdateFormData={onUpdateFormData}
+                              matterData={matterData || {}}
+                              {...s.extra}
+                            />
+                          </Accordion.Body>
+                        </Accordion.Item>
+                      );
+                    })}
+                    <FinancialSummary />
+                  </Accordion>
+                </div>
                 {/* End of Accordion */}
               </div>
             </div>

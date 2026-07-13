@@ -132,6 +132,7 @@ export default function MatterIntakeChatPanel({
   matterData,
   matterId,
   onComplete,
+  onBack,
 }) {
   const dispatch = useDispatch();
 
@@ -142,6 +143,7 @@ export default function MatterIntakeChatPanel({
   const [warming, setWarming] = useState(false);
   const [contextSent, setContextSent] = useState(false);
   const [savedSections, setSavedSections] = useState([]); // section keys captured so far
+  const [intakeComplete, setIntakeComplete] = useState(false);
 
   const windowRef = useRef(null);
   const inputRef = useRef(null);
@@ -187,7 +189,6 @@ export default function MatterIntakeChatPanel({
     );
 
     setSavedSections(Object.keys(formsDataRef.current));
-    if (onComplete) onComplete();
   }
 
   async function send(text) {
@@ -220,6 +221,12 @@ export default function MatterIntakeChatPanel({
         setBubbles((b) => [...b, { role: "assistant", text: data.reply }]);
         setMessages(data.messages || nextMessages);
         persistSections(data.saved_sections);
+        // The agent has no "done" flag; detect its completion phrasing so we can
+        // mark the task complete and offer a clear way back to Tasks.
+        if (/intake is (now )?complete|complete and saved/i.test(data.reply || "")) {
+          setIntakeComplete(true);
+          if (onComplete) onComplete();
+        }
       }
     } catch {
       setBubbles((b) => [
@@ -314,6 +321,32 @@ export default function MatterIntakeChatPanel({
           </div>
         )}
       </div>
+
+      {intakeComplete && (
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            gap: "12px",
+            padding: "10px 16px",
+            margin: "0 0 10px",
+            background: "rgba(34, 197, 94, 0.12)",
+            border: "1px solid rgba(34, 197, 94, 0.4)",
+            borderRadius: "12px",
+          }}
+        >
+          <span style={{ color: "#22c55e", fontWeight: 600 }}>
+            ✓ Intake complete and saved.
+          </span>
+          <button
+            className="btn btnPrimary rounded-pill"
+            onClick={() => onBack && onBack()}
+          >
+            Back to Tasks
+          </button>
+        </div>
+      )}
 
       <div className="mw-chat-panel__input-bar">
         <textarea
