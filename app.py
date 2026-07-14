@@ -498,17 +498,21 @@ SECTIONS AND THEIR EXACT DATA SHAPES
    - Dates in YYYY-MM-DD.
 
 3. section="Children"   (array — one object per child; empty array if none)
-   data: [ { "childName", "dateOfBirth", "nowLivesWith" } ]
+   data: [ { "childName", "dateOfBirth", "age", "nowLivesWith",
+             "representedByLawyer" ("Yes"/"No"),
+             "lawyerName", "lawyerPhone", "lawyerAddress", "lawyerEmail" } ]
    - "nowLivesWith" is who the child primarily lives with. Dates YYYY-MM-DD.
+   - "age" is the child's age in years. Only fill the lawyer* fields (and set
+     "representedByLawyer" to "Yes") if the child has their own lawyer; else "No".
 
 4. section="IncomeAndBenefits"
    data: {
      "financialYear": "<YYYY>",
-     "client":        { "income":  [ { "type", "yearlyAmount" } ],
-                        "benefit": [ { "type", "yearlyAmount", "incomeBenefit": "benefit" } ] },
+     "client":        { "income":  [ { "type", "yearlyAmount", "monthlyAmount" } ],
+                        "benefit": [ { "type", "yearlyAmount", "monthlyAmount", "incomeBenefit": "benefit" } ] },
      "opposingParty": { ...same... }
    }
-   - Amounts are annual CAD, as strings.
+   - Give yearlyAmount and/or monthlyAmount for each line (CAD, as strings).
    - "financialYear" is the tax year the figures are for (e.g. the current year).
 
 5. section="EmploymentDetails"
@@ -523,12 +527,12 @@ SECTIONS AND THEIR EXACT DATA SHAPES
    data: {
      "financialYear": "<YYYY>",
      "client":        { "expenses":            [ { "type", "monthlyAmount", "yearlyAmount" } ],
-                        "specialChildExpenses": [ { "type", "childName", "amount" } ] },
+                        "specialChildExpenses": [ { "type", "childName", "amount", "taxCredits" } ] },
      "opposingParty": { ...same two arrays... }
    }
    - Amounts as strings. Give monthlyAmount and/or yearlyAmount for each ordinary
-     expense line; specialChildExpenses are s.7 child expenses, each with a single
-     "amount" and the "childName" it applies to.
+     expense line; specialChildExpenses are s.7 child expenses, each with an
+     "amount", the "childName" it applies to, and any "taxCredits"/subsidies.
 
 7. section="Assets"   (optional)
    data is an OBJECT keyed by asset category (NOT a flat array). Include only the
