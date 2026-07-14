@@ -11,6 +11,7 @@ import MatterIntakeChoice from "../../components/MatterWorkflow/MatterIntakeChoi
 import ChildSupportChatPanel from "../../components/MatterWorkflow/ChildSupportChatPanel";
 import SpousalSupportChatPanel from "../../components/MatterWorkflow/SpousalSupportChatPanel";
 import MatterIntakeChatPanel from "../../components/MatterWorkflow/MatterIntakeChatPanel";
+import ProfileSummaryPanel from "../../components/MatterWorkflow/ProfileSummaryPanel";
 
 import {
   getSingleMatter,
@@ -359,10 +360,36 @@ const SingleMatter = () => {
 
             {/* Task list view (default) */}
             {view === "tasks" && (
-              <MatterTaskList
-                tasks={tasks}
-                onStart={handleTaskStart}
-                matterName={matterName}
+              <>
+                <div
+                  style={{
+                    display: "flex",
+                    justifyContent: "flex-end",
+                    marginBottom: "16px",
+                  }}
+                >
+                  <button
+                    type="button"
+                    className="btn btnPrimary rounded-pill"
+                    onClick={() => setView("profile_summary")}
+                  >
+                    View Information and Documents
+                  </button>
+                </div>
+                <MatterTaskList
+                  tasks={tasks}
+                  onStart={handleTaskStart}
+                  matterName={matterName}
+                />
+              </>
+            )}
+
+            {/* View Information and Documents: profile summary + folders */}
+            {view === "profile_summary" && (
+              <ProfileSummaryPanel
+                matterId={id}
+                matterData={matterData}
+                onBack={handleBackToTasks}
               />
             )}
 

@@ -4,7 +4,6 @@ import documents from '../../assets/images/documents.svg'
 import { selectMatterFoldersData, selectMatterFoldersLoading } from '../../utils/Apis/matters/getMatterFolders/getMattersFoldersSelectors';
 import { useDispatch, useSelector } from 'react-redux';
 import AllFolders from './Folders/AllFolders';
-import Forms from './Documents/Forms';
 import { getUserSID } from '../../utils/helpers';
 import { createMatterFiles } from '../../utils/Apis/matters/createMatterFiles/createMatterFilesActions';
 import GeneralModal from './Modals/GeneralModal';
@@ -223,17 +222,9 @@ function FolderStructure({ matter_id, matterData }) {
                 <div className="info">
                   <div className="breadcrumbs"> {currentFolder.title} </div>{" "}
                   <div className="description">
-                    In order to proceed with a divorce application, please
-                    complete the following documents{" "}
+                    Document management for this folder is coming soon.{" "}
                   </div>{" "}
                 </div>
-                <Forms
-                  files={currentFolder.contents || []}
-                  formsData={formsData}
-                  matterId={matter_id}
-                  province={matterData.province}
-                  folder_id={currentFolder.id || currentFolder.folder_id}
-                />
               </>
             ) : (
               <>
@@ -247,7 +238,7 @@ function FolderStructure({ matter_id, matterData }) {
                   files={currentFolder.contents || []}
                   formsData={formsData}
                   matterId={matter_id}
-                  province={matterData.province}
+                  province={matterData?.province}
                   folder_id={currentFolder.id || currentFolder.folder_id}
                 />
               </>
