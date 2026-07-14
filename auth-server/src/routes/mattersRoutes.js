@@ -401,13 +401,42 @@ router.post("/save_matter/:sid/:matter_id", async (req, res) => {
   }
 });
 
+// Manual per-section saves (the five-steps Simple forms + Profile Summary
+// modals) POST a WRAPPED body, e.g. { type:"children", children:[...] } or
+// { type:"relationship", relationship:{ data:{...} } }. Map each to the same
+// PascalCase section payload save_matter uses, so a single-section update runs
+// through the identical saveSections transforms and stores the row shape the
+// read side hydrates. Storing the wrapper raw (the old behaviour) never
+// round-trips — the read expects section rows, not a { type, section } object.
+const UPDATE_SECTION_MAP = {
+  background: { key: "Background", pick: (b) => b.background },
+  court: { key: "Court", pick: (b) => b.courtInfo ?? b.court },
+  courtInfo: { key: "Court", pick: (b) => b.courtInfo ?? b.court },
+  children: { key: "Children", pick: (b) => b.children },
+  relationship: { key: "Relationship", pick: (b) => b.relationship?.data ?? b.relationship },
+  employment: { key: "EmploymentDetails", pick: (b) => b.employment?.data ?? b.employment },
+  incomeBenefits: { key: "IncomeAndBenefits", pick: (b) => b.incomeBenefits },
+  expenses: { key: "Expenses", pick: (b) => b.expenses?.data ?? b.expenses },
+  assets: { key: "Assets", pick: (b) => b.assets },
+  debtsLiabilities: { key: "DebtsAndLiabilities", pick: (b) => b.debtsLiabilities },
+  debt: { key: "DebtsAndLiabilities", pick: (b) => b.debtsLiabilities ?? b.debt },
+  otherPersons: { key: "OtherPersonsInHousehold", pick: (b) => b.otherPersons },
+};
+
 router.post("/update_matter/:sid/:matter_id/:data_type", async (req, res) => {
   try {
     const matter = await findMatter(req.user.id, req.params.matter_id);
     if (!matter) return res.status(404).json(errorBody("Matter not found."));
 
-    const storedType = ROW_TYPES[req.params.data_type] || req.params.data_type;
-    await putRecord(matter.id, storedType, assignIds(toArray(req.body)));
+    const mapping = UPDATE_SECTION_MAP[req.params.data_type];
+    const payload = mapping ? mapping.pick(req.body || {}) : undefined;
+    if (mapping && payload !== undefined) {
+      await saveSections(matter, { [mapping.key]: payload });
+    } else {
+      // Unmapped types (folders, form_fields, …) keep the legacy raw store.
+      const storedType = ROW_TYPES[req.params.data_type] || req.params.data_type;
+      await putRecord(matter.id, storedType, assignIds(toArray(req.body)));
+    }
     return res.json(ok(req.body));
   } catch (err) {
     console.log("POST /v1/update_matter failed:", err?.message || err);
