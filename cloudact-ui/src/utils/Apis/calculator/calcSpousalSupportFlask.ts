@@ -9,7 +9,10 @@ import { CALCULATOR_API } from "../../../config";
 export type SpousalSupportFlaskPayload = {
   party1_net_income: number;              // annual income
   party2_net_income: number;              // annual income
-  recipient_age: number;
+  party1_name?: string;                   // party 1 display name
+  party2_name?: string;                   // party 2 display name
+  party1_age?: number;                    // party 1 age at separation
+  recipient_age: number;                  // lower-income party's age
   years: number;                          // years of relationship
   province?: string;                      // e.g. "ON"
   children: boolean;                      // true if any children exist

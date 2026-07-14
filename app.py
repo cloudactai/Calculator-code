@@ -822,6 +822,14 @@ def spousal_calculate():
             year                 = year,
             payor_is_party1      = (party1_gross >= party2_gross),
         )
+
+        # --- Determine actual payor/recipient by INDI (disposable income after CS) ---
+        # The old app compares household incomes (INDI) not gross incomes.
+        # After child support adjustments, the party with higher INDI is the
+        # spousal payor — this can differ from the higher-gross-income party.
+        if result.recipient_indi_mid > result.payor_indi_mid:
+            payor_name, recipient_name = recipient_name, payor_name
+
         return jsonify({
             "payor":              payor_name,
             "recipient":          recipient_name,
