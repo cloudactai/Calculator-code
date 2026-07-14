@@ -472,8 +472,8 @@ conversation). Treat that as already-known — confirm it briefly rather than
 re-asking, and only fill the gaps.
 
 Never invent data. Leave unknown fields as empty strings. Optional sections
-(Expenses, Assets, DebtsAndLiabilities, Court) can be skipped if the user has
-nothing to add.
+(Expenses, Assets, DebtsAndLiabilities, Court, OtherPersonsInHousehold) can be
+skipped if the user has nothing to add.
 
 SECTIONS AND THEIR EXACT DATA SHAPES
 (use these field names verbatim — they must match the intake form):
@@ -573,6 +573,20 @@ SECTIONS AND THEIR EXACT DATA SHAPES
    data: { "name", "fileNumber", "address" }
    - Court name, court file number, and court address.
 
+10. section="OtherPersonsInHousehold"   (optional; a single object)
+    data: {
+      "live_alone" ("Yes"/"No"),
+      "name_of_person_married_to",
+      "name_of_other_adults",
+      "number_of_children",
+      "spouse_partner_work_status",
+      "amount_spouse_partner_earns"
+    }
+    - Describes who else lives in the CLIENT's household: a new spouse/partner,
+      other adults, and other children. Set "live_alone" to "Yes" if the client
+      lives alone (then leave the other fields empty). "number_of_children" and
+      "amount_spouse_partner_earns" are numbers written as strings.
+
 When you have covered the sections the user has information for, briefly summarise
 what was captured and tell them the intake has been saved.
 """
@@ -593,16 +607,16 @@ SAVE_SECTION_TOOL = {
                 "enum": [
                     "Background", "Relationship", "Children", "IncomeAndBenefits",
                     "EmploymentDetails", "Expenses", "Assets", "DebtsAndLiabilities",
-                    "Court",
+                    "Court", "OtherPersonsInHousehold",
                 ],
                 "description": "Which intake section this data belongs to.",
             },
             "data": {
                 "description": (
                     "The section payload. An object for Background, Relationship, "
-                    "IncomeAndBenefits, EmploymentDetails, Expenses, Assets and Court; "
-                    "an array for Children and DebtsAndLiabilities. Use the exact "
-                    "field names from the system prompt."
+                    "IncomeAndBenefits, EmploymentDetails, Expenses, Assets, Court "
+                    "and OtherPersonsInHousehold; an array for Children and "
+                    "DebtsAndLiabilities. Use the exact field names from the system prompt."
                 ),
             },
         },

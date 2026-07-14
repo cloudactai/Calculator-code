@@ -37,6 +37,7 @@ const SECTION_LABELS = {
   Assets: "Assets",
   DebtsAndLiabilities: "Debts",
   Court: "Court",
+  OtherPersonsInHousehold: "Other persons",
 };
 
 function renderText(text) {
