@@ -557,13 +557,17 @@ SECTIONS AND THEIR EXACT DATA SHAPES
                                                nature_and_type_of_ownership
      other_property:                           property_status_op, category_op, details_op
      business_interest:                        property_status_bi, firm_name, interest
-     general_household_items_and_vehicles:     property_status_ghiav, description_ghiav,
-                                               isInPossession
+     general_household_items_and_vehicles:     item, property_status_ghiav,
+                                               description_ghiav, isInPossession
      bank_accounts_savings_securities_pension: property_status_bassp, category_bassp,
                                                description_bassp, institution, account_number
      life_and_disability_insurance:            property_status_ladi, owner, beneficiary,
                                                policy_no, face_amount
      money_owed_to_you:                        property_status_moty, details_moty
+   - For general_household_items_and_vehicles, "item" is a category — EXACTLY one of:
+     "Cars, Boats, Vehicles", "Household Goods, Furniture and Fixtures",
+     "Jewelery, art, electronics, tools,sports & hobby equipment", "Other Special Items".
+     "isInPossession" is "Yes" or "No".
 
 8. section="DebtsAndLiabilities"   (optional; array — one object per debt)
    data: [ { "category", "details", "on_date_of_marriage",
@@ -575,7 +579,7 @@ SECTIONS AND THEIR EXACT DATA SHAPES
 
 10. section="OtherPersonsInHousehold"   (optional; a single object)
     data: {
-      "live_alone" ("Yes"/"No"),
+      "live_alone" ("yes"/"no", lowercase),
       "name_of_person_married_to",
       "name_of_other_adults",
       "number_of_children",
@@ -583,9 +587,11 @@ SECTIONS AND THEIR EXACT DATA SHAPES
       "amount_spouse_partner_earns"
     }
     - Describes who else lives in the CLIENT's household: a new spouse/partner,
-      other adults, and other children. Set "live_alone" to "Yes" if the client
-      lives alone (then leave the other fields empty). "number_of_children" and
-      "amount_spouse_partner_earns" are numbers written as strings.
+      other adults, and other children. Set "live_alone" to "yes" (lowercase) if
+      the client lives alone and leave the other fields empty; otherwise "no".
+    - "spouse_partner_work_status" MUST be EXACTLY one of: "Full Time", "Part Time",
+      "Unemployed", "Retired", "Disabled", "Other" (a work status, not a job title).
+    - "number_of_children" and "amount_spouse_partner_earns" are numbers as strings.
 
 When you have covered the sections the user has information for, briefly summarise
 what was captured and tell them the intake has been saved.

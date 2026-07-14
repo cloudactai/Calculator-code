@@ -15,7 +15,9 @@ const OtherPersonsInHouseholdSimple = ({ matterId, onUpdateFormData}) => {
             const otherPersons = selectOtherPersons?.body[0]
             setFormData({
                 id: otherPersons?.id || "",
-                live_alone: otherPersons?.live_alone || "",
+                // Radio values are lowercase "yes"/"no"; tolerate any casing
+                // (e.g. an AI-saved "No") so the selection + dependent fields show.
+                live_alone: (otherPersons?.live_alone || "").toLowerCase(),
                 name_of_person_married_to: otherPersons?.name_of_person_married_to || "",
                 name_of_other_adults: otherPersons?.name_of_other_adults || "",
                 number_of_children: otherPersons?.number_of_children || "",
