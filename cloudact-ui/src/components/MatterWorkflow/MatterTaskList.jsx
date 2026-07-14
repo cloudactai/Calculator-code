@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import "./MatterWorkflow.css";
 
 /**
@@ -7,7 +7,7 @@ import "./MatterWorkflow.css";
  * Props:
  *   tasks        – array of { id, label, status, disabled }
  *   onStart      – (taskId) => void   called when lawyer clicks Start / Resume
- *   matterName   – string, e.g. "John Doe"
+ *   onViewInfo   – () => void         opens the Profile Summary (info & documents)
  */
 
 const STATUS_LABELS = {
@@ -22,13 +22,39 @@ const STATUS_CLASSES = {
   completed: "mw-status--completed",
 };
 
-export default function MatterTaskList({ tasks, onStart, matterName }) {
+export default function MatterTaskList({ tasks, onStart, onViewInfo }) {
+  const [docsHover, setDocsHover] = useState(false);
   return (
     <div className="mw-task-list">
       <div className="mw-task-list__header">
         <h2 className="mw-task-list__title">Task List</h2>
-        {matterName && (
-          <span className="mw-task-list__matter">Matter: {matterName}</span>
+        {onViewInfo && (
+          <button
+            type="button"
+            onClick={onViewInfo}
+            onMouseEnter={() => setDocsHover(true)}
+            onMouseLeave={() => setDocsHover(false)}
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: "8px",
+              padding: "8px 16px",
+              borderRadius: "8px",
+              border: "1px solid rgba(240, 185, 11, 0.45)",
+              background: docsHover
+                ? "rgba(240, 185, 11, 0.18)"
+                : "rgba(240, 185, 11, 0.08)",
+              color: "#e6b23a",
+              font: "inherit",
+              fontSize: "14px",
+              fontWeight: 600,
+              whiteSpace: "nowrap",
+              cursor: "pointer",
+              transition: "background 0.2s ease, border-color 0.2s ease",
+            }}
+          >
+            View Info &amp; Documents
+          </button>
         )}
       </div>
 

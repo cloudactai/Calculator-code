@@ -61,7 +61,6 @@ const SingleMatter = () => {
   const history = useHistory();
 
   const [view, setView] = useState("tasks"); // tasks | intake_choice | intake_chat | support_choice | child_support | spousal_support
-  const [docsHover, setDocsHover] = useState(false); // hover state for the subtle header "View Info & Documents" button
   const [matterData, setMatterData] = useState(null);
   const [taskStatuses, setTaskStatuses] = useState(() => {
     // Load persisted statuses from localStorage, falling back to not_started
@@ -284,37 +283,6 @@ const SingleMatter = () => {
     </div>
   );
 
-  // Subtle, secondary header action — deliberately NOT styled like the primary
-  // task CTAs (Resume/Start). Only offered on the task list. Same handler/route.
-  const docsButton = view === "tasks" && (
-    <button
-      type="button"
-      onClick={() => setView("profile_summary")}
-      onMouseEnter={() => setDocsHover(true)}
-      onMouseLeave={() => setDocsHover(false)}
-      style={{
-        display: "inline-flex",
-        alignItems: "center",
-        gap: "8px",
-        padding: "8px 16px",
-        borderRadius: "8px",
-        border: "1px solid rgba(240, 185, 11, 0.45)",
-        background: docsHover
-          ? "rgba(240, 185, 11, 0.18)"
-          : "rgba(240, 185, 11, 0.08)",
-        color: "#e6b23a",
-        font: "inherit",
-        fontSize: "14px",
-        fontWeight: 600,
-        whiteSpace: "nowrap",
-        cursor: "pointer",
-        transition: "background 0.2s ease, border-color 0.2s ease",
-      }}
-    >
-      View Info &amp; Documents
-    </button>
-  );
-
   return (
     <Layout title={`Welcome ${response?.username ? response.username : ""} `}>
       {matterLoading ? (
@@ -357,9 +325,8 @@ const SingleMatter = () => {
                 style={{
                   display: "flex",
                   alignItems: "center",
-                  justifyContent: "space-between",
                   flexWrap: "wrap",
-                  gap: "12px 16px",
+                  gap: "6px 30px",
                 }}
               >
                 <button
@@ -394,18 +361,7 @@ const SingleMatter = () => {
                   </svg>
                   Back to Matters
                 </button>
-                <div
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "flex-end",
-                    flexWrap: "wrap",
-                    gap: "12px 24px",
-                  }}
-                >
-                  {matterInfo}
-                  {docsButton}
-                </div>
+                {matterInfo}
               </div>
             )}
           </div>
@@ -424,7 +380,7 @@ const SingleMatter = () => {
               <MatterTaskList
                 tasks={tasks}
                 onStart={handleTaskStart}
-                matterName={matterName}
+                onViewInfo={() => setView("profile_summary")}
               />
             )}
 
