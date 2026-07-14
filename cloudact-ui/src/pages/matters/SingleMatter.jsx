@@ -11,6 +11,7 @@ import MatterIntakeChoice from "../../components/MatterWorkflow/MatterIntakeChoi
 import ChildSupportChatPanel from "../../components/MatterWorkflow/ChildSupportChatPanel";
 import SpousalSupportChatPanel from "../../components/MatterWorkflow/SpousalSupportChatPanel";
 import MatterIntakeChatPanel from "../../components/MatterWorkflow/MatterIntakeChatPanel";
+import ProfileSummaryPanel from "../../components/MatterWorkflow/ProfileSummaryPanel";
 
 import {
   getSingleMatter,
@@ -60,6 +61,7 @@ const SingleMatter = () => {
   const history = useHistory();
 
   const [view, setView] = useState("tasks"); // tasks | intake_choice | intake_chat | support_choice | child_support | spousal_support
+  const [docsHover, setDocsHover] = useState(false); // hover state for the subtle header "View Info & Documents" button
   const [matterData, setMatterData] = useState(null);
   const [taskStatuses, setTaskStatuses] = useState(() => {
     // Load persisted statuses from localStorage, falling back to not_started
@@ -266,6 +268,53 @@ const SingleMatter = () => {
     spousal_support: "Spousal Support Calculator — AI Assistant",
   };
 
+  // Client / matter identity — shown in the header in every view.
+  const matterInfo = (
+    <div className="info-container">
+      <div className="info-row">
+        <div className="label">Client Name:</div>
+        <div className="value">{matterName}</div>
+      </div>
+      <div className="info-row">
+        <div className="label">
+          <div className="label-text">Matter Number:</div>
+        </div>
+        <div className="value">{id}</div>
+      </div>
+    </div>
+  );
+
+  // Subtle, secondary header action — deliberately NOT styled like the primary
+  // task CTAs (Resume/Start). Only offered on the task list. Same handler/route.
+  const docsButton = view === "tasks" && (
+    <button
+      type="button"
+      onClick={() => setView("profile_summary")}
+      onMouseEnter={() => setDocsHover(true)}
+      onMouseLeave={() => setDocsHover(false)}
+      style={{
+        display: "inline-flex",
+        alignItems: "center",
+        gap: "8px",
+        padding: "8px 16px",
+        borderRadius: "8px",
+        border: "1px solid rgba(240, 185, 11, 0.45)",
+        background: docsHover
+          ? "rgba(240, 185, 11, 0.18)"
+          : "rgba(240, 185, 11, 0.08)",
+        color: "#e6b23a",
+        font: "inherit",
+        fontSize: "14px",
+        fontWeight: 600,
+        whiteSpace: "nowrap",
+        cursor: "pointer",
+        transition: "background 0.2s ease, border-color 0.2s ease",
+      }}
+    >
+      View Info &amp; Documents
+    </button>
+  );
+
   return (
     <Layout title={`Welcome ${response?.username ? response.username : ""} `}>
       {matterLoading ? (
@@ -276,11 +325,59 @@ const SingleMatter = () => {
               the panel title so the chat card itself needs no header. */}
           <div className="pHead">
             {isChatView ? (
-              <div className="sm-chat-head">
+              <>
+                <div className="sm-chat-head">
+                  <button
+                    type="button"
+                    className="mw-chat-panel__back"
+                    onClick={() => setView("tasks")}
+                  >
+                    <svg
+                      width="18"
+                      height="18"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    >
+                      <path d="M19 12H5" />
+                      <path d="M12 19l-7-7 7-7" />
+                    </svg>
+                    Back to Tasks
+                  </button>
+                  <h3 className="sm-chat-head__title">{CHAT_TITLES[view]}</h3>
+                </div>
+                {matterInfo}
+              </>
+            ) : (
+              <div
+                className="sm-head-row"
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  flexWrap: "wrap",
+                  gap: "12px 16px",
+                }}
+              >
                 <button
                   type="button"
-                  className="mw-chat-panel__back"
-                  onClick={() => setView("tasks")}
+                  className="sm-back-btn"
+                  onClick={() => history.push(AUTH_ROUTES.MATTER_DASHBOARD)}
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: "6px",
+                    background: "transparent",
+                    border: "none",
+                    color: "inherit",
+                    font: "inherit",
+                    cursor: "pointer",
+                    padding: "4px 0",
+                    opacity: 0.85,
+                  }}
                 >
                   <svg
                     width="18"
@@ -295,57 +392,22 @@ const SingleMatter = () => {
                     <path d="M19 12H5" />
                     <path d="M12 19l-7-7 7-7" />
                   </svg>
-                  Back to Tasks
+                  Back to Matters
                 </button>
-                <h3 className="sm-chat-head__title">{CHAT_TITLES[view]}</h3>
-              </div>
-            ) : (
-              <button
-                type="button"
-                className="sm-back-btn"
-                onClick={() => history.push(AUTH_ROUTES.MATTER_DASHBOARD)}
-                style={{
-                  display: "inline-flex",
-                  alignItems: "center",
-                  gap: "6px",
-                  background: "transparent",
-                  border: "none",
-                  color: "inherit",
-                  font: "inherit",
-                  cursor: "pointer",
-                  padding: "4px 0",
-                  marginBottom: "12px",
-                  opacity: 0.85,
-                }}
-              >
-                <svg
-                  width="18"
-                  height="18"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "flex-end",
+                    flexWrap: "wrap",
+                    gap: "12px 24px",
+                  }}
                 >
-                  <path d="M19 12H5" />
-                  <path d="M12 19l-7-7 7-7" />
-                </svg>
-                Back to Matters
-              </button>
-            )}
-            <div className="info-container">
-              <div className="info-row">
-                <div className="label">Client Name:</div>
-                <div className="value">{matterName}</div>
-              </div>
-              <div className="info-row">
-                <div className="label">
-                  <div className="label-text">Matter Number:</div>
+                  {matterInfo}
+                  {docsButton}
                 </div>
-                <div className="value">{id}</div>
               </div>
-            </div>
+            )}
           </div>
 
           <div className="pBody">
@@ -363,6 +425,15 @@ const SingleMatter = () => {
                 tasks={tasks}
                 onStart={handleTaskStart}
                 matterName={matterName}
+              />
+            )}
+
+            {/* View Information and Documents: profile summary + folders */}
+            {view === "profile_summary" && (
+              <ProfileSummaryPanel
+                matterId={id}
+                matterData={matterData}
+                onBack={handleBackToTasks}
               />
             )}
 
