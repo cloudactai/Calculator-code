@@ -690,13 +690,19 @@ def calculate_spousal_support_iterative(
         )
         cs_ref       = cs_result["child_support_ref"]
         notional_ref = cs_result["notional_amount_ref"]
-        # Pick the payor's CS obligation from the result using the original party key
+        # Pick each party's CS adjustment based on their actual role:
+        #   - Non-custodial parent: uses their actual CS from cs_ref
+        #   - Custodial parent: uses their notional from notional_ref
+        # This handles both cases: spousal payor = CS payor (standard)
+        # and spousal payor = custodial parent (reversed).
         payor_party_key = "party1" if payor_is_party1 else "party2"
         recip_party_key = "party2" if payor_is_party1 else "party1"
         if monthly_cs_paid == -1:
-            monthly_cs_paid  = cs_ref[payor_party_key]
+            payor_actual = cs_ref[payor_party_key]
+            monthly_cs_paid = payor_actual if payor_actual > 0 else notional_ref[payor_party_key]
         if monthly_notional_cs == -1:
-            monthly_notional_cs = notional_ref[recip_party_key]
+            recip_actual = cs_ref[recip_party_key]
+            monthly_notional_cs = recip_actual if recip_actual > 0 else notional_ref[recip_party_key]
     cs_annual       = monthly_cs_paid    * 12
     notional_annual = monthly_notional_cs * 12
     both_gross      = {"party1": payor_gross, "party2": recipient_gross}

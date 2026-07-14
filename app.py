@@ -830,6 +830,14 @@ def spousal_calculate():
             year                 = year,
             payor_is_party1      = (party1_gross >= party2_gross),
         )
+
+        # --- Determine actual payor/recipient by INDI (disposable income after CS) ---
+        # The old app compares household incomes (INDI) not gross incomes.
+        # After child support adjustments, the party with higher INDI is the
+        # spousal payor — this can differ from the higher-gross-income party.
+        if result.recipient_indi_mid > result.payor_indi_mid:
+            payor_name, recipient_name = recipient_name, payor_name
+
         return jsonify({
             "payor":              payor_name,
             "recipient":          recipient_name,
@@ -1481,7 +1489,9 @@ def run_spousal_calc_tool(tool_input: dict) -> dict:
     p1_age   = int(tool_input["party1_age"])
     p2_age   = int(tool_input["party2_age"])
 
-    if p1_gross >= p2_gross:
+    payor_is_party1 = p1_gross >= p2_gross
+
+    if payor_is_party1:
         payor_gross, payor_age, payor_name = p1_gross, p1_age, p1_name
         recip_gross, recip_age, recip_name = p2_gross, p2_age, p2_name
         payor_deductions = {
@@ -1526,6 +1536,7 @@ def run_spousal_calc_tool(tool_input: dict) -> dict:
         child_counts=child_counts,
         monthly_cs_paid=-1,
         monthly_notional_cs=-1,
+        payor_is_party1=payor_is_party1,
         youngest_child_age=float(youngest_child_age),
         payor_other_deductions=payor_deductions["other_deductions"],
         payor_child_care_expenses=payor_deductions["child_care_expenses"],

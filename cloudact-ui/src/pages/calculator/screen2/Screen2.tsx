@@ -423,6 +423,9 @@ const Screen2 = ({
       : [{ label: "", amount: "0", value: "", tolltip: "" }],
   });
 
+  // Counter to force re-render after ref-based calculations update
+  const [calcVersion, setCalcVersion] = useState(0);
+
 
 
   const [deductions, setDeductions] = useState({
@@ -893,6 +896,10 @@ const Screen2 = ({
     party1: 0,
     party2: 0,
   });
+
+  // Stores the Flask-determined spousal payor direction so
+  // spousalSupportGivenTo() works even when amounts are $0.
+  const flaskSpousalPayorIsParty1 = useRef<boolean | null>(null);
 
   const changeInTaxesAndBenefitLow = useRef<twoPartyStates>({
     party1: 0,
@@ -1922,6 +1929,12 @@ const Screen2 = ({
   };
 
   const spousalSupportGivenTo = () => {
+    // When the Flask API determined direction, use it — this handles
+    // the $0 case where both slots are equal and the amount comparison
+    // would always default to party2.
+    if (flaskSpousalPayorIsParty1.current !== null) {
+      return flaskSpousalPayorIsParty1.current ? party2Name() : party1Name();
+    }
     return spousalSupportMed.current.party1 > spousalSupportMed.current.party2
       ? party1Name()
       : party2Name();
@@ -5635,8 +5648,6 @@ const Screen2 = ({
       const p2Income = totalIncomeByIncomeState(income.party2) + nonTaxableIncomeParty2();
 
       // ── Call /calculate first to get Python CS amounts ───────────────────────
-      let monthly_child_support: number | undefined = undefined;
-      let monthly_notional_child_support: number | undefined = undefined;
 
       if (hasChildren) {
         const csPayload = {
@@ -5674,23 +5685,22 @@ const Screen2 = ({
           party2: csResult.party2_annual,
         };
 
-        // For INDI convergence, pass the NET amount the payor actually pays and the
-        // gross amount the recipient would hypothetically owe (notional).
-        const p1IsPayor = p1Income >= p2Income;
-        monthly_child_support = p1IsPayor
-          ? csResult.child_support_ref.party1_monthly   // net CS party1 pays after offset
-          : csResult.child_support_ref.party2_monthly;  // net CS party2 pays after offset
-        monthly_notional_child_support = p1IsPayor
-          ? csResult.party2_monthly   // gross party2 would owe (notional)
-          : csResult.party1_monthly;  // gross party1 would owe (notional)
       }
       // ── End CS pre-fetch ─────────────────────────────────────────────────────
+
+      // Determine recipient (lower-income party) age for the SSAG formula.
+      // The Flask API expects recipient_age to be the actual recipient's age.
+      const p1Age = momentFunction.calculateNumberOfYears(screen1.background.party1DateOfBirth);
+      const p2Age = momentFunction.calculateNumberOfYears(screen1.background.party2DateOfBirth);
+      const recipientAge = p1Income >= p2Income ? p2Age : p1Age;
 
       const flaskPayload = {
         party1_net_income: p1Income,
         party2_net_income: p2Income,
-        party1_age: momentFunction.calculateNumberOfYears(screen1.background.party1DateOfBirth),
-        recipient_age: momentFunction.calculateNumberOfYears(screen1.background.party2DateOfBirth),
+        party1_name: party1Name(),
+        party2_name: party2Name(),
+        party1_age: p1Age,
+        recipient_age: recipientAge,
         years: momentFunction.differenceBetweenTwoDates(
           screen1.aboutTheRelationship.dateOfMarriage,
           screen1.aboutTheRelationship.dateOfSeparation
@@ -5699,8 +5709,8 @@ const Screen2 = ({
         children: hasChildren,
         children_list: hasChildren ? childrenList : undefined,
         youngest_child_age: youngestChildAge,
-        ...(monthly_child_support !== undefined && { monthly_child_support }),
-        ...(monthly_notional_child_support !== undefined && { monthly_notional_child_support }),
+        // Let the Flask API compute CS amounts from children_list + incomes
+        // rather than passing potentially wrong-direction values.
       };
       console.log('[Flask] payload:', flaskPayload);
 
@@ -5710,9 +5720,11 @@ const Screen2 = ({
       console.log('[Flask] refs before override - low:', spousalSupportLow.current, 'med:', spousalSupportMed.current, 'high:', spousalSupportHigh.current);
 
       if (flaskResult) {
-        // Store amount in the RECIPIENT's slot so spousalSupportGivenTo()
-        // returns the correct party name and the arrow points the right way.
-        const payorIsParty1 = p1Income >= p2Income;
+        // Use the Flask API's payor/recipient determination (based on INDI
+        // comparison, matching the old app's disposable-income logic) to
+        // assign spousal support to the correct party slot.
+        const payorIsParty1 = flaskResult.payor === party1Name();
+        flaskSpousalPayorIsParty1.current = payorIsParty1;
         if (payorIsParty1) {
           // Party 1 pays → support given to Party 2
           spousalSupportLow.current.party1  = 0;
@@ -6907,8 +6919,10 @@ const Screen2 = ({
     calculateTotalTaxes(2);
     calculateAllOperationsForParty1();
     calculateAllOperationsForParty2();
+    // Force re-render so RenderCalculationValues picks up fresh ref values
+    setCalcVersion((v) => v + 1);
     // }
-  }, [count, childCareExpenses]);
+  }, [count, childCareExpenses, income, nonTaxableincome, fetchedDynamicValues]);
 
  
 
@@ -7302,10 +7316,15 @@ const Screen2 = ({
       ...distinctYears,
       selectedYear: event.label,
     });
-    fetchFederalDBValues(event.label, getProvinceOfParty1()).then((res) => {
-      allValuesRefreshed();
-      setLoading(false);
-    });
+    fetchFederalDBValues(event.label, getProvinceOfParty1())
+      .then((res) => {
+        allValuesRefreshed();
+        setLoading(false);
+      })
+      .catch((err) => {
+        console.error("Error refreshing tax data for year:", err);
+        setLoading(false);
+      });
   };
 
   //need partyNum also
@@ -8135,7 +8154,9 @@ const Screen2 = ({
               <div className="controls">
                 <div className="form-group mb-0" style={{ width: "300px" }}>
                   <Dropdown
-                    options={distinctYears.allYears.map(({ year }) => year)}
+                    options={distinctYears.allYears.length > 0
+                      ? [Math.max(...distinctYears.allYears.map(y => y.year))]
+                      : []}
                     placeholder="Select Tax Year*"
                     value={`${distinctYears.selectedYear}`}
                     onChange={(event) => {
@@ -8500,8 +8521,6 @@ const Screen2 = ({
                             prefix={"$"}
                             onChange={(e) => {
                               changeParty1Amount(e, index);
-                              calculateAllOperationsForParty1();
-                              calculateAllOperationsForParty2();
                             }}
                             onBlur={() => {
                               calculateChildSupport();
@@ -8613,8 +8632,6 @@ const Screen2 = ({
                               e: React.SyntheticEvent<HTMLInputElement>
                             ) => {
                               changeParty2Amount(e, index);
-                              calculateAllOperationsForParty1();
-                              calculateAllOperationsForParty2();
                             }}
                             onBlur={() => {
                               calculateChildSupport();
