@@ -4,13 +4,29 @@ import InputCustom from '../../components/InputCustom'
 import Loader from '../../components/Loader'
 import { EmploymentData } from '../../utils/Apis/matters/CustomHook/DocumentViewDataUpdate'
 
+const normalizeEmploymentStatus = value => {
+  const key = String(value || '').trim().toLowerCase().replace(/[\s-]+/g, '_')
+  if (key === 'selfemployed' || key === 'self_employed') return 'self_employed'
+  if (key === 'employed' || key === 'unemployed') return key
+  return value || ''
+}
+
 const EmploymentDetailsSimple = ({ matterId, onUpdateFormData, activeTab, setActiveTab }) => {
   const [loading, setLoading] = useState(true)
   const {  selectEmployment, selectEmploymentDataLoading,selectEmploymentDataError} = EmploymentData(matterId)
 
   useEffect(() => {
     if(selectEmployment && !selectEmploymentDataLoading){
-      setFormData(selectEmployment)
+      setFormData({
+        client: {
+          ...(selectEmployment.client || {}),
+          employmentStatus: normalizeEmploymentStatus(selectEmployment.client?.employmentStatus)
+        },
+        opposingParty: {
+          ...(selectEmployment.opposingParty || {}),
+          employmentStatus: normalizeEmploymentStatus(selectEmployment.opposingParty?.employmentStatus)
+        }
+      })
       setLoading(false)
     } else {
       setLoading(true)

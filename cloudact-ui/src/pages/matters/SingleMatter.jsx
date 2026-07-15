@@ -112,12 +112,12 @@ const SingleMatter = () => {
   // Set matter data from Redux
   useEffect(() => {
     const loadedMatter = selectSingleMatter?.body?.[0];
-    if (loadedMatter && matterData?.matterNumber !== loadedMatter.matterNumber) {
+    if (loadedMatter) {
       setMatterData(loadedMatter);
-    } else if (!singleMatterLoading && !matterData) {
-      setMatterData({ client_id: "", matterNumber: id });
+    } else if (!singleMatterLoading) {
+      setMatterData((current) => current || { client_id: "", matterNumber: id });
     }
-  }, [selectSingleMatter, matterData, singleMatterLoading, id]);
+  }, [selectSingleMatter, singleMatterLoading, id]);
 
   // Once we have basic matter data, fetch the sub-data for chat context
   useEffect(() => {
@@ -236,6 +236,21 @@ const SingleMatter = () => {
       child_spousal_support: "completed",
     }));
     setView("tasks");
+  }
+
+  function handleMatterIntakeComplete() {
+    persistTaskStatus("matter_intake", "completed");
+    // Financial year and valuation date live on the matter header rather than
+    // in the section row payloads. Reload it after the AI save so View / Edit
+    // does not keep showing the pre-intake blank values.
+    dispatch(getSingleMatter(id));
+  }
+
+  function handleViewInformation() {
+    // The user may have just completed either intake path. Always refresh the
+    // small matter header before opening forms that depend on its year/date.
+    dispatch(getSingleMatter(id));
+    setView("profile_summary");
   }
 
   // Cleanup on unmount
@@ -380,7 +395,7 @@ const SingleMatter = () => {
               <MatterTaskList
                 tasks={tasks}
                 onStart={handleTaskStart}
-                onViewInfo={() => setView("profile_summary")}
+                onViewInfo={handleViewInformation}
               />
             )}
 
@@ -408,7 +423,7 @@ const SingleMatter = () => {
               <MatterIntakeChatPanel
                 matterData={fullMatterData}
                 matterId={id}
-                onComplete={() => persistTaskStatus("matter_intake", "completed")}
+                onComplete={handleMatterIntakeComplete}
                 onBack={() => setView("tasks")}
               />
             )}

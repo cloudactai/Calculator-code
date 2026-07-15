@@ -522,6 +522,11 @@ SECTIONS AND THEIR EXACT DATA SHAPES
                         "lastEmployed", "role": "Client" },
      "opposingParty": { ...same, "role": "Opposing Party" }
    }
+   - "employmentStatus" MUST be EXACTLY one of the form's stored values:
+     "employed", "self_employed", or "unemployed" (lowercase).
+   - For "employed", fill employerName, employerAddress, and employedSince. For
+     "self_employed", fill businessName and businessAddress. For "unemployed",
+     fill lastEmployed when known. Dates are YYYY-MM-DD.
 
 6. section="Expenses"   (optional)
    data: {
@@ -565,17 +570,34 @@ SECTIONS AND THEIR EXACT DATA SHAPES
                                                description_ghiav, isInPossession
      bank_accounts_savings_securities_pension: property_status_bassp, category_bassp,
                                                description_bassp, institution, account_number
-     life_and_disability_insurance:            property_status_ladi, owner, beneficiary,
-                                               policy_no, face_amount
+     life_and_disability_insurance:            insurance_type, property_status_ladi, owner,
+                                               beneficiary, policy_no, face_amount
      money_owed_to_you:                        property_status_moty, details_moty
+   - For lands, nature_and_type_of_ownership is the LEGAL OWNERSHIP arrangement
+     (for example "Jointly owned" or "Sole ownership"), not the property's use or
+     description. "Matrimonial home" describes the property and must not replace
+     an ownership arrangement supplied by the user.
+   - Every property_status* field is an exceptional-status radio value. Use EXACTLY
+     "disposed_property", "excluded_property", or "opposing_Party_view_differs"
+     only when the user explicitly says that status applies; otherwise leave it "".
+     Joint/sole ownership does NOT belong in a property_status* field.
    - For general_household_items_and_vehicles, "item" is a category — EXACTLY one of:
      "Cars, Boats, Vehicles", "Household Goods, Furniture and Fixtures",
      "Jewelery, art, electronics, tools,sports & hobby equipment", "Other Special Items".
      "isInPossession" is "Yes" or "No".
+   - For bank_accounts_savings_securities_pension, "category_bassp" is EXACTLY one
+     of: "Investments", "Bank accounts", "Life Insurance", "Savings Plans",
+     "Other Assets". Put account-specific wording such as Chequing or RRSP in
+     description_bassp instead of inventing a dropdown value.
+   - For life_and_disability_insurance, "insurance_type" is EXACTLY one of:
+     "Life Insurance", "Pension Fund", or "Disability Cover".
 
 8. section="DebtsAndLiabilities"   (optional; array — one object per debt)
    data: [ { "category", "details", "on_date_of_marriage",
              "on_valuation_date", "today" } ]
+   - "category" is EXACTLY one of: "Mortgages", "Line of credits", "Other loans",
+     "Outstanding credit card balances", "Unpaid Support Amounts", "Other Debts".
+     Put the lender/card type and other specifics in "details".
 
 9. section="Court"   (optional)
    data: { "name", "fileNumber", "address" }

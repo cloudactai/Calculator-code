@@ -27,8 +27,19 @@ const AssetsSimple = ({ matterId, onUpdateFormData, matterData }) => {
     }, [selectAssetsDataLoading, selectAssetsData]);
 
     const [formData, setFormData] = useState({
-        valuation_date: matterData.valuation_date,
+        valuation_date: matterData?.valuation_date || '',
     });
+
+    useEffect(() => {
+        const valuationDate = matterData?.valuation_date
+        if (valuationDate) {
+            setFormData(prevFormData => (
+                prevFormData.valuation_date === valuationDate
+                    ? prevFormData
+                    : { ...prevFormData, valuation_date: valuationDate }
+            ))
+        }
+    }, [matterData?.valuation_date])
     console.log("🚀 ~ AssetsSimple ~ formData:", formData.business_interest)
 
     useEffect(() => {

@@ -175,14 +175,14 @@ export default function MatterIntakeChatPanel({
   }, [matterData, contextSent]);
 
   // Merge the agent's returned sections into the accumulated blob and persist it.
-  function persistSections(sections) {
+  async function persistSections(sections) {
     if (!Array.isArray(sections) || sections.length === 0) return;
 
     sections.forEach(({ section, data }) => {
       if (section) formsDataRef.current[section] = data;
     });
 
-    dispatch(
+    await dispatch(
       saveMatter({
         matter_id: matterId,
         data: formsDataRef.current,
@@ -221,10 +221,13 @@ export default function MatterIntakeChatPanel({
       } else {
         setBubbles((b) => [...b, { role: "assistant", text: data.reply }]);
         setMessages(data.messages || nextMessages);
-        persistSections(data.saved_sections);
+        // Wait for persistence before marking the intake complete. The parent
+        // refreshes matter-header fields (financial year / valuation date) in
+        // response to completion, so firing it early creates a stale read race.
+        await persistSections(data.saved_sections);
         // The agent has no "done" flag; detect its completion phrasing so we can
         // mark the task complete and offer a clear way back to Tasks.
-        if (/intake is (now )?complete|complete and saved/i.test(data.reply || "")) {
+        if (/intake (?:is (?:now )?complete|has been saved)|complete and saved/i.test(data.reply || "")) {
           setIntakeComplete(true);
           if (onComplete) onComplete();
         }

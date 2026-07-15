@@ -41,6 +41,82 @@ const num = (value) => {
   return Number.isFinite(parsed) ? parsed : 0;
 };
 
+// AI extraction is conversational, while several legacy form controls only
+// render a selection for their exact stored enum. Normalise common human labels
+// at the persistence boundary so older prompts/clients also round-trip safely.
+const normalizeEmploymentStatus = (value) => {
+  const key = String(value ?? "")
+    .trim()
+    .toLowerCase()
+    .replace(/[\s-]+/g, "_");
+  return {
+    employed: "employed",
+    self_employed: "self_employed",
+    selfemployed: "self_employed",
+    unemployed: "unemployed",
+  }[key] ?? value ?? "";
+};
+
+const normalizePropertyStatus = (value) => {
+  const key = String(value ?? "").trim().toLowerCase().replace(/[\s-]+/g, "_");
+  return {
+    disposed: "disposed_property",
+    disposed_property: "disposed_property",
+    excluded: "excluded_property",
+    excluded_property: "excluded_property",
+    opposing_party_view_differs: "opposing_Party_view_differs",
+  }[key] ?? value ?? "";
+};
+
+const normalizeAssetItem = (assetType, item) => {
+  const normalized = { ...(item || {}) };
+  const statusFieldByType = {
+    lands: "property_status",
+    other_property: "property_status_op",
+    business_interest: "property_status_bi",
+    general_household_items_and_vehicles: "property_status_ghiav",
+    bank_accounts_savings_securities_pension: "property_status_bassp",
+    life_and_disability_insurance: "property_status_ladi",
+    money_owed_to_you: "property_status_moty",
+  };
+  const statusField = statusFieldByType[assetType];
+  if (statusField) normalized[statusField] = normalizePropertyStatus(normalized[statusField]);
+
+  if (assetType === "general_household_items_and_vehicles") {
+    const itemKey = String(normalized.item ?? "").trim().toLowerCase();
+    if (["car", "cars", "boat", "boats", "vehicle", "vehicles"].includes(itemKey)) {
+      normalized.item = "Cars, Boats, Vehicles";
+    }
+    const possession = String(normalized.isInPossession ?? "").trim().toLowerCase();
+    if (possession === "yes" || possession === "no") {
+      normalized.isInPossession = possession === "yes" ? "Yes" : "No";
+    }
+  }
+
+  if (assetType === "bank_accounts_savings_securities_pension") {
+    const rawCategory = String(normalized.category_bassp ?? "").trim();
+    const categoryKey = rawCategory.toLowerCase();
+    const category = {
+      chequing: "Bank accounts",
+      checking: "Bank accounts",
+      "bank account": "Bank accounts",
+      "bank accounts": "Bank accounts",
+      rrsp: "Savings Plans",
+      resp: "Savings Plans",
+      tfsa: "Savings Plans",
+      pension: "Savings Plans",
+    }[categoryKey];
+    if (category) {
+      normalized.category_bassp = category;
+      if (!normalized.description_bassp && rawCategory !== category) {
+        normalized.description_bassp = rawCategory;
+      }
+    }
+  }
+
+  return normalized;
+};
+
 // Matter helpers
 async function findMatter(userId, matterParam) {
   const asNumber = Number(matterParam);
@@ -144,12 +220,16 @@ async function saveSections(matter, info) {
   }
 
   if (info.EmploymentDetails) {
+    const normalizeEmployment = (party) => ({
+      ...(party || {}),
+      employmentStatus: normalizeEmploymentStatus(party?.employmentStatus),
+    });
     await putRecord(
       matter.id,
       "employment",
       assignIds([
-        withRole(info.EmploymentDetails.client, "Client"),
-        withRole(info.EmploymentDetails.opposingParty, "Opposing Party"),
+        withRole(normalizeEmployment(info.EmploymentDetails.client), "Client"),
+        withRole(normalizeEmployment(info.EmploymentDetails.opposingParty), "Opposing Party"),
       ])
     );
   }
@@ -214,7 +294,10 @@ async function saveSections(matter, info) {
       "money_owed_to_you",
     ];
     const rows = ASSET_TYPES.flatMap((asset_type) =>
-      toArray(section[asset_type]).map((item) => ({ ...item, asset_type }))
+      toArray(section[asset_type]).map((item) => ({
+        ...normalizeAssetItem(asset_type, item),
+        asset_type,
+      }))
     );
     const assetRows = assignIds(rows);
     await putRecord(matter.id, "assets", assetRows);
