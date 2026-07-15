@@ -15,6 +15,12 @@ from datetime import date, datetime, timezone
 from flask import Flask, request, jsonify, render_template
 from flask_cors import CORS
 import anthropic
+from intake_chat_guard import (
+    INTAKE_SECTION_NAMES,
+    is_intake_complete_reply,
+    saved_intake_section_names,
+    should_nudge_intake_reply,
+)
 from spousal_support import calculate_spousal_support_no_children, calculate_spousal_support_with_children, SpousalSupportResult, calculate_spousal_support_iterative
 from tax import ChildInfo as TaxChildInfo
 
@@ -455,6 +461,11 @@ Ask questions ONE AT A TIME. Do not dump a list of questions on the user. But if
 the user volunteers several facts at once, extract all of them and only ask about
 what is still missing.
 
+Use direct, professional language. Do not begin routine replies with filler such
+as "You're right", "Absolutely", or an apology. Only acknowledge a correction
+when the user has actually corrected a mistake. After saving supplied information,
+move directly to the next missing question.
+
 Work through the sections below in order. As soon as a section has enough
 information, call the save_matter_section tool for that section, then continue to
 the next one. Saving as you go lets the user pause and resume without losing work.
@@ -471,9 +482,14 @@ Some information may already be on file (it is provided at the start of the
 conversation). Treat that as already-known — confirm it briefly rather than
 re-asking, and only fill the gaps.
 
-Never invent data. Leave unknown fields as empty strings. Optional sections
-(Expenses, Assets, DebtsAndLiabilities, Court, OtherPersonsInHousehold) can be
-skipped if the user has nothing to add.
+Each save_matter_section call is a PATCH, not a replacement. When revisiting a
+section, include only the values the user just added or corrected plus enough of
+the record's identity to match it (for example party role, child name/DOB, income
+or expense type, asset category and description/address, or debt details). Do not
+restate unknown fields as empty strings and never use an empty value to clear an
+existing value. Never invent data. Optional sections (Expenses, Assets,
+DebtsAndLiabilities, Court, OtherPersonsInHousehold) can be skipped if the user has
+nothing to add.
 
 SECTIONS AND THEIR EXACT DATA SHAPES
 (use these field names verbatim — they must match the intake form):
@@ -619,8 +635,10 @@ SECTIONS AND THEIR EXACT DATA SHAPES
       "Unemployed", "Retired", "Disabled", "Other" (a work status, not a job title).
     - "number_of_children" and "amount_spouse_partner_earns" are numbers as strings.
 
-When you have covered the sections the user has information for, briefly summarise
-what was captured and tell them the intake has been saved.
+When all required sections are complete and every optional section has either been
+provided or explicitly skipped, your final plain-text response MUST begin exactly:
+"Intake complete and saved." Briefly summarise what was captured and tell the user
+they can return to Tasks. Do not ask another intake question after this final message.
 """
 
 SAVE_SECTION_TOOL = {
@@ -636,11 +654,7 @@ SAVE_SECTION_TOOL = {
         "properties": {
             "section": {
                 "type": "string",
-                "enum": [
-                    "Background", "Relationship", "Children", "IncomeAndBenefits",
-                    "EmploymentDetails", "Expenses", "Assets", "DebtsAndLiabilities",
-                    "Court", "OtherPersonsInHousehold",
-                ],
+                "enum": list(INTAKE_SECTION_NAMES),
                 "description": "Which intake section this data belongs to.",
             },
             "data": {
@@ -668,6 +682,7 @@ def intake_chat():
     try:
         body = request.get_json(force=True)
         messages = body.get("messages", [])
+        saved_section_names = saved_intake_section_names(messages)
 
         client = anthropic.Anthropic()  # reads ANTHROPIC_API_KEY from env
 
@@ -712,6 +727,8 @@ def intake_chat():
                     section = block.get("input", {}).get("section")
                     data = block.get("input", {}).get("data")
                     saved_sections.append({"section": section, "data": data})
+                    if section in INTAKE_SECTION_NAMES:
+                        saved_section_names.add(section)
                     tool_results.append({
                         "type":        "tool_result",
                         "tool_use_id": block["id"],
@@ -729,24 +746,7 @@ def intake_chat():
             # any tool call, so nothing gets persisted. If it clearly intends to
             # save, nudge it to actually call the tool instead of dead-ending on
             # the user. Bounded so a genuine question/summary still returns.
-            low = reply.lower()
-            intends_to_save = any(
-                phrase in low
-                for phrase in (
-                    "save", "process", "section by section", "let me",
-                    "one moment", "i'll go", "i will go", "proceed",
-                )
-            )
-            # Don't nudge the final wrap-up ("...has been saved / intake complete"),
-            # which also mentions "saved" but is legitimately tool-call-free.
-            looks_done = any(
-                phrase in low
-                for phrase in (
-                    "intake is complete", "complete and saved", "has been saved",
-                    "have been saved", "all sections", "everything is saved",
-                )
-            )
-            if intends_to_save and not looks_done and nudges < 2:
+            if should_nudge_intake_reply(reply) and nudges < 2:
                 nudges += 1
                 messages.append({
                     "role": "user",
@@ -762,6 +762,10 @@ def intake_chat():
                 "reply": reply,
                 "messages": messages,
                 "saved_sections": saved_sections,
+                "intake_complete": (
+                    set(INTAKE_SECTION_NAMES).issubset(saved_section_names)
+                    or is_intake_complete_reply(reply)
+                ),
             })
 
         return jsonify({"error": "Reached iteration limit without a final reply."}), 500

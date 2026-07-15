@@ -16,9 +16,9 @@ import "./MatterWorkflow.css";
  *
  * Mirrors ChildSupportChatPanel's chat shell, but talks to the Flask /intake-chat
  * endpoint. That endpoint returns structured `saved_sections` (one per intake
- * section the agent completed); this panel accumulates them into a formsData blob
- * and persists the whole blob through the existing saveMatter action — exactly the
- * payload the manual 5-step form sends. The Render agent never touches the DB.
+ * section the agent updated). This panel sends only the current response's changes
+ * to the authenticated backend, which merges non-blank fields into stored matter
+ * data. Section names are accumulated only to show conversational progress.
  *
  * Props:
  *   matterData   – aggregated matter object (snake_case) used for pre-load context
@@ -148,10 +148,9 @@ export default function MatterIntakeChatPanel({
 
   const windowRef = useRef(null);
   const inputRef = useRef(null);
-  // Accumulated formsData blob across the whole conversation. We save the WHOLE
-  // blob each time (like the manual form) rather than per-section, so we don't rely
-  // on the backend merging partial saves.
-  const formsDataRef = useRef({});
+  // Progress only. Matter values live in the backend and must never be reconstructed
+  // from this chat's incomplete local history.
+  const capturedSectionsRef = useRef({});
 
   useEffect(() => {
     if (windowRef.current) {
@@ -174,22 +173,29 @@ export default function MatterIntakeChatPanel({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [matterData, contextSent]);
 
-  // Merge the agent's returned sections into the accumulated blob and persist it.
+  // Persist only the changes returned in this response. The AI route applies these
+  // as non-destructive patches; the manual forms retain full-section save semantics.
   async function persistSections(sections) {
     if (!Array.isArray(sections) || sections.length === 0) return;
 
+    const sectionPatch = {};
     sections.forEach(({ section, data }) => {
-      if (section) formsDataRef.current[section] = data;
+      if (!section) return;
+      capturedSectionsRef.current[section] = true;
+      sectionPatch[section] = data;
     });
+
+    if (Object.keys(sectionPatch).length === 0) return;
 
     await dispatch(
       saveMatter({
         matter_id: matterId,
-        data: formsDataRef.current,
+        save_mode: "merge",
+        data: sectionPatch,
       })
     );
 
-    setSavedSections(Object.keys(formsDataRef.current));
+    setSavedSections(Object.keys(capturedSectionsRef.current));
   }
 
   async function send(text) {
@@ -225,9 +231,13 @@ export default function MatterIntakeChatPanel({
         // refreshes matter-header fields (financial year / valuation date) in
         // response to completion, so firing it early creates a stale read race.
         await persistSections(data.saved_sections);
-        // The agent has no "done" flag; detect its completion phrasing so we can
-        // mark the task complete and offer a clear way back to Tasks.
-        if (/intake (?:is (?:now )?complete|has been saved)|complete and saved/i.test(data.reply || "")) {
+        // Prefer the service's explicit completion state. Keep wording detection
+        // as a compatibility fallback while older deployments are still active.
+        const replyText = data.reply || "";
+        const completionReply =
+          !/(?:not|isn't|is not|hasn't|has not)\s+(?:yet\s+)?(?:complete|completed|saved|been saved)/i.test(replyText) &&
+          /intake.{0,60}(?:complete|completed|saved)|complete and saved|(?:everything|all (?:sections|information|details)).{0,60}(?:complete|completed|captured|saved)/i.test(replyText);
+        if (data.intake_complete === true || completionReply) {
           setIntakeComplete(true);
           if (onComplete) onComplete();
         }
@@ -260,7 +270,8 @@ export default function MatterIntakeChatPanel({
     setInput("");
     setContextSent(false);
     setSavedSections([]);
-    formsDataRef.current = {};
+    setIntakeComplete(false);
+    capturedSectionsRef.current = {};
   }
 
   return (
@@ -341,7 +352,7 @@ export default function MatterIntakeChatPanel({
           }}
         >
           <span style={{ color: "#22c55e", fontWeight: 600 }}>
-            ✓ Intake complete and saved.
+            ✓ Intake complete and saved. Return to Tasks when you’re ready.
           </span>
           <button
             className="btn btnPrimary rounded-pill"

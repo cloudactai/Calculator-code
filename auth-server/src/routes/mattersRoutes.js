@@ -11,11 +11,16 @@
 // the authenticated user (req.user.id). Matters are addressed by matterNumber
 // (legacy child tables key on it), with a numeric-id fallback.
 //
-// Save semantics improve on legacy: each five-steps section REPLACES that
-// section's rows (legacy blindly re-INSERTed, duplicating rows on re-save).
+// Manual five-step saves replace a complete section. AI intake saves use a
+// non-destructive patch mode so partial conversational updates cannot erase
+// fields or sibling rows captured in earlier chats.
 const express = require("express");
 const prisma = require("../../prismaClient");
 const { authMiddleware } = require("../middleware/authMiddleware");
+const {
+  isBlankValue,
+  mergeRecordRows,
+} = require("../utils/matterPatchMerge");
 
 const router = express.Router();
 router.use(authMiddleware);
@@ -168,6 +173,26 @@ async function putRecord(matterId, dataType, data) {
   });
 }
 
+async function saveRecordRows(
+  matterId,
+  dataType,
+  incomingRows,
+  { merge = false, ...mergeOptions } = {}
+) {
+  let rows = toArray(incomingRows);
+  if (merge) {
+    const existingRows = toArray(await getRecordRows(matterId, dataType));
+    rows = mergeRecordRows(existingRows, rows, mergeOptions);
+  }
+  // Patch mode can append to legacy rows whose ids are not contiguous. Reindex
+  // the final ordered collection so a newly appended row cannot reuse an id.
+  const rowsWithIds = merge
+    ? rows.map((row, index) => ({ ...row, id: index + 1 }))
+    : assignIds(rows);
+  await putRecord(matterId, dataType, rowsWithIds);
+  return rowsWithIds;
+}
+
 // Save-side transforms (port of cloud-act-api saveMatter)
 //
 // Party rows are split back apart on read by an EXACT role match of "Client" /
@@ -177,17 +202,18 @@ async function putRecord(matterId, dataType, data) {
 // the party discriminator the forms hydrate on.
 const withRole = (obj, role) => ({ ...(obj || {}), role });
 
-async function saveSections(matter, info) {
+async function saveSections(matter, info, { merge = false } = {}) {
   const matterPatch = {};
 
   if (info.Background) {
-    await putRecord(
+    await saveRecordRows(
       matter.id,
       "background",
-      assignIds([
+      [
         withRole(info.Background.client, "Client"),
         withRole(info.Background.opposingParty, "Opposing Party"),
-      ])
+      ],
+      { merge, identityGroups: [["role"]] }
     );
   }
 
@@ -200,22 +226,31 @@ async function saveSections(matter, info) {
       file_number: c.file_number ?? c.fileNumber ?? "",
       address: c.address ?? "",
     }));
-    await putRecord(matter.id, "court", assignIds(courtRows));
+    await saveRecordRows(matter.id, "court", courtRows, { merge, singleton: true });
   }
 
   if (info.Children) {
-    await putRecord(
+    await saveRecordRows(
       matter.id,
       "children",
-      assignIds(Object.values(info.Children))
+      Object.values(info.Children),
+      {
+        merge,
+        identityGroups: [
+          ["childName", "dateOfBirth"],
+          ["childName"],
+          ["dateOfBirth"],
+        ],
+      }
     );
   }
 
   if (info.Relationship) {
-    await putRecord(
+    await saveRecordRows(
       matter.id,
       "relationship",
-      assignIds(toArray(info.Relationship))
+      toArray(info.Relationship),
+      { merge, singleton: true }
     );
   }
 
@@ -224,19 +259,22 @@ async function saveSections(matter, info) {
       ...(party || {}),
       employmentStatus: normalizeEmploymentStatus(party?.employmentStatus),
     });
-    await putRecord(
+    await saveRecordRows(
       matter.id,
       "employment",
-      assignIds([
+      [
         withRole(normalizeEmployment(info.EmploymentDetails.client), "Client"),
         withRole(normalizeEmployment(info.EmploymentDetails.opposingParty), "Opposing Party"),
-      ])
+      ],
+      { merge, identityGroups: [["role"]] }
     );
   }
 
   if (info.IncomeAndBenefits) {
     const section = info.IncomeAndBenefits;
-    const financialYear = section.financialYear;
+    const financialYear = isBlankValue(section.financialYear)
+      ? matter.fyIncomeBenefits
+      : section.financialYear;
     // Key indexes section.client / section.opposingParty; roleLabel is the exact
     // discriminator the Income Simple form splits on ("Client"/"Opposing Party").
     const rows = [
@@ -253,13 +291,18 @@ async function saveSections(matter, info) {
         }));
       return [...tag(party.income, "income"), ...tag(party.benefit, "benefit")];
     });
-    await putRecord(matter.id, "income_benefits", assignIds(rows));
-    matterPatch.fyIncomeBenefits = financialYear ?? matter.fyIncomeBenefits;
+    await saveRecordRows(matter.id, "income_benefits", rows, {
+      merge,
+      identityGroups: [["role", "incomeBenefit", "type"]],
+    });
+    if (!isBlankValue(financialYear)) matterPatch.fyIncomeBenefits = financialYear;
   }
 
   if (info.Expenses) {
     const section = info.Expenses;
-    const financialYear = section.financialYear;
+    const financialYear = isBlankValue(section.financialYear)
+      ? matter.fyExpenses
+      : section.financialYear;
     const collect = (key, expenseType) =>
       ["client", "opposingParty"].flatMap((role) =>
         toArray((section[role] || {})[key]).map((item) => ({
@@ -269,17 +312,19 @@ async function saveSections(matter, info) {
           financialYear,
         }))
       );
-    await putRecord(
+    await saveRecordRows(
       matter.id,
       "expenses",
-      assignIds(collect("expenses", "expenses"))
+      collect("expenses", "expenses"),
+      { merge, identityGroups: [["role", "type"]] }
     );
-    await putRecord(
+    await saveRecordRows(
       matter.id,
       "special_expenses",
-      assignIds(collect("specialChildExpenses", "specialChildExpenses"))
+      collect("specialChildExpenses", "specialChildExpenses"),
+      { merge, identityGroups: [["role", "type", "childName"]] }
     );
-    matterPatch.fyExpenses = financialYear ?? matter.fyExpenses;
+    if (!isBlankValue(financialYear)) matterPatch.fyExpenses = financialYear;
   }
 
   if (info.Assets) {
@@ -299,8 +344,19 @@ async function saveSections(matter, info) {
         asset_type,
       }))
     );
-    const assetRows = assignIds(rows);
-    await putRecord(matter.id, "assets", assetRows);
+    const assetRows = await saveRecordRows(matter.id, "assets", rows, {
+      merge,
+      identityGroups: [
+        ["asset_type", "address_of_property"],
+        ["asset_type", "details_op"],
+        ["asset_type", "firm_name"],
+        ["asset_type", "description_ghiav"],
+        ["asset_type", "account_number"],
+        ["asset_type", "policy_no"],
+        ["asset_type", "details_moty"],
+      ],
+      uniqueFallbackFields: ["asset_type"],
+    });
 
     // Legacy also kept a flat market-value table; data_all exposes it.
     const marketValueRows = assetRows.flatMap((row) =>
@@ -311,24 +367,30 @@ async function saveSections(matter, info) {
       }))
     );
     await putRecord(matter.id, "assets_market_value", assignIds(marketValueRows));
-    if (section.valuation_date !== undefined) {
+    if (!isBlankValue(section.valuation_date)) {
       matterPatch.valuationDate = section.valuation_date;
     }
   }
 
   if (info.DebtsAndLiabilities) {
-    await putRecord(
+    await saveRecordRows(
       matter.id,
       "debts_liabilities",
-      assignIds(toArray(info.DebtsAndLiabilities))
+      toArray(info.DebtsAndLiabilities),
+      {
+        merge,
+        identityGroups: [["category", "details"], ["details"]],
+        uniqueFallbackFields: ["category"],
+      }
     );
   }
 
   if (info.OtherPersonsInHousehold) {
-    await putRecord(
+    await saveRecordRows(
       matter.id,
       "opih",
-      assignIds(toArray(info.OtherPersonsInHousehold))
+      toArray(info.OtherPersonsInHousehold),
+      { merge, singleton: true }
     );
   }
 
@@ -476,7 +538,10 @@ router.post("/save_matter/:sid/:matter_id", async (req, res) => {
         },
       });
     }
-    await saveSections(matter, info);
+    // AI callers explicitly opt into field-level merge semantics. Other callers
+    // retain the legacy full-section replacement behaviour by default.
+    const merge = req.body?.save_mode === "merge";
+    await saveSections(matter, info, { merge });
     return res.json(ok(req.body));
   } catch (err) {
     console.log("POST /v1/save_matter failed:", err?.message || err);
