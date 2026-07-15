@@ -1,8 +1,11 @@
 import React, { useEffect, useRef, useState } from "react";
 import { TbDeviceFloppy } from "react-icons/tb";
 import { useHistory } from "react-router";
-import ReactToPrint from "react-to-print";
 import { Edit, Trash } from "tabler-icons-react";
+import html2canvas from "html2canvas";
+import { jsPDF } from "jspdf";
+import moment from "moment";
+import toast from "react-hot-toast";
 import Search from "../../assets/images/search.png";
 import InputCustom from "../../components/InputCustom";
 import ModalInputCenter from "../../components/ModalInputCenter";
@@ -55,11 +58,64 @@ const ExistingCalculations = ({
 
   const headings = ["Label", "Client Name", "Status", "Actions"];
 
-  const [reportData, setReportData] = useState({
-    data: {},
-    showReportTemplate: true,
-  });
+  const [reportData, setReportData] = useState(null);
+  const [generatingId, setGeneratingId] = useState(null);
   let calculator_report = useRef(null);
+
+  // Once reportData is set and Reports renders offscreen, generate & download PDF
+  useEffect(() => {
+    if (!reportData || !generatingId) return;
+
+    const timer = setTimeout(async () => {
+      try {
+        const element = calculator_report.current;
+        if (!element) {
+          toast.error("Report content not ready");
+          return;
+        }
+
+        const pages = element.querySelectorAll(".pagePDF");
+        if (pages.length === 0) {
+          toast.error("No report pages found");
+          return;
+        }
+
+        const pdf = new jsPDF("p", "mm", "letter");
+        const pdfWidth = pdf.internal.pageSize.getWidth();
+        const pdfHeight = pdf.internal.pageSize.getHeight();
+
+        for (let i = 0; i < pages.length; i++) {
+          const canvas = await html2canvas(pages[i], {
+            scale: 2,
+            useCORS: true,
+            logging: false,
+            backgroundColor: "#ffffff",
+          });
+
+          const imgData = canvas.toDataURL("image/jpeg", 0.95);
+          const imgWidth = pdfWidth;
+          const imgHeight = (canvas.height * pdfWidth) / canvas.width;
+
+          if (i > 0) pdf.addPage();
+          pdf.addImage(imgData, "JPEG", 0, 0, imgWidth, Math.min(imgHeight, pdfHeight));
+        }
+
+        const party1 = reportData?.background?.party1FirstName || "Party1";
+        const party2 = reportData?.background?.party2FirstName || "Party2";
+        const date = moment().format("YYYY-MM-DD");
+        pdf.save(`CloudAct_Report_${party1}_${party2}_${date}.pdf`);
+        toast.success("PDF downloaded successfully");
+      } catch (err) {
+        console.error("PDF generation failed", err);
+        toast.error("Failed to generate PDF");
+      } finally {
+        setGeneratingId(null);
+        setReportData(null);
+      }
+    }, 1500);
+
+    return () => clearTimeout(timer);
+  }, [reportData, generatingId]);
 
   return (
     <div className="row">
@@ -93,14 +149,14 @@ const ExistingCalculations = ({
                 </thead>
                 <tbody>
                 
-                  <CalculationValuesTasks setReportData={setReportData} calculator_report={calculator_report} isLoading={isLoading} data={getSearchedCalculations()} setEditModal={setEditModal} />
+                  <CalculationValuesTasks setReportData={setReportData} generatingId={generatingId} setGeneratingId={setGeneratingId} isLoading={isLoading} data={getSearchedCalculations()} setEditModal={setEditModal} />
                 </tbody>
               </table>
             </div>
             
-            {reportData.data && (
+            {reportData && (
               <div style={{position: "absolute",left: "-999rem",opacity: 0,visibility: "hidden",}}>
-                <Reports ref={calculator_report} data={reportData.data} />
+                <Reports ref={calculator_report} data={reportData} />
               </div>
             )}
           </div>
@@ -272,7 +328,8 @@ const BaseCalculationTasks = ({
   setEditModal,
   isLoading,
   setReportData,
-  calculator_report,
+  generatingId,
+  setGeneratingId,
 }) => {
   const history = useHistory();
 
@@ -284,15 +341,30 @@ const BaseCalculationTasks = ({
     }
   };
 
+  const handleDownloadPdf = async (calcId) => {
+    if (generatingId) return;
+    setGeneratingId(calcId);
+
+    try {
+      const data = await apiCalculatorById.get_value(calcId);
+      const extracted = JSON.parse(data.report_data);
+      setReportData(extracted);
+    } catch (err) {
+      console.error("Failed to fetch report data", err);
+      toast.error("Failed to load calculation data");
+      setGeneratingId(null);
+    }
+  };
+
+  const isGenerating = !!generatingId;
+
   return data.map((e, index: number) => {
     return (
       <tr key={index} style={{ cursor: "pointer" }}>
         <td
           onClick={() =>
             history.push({
-              pathname: `${
-                  AUTH_ROUTES.CALCULATOR
-              }`,
+              pathname: `${AUTH_ROUTES.CALCULATOR}`,
               search: `?id=${e.id}&step=1`,
             })
           }
@@ -321,11 +393,18 @@ const BaseCalculationTasks = ({
         </td>
         <td className="actions">
             {e.status === "DONE" ? (
-                <ReactToPrint onBeforeGetContent={async () => { const data = await apiCalculatorById.get_value(e.id); const ExtractedData = JSON.parse(data.report_data);
-                setReportData((prev) => ({data: ExtractedData,showReportTemplate: false,}));}} trigger={() => (
-                  <button className="redColor"><i className="fa-solid fa-file-pdf"></i> PDF</button>
-                )}
-                content={() => calculator_report.current}/>
+                <button
+                  className="redColor"
+                  style={{ cursor: generatingId === e.id ? "wait" : "pointer" }}
+                  onClick={() => handleDownloadPdf(e.id)}
+                  disabled={isGenerating}
+                >
+                  {generatingId === e.id ? (
+                    <><i className="fas fa-spinner fa-spin"></i> Generating...</>
+                  ) : (
+                    <><i className="fa-solid fa-download"></i> Download PDF</>
+                  )}
+                </button>
             ) : (
                 <button className="blueColor" onClick={() => setEditModal((prev) => ({ ...prev, show: true, idToChange: e.id, label: e.label, description: e.description,}))}><i className="fa-solid fa-pen-to-square"></i> Edit</button>
             )}
