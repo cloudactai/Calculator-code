@@ -15,6 +15,12 @@ from datetime import date, datetime, timezone
 from flask import Flask, request, jsonify, render_template
 from flask_cors import CORS
 import anthropic
+from intake_chat_guard import (
+    INTAKE_SECTION_NAMES,
+    is_intake_complete_reply,
+    saved_intake_section_names,
+    should_nudge_intake_reply,
+)
 from spousal_support import calculate_spousal_support_no_children, calculate_spousal_support_with_children, SpousalSupportResult, calculate_spousal_support_iterative
 from tax import ChildInfo as TaxChildInfo
 
@@ -455,6 +461,11 @@ Ask questions ONE AT A TIME. Do not dump a list of questions on the user. But if
 the user volunteers several facts at once, extract all of them and only ask about
 what is still missing.
 
+Use direct, professional language. Do not begin routine replies with filler such
+as "You're right", "Absolutely", or an apology. Only acknowledge a correction
+when the user has actually corrected a mistake. After saving supplied information,
+move directly to the next missing question.
+
 Work through the sections below in order. As soon as a section has enough
 information, call the save_matter_section tool for that section, then continue to
 the next one. Saving as you go lets the user pause and resume without losing work.
@@ -471,8 +482,19 @@ Some information may already be on file (it is provided at the start of the
 conversation). Treat that as already-known — confirm it briefly rather than
 re-asking, and only fill the gaps.
 
-Never invent data. Leave unknown fields as empty strings. Optional sections
-(Expenses, Assets, DebtsAndLiabilities, Court) can be skipped if the user has
+The database snapshot is authoritative. Never ask the user for a value that is
+already populated there, and never call save_matter_section merely to re-save
+unchanged database values. If the user explicitly supplies a different value,
+treat it as a correction: save the new value as a patch while preserving every
+saved value they did not change.
+
+Each save_matter_section call is a PATCH, not a replacement. When revisiting a
+section, include only the values the user just added or corrected plus enough of
+the record's identity to match it (for example party role, child name/DOB, income
+or expense type, asset category and description/address, or debt details). Do not
+restate unknown fields as empty strings and never use an empty value to clear an
+existing value. Never invent data. Optional sections (Expenses, Assets,
+DebtsAndLiabilities, Court, OtherPersonsInHousehold) can be skipped if the user has
 nothing to add.
 
 SECTIONS AND THEIR EXACT DATA SHAPES
@@ -498,17 +520,21 @@ SECTIONS AND THEIR EXACT DATA SHAPES
    - Dates in YYYY-MM-DD.
 
 3. section="Children"   (array — one object per child; empty array if none)
-   data: [ { "childName", "dateOfBirth", "nowLivesWith" } ]
+   data: [ { "childName", "dateOfBirth", "age", "nowLivesWith",
+             "representedByLawyer" ("Yes"/"No"),
+             "lawyerName", "lawyerPhone", "lawyerAddress", "lawyerEmail" } ]
    - "nowLivesWith" is who the child primarily lives with. Dates YYYY-MM-DD.
+   - "age" is the child's age in years. Only fill the lawyer* fields (and set
+     "representedByLawyer" to "Yes") if the child has their own lawyer; else "No".
 
 4. section="IncomeAndBenefits"
    data: {
      "financialYear": "<YYYY>",
-     "client":        { "income":  [ { "type", "yearlyAmount" } ],
-                        "benefit": [ { "type", "yearlyAmount", "incomeBenefit": "benefit" } ] },
+     "client":        { "income":  [ { "type", "yearlyAmount", "monthlyAmount" } ],
+                        "benefit": [ { "type", "yearlyAmount", "monthlyAmount", "incomeBenefit": "benefit" } ] },
      "opposingParty": { ...same... }
    }
-   - Amounts are annual CAD, as strings.
+   - Give yearlyAmount and/or monthlyAmount for each line (CAD, as strings).
    - "financialYear" is the tax year the figures are for (e.g. the current year).
 
 5. section="EmploymentDetails"
@@ -518,17 +544,22 @@ SECTIONS AND THEIR EXACT DATA SHAPES
                         "lastEmployed", "role": "Client" },
      "opposingParty": { ...same, "role": "Opposing Party" }
    }
+   - "employmentStatus" MUST be EXACTLY one of the form's stored values:
+     "employed", "self_employed", or "unemployed" (lowercase).
+   - For "employed", fill employerName, employerAddress, and employedSince. For
+     "self_employed", fill businessName and businessAddress. For "unemployed",
+     fill lastEmployed when known. Dates are YYYY-MM-DD.
 
 6. section="Expenses"   (optional)
    data: {
      "financialYear": "<YYYY>",
      "client":        { "expenses":            [ { "type", "monthlyAmount", "yearlyAmount" } ],
-                        "specialChildExpenses": [ { "type", "childName", "amount" } ] },
+                        "specialChildExpenses": [ { "type", "childName", "amount", "taxCredits" } ] },
      "opposingParty": { ...same two arrays... }
    }
    - Amounts as strings. Give monthlyAmount and/or yearlyAmount for each ordinary
-     expense line; specialChildExpenses are s.7 child expenses, each with a single
-     "amount" and the "childName" it applies to.
+     expense line; specialChildExpenses are s.7 child expenses, each with an
+     "amount", the "childName" it applies to, and any "taxCredits"/subsidies.
 
 7. section="Assets"   (optional)
    data is an OBJECT keyed by asset category (NOT a flat array). Include only the
@@ -557,24 +588,63 @@ SECTIONS AND THEIR EXACT DATA SHAPES
                                                nature_and_type_of_ownership
      other_property:                           property_status_op, category_op, details_op
      business_interest:                        property_status_bi, firm_name, interest
-     general_household_items_and_vehicles:     property_status_ghiav, description_ghiav,
-                                               isInPossession
+     general_household_items_and_vehicles:     item, property_status_ghiav,
+                                               description_ghiav, isInPossession
      bank_accounts_savings_securities_pension: property_status_bassp, category_bassp,
                                                description_bassp, institution, account_number
-     life_and_disability_insurance:            property_status_ladi, owner, beneficiary,
-                                               policy_no, face_amount
+     life_and_disability_insurance:            insurance_type, property_status_ladi, owner,
+                                               beneficiary, policy_no, face_amount
      money_owed_to_you:                        property_status_moty, details_moty
+   - For lands, nature_and_type_of_ownership is the LEGAL OWNERSHIP arrangement
+     (for example "Jointly owned" or "Sole ownership"), not the property's use or
+     description. "Matrimonial home" describes the property and must not replace
+     an ownership arrangement supplied by the user.
+   - Every property_status* field is an exceptional-status radio value. Use EXACTLY
+     "disposed_property", "excluded_property", or "opposing_Party_view_differs"
+     only when the user explicitly says that status applies; otherwise leave it "".
+     Joint/sole ownership does NOT belong in a property_status* field.
+   - For general_household_items_and_vehicles, "item" is a category — EXACTLY one of:
+     "Cars, Boats, Vehicles", "Household Goods, Furniture and Fixtures",
+     "Jewelery, art, electronics, tools,sports & hobby equipment", "Other Special Items".
+     "isInPossession" is "Yes" or "No".
+   - For bank_accounts_savings_securities_pension, "category_bassp" is EXACTLY one
+     of: "Investments", "Bank accounts", "Life Insurance", "Savings Plans",
+     "Other Assets". Put account-specific wording such as Chequing or RRSP in
+     description_bassp instead of inventing a dropdown value.
+   - For life_and_disability_insurance, "insurance_type" is EXACTLY one of:
+     "Life Insurance", "Pension Fund", or "Disability Cover".
 
 8. section="DebtsAndLiabilities"   (optional; array — one object per debt)
    data: [ { "category", "details", "on_date_of_marriage",
              "on_valuation_date", "today" } ]
+   - "category" is EXACTLY one of: "Mortgages", "Line of credits", "Other loans",
+     "Outstanding credit card balances", "Unpaid Support Amounts", "Other Debts".
+     Put the lender/card type and other specifics in "details".
 
 9. section="Court"   (optional)
    data: { "name", "fileNumber", "address" }
    - Court name, court file number, and court address.
 
-When you have covered the sections the user has information for, briefly summarise
-what was captured and tell them the intake has been saved.
+10. section="OtherPersonsInHousehold"   (optional; a single object)
+    data: {
+      "live_alone" ("yes"/"no", lowercase),
+      "name_of_person_married_to",
+      "name_of_other_adults",
+      "number_of_children",
+      "spouse_partner_work_status",
+      "amount_spouse_partner_earns"
+    }
+    - Describes who else lives in the CLIENT's household: a new spouse/partner,
+      other adults, and other children. Set "live_alone" to "yes" (lowercase) if
+      the client lives alone and leave the other fields empty; otherwise "no".
+    - "spouse_partner_work_status" MUST be EXACTLY one of: "Full Time", "Part Time",
+      "Unemployed", "Retired", "Disabled", "Other" (a work status, not a job title).
+    - "number_of_children" and "amount_spouse_partner_earns" are numbers as strings.
+
+When all required sections are complete and every optional section has either been
+provided or explicitly skipped, your final plain-text response MUST begin exactly:
+"Intake complete and saved." Briefly summarise what was captured and tell the user
+they can return to Tasks. Do not ask another intake question after this final message.
 """
 
 SAVE_SECTION_TOOL = {
@@ -590,19 +660,15 @@ SAVE_SECTION_TOOL = {
         "properties": {
             "section": {
                 "type": "string",
-                "enum": [
-                    "Background", "Relationship", "Children", "IncomeAndBenefits",
-                    "EmploymentDetails", "Expenses", "Assets", "DebtsAndLiabilities",
-                    "Court",
-                ],
+                "enum": list(INTAKE_SECTION_NAMES),
                 "description": "Which intake section this data belongs to.",
             },
             "data": {
                 "description": (
                     "The section payload. An object for Background, Relationship, "
-                    "IncomeAndBenefits, EmploymentDetails, Expenses, Assets and Court; "
-                    "an array for Children and DebtsAndLiabilities. Use the exact "
-                    "field names from the system prompt."
+                    "IncomeAndBenefits, EmploymentDetails, Expenses, Assets, Court "
+                    "and OtherPersonsInHousehold; an array for Children and "
+                    "DebtsAndLiabilities. Use the exact field names from the system prompt."
                 ),
             },
         },
@@ -622,6 +688,7 @@ def intake_chat():
     try:
         body = request.get_json(force=True)
         messages = body.get("messages", [])
+        saved_section_names = saved_intake_section_names(messages)
 
         client = anthropic.Anthropic()  # reads ANTHROPIC_API_KEY from env
 
@@ -666,6 +733,8 @@ def intake_chat():
                     section = block.get("input", {}).get("section")
                     data = block.get("input", {}).get("data")
                     saved_sections.append({"section": section, "data": data})
+                    if section in INTAKE_SECTION_NAMES:
+                        saved_section_names.add(section)
                     tool_results.append({
                         "type":        "tool_result",
                         "tool_use_id": block["id"],
@@ -683,24 +752,7 @@ def intake_chat():
             # any tool call, so nothing gets persisted. If it clearly intends to
             # save, nudge it to actually call the tool instead of dead-ending on
             # the user. Bounded so a genuine question/summary still returns.
-            low = reply.lower()
-            intends_to_save = any(
-                phrase in low
-                for phrase in (
-                    "save", "process", "section by section", "let me",
-                    "one moment", "i'll go", "i will go", "proceed",
-                )
-            )
-            # Don't nudge the final wrap-up ("...has been saved / intake complete"),
-            # which also mentions "saved" but is legitimately tool-call-free.
-            looks_done = any(
-                phrase in low
-                for phrase in (
-                    "intake is complete", "complete and saved", "has been saved",
-                    "have been saved", "all sections", "everything is saved",
-                )
-            )
-            if intends_to_save and not looks_done and nudges < 2:
+            if should_nudge_intake_reply(reply) and nudges < 2:
                 nudges += 1
                 messages.append({
                     "role": "user",
@@ -716,6 +768,10 @@ def intake_chat():
                 "reply": reply,
                 "messages": messages,
                 "saved_sections": saved_sections,
+                "intake_complete": (
+                    set(INTAKE_SECTION_NAMES).issubset(saved_section_names)
+                    or is_intake_complete_reply(reply)
+                ),
             })
 
         return jsonify({"error": "Reached iteration limit without a final reply."}), 500

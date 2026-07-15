@@ -16,8 +16,14 @@ const IncomeAndBenefitsSimple = ({ matterId, onUpdateFormData, matterData, activ
     useEffect(() => {
         if (selectIncomeData && !selectIncomeDataLoading) {
 
+            const savedRows = selectIncomeData?.body || [];
+            const savedFinancialYear = savedRows.find(item => item.financialYear)?.financialYear;
+
             const incomeData = {
-                financialYear: matterData.financial_year_income_benefits,
+                // Each saved row also carries the year. That fallback makes the
+                // form resilient while the separately stored matter header is
+                // being refreshed after an AI intake.
+                financialYear: matterData?.financial_year_income_benefits || savedFinancialYear || "",
                 client: {
                     income: [],
                     benefit: []
@@ -51,7 +57,7 @@ const IncomeAndBenefitsSimple = ({ matterId, onUpdateFormData, matterData, activ
                 },
             };
 
-            selectIncomeData?.body.forEach(item => {
+            savedRows.forEach(item => {
                 const { type, monthlyAmount, yearlyAmount, role, incomeBenefit, id } = item;
                 const newItem = { id, type, monthlyAmount, yearlyAmount, role };
 
@@ -85,7 +91,7 @@ const IncomeAndBenefitsSimple = ({ matterId, onUpdateFormData, matterData, activ
 
         }
 
-    }, [selectIncomeData, selectIncomeDataLoading])
+    }, [selectIncomeData, selectIncomeDataLoading, matterData?.financial_year_income_benefits])
 
 
     const [formData, setFormData] = useState({

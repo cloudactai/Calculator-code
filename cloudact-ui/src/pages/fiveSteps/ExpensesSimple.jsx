@@ -28,8 +28,14 @@ const ExpensesSimple = ({ matterId, onUpdateFormData, matterData, activeTab, set
         setLoading(false)
         // updateTotals()
       } else {
+        const savedFinancialYear = [
+          ...(receivedData?.client?.expenses || []),
+          ...(receivedData?.client?.specialChildExpenses || []),
+          ...(receivedData?.opposingParty?.expenses || []),
+          ...(receivedData?.opposingParty?.specialChildExpenses || []),
+        ].find(item => item.financialYear)?.financialYear
         const newFormData = {
-          financialYear: matterData.financial_year_expenses,
+          financialYear: matterData?.financial_year_expenses || savedFinancialYear || '',
           client: {
             expenses: receivedData.client && receivedData.client.expenses ? receivedData.client.expenses.map(expense => ({
               id: expense.id,
@@ -91,7 +97,7 @@ const ExpensesSimple = ({ matterId, onUpdateFormData, matterData, activeTab, set
     } else {
       setLoading(true)
     }
-  }, [selectChildrenData, selectExpenseData, selectExpenseDataLoading])
+  }, [selectChildrenData, selectExpenseData, selectExpenseDataLoading, matterData?.financial_year_expenses])
 
 
 

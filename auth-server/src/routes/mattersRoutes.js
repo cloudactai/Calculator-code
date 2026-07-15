@@ -11,11 +11,16 @@
 // the authenticated user (req.user.id). Matters are addressed by matterNumber
 // (legacy child tables key on it), with a numeric-id fallback.
 //
-// Save semantics improve on legacy: each five-steps section REPLACES that
-// section's rows (legacy blindly re-INSERTed, duplicating rows on re-save).
+// Manual five-step saves replace a complete section. AI intake saves use a
+// non-destructive patch mode so partial conversational updates cannot erase
+// fields or sibling rows captured in earlier chats.
 const express = require("express");
 const prisma = require("../../prismaClient");
 const { authMiddleware } = require("../middleware/authMiddleware");
+const {
+  isBlankValue,
+  mergeRecordRows,
+} = require("../utils/matterPatchMerge");
 
 const router = express.Router();
 router.use(authMiddleware);
@@ -39,6 +44,82 @@ const toArray = (value) => {
 const num = (value) => {
   const parsed = parseFloat(value);
   return Number.isFinite(parsed) ? parsed : 0;
+};
+
+// AI extraction is conversational, while several legacy form controls only
+// render a selection for their exact stored enum. Normalise common human labels
+// at the persistence boundary so older prompts/clients also round-trip safely.
+const normalizeEmploymentStatus = (value) => {
+  const key = String(value ?? "")
+    .trim()
+    .toLowerCase()
+    .replace(/[\s-]+/g, "_");
+  return {
+    employed: "employed",
+    self_employed: "self_employed",
+    selfemployed: "self_employed",
+    unemployed: "unemployed",
+  }[key] ?? value ?? "";
+};
+
+const normalizePropertyStatus = (value) => {
+  const key = String(value ?? "").trim().toLowerCase().replace(/[\s-]+/g, "_");
+  return {
+    disposed: "disposed_property",
+    disposed_property: "disposed_property",
+    excluded: "excluded_property",
+    excluded_property: "excluded_property",
+    opposing_party_view_differs: "opposing_Party_view_differs",
+  }[key] ?? value ?? "";
+};
+
+const normalizeAssetItem = (assetType, item) => {
+  const normalized = { ...(item || {}) };
+  const statusFieldByType = {
+    lands: "property_status",
+    other_property: "property_status_op",
+    business_interest: "property_status_bi",
+    general_household_items_and_vehicles: "property_status_ghiav",
+    bank_accounts_savings_securities_pension: "property_status_bassp",
+    life_and_disability_insurance: "property_status_ladi",
+    money_owed_to_you: "property_status_moty",
+  };
+  const statusField = statusFieldByType[assetType];
+  if (statusField) normalized[statusField] = normalizePropertyStatus(normalized[statusField]);
+
+  if (assetType === "general_household_items_and_vehicles") {
+    const itemKey = String(normalized.item ?? "").trim().toLowerCase();
+    if (["car", "cars", "boat", "boats", "vehicle", "vehicles"].includes(itemKey)) {
+      normalized.item = "Cars, Boats, Vehicles";
+    }
+    const possession = String(normalized.isInPossession ?? "").trim().toLowerCase();
+    if (possession === "yes" || possession === "no") {
+      normalized.isInPossession = possession === "yes" ? "Yes" : "No";
+    }
+  }
+
+  if (assetType === "bank_accounts_savings_securities_pension") {
+    const rawCategory = String(normalized.category_bassp ?? "").trim();
+    const categoryKey = rawCategory.toLowerCase();
+    const category = {
+      chequing: "Bank accounts",
+      checking: "Bank accounts",
+      "bank account": "Bank accounts",
+      "bank accounts": "Bank accounts",
+      rrsp: "Savings Plans",
+      resp: "Savings Plans",
+      tfsa: "Savings Plans",
+      pension: "Savings Plans",
+    }[categoryKey];
+    if (category) {
+      normalized.category_bassp = category;
+      if (!normalized.description_bassp && rawCategory !== category) {
+        normalized.description_bassp = rawCategory;
+      }
+    }
+  }
+
+  return normalized;
 };
 
 // Matter helpers
@@ -92,6 +173,26 @@ async function putRecord(matterId, dataType, data) {
   });
 }
 
+async function saveRecordRows(
+  matterId,
+  dataType,
+  incomingRows,
+  { merge = false, ...mergeOptions } = {}
+) {
+  let rows = toArray(incomingRows);
+  if (merge) {
+    const existingRows = toArray(await getRecordRows(matterId, dataType));
+    rows = mergeRecordRows(existingRows, rows, mergeOptions);
+  }
+  // Patch mode can append to legacy rows whose ids are not contiguous. Reindex
+  // the final ordered collection so a newly appended row cannot reuse an id.
+  const rowsWithIds = merge
+    ? rows.map((row, index) => ({ ...row, id: index + 1 }))
+    : assignIds(rows);
+  await putRecord(matterId, dataType, rowsWithIds);
+  return rowsWithIds;
+}
+
 // Save-side transforms (port of cloud-act-api saveMatter)
 //
 // Party rows are split back apart on read by an EXACT role match of "Client" /
@@ -101,17 +202,18 @@ async function putRecord(matterId, dataType, data) {
 // the party discriminator the forms hydrate on.
 const withRole = (obj, role) => ({ ...(obj || {}), role });
 
-async function saveSections(matter, info) {
+async function saveSections(matter, info, { merge = false } = {}) {
   const matterPatch = {};
 
   if (info.Background) {
-    await putRecord(
+    await saveRecordRows(
       matter.id,
       "background",
-      assignIds([
+      [
         withRole(info.Background.client, "Client"),
         withRole(info.Background.opposingParty, "Opposing Party"),
-      ])
+      ],
+      { merge, identityGroups: [["role"]] }
     );
   }
 
@@ -124,39 +226,55 @@ async function saveSections(matter, info) {
       file_number: c.file_number ?? c.fileNumber ?? "",
       address: c.address ?? "",
     }));
-    await putRecord(matter.id, "court", assignIds(courtRows));
+    await saveRecordRows(matter.id, "court", courtRows, { merge, singleton: true });
   }
 
   if (info.Children) {
-    await putRecord(
+    await saveRecordRows(
       matter.id,
       "children",
-      assignIds(Object.values(info.Children))
+      Object.values(info.Children),
+      {
+        merge,
+        identityGroups: [
+          ["childName", "dateOfBirth"],
+          ["childName"],
+          ["dateOfBirth"],
+        ],
+      }
     );
   }
 
   if (info.Relationship) {
-    await putRecord(
+    await saveRecordRows(
       matter.id,
       "relationship",
-      assignIds(toArray(info.Relationship))
+      toArray(info.Relationship),
+      { merge, singleton: true }
     );
   }
 
   if (info.EmploymentDetails) {
-    await putRecord(
+    const normalizeEmployment = (party) => ({
+      ...(party || {}),
+      employmentStatus: normalizeEmploymentStatus(party?.employmentStatus),
+    });
+    await saveRecordRows(
       matter.id,
       "employment",
-      assignIds([
-        withRole(info.EmploymentDetails.client, "Client"),
-        withRole(info.EmploymentDetails.opposingParty, "Opposing Party"),
-      ])
+      [
+        withRole(normalizeEmployment(info.EmploymentDetails.client), "Client"),
+        withRole(normalizeEmployment(info.EmploymentDetails.opposingParty), "Opposing Party"),
+      ],
+      { merge, identityGroups: [["role"]] }
     );
   }
 
   if (info.IncomeAndBenefits) {
     const section = info.IncomeAndBenefits;
-    const financialYear = section.financialYear;
+    const financialYear = isBlankValue(section.financialYear)
+      ? matter.fyIncomeBenefits
+      : section.financialYear;
     // Key indexes section.client / section.opposingParty; roleLabel is the exact
     // discriminator the Income Simple form splits on ("Client"/"Opposing Party").
     const rows = [
@@ -173,13 +291,18 @@ async function saveSections(matter, info) {
         }));
       return [...tag(party.income, "income"), ...tag(party.benefit, "benefit")];
     });
-    await putRecord(matter.id, "income_benefits", assignIds(rows));
-    matterPatch.fyIncomeBenefits = financialYear ?? matter.fyIncomeBenefits;
+    await saveRecordRows(matter.id, "income_benefits", rows, {
+      merge,
+      identityGroups: [["role", "incomeBenefit", "type"]],
+    });
+    if (!isBlankValue(financialYear)) matterPatch.fyIncomeBenefits = financialYear;
   }
 
   if (info.Expenses) {
     const section = info.Expenses;
-    const financialYear = section.financialYear;
+    const financialYear = isBlankValue(section.financialYear)
+      ? matter.fyExpenses
+      : section.financialYear;
     const collect = (key, expenseType) =>
       ["client", "opposingParty"].flatMap((role) =>
         toArray((section[role] || {})[key]).map((item) => ({
@@ -189,17 +312,19 @@ async function saveSections(matter, info) {
           financialYear,
         }))
       );
-    await putRecord(
+    await saveRecordRows(
       matter.id,
       "expenses",
-      assignIds(collect("expenses", "expenses"))
+      collect("expenses", "expenses"),
+      { merge, identityGroups: [["role", "type"]] }
     );
-    await putRecord(
+    await saveRecordRows(
       matter.id,
       "special_expenses",
-      assignIds(collect("specialChildExpenses", "specialChildExpenses"))
+      collect("specialChildExpenses", "specialChildExpenses"),
+      { merge, identityGroups: [["role", "type", "childName"]] }
     );
-    matterPatch.fyExpenses = financialYear ?? matter.fyExpenses;
+    if (!isBlankValue(financialYear)) matterPatch.fyExpenses = financialYear;
   }
 
   if (info.Assets) {
@@ -214,10 +339,24 @@ async function saveSections(matter, info) {
       "money_owed_to_you",
     ];
     const rows = ASSET_TYPES.flatMap((asset_type) =>
-      toArray(section[asset_type]).map((item) => ({ ...item, asset_type }))
+      toArray(section[asset_type]).map((item) => ({
+        ...normalizeAssetItem(asset_type, item),
+        asset_type,
+      }))
     );
-    const assetRows = assignIds(rows);
-    await putRecord(matter.id, "assets", assetRows);
+    const assetRows = await saveRecordRows(matter.id, "assets", rows, {
+      merge,
+      identityGroups: [
+        ["asset_type", "address_of_property"],
+        ["asset_type", "details_op"],
+        ["asset_type", "firm_name"],
+        ["asset_type", "description_ghiav"],
+        ["asset_type", "account_number"],
+        ["asset_type", "policy_no"],
+        ["asset_type", "details_moty"],
+      ],
+      uniqueFallbackFields: ["asset_type"],
+    });
 
     // Legacy also kept a flat market-value table; data_all exposes it.
     const marketValueRows = assetRows.flatMap((row) =>
@@ -228,24 +367,30 @@ async function saveSections(matter, info) {
       }))
     );
     await putRecord(matter.id, "assets_market_value", assignIds(marketValueRows));
-    if (section.valuation_date !== undefined) {
+    if (!isBlankValue(section.valuation_date)) {
       matterPatch.valuationDate = section.valuation_date;
     }
   }
 
   if (info.DebtsAndLiabilities) {
-    await putRecord(
+    await saveRecordRows(
       matter.id,
       "debts_liabilities",
-      assignIds(toArray(info.DebtsAndLiabilities))
+      toArray(info.DebtsAndLiabilities),
+      {
+        merge,
+        identityGroups: [["category", "details"], ["details"]],
+        uniqueFallbackFields: ["category"],
+      }
     );
   }
 
   if (info.OtherPersonsInHousehold) {
-    await putRecord(
+    await saveRecordRows(
       matter.id,
       "opih",
-      assignIds(toArray(info.OtherPersonsInHousehold))
+      toArray(info.OtherPersonsInHousehold),
+      { merge, singleton: true }
     );
   }
 
@@ -393,7 +538,10 @@ router.post("/save_matter/:sid/:matter_id", async (req, res) => {
         },
       });
     }
-    await saveSections(matter, info);
+    // AI callers explicitly opt into field-level merge semantics. Other callers
+    // retain the legacy full-section replacement behaviour by default.
+    const merge = req.body?.save_mode === "merge";
+    await saveSections(matter, info, { merge });
     return res.json(ok(req.body));
   } catch (err) {
     console.log("POST /v1/save_matter failed:", err?.message || err);
@@ -529,6 +677,11 @@ router.get(
 
       return res.json(
         ok({
+          matter_number: matter?.matterNumber || String(req.params.matter_id),
+          client_id: matter?.clientName || "",
+          valuation_date: matter?.valuationDate || "",
+          financial_year_income_benefits: matter?.fyIncomeBenefits || "",
+          financial_year_expenses: matter?.fyExpenses || "",
           background,
           children,
           court_info: court,

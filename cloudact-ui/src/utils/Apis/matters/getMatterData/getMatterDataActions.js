@@ -30,10 +30,12 @@ export const getMatterData = (getData) => {
       )
 
         dispatch({ type: types.GET_MATTER_DATA_SUCCESS, payload: data.data})
+        return data.data?.body || null
       
       // dispatch(fetchMatterDataSuccess(data.data))
     } catch (error) {
       dispatch(fetchMatterDataFailure(error))
+      return null
     }
   }
 }

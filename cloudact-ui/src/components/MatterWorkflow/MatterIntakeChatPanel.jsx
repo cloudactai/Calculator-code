@@ -4,11 +4,9 @@ import { CALCULATOR_API } from "../../config";
 import { saveMatter } from "../../utils/Apis/matters/saveMatterInformation/saveMattersActions";
 import refreshIcon from "../../assets/images/refresh-icon.png";
 import {
-  getAllUserInfo,
-  getCurrentUserFromCookies,
-  getCompanyInfo,
-  getUserProvince,
-} from "../../utils/helpers";
+  buildStoredMatterContextMessage,
+  normalizeStoredIntakeData,
+} from "./matterIntakeContext";
 import "./MatterWorkflow.css";
 
 /**
@@ -16,9 +14,9 @@ import "./MatterWorkflow.css";
  *
  * Mirrors ChildSupportChatPanel's chat shell, but talks to the Flask /intake-chat
  * endpoint. That endpoint returns structured `saved_sections` (one per intake
- * section the agent completed); this panel accumulates them into a formsData blob
- * and persists the whole blob through the existing saveMatter action — exactly the
- * payload the manual 5-step form sends. The Render agent never touches the DB.
+ * section the agent updated). This panel sends only the current response's changes
+ * to the authenticated backend, which merges non-blank fields into stored matter
+ * data. Section names are accumulated only to show conversational progress.
  *
  * Props:
  *   matterData   – aggregated matter object (snake_case) used for pre-load context
@@ -37,6 +35,7 @@ const SECTION_LABELS = {
   Assets: "Assets",
   DebtsAndLiabilities: "Debts",
   Court: "Court",
+  OtherPersonsInHousehold: "Other persons",
 };
 
 function renderText(text) {
@@ -47,85 +46,6 @@ function renderText(text) {
   return escaped
     .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
     .replace(/\n/g, "<br/>");
-}
-
-// Flatten the already-saved matter data into a plain-text primer so the agent
-// starts knowing what's on file and only asks for the gaps. (Same approach as
-// ChildSupportChatPanel.)
-function buildContextMessage(matterData) {
-  if (!matterData) return null;
-
-  const parts = [];
-
-  const userInfo = getAllUserInfo();
-  const currentRole = getCurrentUserFromCookies();
-  const companyInfo = getCompanyInfo();
-  const province = getUserProvince();
-
-  if (companyInfo?.company_name) parts.push(`Law firm: ${companyInfo.company_name}`);
-  if (currentRole?.short_firmname) parts.push(`Firm ID: ${currentRole.short_firmname}`);
-  if (userInfo?.first_name || userInfo?.last_name) {
-    parts.push(
-      `Lawyer / user: ${[userInfo.first_name, userInfo.last_name]
-        .filter(Boolean)
-        .join(" ")}`
-    );
-  }
-  if (province) parts.push(`Province: ${province}`);
-
-  if (matterData.matter_number) parts.push(`Matter number: ${matterData.matter_number}`);
-  if (matterData.client_id) parts.push(`Client name: ${matterData.client_id}`);
-
-  const bg = matterData.background_information;
-  if (bg) {
-    if (bg.client?.name) parts.push(`Party 1 (Client): ${bg.client.name}`);
-    if (bg.client?.dateOfBirth) parts.push(`  DOB: ${bg.client.dateOfBirth}`);
-    if (bg.client?.address) parts.push(`  Address: ${bg.client.address}`);
-    if (bg.opposing_party?.name)
-      parts.push(`Party 2 (Opposing Party): ${bg.opposing_party.name}`);
-    if (bg.opposing_party?.dateOfBirth) parts.push(`  DOB: ${bg.opposing_party.dateOfBirth}`);
-    if (bg.opposing_party?.address) parts.push(`  Address: ${bg.opposing_party.address}`);
-  }
-
-  const rel = matterData.relationship_information;
-  if (rel) {
-    if (rel.dateOfMarriage) parts.push(`Date of marriage: ${rel.dateOfMarriage}`);
-    if (rel.dateOfSeparation) parts.push(`Date of separation: ${rel.dateOfSeparation}`);
-    if (rel.typeOfRelationship) parts.push(`Relationship type: ${rel.typeOfRelationship}`);
-  }
-
-  const children = matterData.children_information;
-  if (Array.isArray(children) && children.length > 0) {
-    parts.push(`Number of children: ${children.length}`);
-    children.forEach((c, idx) => {
-      const info = [];
-      if (c.childName) info.push(c.childName);
-      if (c.dateOfBirth) info.push(`DOB: ${c.dateOfBirth}`);
-      if (c.nowLivesWith) info.push(`lives with: ${c.nowLivesWith}`);
-      if (info.length) parts.push(`  Child ${idx + 1}: ${info.join(", ")}`);
-    });
-  }
-
-  const emp = matterData.employment_information;
-  if (emp) {
-    if (emp.client?.employerName) parts.push(`Party 1 employer: ${emp.client.employerName}`);
-    if (emp.opposing_party?.employerName)
-      parts.push(`Party 2 employer: ${emp.opposing_party.employerName}`);
-  }
-
-  const court = matterData.court_information;
-  if (court) {
-    if (court.name) parts.push(`Court: ${court.name}`);
-    if (court.fileNumber) parts.push(`Court file number: ${court.fileNumber}`);
-  }
-
-  if (parts.length === 0) return null;
-
-  return (
-    "I'm starting a matter intake. Here is the information already on file:\n\n" +
-    parts.join("\n") +
-    "\n\nPlease continue the intake, only asking for details that are still missing."
-  );
 }
 
 export default function MatterIntakeChatPanel({
@@ -147,10 +67,9 @@ export default function MatterIntakeChatPanel({
 
   const windowRef = useRef(null);
   const inputRef = useRef(null);
-  // Accumulated formsData blob across the whole conversation. We save the WHOLE
-  // blob each time (like the manual form) rather than per-section, so we don't rely
-  // on the backend merging partial saves.
-  const formsDataRef = useRef({});
+  // Progress only. Matter values live in the backend and must never be reconstructed
+  // from this chat's incomplete local history.
+  const capturedSectionsRef = useRef({});
 
   useEffect(() => {
     if (windowRef.current) {
@@ -164,40 +83,55 @@ export default function MatterIntakeChatPanel({
 
   useEffect(() => {
     if (!contextSent && matterData) {
-      const ctx = buildContextMessage(matterData);
+      const storedSections = normalizeStoredIntakeData(matterData);
+      Object.keys(storedSections).forEach((section) => {
+        capturedSectionsRef.current[section] = true;
+      });
+      setSavedSections(Object.keys(capturedSectionsRef.current));
+
+      const ctx = buildStoredMatterContextMessage(matterData);
       if (ctx) {
         setContextSent(true);
-        send(ctx);
+        send(ctx, { hideUserBubble: true });
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [matterData, contextSent]);
 
-  // Merge the agent's returned sections into the accumulated blob and persist it.
-  function persistSections(sections) {
+  // Persist only the changes returned in this response. The AI route applies these
+  // as non-destructive patches; the manual forms retain full-section save semantics.
+  async function persistSections(sections) {
     if (!Array.isArray(sections) || sections.length === 0) return;
 
+    const sectionPatch = {};
     sections.forEach(({ section, data }) => {
-      if (section) formsDataRef.current[section] = data;
+      if (!section) return;
+      capturedSectionsRef.current[section] = true;
+      sectionPatch[section] = data;
     });
 
-    dispatch(
+    if (Object.keys(sectionPatch).length === 0) return;
+
+    await dispatch(
       saveMatter({
         matter_id: matterId,
-        data: formsDataRef.current,
+        save_mode: "merge",
+        data: sectionPatch,
       })
     );
 
-    setSavedSections(Object.keys(formsDataRef.current));
+    setSavedSections(Object.keys(capturedSectionsRef.current));
   }
 
-  async function send(text) {
+  async function send(text, { hideUserBubble = false } = {}) {
     const userText = (text != null ? text : input).trim();
     if (!userText || loading) return;
 
     const nextMessages = [...messages, { role: "user", content: userText }];
 
-    setBubbles((b) => [...b, { role: "user", text: userText }]);
+    if (!hideUserBubble) {
+      setBubbles((b) => [...b, { role: "user", text: userText }]);
+    }
     setMessages(nextMessages);
     setInput("");
     setLoading(true);
@@ -220,10 +154,17 @@ export default function MatterIntakeChatPanel({
       } else {
         setBubbles((b) => [...b, { role: "assistant", text: data.reply }]);
         setMessages(data.messages || nextMessages);
-        persistSections(data.saved_sections);
-        // The agent has no "done" flag; detect its completion phrasing so we can
-        // mark the task complete and offer a clear way back to Tasks.
-        if (/intake is (now )?complete|complete and saved/i.test(data.reply || "")) {
+        // Wait for persistence before marking the intake complete. The parent
+        // refreshes matter-header fields (financial year / valuation date) in
+        // response to completion, so firing it early creates a stale read race.
+        await persistSections(data.saved_sections);
+        // Prefer the service's explicit completion state. Keep wording detection
+        // as a compatibility fallback while older deployments are still active.
+        const replyText = data.reply || "";
+        const completionReply =
+          !/(?:not|isn't|is not|hasn't|has not)\s+(?:yet\s+)?(?:complete|completed|saved|been saved)/i.test(replyText) &&
+          /intake.{0,60}(?:complete|completed|saved)|complete and saved|(?:everything|all (?:sections|information|details)).{0,60}(?:complete|completed|captured|saved)/i.test(replyText);
+        if (data.intake_complete === true || completionReply) {
           setIntakeComplete(true);
           if (onComplete) onComplete();
         }
@@ -256,7 +197,8 @@ export default function MatterIntakeChatPanel({
     setInput("");
     setContextSent(false);
     setSavedSections([]);
-    formsDataRef.current = {};
+    setIntakeComplete(false);
+    capturedSectionsRef.current = {};
   }
 
   return (
@@ -337,7 +279,7 @@ export default function MatterIntakeChatPanel({
           }}
         >
           <span style={{ color: "#22c55e", fontWeight: 600 }}>
-            ✓ Intake complete and saved.
+            ✓ Intake complete and saved. Return to Tasks when you’re ready.
           </span>
           <button
             className="btn btnPrimary rounded-pill"

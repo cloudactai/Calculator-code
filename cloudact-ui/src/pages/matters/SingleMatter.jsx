@@ -26,6 +26,7 @@ import {
   getSingleMatterData,
   getSingleMatterDataReset,
 } from "../../utils/Apis/matters/getSingleMatterData/getSingleMattersDataActions";
+import { getMatterData } from "../../utils/Apis/matters/getMatterData/getMatterDataActions";
 import { AUTH_ROUTES } from "../../routes/Routes.types";
 
 /**
@@ -61,7 +62,6 @@ const SingleMatter = () => {
   const history = useHistory();
 
   const [view, setView] = useState("tasks"); // tasks | intake_choice | intake_chat | support_choice | child_support | spousal_support
-  const [docsHover, setDocsHover] = useState(false); // hover state for the subtle header "View Info & Documents" button
   const [matterData, setMatterData] = useState(null);
   const [taskStatuses, setTaskStatuses] = useState(() => {
     // Load persisted statuses from localStorage, falling back to not_started
@@ -82,6 +82,9 @@ const SingleMatter = () => {
 
   // Aggregated matter data for the chat context
   const [fullMatterData, setFullMatterData] = useState(null);
+  // Fresh database snapshot used only by matter intake. It is deliberately
+  // separate from the legacy support-calculator context above.
+  const [intakeMatterData, setIntakeMatterData] = useState(null);
 
   // Persist task statuses to localStorage whenever they change
   useEffect(() => {
@@ -113,12 +116,12 @@ const SingleMatter = () => {
   // Set matter data from Redux
   useEffect(() => {
     const loadedMatter = selectSingleMatter?.body?.[0];
-    if (loadedMatter && matterData?.matterNumber !== loadedMatter.matterNumber) {
+    if (loadedMatter) {
       setMatterData(loadedMatter);
-    } else if (!singleMatterLoading && !matterData) {
-      setMatterData({ client_id: "", matterNumber: id });
+    } else if (!singleMatterLoading) {
+      setMatterData((current) => current || { client_id: "", matterNumber: id });
     }
-  }, [selectSingleMatter, matterData, singleMatterLoading, id]);
+  }, [selectSingleMatter, singleMatterLoading, id]);
 
   // Once we have basic matter data, fetch the sub-data for chat context
   useEffect(() => {
@@ -200,9 +203,19 @@ const SingleMatter = () => {
     }
   }
 
-  function handleIntakeChoice(choice) {
+  async function handleIntakeChoice(choice) {
     if (choice === "ai") {
+      // Manual entry and earlier AI conversations write to the same database.
+      // Refresh now so the agent sees those values before asking its first question.
+      setIntakeMatterData(null);
       setView("intake_chat");
+      const storedMatter = await dispatch(getMatterData(id));
+      setIntakeMatterData(
+        storedMatter || {
+          matter_number: id,
+          client_id: matterData?.client_id || "",
+        }
+      );
     } else if (choice === "manual") {
       // 5-step accordion intake (hydrated forms that save as you go).
       history.push(`/5-steps/${id}`);
@@ -237,6 +250,21 @@ const SingleMatter = () => {
       child_spousal_support: "completed",
     }));
     setView("tasks");
+  }
+
+  function handleMatterIntakeComplete() {
+    persistTaskStatus("matter_intake", "completed");
+    // Financial year and valuation date live on the matter header rather than
+    // in the section row payloads. Reload it after the AI save so View / Edit
+    // does not keep showing the pre-intake blank values.
+    dispatch(getSingleMatter(id));
+  }
+
+  function handleViewInformation() {
+    // The user may have just completed either intake path. Always refresh the
+    // small matter header before opening forms that depend on its year/date.
+    dispatch(getSingleMatter(id));
+    setView("profile_summary");
   }
 
   // Cleanup on unmount
@@ -284,37 +312,6 @@ const SingleMatter = () => {
     </div>
   );
 
-  // Subtle, secondary header action — deliberately NOT styled like the primary
-  // task CTAs (Resume/Start). Only offered on the task list. Same handler/route.
-  const docsButton = view === "tasks" && (
-    <button
-      type="button"
-      onClick={() => setView("profile_summary")}
-      onMouseEnter={() => setDocsHover(true)}
-      onMouseLeave={() => setDocsHover(false)}
-      style={{
-        display: "inline-flex",
-        alignItems: "center",
-        gap: "8px",
-        padding: "8px 16px",
-        borderRadius: "8px",
-        border: "1px solid rgba(240, 185, 11, 0.45)",
-        background: docsHover
-          ? "rgba(240, 185, 11, 0.18)"
-          : "rgba(240, 185, 11, 0.08)",
-        color: "#e6b23a",
-        font: "inherit",
-        fontSize: "14px",
-        fontWeight: 600,
-        whiteSpace: "nowrap",
-        cursor: "pointer",
-        transition: "background 0.2s ease, border-color 0.2s ease",
-      }}
-    >
-      View Info &amp; Documents
-    </button>
-  );
-
   return (
     <Layout title={`Welcome ${response?.username ? response.username : ""} `}>
       {matterLoading ? (
@@ -357,9 +354,8 @@ const SingleMatter = () => {
                 style={{
                   display: "flex",
                   alignItems: "center",
-                  justifyContent: "space-between",
                   flexWrap: "wrap",
-                  gap: "12px 16px",
+                  gap: "6px 30px",
                 }}
               >
                 <button
@@ -394,18 +390,7 @@ const SingleMatter = () => {
                   </svg>
                   Back to Matters
                 </button>
-                <div
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "flex-end",
-                    flexWrap: "wrap",
-                    gap: "12px 24px",
-                  }}
-                >
-                  {matterInfo}
-                  {docsButton}
-                </div>
+                {matterInfo}
               </div>
             )}
           </div>
@@ -424,7 +409,7 @@ const SingleMatter = () => {
               <MatterTaskList
                 tasks={tasks}
                 onStart={handleTaskStart}
-                matterName={matterName}
+                onViewInfo={handleViewInformation}
               />
             )}
 
@@ -449,12 +434,16 @@ const SingleMatter = () => {
 
             {/* Matter Intake via AI chat */}
             {view === "intake_chat" && (
-              <MatterIntakeChatPanel
-                matterData={fullMatterData}
-                matterId={id}
-                onComplete={() => persistTaskStatus("matter_intake", "completed")}
-                onBack={() => setView("tasks")}
-              />
+              intakeMatterData ? (
+                <MatterIntakeChatPanel
+                  matterData={intakeMatterData}
+                  matterId={id}
+                  onComplete={handleMatterIntakeComplete}
+                  onBack={() => setView("tasks")}
+                />
+              ) : (
+                <Loader isLoading />
+              )
             )}
 
             {/* Child & Spousal Support choice: AI or Manual */}

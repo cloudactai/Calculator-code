@@ -32,10 +32,6 @@ import assets_icon from "../../assets/images/assets.svg";
 import debts_and_liabilities from "../../assets/images/debts_and_liabilities.svg";
 import other_persons_in_household from "../../assets/images/other_persons_in_household.svg";
 import {
-  saveMatter,
-  saveMatterReset,
-} from "../../utils/Apis/matters/saveMatterInformation/saveMattersActions";
-import {
   updateMatterData,
   updateMatterReset,
 } from "../../utils/Apis/matters/updateMatters/updateMatterDataActions";
@@ -49,12 +45,7 @@ import {
   validateForm,
 } from "../../utils/matterValidations/formValidations";
 import CustomDrawer from "../../components/Matters/CustomDrawer/CustomDrawer";
-import {
-  selectSaveMatterData,
-  selectSaveMatterDataLoading,
-} from "../../utils/Apis/matters/saveMatterInformation/saveMattersSelector";
 import Loader from "../../components/Loader";
-import toast from "react-hot-toast";
 
 const FiveStepsPage = () => {
   const { id } = useParams();
@@ -271,26 +262,6 @@ const FiveStepsPage = () => {
     // Everything is already auto-saved per section; just go back to the matter.
     history.push(`/single-matter/${id}`);
   };
-
-  const selectSavedMatterData = useSelector(selectSaveMatterData);
-
-  const selectSavedMatterDataLoading = useSelector(selectSaveMatterDataLoading);
-
-  useEffect(() => {
-    if (selectSavedMatterData) {
-      toast.success("Data Successfully Saved", {
-        position: "top-right",
-        style: {
-          borderRadius: "10px",
-          background: "#FFF",
-          color: "#000",
-        },
-      });
-      setLoading(false);
-      dispatch(saveMatterReset());
-      history.push(`/single-matter/${id}`);
-    }
-  }, [selectSavedMatterData, selectSavedMatterDataLoading]);
 
   return (
     <>
