@@ -4,11 +4,9 @@ import { CALCULATOR_API } from "../../config";
 import { saveMatter } from "../../utils/Apis/matters/saveMatterInformation/saveMattersActions";
 import refreshIcon from "../../assets/images/refresh-icon.png";
 import {
-  getAllUserInfo,
-  getCurrentUserFromCookies,
-  getCompanyInfo,
-  getUserProvince,
-} from "../../utils/helpers";
+  buildStoredMatterContextMessage,
+  normalizeStoredIntakeData,
+} from "./matterIntakeContext";
 import "./MatterWorkflow.css";
 
 /**
@@ -50,85 +48,6 @@ function renderText(text) {
     .replace(/\n/g, "<br/>");
 }
 
-// Flatten the already-saved matter data into a plain-text primer so the agent
-// starts knowing what's on file and only asks for the gaps. (Same approach as
-// ChildSupportChatPanel.)
-function buildContextMessage(matterData) {
-  if (!matterData) return null;
-
-  const parts = [];
-
-  const userInfo = getAllUserInfo();
-  const currentRole = getCurrentUserFromCookies();
-  const companyInfo = getCompanyInfo();
-  const province = getUserProvince();
-
-  if (companyInfo?.company_name) parts.push(`Law firm: ${companyInfo.company_name}`);
-  if (currentRole?.short_firmname) parts.push(`Firm ID: ${currentRole.short_firmname}`);
-  if (userInfo?.first_name || userInfo?.last_name) {
-    parts.push(
-      `Lawyer / user: ${[userInfo.first_name, userInfo.last_name]
-        .filter(Boolean)
-        .join(" ")}`
-    );
-  }
-  if (province) parts.push(`Province: ${province}`);
-
-  if (matterData.matter_number) parts.push(`Matter number: ${matterData.matter_number}`);
-  if (matterData.client_id) parts.push(`Client name: ${matterData.client_id}`);
-
-  const bg = matterData.background_information;
-  if (bg) {
-    if (bg.client?.name) parts.push(`Party 1 (Client): ${bg.client.name}`);
-    if (bg.client?.dateOfBirth) parts.push(`  DOB: ${bg.client.dateOfBirth}`);
-    if (bg.client?.address) parts.push(`  Address: ${bg.client.address}`);
-    if (bg.opposing_party?.name)
-      parts.push(`Party 2 (Opposing Party): ${bg.opposing_party.name}`);
-    if (bg.opposing_party?.dateOfBirth) parts.push(`  DOB: ${bg.opposing_party.dateOfBirth}`);
-    if (bg.opposing_party?.address) parts.push(`  Address: ${bg.opposing_party.address}`);
-  }
-
-  const rel = matterData.relationship_information;
-  if (rel) {
-    if (rel.dateOfMarriage) parts.push(`Date of marriage: ${rel.dateOfMarriage}`);
-    if (rel.dateOfSeparation) parts.push(`Date of separation: ${rel.dateOfSeparation}`);
-    if (rel.typeOfRelationship) parts.push(`Relationship type: ${rel.typeOfRelationship}`);
-  }
-
-  const children = matterData.children_information;
-  if (Array.isArray(children) && children.length > 0) {
-    parts.push(`Number of children: ${children.length}`);
-    children.forEach((c, idx) => {
-      const info = [];
-      if (c.childName) info.push(c.childName);
-      if (c.dateOfBirth) info.push(`DOB: ${c.dateOfBirth}`);
-      if (c.nowLivesWith) info.push(`lives with: ${c.nowLivesWith}`);
-      if (info.length) parts.push(`  Child ${idx + 1}: ${info.join(", ")}`);
-    });
-  }
-
-  const emp = matterData.employment_information;
-  if (emp) {
-    if (emp.client?.employerName) parts.push(`Party 1 employer: ${emp.client.employerName}`);
-    if (emp.opposing_party?.employerName)
-      parts.push(`Party 2 employer: ${emp.opposing_party.employerName}`);
-  }
-
-  const court = matterData.court_information;
-  if (court) {
-    if (court.name) parts.push(`Court: ${court.name}`);
-    if (court.fileNumber) parts.push(`Court file number: ${court.fileNumber}`);
-  }
-
-  if (parts.length === 0) return null;
-
-  return (
-    "I'm starting a matter intake. Here is the information already on file:\n\n" +
-    parts.join("\n") +
-    "\n\nPlease continue the intake, only asking for details that are still missing."
-  );
-}
-
 export default function MatterIntakeChatPanel({
   matterData,
   matterId,
@@ -164,10 +83,16 @@ export default function MatterIntakeChatPanel({
 
   useEffect(() => {
     if (!contextSent && matterData) {
-      const ctx = buildContextMessage(matterData);
+      const storedSections = normalizeStoredIntakeData(matterData);
+      Object.keys(storedSections).forEach((section) => {
+        capturedSectionsRef.current[section] = true;
+      });
+      setSavedSections(Object.keys(capturedSectionsRef.current));
+
+      const ctx = buildStoredMatterContextMessage(matterData);
       if (ctx) {
         setContextSent(true);
-        send(ctx);
+        send(ctx, { hideUserBubble: true });
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -198,13 +123,15 @@ export default function MatterIntakeChatPanel({
     setSavedSections(Object.keys(capturedSectionsRef.current));
   }
 
-  async function send(text) {
+  async function send(text, { hideUserBubble = false } = {}) {
     const userText = (text != null ? text : input).trim();
     if (!userText || loading) return;
 
     const nextMessages = [...messages, { role: "user", content: userText }];
 
-    setBubbles((b) => [...b, { role: "user", text: userText }]);
+    if (!hideUserBubble) {
+      setBubbles((b) => [...b, { role: "user", text: userText }]);
+    }
     setMessages(nextMessages);
     setInput("");
     setLoading(true);

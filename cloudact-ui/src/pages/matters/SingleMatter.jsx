@@ -26,6 +26,7 @@ import {
   getSingleMatterData,
   getSingleMatterDataReset,
 } from "../../utils/Apis/matters/getSingleMatterData/getSingleMattersDataActions";
+import { getMatterData } from "../../utils/Apis/matters/getMatterData/getMatterDataActions";
 import { AUTH_ROUTES } from "../../routes/Routes.types";
 
 /**
@@ -81,6 +82,9 @@ const SingleMatter = () => {
 
   // Aggregated matter data for the chat context
   const [fullMatterData, setFullMatterData] = useState(null);
+  // Fresh database snapshot used only by matter intake. It is deliberately
+  // separate from the legacy support-calculator context above.
+  const [intakeMatterData, setIntakeMatterData] = useState(null);
 
   // Persist task statuses to localStorage whenever they change
   useEffect(() => {
@@ -199,9 +203,19 @@ const SingleMatter = () => {
     }
   }
 
-  function handleIntakeChoice(choice) {
+  async function handleIntakeChoice(choice) {
     if (choice === "ai") {
+      // Manual entry and earlier AI conversations write to the same database.
+      // Refresh now so the agent sees those values before asking its first question.
+      setIntakeMatterData(null);
       setView("intake_chat");
+      const storedMatter = await dispatch(getMatterData(id));
+      setIntakeMatterData(
+        storedMatter || {
+          matter_number: id,
+          client_id: matterData?.client_id || "",
+        }
+      );
     } else if (choice === "manual") {
       // 5-step accordion intake (hydrated forms that save as you go).
       history.push(`/5-steps/${id}`);
@@ -420,12 +434,16 @@ const SingleMatter = () => {
 
             {/* Matter Intake via AI chat */}
             {view === "intake_chat" && (
-              <MatterIntakeChatPanel
-                matterData={fullMatterData}
-                matterId={id}
-                onComplete={handleMatterIntakeComplete}
-                onBack={() => setView("tasks")}
-              />
+              intakeMatterData ? (
+                <MatterIntakeChatPanel
+                  matterData={intakeMatterData}
+                  matterId={id}
+                  onComplete={handleMatterIntakeComplete}
+                  onBack={() => setView("tasks")}
+                />
+              ) : (
+                <Loader isLoading />
+              )
             )}
 
             {/* Child & Spousal Support choice: AI or Manual */}

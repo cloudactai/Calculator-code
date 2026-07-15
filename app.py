@@ -482,6 +482,12 @@ Some information may already be on file (it is provided at the start of the
 conversation). Treat that as already-known — confirm it briefly rather than
 re-asking, and only fill the gaps.
 
+The database snapshot is authoritative. Never ask the user for a value that is
+already populated there, and never call save_matter_section merely to re-save
+unchanged database values. If the user explicitly supplies a different value,
+treat it as a correction: save the new value as a patch while preserving every
+saved value they did not change.
+
 Each save_matter_section call is a PATCH, not a replacement. When revisiting a
 section, include only the values the user just added or corrected plus enough of
 the record's identity to match it (for example party role, child name/DOB, income

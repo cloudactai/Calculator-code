@@ -8,10 +8,15 @@ import { render, screen, fireEvent } from "@testing-library/react";
 import { Provider } from "react-redux";
 import { MemoryRouter, Route } from "react-router-dom";
 
+const mockMatterIntakeProps = jest.fn();
+
 jest.mock("../../components/LayoutComponents/Layout", () => ({ children }) => (
   <div>{children}</div>
 ));
-jest.mock("../../components/MatterWorkflow/MatterIntakeChatPanel", () => () => <div />);
+jest.mock("../../components/MatterWorkflow/MatterIntakeChatPanel", () => (props) => {
+  mockMatterIntakeProps(props);
+  return <div>AI INTAKE CHAT</div>;
+});
 jest.mock("../../components/MatterWorkflow/ChildSupportChatPanel", () => () => <div />);
 jest.mock("../../components/MatterWorkflow/SpousalSupportChatPanel", () => () => <div />);
 jest.mock("react-hot-toast", () => ({
@@ -30,6 +35,7 @@ import SingleMatter from "./SingleMatter";
 
 beforeEach(() => {
   localStorage.clear();
+  mockMatterIntakeProps.mockClear();
   fetchRequest.mockResolvedValue({ data: { data: { body: [] } } });
 });
 
@@ -51,4 +57,63 @@ test("manual intake routes to the 5-step accordion page", async () => {
   fireEvent.click(await screen.findByText(/open forms/i));
 
   expect(await screen.findByText("FIVE STEPS PAGE")).toBeInTheDocument();
+});
+
+test("AI intake opens with a fresh complete database snapshot", async () => {
+  const databaseSnapshot = {
+    matter_number: "TEST-1",
+    client_id: "Lorelai Phinnemore",
+    financial_year_income_benefits: "2026",
+    background: [
+      {
+        id: 1,
+        role: "Client",
+        name: "Lorelai Phinnemore",
+        address: "168 Westcourt Pl",
+      },
+    ],
+    income_benefits: [
+      {
+        id: 1,
+        role: "Client",
+        incomeBenefit: "income",
+        type: "Commissions, tips and bonuses",
+        monthlyAmount: "4000",
+        yearlyAmount: "48000",
+      },
+    ],
+  };
+
+  fetchRequest.mockImplementation((type, endpoint) => {
+    if (endpoint.startsWith("get_single_matter_data_all/")) {
+      return Promise.resolve({ data: { data: { body: databaseSnapshot } } });
+    }
+    if (endpoint.startsWith("get_single_matter/")) {
+      return Promise.resolve({
+        data: {
+          data: {
+            body: [{ client_id: "Lorelai Phinnemore", matterNumber: "TEST-1" }],
+          },
+        },
+      });
+    }
+    return Promise.resolve({ data: { data: { body: [] } } });
+  });
+
+  renderPage();
+
+  fireEvent.click((await screen.findAllByRole("button", { name: /^start$/i }))[0]);
+  fireEvent.click(await screen.findByText("Start Chat"));
+
+  expect(await screen.findByText("AI INTAKE CHAT")).toBeInTheDocument();
+  expect(mockMatterIntakeProps).toHaveBeenLastCalledWith(
+    expect.objectContaining({
+      matterId: "TEST-1",
+      matterData: databaseSnapshot,
+    })
+  );
+  expect(fetchRequest).toHaveBeenCalledWith(
+    "get",
+    expect.stringContaining("get_single_matter_data_all/1/TEST-1")
+  );
 });

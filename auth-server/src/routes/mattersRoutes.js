@@ -677,6 +677,11 @@ router.get(
 
       return res.json(
         ok({
+          matter_number: matter?.matterNumber || String(req.params.matter_id),
+          client_id: matter?.clientName || "",
+          valuation_date: matter?.valuationDate || "",
+          financial_year_income_benefits: matter?.fyIncomeBenefits || "",
+          financial_year_expenses: matter?.fyExpenses || "",
           background,
           children,
           court_info: court,

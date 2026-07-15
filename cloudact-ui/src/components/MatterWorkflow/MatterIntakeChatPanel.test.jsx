@@ -147,3 +147,58 @@ test("sends only the current AI changes in explicit merge mode", async () => {
   expect(mockDispatch.mock.calls[1][0].payload.data.Background).toBeUndefined();
   expect(screen.getByText(/Saved: Background · Employment/i)).toBeInTheDocument();
 });
+
+test("starts with all manually saved database values and does not expose the primer", async () => {
+  global.fetch.mockResolvedValueOnce({
+    json: async () => ({
+      reply: "What was the date of marriage?",
+      messages: [],
+      saved_sections: [],
+      intake_complete: false,
+    }),
+  });
+
+  render(
+    <MatterIntakeChatPanel
+      matterId="TEST-3"
+      matterData={{
+        matter_number: "TEST-3",
+        client_id: "Lorelai Phinnemore",
+        financial_year_income_benefits: "2026",
+        background: [
+          {
+            id: 1,
+            role: "Client",
+            name: "Lorelai Phinnemore",
+            address: "168 Westcourt Pl",
+            phone: "2265592324",
+          },
+        ],
+        income_benefits: [
+          {
+            id: 1,
+            role: "Client",
+            incomeBenefit: "income",
+            type: "Commissions, tips and bonuses",
+            monthlyAmount: "4000",
+            yearlyAmount: "48000",
+          },
+        ],
+      }}
+    />
+  );
+
+  expect(await screen.findByText("What was the date of marriage?")).toBeInTheDocument();
+  expect(global.fetch).toHaveBeenCalledTimes(1);
+
+  const request = JSON.parse(global.fetch.mock.calls[0][1].body);
+  const primer = request.messages[0].content;
+  expect(primer).toContain("Lorelai Phinnemore");
+  expect(primer).toContain("168 Westcourt Pl");
+  expect(primer).toContain('"monthlyAmount": "4000"');
+  expect(primer).toContain("Do not ask for a value that is already populated");
+
+  expect(screen.queryByText(/168 Westcourt Pl/)).not.toBeInTheDocument();
+  expect(screen.getByText(/Saved: Background · Income & benefits/i)).toBeInTheDocument();
+  expect(mockDispatch).not.toHaveBeenCalled();
+});
