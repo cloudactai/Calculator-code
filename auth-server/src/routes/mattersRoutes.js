@@ -808,16 +808,14 @@ router.post("/create_folder", async (req, res) => {
     const { matter_id, title, type } = req.body || {};
     const matter = await findMatter(req.user.id, matter_id);
     if (!matter) return res.status(404).json(errorBody("Matter not found."));
-    const folders = toArray(await getRecordRows(matter.id, "folders"));
-    const folder = {
-      id: folders.reduce((max, f) => Math.max(max, f.id || 0), 0) + 1,
-      title: title ?? "Untitled",
-      type: type ?? null,
-      matter_id: matter.matterNumber,
-      sid: req.user.id,
-      created: new Date().toISOString(),
-    };
-    await putRecord(matter.id, "folders", [...folders, folder]);
+    const rawTitle = String(title ?? "Untitled").trim();
+    const normalizedTitle = rawTitle.replace(/\s+/g, " ").toLocaleLowerCase();
+    const saved = await prisma.matterFolder.upsert({
+      where: { matterId_normalizedTitle: { matterId: matter.id, normalizedTitle } },
+      create: { matterId: matter.id, title: rawTitle, normalizedTitle, type: type ?? null },
+      update: {},
+    });
+    const folder = { id: saved.id, title: saved.title, type: saved.type, matter_id: matter.matterNumber, sid: req.user.id, created: saved.createdAt };
     return res.json(ok(folder));
   } catch (err) {
     console.log("POST /v1/create_folder failed:", err?.message || err);
@@ -828,7 +826,11 @@ router.post("/create_folder", async (req, res) => {
 router.get("/get_folders/:sid/:matter_id", async (req, res) => {
   try {
     const matter = await findMatter(req.user.id, req.params.matter_id);
-    const folders = matter ? toArray(await getRecordRows(matter.id, "folders")) : [];
+    if (!matter) return res.json(ok([]));
+    const normalized = await prisma.matterFolder.findMany({ where: { matterId: matter.id }, orderBy: { createdAt: "asc" } });
+    const folders = normalized.length
+      ? normalized.map((folder) => ({ id: folder.id, title: folder.title, type: folder.type, matter_id: matter.matterNumber, sid: req.user.id, created: folder.createdAt }))
+      : toArray(await getRecordRows(matter.id, "folders"));
     return res.json(ok(folders));
   } catch (err) {
     console.log("GET /v1/get_folders failed:", err?.message || err);
@@ -932,6 +934,10 @@ router.post("/calculator/save_values", async (req, res) => {
   try {
     const body = req.body || {};
     const fields = savedCalcFields(body);
+    if (fields.matterId) {
+      const matter = await findMatter(req.user.id, fields.matterId);
+      if (matter) fields.matterDbId = matter.id;
+    }
     if (body.id) {
       const existing = await prisma.savedCalculation.findFirst({
         where: { id: Number(body.id), userId: req.user.id },
@@ -970,14 +976,33 @@ router.patch("/calculator/save_values/:id", async (req, res) => {
       where: { id: Number(req.params.id), userId: req.user.id },
     });
     if (!existing) return res.status(404).json(errorBody("Not found."));
+    const fields = savedCalcFields(req.body || {});
+    if (fields.matterId) {
+      const matter = await findMatter(req.user.id, fields.matterId);
+      if (matter) fields.matterDbId = matter.id;
+    }
     const updated = await prisma.savedCalculation.update({
       where: { id: existing.id },
-      data: savedCalcFields(req.body || {}),
+      data: fields,
     });
     return res.json(ok({ id: updated.id }));
   } catch (err) {
     console.log("PATCH /v1/calculator/save_values failed:", err?.message || err);
     return res.status(500).json(errorBody("Could not update calculation.", 500));
+  }
+});
+
+router.get("/matters/:matter_id/calculations/latest/:type", async (req, res) => {
+  try {
+    const matter = await findMatter(req.user.id, req.params.matter_id);
+    if (!matter) return res.json(ok(null));
+    const calculation = await prisma.savedCalculation.findFirst({
+      where: { userId: req.user.id, matterDbId: matter.id, type: req.params.type, status: "completed" },
+      orderBy: { updatedAt: "desc" },
+    });
+    return res.json(ok(calculation ? { id: calculation.id, type: calculation.type, tax_year: calculation.taxYear, data: calculation.data, updated_at: calculation.updatedAt } : null));
+  } catch (err) {
+    return res.status(500).json(errorBody("Could not load calculation.", 500));
   }
 });
 

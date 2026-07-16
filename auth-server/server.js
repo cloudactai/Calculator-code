@@ -17,6 +17,7 @@ dotenv.config({ path: path.join(__dirname, ".env") });
 const authRoutes = require("./src/routes/authRoutes");
 const mattersRoutes = require("./src/routes/mattersRoutes");
 const calculatorDataRoutes = require("./src/routes/calculatorDataRoutes");
+const formsRoutes = require("./src/routes/formsRoutes");
 
 const app = express();
 const REQUEST_SIZE_LIMIT = "5mb"; // room for base64 avatar uploads
@@ -72,6 +73,7 @@ app.use("/api", authRoutes);
 // tables).  No auth required — this is public reference data.  Mounted BEFORE
 // mattersRoutes so that its authMiddleware doesn't block these public routes.
 app.use("/v1", calculatorDataRoutes);
+app.use("/v1", formsRoutes);
 app.use("/v1", mattersRoutes);
 app.get("/api/health", (req, res) => res.json({ status: "ok" }));
 

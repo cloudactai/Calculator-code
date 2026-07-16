@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import Layout from "../../components/LayoutComponents/Layout";
-import { useLocation } from "react-router-dom";
+import { useLocation, useParams } from "react-router-dom";
 import { useHistory } from 'react-router-dom';
 // import { Margin, usePDF } from "react-to-pdf";
 import { selectSaveFileData, selectSaveFileDataError, selectSaveFileDataLoading } from "../../utils/Apis/matters/saveFileData/saveFileDataSelector";
@@ -23,13 +23,15 @@ import CalculationManager from "../../components/FormPages/forms/newComponents/C
 import PDFViewer from "./PDFViewer";
 import Loader from "../../components/Loader";
 import axios from "../../utils/axios";
+import { formsService } from "../../services/formsService";
 
 pdfjs.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
 
 const FillPdf = ({ currentUserRole }) => {
   const location = useLocation();
+  const { matterNumber: routeMatterNumber, documentId: routeDocumentId } = useParams();
   const history = useHistory();
-  const formData = location.state?.formData;
+  const formData = location.state?.formData || { matterNumber: routeMatterNumber };
   const dispatch = useDispatch();
   const [pdfUrl, setPdfUrl] = useState(null);
   const { response } = useSelector((state) => state.userProfileInfo);
@@ -56,6 +58,27 @@ const FillPdf = ({ currentUserRole }) => {
   const { selectAssetsData, selectAssetsDataLoading } = AssetsData(formData.matterNumber)
   const { debtsArray, combinedAssets, propertiesAssets } = AssetsDetails(selectAssetsData, formData.matterNumber)
   const [isSaving, setIsSaving] = useState(false);
+  const [remoteDocument, setRemoteDocument] = useState(null);
+
+  useEffect(() => {
+    if (!routeMatterNumber || !routeDocumentId) return;
+    formsService.getDocument(routeMatterNumber, routeDocumentId)
+      .then((document) => {
+        setRemoteDocument(document);
+        const form = {
+          id: document.id,
+          docId: document.docId,
+          file_name: document.file_name,
+          title: document.file_name,
+          shortTitle: document.file_name,
+          folder_id: document.folder_id,
+          revision: document.revision,
+        };
+        setForms([form]);
+        setActiveForm(form);
+      })
+      .catch(() => toast.error("Could not load this saved form."));
+  }, [routeMatterNumber, routeDocumentId]);
 
   useEffect(() => {
     if (documentInfo) {
@@ -191,7 +214,9 @@ const FillPdf = ({ currentUserRole }) => {
             debtsArray,
             propertiesAssets
           );
-          setFields(updatedFields);
+          setFields(updatedFields.map((field) => remoteDocument?.fieldValues?.[field.id] !== undefined
+            ? { ...field, value: remoteDocument.fieldValues[field.id] }
+            : field));
         }
 
         setFieldsReady(true);
@@ -205,7 +230,7 @@ const FillPdf = ({ currentUserRole }) => {
     setIsFormLoading(true); // Ensure loading state is active
     setIsLoading(true);
     loadPdf();
-  }, [pdfUrl, activeForm, documentData, selectFileData, selectFileDataLoading]);
+  }, [pdfUrl, activeForm, documentData, selectFileData, selectFileDataLoading, remoteDocument]);
 
   // Add this function inside your PDFViewer component
   const formatDate = (date, format = 'MM/DD/YYYY') => {
@@ -1653,8 +1678,21 @@ const FillPdf = ({ currentUserRole }) => {
   const selectSaveDataLoading = useSelector(selectSaveFileDataLoading);
   const selectSaveDataError = useSelector(selectSaveFileDataError);
 
-  const handleSave = () => {
+  const handleSave = async () => {
     setIsSaving(true); // Disable button when save starts
+    if (remoteDocument) {
+      try {
+        const fieldValues = Object.fromEntries(fields.map((field) => [field.id, field.value]));
+        const saved = await formsService.saveDocument(formData.matterNumber, remoteDocument.id, remoteDocument.revision, fieldValues, "IN_PROGRESS");
+        setRemoteDocument((document) => ({ ...document, revision: saved.revision }));
+        toast.success("Data Successfully Saved");
+      } catch (error) {
+        toast.error(error?.response?.status === 409 ? "This form changed elsewhere. Reload it before saving." : "Could not save this form.");
+      } finally {
+        setIsSaving(false);
+      }
+      return;
+    }
     let data = {
       matterId: formData.matterNumber,
       file_id: activeForm.docId,

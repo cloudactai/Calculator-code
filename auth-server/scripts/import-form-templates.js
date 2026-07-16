@@ -1,0 +1,46 @@
+/*
+ * Usage: node scripts/import-form-templates.js /absolute/path/to/export
+ * Export must contain catalog.json plus <docId>.pdf and <docId>.json files.
+ * This deliberately fails closed: a template is never production-ready unless
+ * both the legal artifact and its field map passed validation.
+ */
+const crypto = require("crypto");
+const fs = require("fs");
+const path = require("path");
+let prisma;
+
+const dir = process.argv[2];
+if (!dir) throw new Error("Usage: node scripts/import-form-templates.js <export-directory>");
+const dryRun = process.argv.includes("--dry-run");
+const catalog = JSON.parse(fs.readFileSync(path.join(dir, "catalog.json"), "utf8"));
+if (!Array.isArray(catalog)) throw new Error("catalog.json must be an array.");
+const sha256 = (value) => crypto.createHash("sha256").update(value).digest("hex");
+
+async function main() {
+  if (!dryRun) prisma = require("../prismaClient");
+  const seen = new Set();
+  for (let index = 0; index < catalog.length; index += 1) {
+    const item = catalog[index];
+    if (!item.docId || seen.has(item.docId)) throw new Error(`Duplicate or missing docId: ${item.docId || "<missing>"}`);
+    seen.add(item.docId);
+    const pdf = fs.readFileSync(path.join(dir, `${item.docId}.pdf`));
+    const mapping = JSON.parse(fs.readFileSync(path.join(dir, `${item.docId}.json`), "utf8"));
+    const fields = mapping.staticFields;
+    if (!Buffer.from(pdf).subarray(0, 4).equals(Buffer.from("%PDF"))) throw new Error(`${item.docId}: invalid PDF`);
+    if (!Array.isArray(fields) || fields.some((field) => !field.id || !Number.isInteger(field.page) || field.page < 1)) throw new Error(`${item.docId}: invalid field map`);
+    if (dryRun) continue;
+    const template = await prisma.formTemplate.upsert({
+      where: { docId: item.docId },
+      create: { docId: item.docId, province: item.province, category: item.category, title: item.title, shortTitle: item.shortTitle || null, fileName: item.fileName || `${item.docId}.pdf`, footerText: item.footerText || null, status: item.status || "active", productionReady: true, mappingReady: true, sortOrder: item.sortOrder || index },
+      update: { province: item.province, category: item.category, title: item.title, shortTitle: item.shortTitle || null, fileName: item.fileName || `${item.docId}.pdf`, footerText: item.footerText || null, status: item.status || "active", productionReady: true, mappingReady: true, sortOrder: item.sortOrder || index },
+    });
+    const version = Number(item.version || 1);
+    await prisma.formTemplateVersion.upsert({
+      where: { templateId_version: { templateId: template.id, version } },
+      create: { templateId: template.id, version, pdfBytes: pdf, fieldMapping: mapping, pageCount: item.pageCount || null, pdfChecksum: sha256(pdf), mappingChecksum: sha256(JSON.stringify(mapping)), effectiveDate: item.effectiveDate ? new Date(item.effectiveDate) : null },
+      update: { pdfBytes: pdf, fieldMapping: mapping, pageCount: item.pageCount || null, pdfChecksum: sha256(pdf), mappingChecksum: sha256(JSON.stringify(mapping)), effectiveDate: item.effectiveDate ? new Date(item.effectiveDate) : null, active: true },
+    });
+  }
+}
+
+main().then(() => console.log(dryRun ? "Form template export validated." : "Form templates imported.")).finally(() => prisma?.$disconnect());

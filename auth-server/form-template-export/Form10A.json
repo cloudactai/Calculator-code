@@ -1,0 +1,425 @@
+{
+  "staticFields": [
+    {
+      "id": 1727915370014,
+      "type": "TextField",
+      "x": 34,
+      "y": 58,
+      "width": 585,
+      "height": 20,
+      "value": "Armstrong Courthouse",
+      "fontSize": 10,
+      "color": [
+        0,
+        0,
+        0
+      ],
+      "background": "none",
+      "border": "none",
+      "page": 1,
+      "bind": "court_info.courtName"
+    },
+    {
+      "id": 1727915389443,
+      "type": "TextField",
+      "x": 34,
+      "y": 88,
+      "width": 585,
+      "height": 20,
+      "value": "ARDC Building 111 Queen St, PO Box 2000, Armstrong, Ontario P0T 1A0",
+      "fontSize": 10,
+      "color": [
+        0,
+        0,
+        0
+      ],
+      "background": "none",
+      "border": "none",
+      "page": 1,
+      "bind": "court_info.courtOfficeAddress"
+    },
+    {
+      "id": 1727915418071,
+      "type": "TextField",
+      "x": 436,
+      "y": 58,
+      "width": 234,
+      "height": 20,
+      "value": "FS-24-0055",
+      "fontSize": 10,
+      "color": [
+        0,
+        0,
+        0
+      ],
+      "background": "none",
+      "border": "none",
+      "page": 1,
+      "bind": "court_info.courtFileNumber"
+    },
+    {
+      "id": 4,
+      "type": "CheckBox",
+      "x": 487,
+      "y": 89,
+      "width": 20,
+      "height": 20,
+      "value": "",
+      "fontSize": 10,
+      "color": [
+        0,
+        0,
+        0
+      ],
+      "page": 1
+    },
+    {
+      "id": 5,
+      "type": "CheckBox",
+      "x": 488,
+      "y": 105,
+      "width": 20,
+      "height": 20,
+      "value": "",
+      "fontSize": 10,
+      "color": [
+        0,
+        0,
+        0
+      ],
+      "page": 1
+    },
+    {
+      "id": 1727915453635,
+      "type": "TextField",
+      "x": 169,
+      "y": 568,
+      "width": 605,
+      "height": 20,
+      "value": "",
+      "fontSize": 10,
+      "color": [
+        0,
+        0,
+        0
+      ],
+      "background": "none",
+      "border": "none",
+      "page": 1,
+      "bind": "applicant.fullLegalName"
+    },
+    {
+      "id": 1727915471785,
+      "type": "TextArea",
+      "x": 49,
+      "y": 612,
+      "width": 788,
+      "height": 38,
+      "value": "",
+      "fontSize": 10,
+      "color": [
+        0,
+        0,
+        0
+      ],
+      "background": "none",
+      "border": "none",
+      "page": 1
+    },
+    {
+      "id": 1727915481497,
+      "type": "TextArea",
+      "x": 50,
+      "y": 667,
+      "width": "788",
+      "height": 44,
+      "value": "",
+      "fontSize": 10,
+      "color": [
+        0,
+        0,
+        0
+      ],
+      "background": "none",
+      "border": "none",
+      "page": 1
+    },
+    {
+      "id": 9,
+      "type": "CheckBox",
+      "x": 50,
+      "y": 700,
+      "width": 20,
+      "height": 20,
+      "value": "",
+      "fontSize": 10,
+      "color": [
+        0,
+        0,
+        0
+      ],
+      "page": 1
+    },
+    {
+      "id": 1727915505655,
+      "type": "TextArea",
+      "x": 50,
+      "y": 716,
+      "width": "788",
+      "height": "44",
+      "value": "",
+      "fontSize": 10,
+      "color": [
+        0,
+        0,
+        0
+      ],
+      "background": "none",
+      "border": "none",
+      "page": 1
+    },
+    {
+      "id": 1727915530277,
+      "type": "TextField",
+      "x": 434,
+      "y": 30,
+      "width": 235,
+      "height": 20,
+      "value": "FS-24-0055",
+      "fontSize": 10,
+      "color": [
+        0,
+        0,
+        0
+      ],
+      "background": "none",
+      "border": "none",
+      "page": 2,
+      "bind": "court_info.courtFileNumber"
+    },
+    {
+      "id": 1727915546185,
+      "type": "TextArea",
+      "x": 47,
+      "y": 92,
+      "width": 811,
+      "height": 869,
+      "value": "",
+      "fontSize": 10,
+      "color": [
+        0,
+        0,
+        0
+      ],
+      "background": "none",
+      "border": "none",
+      "page": 2
+    },
+    {
+      "id": 1727915549071,
+      "type": "Date",
+      "x": 19,
+      "y": 720,
+      "width": 399,
+      "height": 20,
+      "value": "",
+      "fontSize": 10,
+      "color": [
+        0,
+        0,
+        0
+      ],
+      "background": "none",
+      "border": "none",
+      "page": 2
+    },
+    {
+      "id": 1728332773265,
+      "type": "TextArea",
+      "x": 20,
+      "y": 157,
+      "width": 412,
+      "height": 35,
+      "value": "Alex Smith , Royal Road, Toronto",
+      "fontSize": 10,
+      "color": [
+        0,
+        0,
+        0
+      ],
+      "background": "none",
+      "border": "none",
+      "page": 1,
+      "bind": "applicant.fullLegalName, applicant.address"
+    },
+    {
+      "id": 1728332783693,
+      "type": "TextArea",
+      "x": 317,
+      "y": 157,
+      "width": 411,
+      "height": 35,
+      "value": "John Cea, Royal Road, Toronto",
+      "fontSize": 10,
+      "color": [
+        0,
+        0,
+        0
+      ],
+      "background": "none",
+      "border": "none",
+      "page": 1,
+      "bind": "applicantsLawyer.fullLegalName, applicantsLawyer.address"
+    },
+    {
+      "id": 1728332792293,
+      "type": "TextArea",
+      "x": 20,
+      "y": 183,
+      "width": 411,
+      "height": 36,
+      "value": "(647) 726 - 0053, AlexSmith@gmail.com",
+      "fontSize": 10,
+      "color": [
+        0,
+        0,
+        0
+      ],
+      "background": "none",
+      "border": "none",
+      "page": 1,
+      "bind": "applicant.phoneAndFax, applicant.email"
+    },
+    {
+      "id": 1728332811117,
+      "type": "TextArea",
+      "x": 317,
+      "y": 183,
+      "width": 410,
+      "height": 36,
+      "value": "4831296, JohnCena@gmail.com",
+      "fontSize": 10,
+      "color": [
+        0,
+        0,
+        0
+      ],
+      "background": "none",
+      "border": "none",
+      "page": 1,
+      "bind": "applicantsLawyer.phoneAndFax, applicantsLawyer.email"
+    },
+    {
+      "id": 1728332824105,
+      "type": "TextArea",
+      "x": 20,
+      "y": 248,
+      "width": 412,
+      "height": 35,
+      "value": "Jane Smith, Royal Road, Toronto",
+      "fontSize": 10,
+      "color": [
+        0,
+        0,
+        0
+      ],
+      "background": "none",
+      "border": "none",
+      "page": 1,
+      "bind": "respondent.fullLegalName, respondent.address"
+    },
+    {
+      "id": 1728332833765,
+      "type": "TextArea",
+      "x": 317,
+      "y": 248,
+      "width": 415,
+      "height": 35,
+      "value": ", ",
+      "fontSize": 10,
+      "color": [
+        0,
+        0,
+        0
+      ],
+      "background": "none",
+      "border": "none",
+      "page": 1,
+      "bind": "respondentsLawyer.fullLegalName, respondentsLawyer.address"
+    },
+    {
+      "id": 1728332844009,
+      "type": "TextArea",
+      "x": 316,
+      "y": 274,
+      "width": 414,
+      "height": 34,
+      "value": ", ",
+      "fontSize": 10,
+      "color": [
+        0,
+        0,
+        0
+      ],
+      "background": "none",
+      "border": "none",
+      "page": 1,
+      "bind": "respondentsLawyer.phoneAndFax, respondentsLawyer.email"
+    },
+    {
+      "id": 1728332861153,
+      "type": "TextArea",
+      "x": 20,
+      "y": 274,
+      "width": 410,
+      "height": 35,
+      "value": "4831296, Janesmith@gmail.com",
+      "fontSize": 10,
+      "color": [
+        0,
+        0,
+        0
+      ],
+      "background": "none",
+      "border": "none",
+      "page": 1,
+      "bind": "respondent.phoneAndFax, respondent.email"
+    },
+    {
+      "id": 1728332879732,
+      "type": "TextArea",
+      "x": 19,
+      "y": 339,
+      "width": 859,
+      "height": 35,
+      "value": "",
+      "fontSize": 10,
+      "color": [
+        0,
+        0,
+        0
+      ],
+      "background": "none",
+      "border": "none",
+      "page": 1
+    },
+    {
+      "id": 1728332890349,
+      "type": "TextArea",
+      "x": 19,
+      "y": 364,
+      "width": 860,
+      "height": 38,
+      "value": "",
+      "fontSize": 10,
+      "color": [
+        0,
+        0,
+        0
+      ],
+      "background": "none",
+      "border": "none",
+      "page": 1
+    }
+  ]
+}

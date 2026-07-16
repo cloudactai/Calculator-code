@@ -455,6 +455,12 @@ const Routes = () => {
         </AuthUser>
       </Route>
 
+      <Route path="/matters/:matterNumber/forms/:documentId">
+        <AuthUser sidAccess={accessPagesState?.auth_forms} usersAuth={rl_all}>
+          <FillPdf />
+        </AuthUser>
+      </Route>
+
       <Route path={AUTH_ROUTES.FORMS_CREATE_NEW_FILL_PDF}>
         <AuthUser sidAccess={accessPagesState?.auth_forms} usersAuth={rl_all}>
           <FillPdf />

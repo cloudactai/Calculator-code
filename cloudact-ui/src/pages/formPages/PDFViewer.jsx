@@ -82,6 +82,7 @@ const renderField = (field, handleEditField, handleSort, handleCellEdit, formatD
       return (
         <input
           id={field.id}
+          aria-label={field.label || field.id}
           type="text"
           value={field.value}
           onChange={(e) => handleEditField(field.id, e.target.value)}
@@ -98,6 +99,7 @@ const renderField = (field, handleEditField, handleSort, handleCellEdit, formatD
       return (
         <textarea
           id={field.id}
+          aria-label={field.label || field.id}
           value={field.value}
           onChange={(e) => handleEditField(field.id, e.target.value)}
           style={{
@@ -121,6 +123,7 @@ const renderField = (field, handleEditField, handleSort, handleCellEdit, formatD
           //   background: 'none'
           // }}
           id={field.id}
+          aria-label={field.label || field.id}
           value={field.value}
           thousandSeparator={true}
           prefix={''}
@@ -149,6 +152,7 @@ const renderField = (field, handleEditField, handleSort, handleCellEdit, formatD
         <label style={{ display: 'flex', alignItems: 'center' }}>
           <input
             id={field.id}
+            aria-label={field.label || field.id}
             type="checkbox"
             checked={field.value === 'checked'}
             onChange={() => {

@@ -28,8 +28,7 @@ import {
   selectMatterFoldersLoading,
 } from "../../utils/Apis/matters/getMatterFolders/getMattersFoldersSelectors";
 import { getMatterFolders } from "../../utils/Apis/matters/getMatterFolders/getMattersFoldersActions";
-import { getUserProvince, getUserSID } from "../../utils/helpers";
-import { createMatterFiles } from "../../utils/Apis/matters/createMatterFiles/createMatterFilesActions";
+import { formsService } from "../../services/formsService";
 
 const CreateNewFormPage = ({ currentUserRole }) => {
   const dispatch = useDispatch();
@@ -50,13 +49,10 @@ const CreateNewFormPage = ({ currentUserRole }) => {
 
   useEffect(() => {
     const fetchForms = async () => {
-      let userProvince = getUserProvince();
-      if (typeof userProvince === "string") {
-        userProvince = userProvince.replace(/^"(.*)"$/, "$1"); // Removes leading/trailing quotes
-      }
-      if (userProvince) {
+      const province = matterData?.province;
+      if (province) {
         try {
-          const formsArrayData = await FormsArray(userProvince, true);
+          const formsArrayData = await FormsArray(province, true, true);
           setForms(formsArrayData);
         } catch (error) {
           console.error("Error fetching forms:", error);
@@ -154,46 +150,17 @@ const CreateNewFormPage = ({ currentUserRole }) => {
     }
   }, [selectFolders, selectFolderLoading]);
 
-  const handleCreateNewFormSubmit = (e) => {
+  const handleCreateNewFormSubmit = async (e) => {
     e.preventDefault();
-
-    let checkedForms = [];
-
-    forms.map((formGroup) =>
-      formGroup.forms.map((form) => {
-        if (form.checked) {
-          checkedForms.push({
-            ...form,
-            folder_id: selectedFolderId,
-          });
-
-          const newFileData = {
-            sid: getUserSID(),
-            matter_id: formData.matterNumber,
-            folder_id: selectedFolderId,
-            file_name: form.file_name,
-            docId: form.docId,
-            status: "Open",
-            type: "form",
-          };
-          dispatch(createMatterFiles(newFileData));
-        }
-      })
-    );
-
-    dispatch({
-      type: "UPDATE_SELECTED_FORMS",
-      payload: checkedForms,
-    });
-
-    let serializedCheckedForms = JSON.stringify(checkedForms);
-
-    localStorage.setItem("checkedForms", serializedCheckedForms);
-
-    history.push({
-      pathname: "/forms/create-new/fill-pdf",
-      state: { formData },
-    });
+    const selected = forms.flatMap((group) => group.forms.filter((form) => form.checked));
+    if (!selectedFolderId || selected.length === 0) return;
+    try {
+      const documents = await formsService.createDocuments(formData.matterNumber, selectedFolderId, selected.map((form) => form.id));
+      const first = documents[0];
+      if (first) history.push(`/matters/${encodeURIComponent(formData.matterNumber)}/forms/${first.id}`);
+    } catch (error) {
+      console.error("Could not create form documents", error);
+    }
   };
 
   return (
@@ -236,7 +203,6 @@ const CreateNewFormPage = ({ currentUserRole }) => {
                             <p>
                               Selected Matter Province:{" "}
                               <strong>{matterData.province}</strong>
-                            </p>
                             <p>
                               Client Name:{" "}
                               <strong>{matterData.client_id}</strong>
