@@ -30,3 +30,6 @@ The equivalent Render Shell command for the complete catalog is:
 ```bash
 npm run forms:import:render-safe && npm run forms:backfill
 ```
+
+No Render Shell is required in production: `npm start` runs a one-time,
+memory-safe bootstrap whenever fewer than the expected templates exist.
