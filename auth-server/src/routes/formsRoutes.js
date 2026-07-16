@@ -229,4 +229,11 @@ router.post("/matters/:matterNumber/folders", async (req, res) => {
   return res.status(201).json({ data: folder });
 });
 
+router.get("/matters/:matterNumber/folders", async (req, res) => {
+  const matter = await matterForUser(req.user.id, req.params.matterNumber);
+  if (!matter) return res.status(404).json({ message: "Matter not found." });
+  const folders = await prisma.matterFolder.findMany({ where: { matterId: matter.id }, orderBy: { createdAt: "asc" } });
+  return res.json({ data: folders });
+});
+
 module.exports = router;

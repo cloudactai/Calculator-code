@@ -23,11 +23,6 @@ import {
   getSingleMatter,
   getSingleMatterReset,
 } from "../../utils/Apis/matters/getSingleMatter/getSingleMattersActions";
-import {
-  selectMatterFoldersData,
-  selectMatterFoldersLoading,
-} from "../../utils/Apis/matters/getMatterFolders/getMattersFoldersSelectors";
-import { getMatterFolders } from "../../utils/Apis/matters/getMatterFolders/getMattersFoldersActions";
 import { formsService } from "../../services/formsService";
 
 const CreateNewFormPage = ({ currentUserRole }) => {
@@ -127,15 +122,12 @@ const CreateNewFormPage = ({ currentUserRole }) => {
       ...formData,
       matterNumber: li.value,
     });
-    dispatch(getMatterFolders(li.value));
   };
   const handleFolderChange = (e, li) => {
     setSelectedFolderId(li.value);
     setSelectedFolderTitle(li.name);
   };
 
-  const selectFolders = useSelector(selectMatterFoldersData);
-  const selectFolderLoading = useSelector(selectMatterFoldersLoading);
   const [folders, setFolders] = useState([]);
   const [selectedFolderId, setSelectedFolderId] = useState(null);
   const [selectedFolderTitle, setSelectedFolderTitle] = useState(null);
@@ -145,19 +137,14 @@ const CreateNewFormPage = ({ currentUserRole }) => {
   const [createError, setCreateError] = useState("");
 
   useEffect(() => {
-    if (selectFolders) {
-      const selectedFolders = selectFolders?.body;
-      const foldersData = selectedFolders.map((folder) => ({
-        title: folder.title,
-        folder_id: folder.id,
-        matter_id: folder.matter_id,
-        created: folder.created,
-        type: folder.type,
-        contents: folder.contents,
-      }));
-      setFolders(foldersData);
-    }
-  }, [selectFolders, selectFolderLoading]);
+    if (!formData.matterNumber) return;
+    formsService.listFolders(formData.matterNumber)
+      .then((result) => setFolders(result.map((folder) => ({
+        title: folder.title, folder_id: folder.id, matter_id: formData.matterNumber,
+        created: folder.createdAt || folder.created, type: folder.type,
+      }))))
+      .catch(() => setFolders([]));
+  }, [formData.matterNumber]);
 
   const handleCreateNewFormSubmit = async (e) => {
     e.preventDefault();
