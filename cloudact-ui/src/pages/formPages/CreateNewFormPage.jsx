@@ -117,6 +117,11 @@ const CreateNewFormPage = ({ currentUserRole }) => {
   const handleClientNumberChange = (e, li) => {
     setMatterData(null);
     dispatch(getSingleMatterReset());
+    setSelectedFolderId(null);
+    setSelectedFolderTitle(null);
+    setNewFolderTitle("");
+    setFolderError("");
+    setCreateError("");
 
     setFormData({
       ...formData,
@@ -134,6 +139,10 @@ const CreateNewFormPage = ({ currentUserRole }) => {
   const [folders, setFolders] = useState([]);
   const [selectedFolderId, setSelectedFolderId] = useState(null);
   const [selectedFolderTitle, setSelectedFolderTitle] = useState(null);
+  const [newFolderTitle, setNewFolderTitle] = useState("");
+  const [isCreatingFolder, setIsCreatingFolder] = useState(false);
+  const [folderError, setFolderError] = useState("");
+  const [createError, setCreateError] = useState("");
 
   useEffect(() => {
     if (selectFolders) {
@@ -153,13 +162,42 @@ const CreateNewFormPage = ({ currentUserRole }) => {
   const handleCreateNewFormSubmit = async (e) => {
     e.preventDefault();
     const selected = forms.flatMap((group) => group.forms.filter((form) => form.checked));
-    if (!selectedFolderId || selected.length === 0) return;
+    if (!selectedFolderId || selected.length === 0) {
+      setCreateError(!selectedFolderId ? "Create or select a folder before creating forms." : "Select at least one form to create.");
+      return;
+    }
+    setCreateError("");
     try {
       const documents = await formsService.createDocuments(formData.matterNumber, selectedFolderId, selected.map((form) => form.id));
       const first = documents[0];
       if (first) history.push(`/matters/${encodeURIComponent(formData.matterNumber)}/forms/${first.id}`);
     } catch (error) {
       console.error("Could not create form documents", error);
+    }
+  };
+
+  const handleCreateFolder = async () => {
+    const title = newFolderTitle.trim();
+    if (!title || !formData.matterNumber) return;
+    setIsCreatingFolder(true);
+    setFolderError("");
+    try {
+      const folder = await formsService.createFolder(formData.matterNumber, title);
+      const createdFolder = {
+        title: folder.title,
+        folder_id: folder.id,
+        matter_id: formData.matterNumber,
+        created: folder.createdAt || folder.created,
+        type: folder.type,
+      };
+      setFolders((current) => [...current.filter((item) => item.folder_id !== createdFolder.folder_id), createdFolder]);
+      setSelectedFolderId(createdFolder.folder_id);
+      setSelectedFolderTitle(createdFolder.title);
+      setNewFolderTitle("");
+    } catch (error) {
+      setFolderError("Could not create that folder. Please try again.");
+    } finally {
+      setIsCreatingFolder(false);
     }
   };
 
@@ -195,6 +233,31 @@ const CreateNewFormPage = ({ currentUserRole }) => {
                                 list={mattersList}
                                 curListItem={formData.matterNumber}
                               ></CustomDropDown>
+                              <div className="d-flex align-items-center gap-2 mt-2">
+                                <input
+                                  className="form-control"
+                                  aria-label="New folder name"
+                                  placeholder="New folder name"
+                                  value={newFolderTitle}
+                                  onChange={(e) => setNewFolderTitle(e.target.value)}
+                                  onKeyDown={(e) => {
+                                    if (e.key === "Enter") {
+                                      e.preventDefault();
+                                      handleCreateFolder();
+                                    }
+                                  }}
+                                />
+                                <button
+                                  type="button"
+                                  className="btn btnSecondary"
+                                  onClick={handleCreateFolder}
+                                  disabled={isCreatingFolder || !newFolderTitle.trim()}
+                                >
+                                  {isCreatingFolder ? "Creating…" : "Create folder"}
+                                </button>
+                              </div>
+                              {folders.length === 0 && <small className="d-block mt-2">Create a folder to choose where this form will be saved.</small>}
+                              {folderError && <small className="d-block mt-2 text-danger" role="alert">{folderError}</small>}
                             </div>
                           </div>
                         </div>
@@ -287,6 +350,7 @@ const CreateNewFormPage = ({ currentUserRole }) => {
                       ></div>
                     </div>
                     <div className="action">
+                      {createError && <div className="text-danger mb-2" role="alert">{createError}</div>}
                       <button
                         className="btn btnPrimary rounded-pill"
                         onClick={handleCreateNewFormSubmit}

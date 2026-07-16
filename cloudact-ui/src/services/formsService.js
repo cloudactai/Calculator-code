@@ -8,4 +8,5 @@ export const formsService = {
   getDocument: async (matterNumber, documentId) => body(await axios.get(`/matters/${encodeURIComponent(matterNumber)}/forms/${documentId}`)),
   saveDocument: async (matterNumber, documentId, revision, fieldValues, status) => body(await axios.patch(`/matters/${encodeURIComponent(matterNumber)}/forms/${documentId}`, { revision, fieldValues, status })),
   listDocuments: async (matterNumber, folderId) => body(await axios.get(`/matters/${encodeURIComponent(matterNumber)}/forms`, { params: folderId ? { folderId } : undefined })),
+  createFolder: async (matterNumber, title, type = "forms") => body(await axios.post(`/matters/${encodeURIComponent(matterNumber)}/folders`, { title, type })),
 };
