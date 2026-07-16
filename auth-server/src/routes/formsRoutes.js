@@ -3,6 +3,7 @@ const express = require("express");
 const path = require("path");
 const prisma = require("../../prismaClient");
 const { authMiddleware } = require("../middleware/authMiddleware");
+const { parseStoredJson, prefillFields, supportType } = require("../utils/formPrefillResolver");
 
 const router = express.Router();
 router.use(authMiddleware);
@@ -71,39 +72,6 @@ function documentDto(document) {
   };
 }
 
-function readPath(source, path) {
-  return String(path || "")
-    .replace(/\[(\d+)\]/g, ".$1")
-    .split(".")
-    .filter(Boolean)
-    .reduce((value, key) => value == null ? undefined : value[key], source);
-}
-
-function resolveBinding(source, binding) {
-  const paths = String(binding || "").split(",").map((path) => path.trim()).filter(Boolean);
-  const values = paths.map((path) => readPath(source, path));
-  if (values.length <= 1) return values[0];
-  return values.map((value) => value == null ? "" : value).join(", ");
-}
-
-function parseStoredJson(value) {
-  if (value && typeof value === "object") return value;
-  if (typeof value !== "string" || !value.trim()) return {};
-  try {
-    const parsed = JSON.parse(value);
-    return parsed && typeof parsed === "object" ? parsed : {};
-  } catch {
-    return {};
-  }
-}
-
-function supportType(calculation) {
-  const value = `${calculation.type || ""} ${calculation.calculatorType || ""}`.toLowerCase();
-  if (value.includes("child")) return "child";
-  if (value.includes("spousal")) return "spousal";
-  return null;
-}
-
 async function buildPrefillData(matter, userId) {
   const [records, profile, calculations] = await Promise.all([
     prisma.matterRecord.findMany({ where: { matterId: matter.id } }),
@@ -161,21 +129,6 @@ async function buildPrefillData(matter, userId) {
     profile: profile || {},
     support,
   };
-}
-
-function prefillFields(data, mapping) {
-  const fields = Array.isArray(mapping?.staticFields) ? mapping.staticFields : [];
-  const values = {};
-  const provenance = {};
-  for (const field of fields) {
-    if (!field?.id || !field.bind) continue;
-    const value = resolveBinding(data, field.bind);
-    if (value !== undefined && value !== null && value !== "") {
-      values[field.id] = value;
-      provenance[field.id] = "prefill";
-    }
-  }
-  return { values, provenance };
 }
 
 // Catalog response intentionally keeps the source UI's field names.
