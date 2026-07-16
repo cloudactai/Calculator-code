@@ -313,23 +313,40 @@ router.put("/matters/:matterNumber/forms/:documentId/pdf", async (req, res) => {
   const encoded = String(req.body?.pdfBase64 || "").replace(/^data:application\/pdf;base64,/, "");
   const pdf = Buffer.from(encoded, "base64");
   if (!matter || !encoded || pdf.length > 20 * 1024 * 1024 || pdf.subarray(0, 4).toString() !== "%PDF") return res.status(400).json({ message: "A PDF under 20 MB is required." });
+  const expectedRevision = Number(req.body?.revision);
+  if (!Number.isInteger(expectedRevision) || expectedRevision < 0) {
+    return res.status(400).json({ message: "A generated PDF revision is required." });
+  }
   const checksum = crypto.createHash("sha256").update(pdf).digest("hex");
-  const document = await prisma.$transaction(async (tx) => {
-    const existing = await tx.matterFormDocument.findFirst({
-      where: { id: Number(req.params.documentId), matterId: matter.id },
-      select: { id: true, generatedPdfRevision: true },
+  let document;
+  try {
+    document = await prisma.$transaction(async (tx) => {
+      const existing = await tx.matterFormDocument.findFirst({
+        where: { id: Number(req.params.documentId), matterId: matter.id },
+        select: { id: true, generatedPdfRevision: true },
+      });
+      if (!existing) return null;
+      if (existing.generatedPdfRevision !== expectedRevision) {
+        throw Object.assign(new Error("This completed PDF changed elsewhere. Reload it before saving."), { status: 409, revision: existing.generatedPdfRevision });
+      }
+      const generatedPdfRevision = expectedRevision + 1;
+      const generatedAt = new Date();
+      const updated = await tx.matterFormDocument.updateMany({
+        where: { id: existing.id, generatedPdfRevision: expectedRevision },
+        data: { generatedPdf: pdf, generatedAt, generatedPdfRevision },
+      });
+      if (!updated.count) {
+        throw Object.assign(new Error("This completed PDF changed elsewhere. Reload it before saving."), { status: 409 });
+      }
+      await tx.matterFormPdfRevision.create({
+        data: { documentId: existing.id, revision: generatedPdfRevision, checksum, pdf },
+      });
+      return { generatedPdfRevision, generatedAt };
     });
-    if (!existing) return null;
-    const generatedPdfRevision = existing.generatedPdfRevision + 1;
-    await tx.matterFormPdfRevision.create({
-      data: { documentId: existing.id, revision: generatedPdfRevision, checksum, pdf },
-    });
-    return tx.matterFormDocument.update({
-      where: { id: existing.id },
-      data: { generatedPdf: pdf, generatedAt: new Date(), generatedPdfRevision },
-      select: { generatedPdfRevision: true, generatedAt: true },
-    });
-  });
+  } catch (error) {
+    if (error.status === 409) return res.status(409).json({ message: error.message, revision: error.revision });
+    throw error;
+  }
   if (!document) return res.status(404).json({ message: "Form document not found." });
   return res.json({ data: { checksum, revision: document.generatedPdfRevision, created: document.generatedAt } });
 });

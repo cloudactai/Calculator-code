@@ -14,7 +14,6 @@
     "forms:validate-export": "node scripts/import-form-templates.js form-template-export --dry-run",
     "forms:import": "node scripts/import-form-templates.js form-template-export",
     "forms:import:render-safe": "node scripts/import-form-templates-render-safe.js",
-    "forms:backfill": "node scripts/backfill-legacy-form-records.js",
     "forms:bootstrap": "node scripts/bootstrap-forms.js",
     "postinstall": "prisma generate"
   },

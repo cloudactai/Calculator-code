@@ -1785,11 +1785,12 @@ const FillPdf = ({ currentUserRole }) => {
       reader.readAsDataURL(blob);
     });
     try {
-      const saved = await formsService.saveGeneratedPdf(routeMatterNumber, remoteDocument.id, pdfBase64);
+      const saved = await formsService.saveGeneratedPdf(routeMatterNumber, remoteDocument.id, remoteDocument.generated_pdf_revision, pdfBase64);
+      setRemoteDocument((document) => ({ ...document, generated_pdf_revision: saved.revision }));
       toast.success(`Completed PDF revision ${saved.revision} saved.`);
     } catch (error) {
       URL.revokeObjectURL(pdfBlobUrl);
-      toast.error("Could not save the completed PDF.");
+      toast.error(error?.response?.status === 409 ? "This completed PDF changed elsewhere. Reload it before saving." : "Could not save the completed PDF.");
       return;
     }
     const download = document.createElement("a");

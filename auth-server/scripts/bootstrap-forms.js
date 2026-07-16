@@ -34,7 +34,6 @@ async function main() {
   } else {
     console.log(`Forms catalog already complete (${count}/${catalog.length}).`);
   }
-  run(process.execPath, [path.join(__dirname, "backfill-legacy-form-records.js")]);
 }
 
 main().catch(async (error) => { console.error(error); await prisma.$disconnect(); process.exitCode = 1; });

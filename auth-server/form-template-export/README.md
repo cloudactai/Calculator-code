@@ -1,4 +1,4 @@
-# Legacy Ontario Forms export
+# Ontario Forms template export
 
 This folder was generated from `cloud-act-api-master` and
 `cloudact-frontend-main`. It contains the 25 catalogued Ontario templates for
@@ -28,7 +28,7 @@ node scripts/import-form-templates.js form-template-export --doc-id Form13_1
 The equivalent Render Shell command for the complete catalog is:
 
 ```bash
-npm run forms:import:render-safe && npm run forms:backfill
+npm run forms:import:render-safe
 ```
 
 No Render Shell is required in production: `npm start` runs a one-time,
