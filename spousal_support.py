@@ -107,6 +107,18 @@ class IterativeResult:
     recipient_indi_mid:   float
     payor_indi_high:      float
     recipient_indi_high:  float
+    payor_taxes_low:      float
+    payor_taxes_mid:      float
+    payor_taxes_high:     float
+    recipient_taxes_low:  float
+    recipient_taxes_mid:  float
+    recipient_taxes_high: float
+    payor_benefits_low:   float
+    payor_benefits_mid:   float
+    payor_benefits_high:  float
+    recipient_benefits_low:  float
+    recipient_benefits_mid:  float
+    recipient_benefits_high: float
     duration_low:         float
     duration_high:        float
     iterations_low:       int
@@ -385,11 +397,14 @@ def _compute_net_indi(
     other_deductions:        float = 0.0,
     eligible_for_disability: str   = "No",
     special_expenses_annual: float = 0.0,
-) -> float:
+) -> dict:
     """
     Compute one party's INDI for one iteration step.
 
     INDI = gross_income − total_taxes + total_benefits − cs_adjustment − special_expenses
+
+    Returns a dict with 'indi', 'total_taxes', and 'total_benefits' so
+    callers can access the breakdown for reporting.
 
     Per the Excel reference model (Screen 2 -WithoutSplexp), INDI starts
     from RAW gross income (employment + self-employment + other), NOT from
@@ -431,11 +446,16 @@ def _compute_net_indi(
 
     # INDI = gross (no support/deductions) − taxes + benefits − CS − special expenses
     raw_gross = gross_income + self_employed_income + other_income
-    return (raw_gross
+    indi = (raw_gross
             - result["total_taxes"]
             + result["total_benefits"]
             - cs_adjustment_annual
             - special_expenses_annual)
+    return {
+        "indi": indi,
+        "total_taxes": result["total_taxes"],
+        "total_benefits": result["total_benefits"],
+    }
 
 
 # ===========================================================================
@@ -713,12 +733,16 @@ def calculate_spousal_support_iterative(
         ss         = 0.0
         payor_indi = 0.0
         recip_indi = 0.0
+        payor_taxes = 0.0
+        payor_benefits = 0.0
+        recip_taxes = 0.0
+        recip_benefits = 0.0
         iters      = 0
 
         for i in range(max_iter):
             ss_annual = ss * 12
 
-            payor_indi = _compute_net_indi(
+            payor_result = _compute_net_indi(
                 gross_income             = payor_gross,
                 age                      = payor_age,
                 party_num                = 1,
@@ -737,8 +761,11 @@ def calculate_spousal_support_iterative(
                 eligible_for_disability  = payor_eligible_for_disability,
                 special_expenses_annual  = payor_special_expenses_annual,
             )
+            payor_indi = payor_result["indi"]
+            payor_taxes = payor_result["total_taxes"]
+            payor_benefits = payor_result["total_benefits"]
 
-            recip_indi = _compute_net_indi(
+            recip_result = _compute_net_indi(
                 gross_income             = recipient_gross,
                 age                      = recipient_age,
                 party_num                = 2,
@@ -757,6 +784,9 @@ def calculate_spousal_support_iterative(
                 eligible_for_disability  = recip_eligible_for_disability,
                 special_expenses_annual  = recip_special_expenses_annual,
             )
+            recip_indi = recip_result["indi"]
+            recip_taxes = recip_result["total_taxes"]
+            recip_benefits = recip_result["total_benefits"]
 
             new_ss = spousal_support_formula_by_rate(payor_indi, recip_indi, rate)
 
@@ -767,10 +797,14 @@ def calculate_spousal_support_iterative(
             ss = new_ss  # no damping — direct substitution
 
         rate_results[label] = {
-            "monthly":    round(ss, 2),
-            "payor_indi": round(payor_indi, 2),
-            "recip_indi": round(recip_indi, 2),
-            "iters":      iters,
+            "monthly":        round(ss, 2),
+            "payor_indi":     round(payor_indi, 2),
+            "recip_indi":     round(recip_indi, 2),
+            "payor_taxes":    round(payor_taxes, 2),
+            "payor_benefits": round(payor_benefits, 2),
+            "recip_taxes":    round(recip_taxes, 2),
+            "recip_benefits": round(recip_benefits, 2),
+            "iters":          iters,
         }
 
     dur = formula_for_calculating_duration_of_support(
@@ -794,6 +828,18 @@ def calculate_spousal_support_iterative(
         recipient_indi_mid   = rate_results["mid"]["recip_indi"],
         payor_indi_high      = rate_results["high"]["payor_indi"],
         recipient_indi_high  = rate_results["high"]["recip_indi"],
+        payor_taxes_low      = rate_results["low"]["payor_taxes"],
+        payor_taxes_mid      = rate_results["mid"]["payor_taxes"],
+        payor_taxes_high     = rate_results["high"]["payor_taxes"],
+        recipient_taxes_low  = rate_results["low"]["recip_taxes"],
+        recipient_taxes_mid  = rate_results["mid"]["recip_taxes"],
+        recipient_taxes_high = rate_results["high"]["recip_taxes"],
+        payor_benefits_low      = rate_results["low"]["payor_benefits"],
+        payor_benefits_mid      = rate_results["mid"]["payor_benefits"],
+        payor_benefits_high     = rate_results["high"]["payor_benefits"],
+        recipient_benefits_low  = rate_results["low"]["recip_benefits"],
+        recipient_benefits_mid  = rate_results["mid"]["recip_benefits"],
+        recipient_benefits_high = rate_results["high"]["recip_benefits"],
         duration_low         = dur[0],
         duration_high        = dur[1],
         iterations_low       = rate_results["low"]["iters"],

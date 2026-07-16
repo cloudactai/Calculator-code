@@ -32,6 +32,24 @@ export type SpousalSupportFlaskResult = {
   payor: string;
   recipient: string;
   duration_label: string;
+  payor_indi_low: number;
+  payor_indi_mid: number;
+  payor_indi_high: number;
+  recipient_indi_low: number;
+  recipient_indi_mid: number;
+  recipient_indi_high: number;
+  payor_taxes_low: number;
+  payor_taxes_mid: number;
+  payor_taxes_high: number;
+  recipient_taxes_low: number;
+  recipient_taxes_mid: number;
+  recipient_taxes_high: number;
+  payor_benefits_low: number;
+  payor_benefits_mid: number;
+  payor_benefits_high: number;
+  recipient_benefits_low: number;
+  recipient_benefits_mid: number;
+  recipient_benefits_high: number;
 };
 
 const calcSpousalSupportFlask = async (

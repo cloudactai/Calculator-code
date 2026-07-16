@@ -113,6 +113,30 @@ export interface calculatorScreen2State {
     changeInTaxesAndBenefitHigh1: number;
     changeInTaxesAndBenefitHigh2: number;
   };
+  disposableIncome?: {
+    party1Low: number;
+    party1Mid: number;
+    party1High: number;
+    party2Low: number;
+    party2Mid: number;
+    party2High: number;
+  };
+  taxesFromApi?: {
+    party1Low: number;
+    party1Mid: number;
+    party1High: number;
+    party2Low: number;
+    party2Mid: number;
+    party2High: number;
+  };
+  benefitsFromApi?: {
+    party1Low: number;
+    party1Mid: number;
+    party1High: number;
+    party2Low: number;
+    party2Mid: number;
+    party2High: number;
+  };
 }
 
 export const getCalculatorIdFromQuery = (value: Object) => {

@@ -54,7 +54,6 @@ export enum AUTH_ROUTES {
   SINGLE_MATTER = "/single-matter/:id",
   FORMS_CREATE_NEW = "/forms/create-new",
   FORMS_CREATE_NEW_FILL_INFORMATION = "/forms/create-new/fill-information",
-  FORMS_CREATE_NEW_FILL_PDF = "/forms/create-new/fill-pdf",
 
   // Super admin
   SUPERADMINDB = "/superadmin/dashboard",
