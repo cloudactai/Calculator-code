@@ -19,6 +19,10 @@ if (process.argv.includes("--doc-id") && !onlyDocId) throw new Error("--doc-id r
 const catalog = JSON.parse(fs.readFileSync(path.join(dir, "catalog.json"), "utf8"));
 if (!Array.isArray(catalog)) throw new Error("catalog.json must be an array.");
 
+function checksum(buffer) {
+  return crypto.createHash("sha256").update(buffer).digest("hex");
+}
+
 async function main() {
   if (!dryRun) prisma = require("../prismaClient");
   const seen = new Set();
@@ -33,10 +37,14 @@ async function main() {
     const header = Buffer.alloc(4);
     fs.readSync(descriptor, header, 0, 4, 0);
     fs.closeSync(descriptor);
-    const mapping = JSON.parse(fs.readFileSync(path.join(dir, `${item.docId}.json`), "utf8"));
+    const pdf = fs.readFileSync(pdfPath);
+    const mappingBytes = fs.readFileSync(path.join(dir, `${item.docId}.json`));
+    const mapping = JSON.parse(mappingBytes.toString("utf8"));
     const fields = mapping.staticFields;
     if (!header.equals(Buffer.from("%PDF"))) throw new Error(`${item.docId}: invalid PDF`);
     if (!Array.isArray(fields) || fields.some((field) => !field.id || !Number.isInteger(field.page) || field.page < 1)) throw new Error(`${item.docId}: invalid field map`);
+    const pdfChecksum = checksum(pdf);
+    const mappingChecksum = checksum(mappingBytes);
     if (dryRun) continue;
     const template = await prisma.formTemplate.upsert({
       where: { docId: item.docId },
@@ -46,8 +54,8 @@ async function main() {
     const version = Number(item.version || 1);
     await prisma.formTemplateVersion.upsert({
       where: { templateId_version: { templateId: template.id, version } },
-      create: { templateId: template.id, version, pdfPath: `${item.docId}.pdf`, fieldMapping: mapping, pageCount: item.pageCount || null, mappingChecksum: crypto.createHash("sha256").update(JSON.stringify(mapping)).digest("hex"), effectiveDate: item.effectiveDate ? new Date(item.effectiveDate) : null },
-      update: { pdfBytes: null, pdfPath: `${item.docId}.pdf`, fieldMapping: mapping, pageCount: item.pageCount || null, mappingChecksum: crypto.createHash("sha256").update(JSON.stringify(mapping)).digest("hex"), effectiveDate: item.effectiveDate ? new Date(item.effectiveDate) : null, active: true },
+      create: { templateId: template.id, version, pdfPath: `${item.docId}.pdf`, fieldMapping: mapping, pageCount: item.pageCount || null, pdfChecksum, mappingChecksum, effectiveDate: item.effectiveDate ? new Date(item.effectiveDate) : null },
+      update: { pdfBytes: null, pdfPath: `${item.docId}.pdf`, fieldMapping: mapping, pageCount: item.pageCount || null, pdfChecksum, mappingChecksum, effectiveDate: item.effectiveDate ? new Date(item.effectiveDate) : null, active: true },
     });
   }
 }
