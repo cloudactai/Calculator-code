@@ -2,14 +2,14 @@ import React from "react";
 import "@testing-library/jest-dom";
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 
-const mockDispatch = jest.fn(() => Promise.resolve());
+const mockDispatch = jest.fn(() => Promise.resolve({ saved: true, completion: { complete: false, missing: [] } }));
 
 jest.mock("react-redux", () => ({
   useDispatch: () => mockDispatch,
 }));
 jest.mock("../../config", () => ({ CALCULATOR_API: "https://intake.test" }));
 jest.mock("../../utils/Apis/matters/saveMatterInformation/saveMattersActions", () => ({
-  saveMatter: (payload) => ({ type: "SAVE_MATTER", payload }),
+  patchMatterIntake: (payload) => ({ type: "PATCH_MATTER_INTAKE", payload }),
 }));
 jest.mock("../../utils/helpers", () => ({
   getAllUserInfo: () => ({}),
@@ -36,7 +36,8 @@ afterEach(() => {
   delete global.fetch;
 });
 
-test("shows the completion action when the intake service marks the intake complete", async () => {
+test("shows the completion action only when backend storage validation marks complete", async () => {
+  mockDispatch.mockImplementationOnce(() => Promise.resolve({ saved: true, completion: { complete: true, missing: [] } }));
   const onComplete = jest.fn();
   const onBack = jest.fn();
 
@@ -67,7 +68,7 @@ test("shows the completion action when the intake service marks the intake compl
   });
 });
 
-test("sends only the current AI changes in explicit merge mode", async () => {
+test("sends ordered current AI patches to the dedicated endpoint", async () => {
   global.fetch
     .mockResolvedValueOnce({
       json: async () => ({
@@ -108,15 +109,10 @@ test("sends only the current AI changes in explicit merge mode", async () => {
   await waitFor(() => expect(mockDispatch).toHaveBeenCalledTimes(1));
 
   expect(mockDispatch.mock.calls[0][0]).toEqual({
-    type: "SAVE_MATTER",
-    payload: {
-      matter_id: "TEST-2",
-      save_mode: "merge",
-      data: {
-        Background: {
-          client: { name: "Sarah Mitchell", phone: "416-555-0101" },
-        },
-      },
+      type: "PATCH_MATTER_INTAKE",
+      payload: {
+        matter_id: "TEST-2",
+        patches: [{ section: "Background", data: { client: { name: "Sarah Mitchell", phone: "416-555-0101" } } }],
     },
   });
 
@@ -130,22 +126,33 @@ test("sends only the current AI changes in explicit merge mode", async () => {
 
   await waitFor(() => expect(mockDispatch).toHaveBeenCalledTimes(2));
   expect(mockDispatch.mock.calls[1][0]).toEqual({
-    type: "SAVE_MATTER",
-    payload: {
-      matter_id: "TEST-2",
-      save_mode: "merge",
-      data: {
-        EmploymentDetails: {
-          client: {
-            employmentStatus: "employed",
-            employerName: "New Employer",
-          },
-        },
-      },
+      type: "PATCH_MATTER_INTAKE",
+      payload: {
+        matter_id: "TEST-2",
+        patches: [{ section: "EmploymentDetails", data: { client: { employmentStatus: "employed", employerName: "New Employer" } } }],
     },
   });
-  expect(mockDispatch.mock.calls[1][0].payload.data.Background).toBeUndefined();
+  expect(mockDispatch.mock.calls[1][0].payload.patches[0].section).toBe("EmploymentDetails");
   expect(screen.getByText(/Saved: Background · Employment/i)).toBeInTheDocument();
+});
+
+test("does not collapse repeated section tool calls", async () => {
+  global.fetch.mockResolvedValueOnce({
+    json: async () => ({
+      reply: "Assets saved.", messages: [], intake_complete: false,
+      saved_sections: [
+        { section: "Assets", data: { lands: [{ address_of_property: "1 Main Street" }] } },
+        { section: "Assets", data: { bank_accounts_savings_securities_pension: [{ account_number: "1234" }] } },
+      ],
+    }),
+  });
+  render(<MatterIntakeChatPanel matterData={null} matterId="TEST-4" />);
+  fireEvent.click(screen.getByRole("button", { name: "Start intake" }));
+  await waitFor(() => expect(mockDispatch).toHaveBeenCalledTimes(1));
+  expect(mockDispatch.mock.calls[0][0].payload.patches).toEqual([
+    { section: "Assets", data: { lands: [{ address_of_property: "1 Main Street" }] } },
+    { section: "Assets", data: { bank_accounts_savings_securities_pension: [{ account_number: "1234" }] } },
+  ]);
 });
 
 test("starts with all manually saved database values and does not expose the primer", async () => {
@@ -200,5 +207,8 @@ test("starts with all manually saved database values and does not expose the pri
 
   expect(screen.queryByText(/168 Westcourt Pl/)).not.toBeInTheDocument();
   expect(screen.getByText(/Saved: Background · Income & benefits/i)).toBeInTheDocument();
-  expect(mockDispatch).not.toHaveBeenCalled();
+  expect(mockDispatch).toHaveBeenCalledWith({
+    type: "PATCH_MATTER_INTAKE",
+    payload: { matter_id: "TEST-3", patches: [] },
+  });
 });

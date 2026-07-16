@@ -440,6 +440,10 @@ const SingleMatter = () => {
                   matterId={id}
                   onComplete={handleMatterIntakeComplete}
                   onBack={() => setView("tasks")}
+                  onSaved={(savedMatter) => {
+                    setIntakeMatterData(savedMatter);
+                    dispatch(getSingleMatter(id));
+                  }}
                 />
               ) : (
                 <Loader isLoading />

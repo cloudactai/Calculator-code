@@ -78,8 +78,17 @@ const findMatchingRowIndex = (
     if (fields.every((field) => !isBlankValue(incoming?.[field]))) {
       suppliedCompleteIdentity = true;
     }
-    const index = rows.findIndex((row) => matchesFields(row, incoming, fields));
-    if (index >= 0) return index;
+    const matches = rows
+      .map((row, index) => ({ row, index }))
+      .filter(({ row }) => matchesFields(row, incoming, fields));
+    if (matches.length > 1) {
+      const error = new Error(
+        `Ambiguous patch: more than one row matches identity ${fields.join(", ")}.`
+      );
+      error.code = "AMBIGUOUS_PATCH";
+      throw error;
+    }
+    if (matches.length === 1) return matches[0].index;
   }
 
   if (
@@ -90,6 +99,13 @@ const findMatchingRowIndex = (
     const candidates = rows
       .map((row, index) => ({ row, index }))
       .filter(({ row }) => matchesFields(row, incoming, uniqueFallbackFields));
+    if (candidates.length > 1) {
+      const error = new Error(
+        `Ambiguous patch: more than one row matches fallback identity ${uniqueFallbackFields.join(", ")}.`
+      );
+      error.code = "AMBIGUOUS_PATCH";
+      throw error;
+    }
     if (candidates.length === 1) return candidates[0].index;
   }
 
