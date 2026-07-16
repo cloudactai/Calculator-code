@@ -1,15 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { useHistory } from 'react-router-dom';
 import documents from '../../assets/images/documents.svg'
-import { selectMatterFoldersData, selectMatterFoldersLoading } from '../../utils/Apis/matters/getMatterFolders/getMattersFoldersSelectors';
-import { useDispatch, useSelector } from 'react-redux';
 import AllFolders from './Folders/AllFolders';
-import { getUserSID } from '../../utils/helpers';
-import { createMatterFiles } from '../../utils/Apis/matters/createMatterFiles/createMatterFilesActions';
 import GeneralModal from './Modals/GeneralModal';
-import { selectCreateFoldersData } from '../../utils/Apis/matters/createMatterFolders/createMatterFoldersSelectors';
-import { createMatterFolder } from '../../utils/Apis/matters/createMatterFolders/createMatterFoldersActions';
-import { getMatterFolders } from '../../utils/Apis/matters/getMatterFolders/getMattersFoldersActions';
 import CalculationPDf from './Documents/CalculationPdf';
 import { formsService } from '../../services/formsService';
 
@@ -57,51 +50,22 @@ function FolderStructure({ matter_id, matterData }) {
     const [showAddFolderModal, setShowAddFolderModal] = useState(false)
     const [validationError, setValidationError] = useState(false)
     const history = useHistory();
-    // const selectFolders = useSelector(selectMatterFoldersData)
     const [newFolderName, setNewFolderName] = useState('')
 
-    const dispatch = useDispatch();
-
-    const selectFolders = useSelector(selectMatterFoldersData)
-    const selectFolderLoading = useSelector(selectMatterFoldersLoading)
-
-
     useEffect(() => {
-        if (!matter_id) {
-            console.error("matter_id is missing:", matter_id);
-            return;
-        }
-        console.log("Dispatching getMatterFolders with matter_id:", matter_id);
-        dispatch(getMatterFolders(matter_id));
-    }, [matter_id, dispatch]);
+        if (!matter_id) return;
+        formsService.listFolders(matter_id)
+            .then((result) => setFolders(result.map((folder) => ({
+                title: folder.title, folder_id: folder.id, matter_id,
+                created: folder.createdAt || folder.created, type: folder.type,
+            }))))
+            .catch(() => setFolders([]));
+    }, [matter_id]);
 
 
     const handleBackDirClick = () => {
         setCurrentFolder(null);
-        setFolders(selectFolders.body)
     }
-
-
-    useEffect(() => {
-        if (selectFolders) {
-            const selectedFolders = selectFolders?.body
-
-            // const foldersData = selectedFolders.filter(item => item.type === 'Folder');
-            const foldersData = selectedFolders.map(folder => (
-                {
-                    title: folder.title,
-                    folder_id: folder.id,
-                    matter_id: folder.matter_id,
-                    created: folder.created,
-                    type: folder.type,
-                    contents: folder.contents
-
-                }
-            ));
-
-            setFolders(foldersData);
-        }
-    }, [selectFolders, selectFolderLoading])
 
 
     const [folders, setFolders] = useState([]);
@@ -127,49 +91,6 @@ function FolderStructure({ matter_id, matterData }) {
         }
     };
 
-
-    const formsData = (data) => {
-        const newDirStack = [currentFolder]
-
-        data.forEach(category => {
-            category.forms.forEach(form => {
-                const fileExists = currentFolder.contents.filter(file => file.docId === form.docId);
-                if (fileExists && form.checked) {
-                    const folderID = currentFolder;
-
-                    const newFileData = {
-                        sid: getUserSID(),
-                        matter_id: folderID.matter_id,
-                        folder_id: folderID.folder_id || folderID.id,
-                        file_name: form.file_name,
-                        docId: form.docId,
-                        status: 'Open',
-                        type: 'form'
-                    }
-
-                    dispatch(createMatterFiles(newFileData));
-
-                    const newFile = {
-                        id: form.id,
-                        title: form.title,
-                        createdOn: new Date().toISOString(),                        
-                        status: 'Open',
-                        docId: form.docId,
-                        file_name: form.file_name,
-                        folder_id: folderID.folder_id || folderID.id,
-                        signOff: 'NC, VL',
-                        type: 'form'
-                    }
-
-                    console.log("🚀 ~ formsData ~ newFile:", newFile)
-
-                    newDirStack[newDirStack.length - 1].contents.push(newFile)
-                }
-            })
-
-        })
-
-    }
 
     useEffect(() => {
         if (newFolderName !== '') {
@@ -210,39 +131,22 @@ function FolderStructure({ matter_id, matterData }) {
 
 
 
-        const newDirectory = {
-            title: newFolderName,
-            matter_id: matter_id,
-            sid: getUserSID(),
-            type: 'Folder'
+        try {
+            const folder = await formsService.createFolder(matter_id, newFolderName, 'Folder');
+            setFolders((current) => [...current, {
+                title: folder.title, folder_id: folder.id, matter_id,
+                created: folder.createdAt || folder.created, type: folder.type,
+            }]);
+            setShowAddFolderModal(false);
+            setNewFolderName('');
+            setValidationError(false);
+        } catch {
+            setValidationError({ newFolderName: 'Could not create folder' });
         }
-
-        await dispatch(createMatterFolder(newDirectory))
-
-        setShowAddFolderModal(false)
-
-        const newDir = {
-            title: newFolderName,
-            folder_id: selectFolder?.body?.folder_id,
-            matter_id: matter_id,
-            created: '',
-            type: 'Folder',
-            contents: []
-        }
-
-        setFolders([...folders, newDir])
-
-        dispatch(getMatterFolders(matter_id))
-
-        setNewFolderName('')
-
-        setValidationError(false)
 
 
 
     }
-
-    const selectFolder = useSelector(selectCreateFoldersData);
 
     return (
         <div className='document-container'>
@@ -280,7 +184,6 @@ function FolderStructure({ matter_id, matterData }) {
                 </div>
                 <CalculationPDf
                   files={currentFolder.contents || []}
-                  formsData={formsData}
                   matterId={matter_id}
                   province={matterData?.province}
                   folder_id={currentFolder.id || currentFolder.folder_id}
