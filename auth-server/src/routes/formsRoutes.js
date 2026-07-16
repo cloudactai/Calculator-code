@@ -74,7 +74,8 @@ async function prefillFields(matter, mapping) {
 
 // Catalog response intentionally keeps the source UI's field names.
 router.get("/forms", async (req, res) => {
-  const province = String(req.query.province || "").toUpperCase();
+  const provinceInput = String(req.query.province || "").trim().toUpperCase();
+  const province = { ONTARIO: "ON", ALBERTA: "AB", "BRITISH COLUMBIA": "BC" }[provinceInput] || provinceInput;
   const where = {
     ...(province ? { province } : {}),
     ...(req.query.production_ready === "true" ? { productionReady: true } : {}),

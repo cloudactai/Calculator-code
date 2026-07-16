@@ -10,7 +10,7 @@ const CustomCheckbox = ({ id, label, onChange, checked, docId }) => {
                 id={id}
                 docId= {docId}
                 checked={checked}
-                onChange={e => onChange(id, e.target.checked, docId)}
+                onChange={e => onChange?.(id, e.target.checked, docId)}
             />
             <span className='checkmark'></span>
         </label>
