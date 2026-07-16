@@ -18,7 +18,7 @@ async function main() {
   await prisma.$disconnect();
   if (count < catalog.length) {
     console.log(`Forms catalog has ${count}/${catalog.length} templates; completing import.`);
-    run(process.execPath, [path.join(__dirname, "import-form-templates-render-safe.js")]);
+    run(process.execPath, [path.join(__dirname, "import-form-templates.js"), "form-template-export"]);
   } else {
     console.log(`Forms catalog already complete (${count}/${catalog.length}).`);
   }

@@ -154,6 +154,7 @@ model FormTemplateVersion {
   templateId      Int
   version         Int
   pdfBytes        Bytes?
+  pdfPath         String?
   fieldMapping    Json?
   pageCount       Int?
   pdfChecksum     String?

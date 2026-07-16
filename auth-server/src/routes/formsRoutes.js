@@ -1,5 +1,6 @@
 const crypto = require("crypto");
 const express = require("express");
+const path = require("path");
 const prisma = require("../../prismaClient");
 const { authMiddleware } = require("../middleware/authMiddleware");
 
@@ -91,8 +92,14 @@ router.get("/fetch-pdf", async (req, res) => {
     where: { active: true, template: { OR: [{ fileName }, { docId }] } },
     orderBy: { version: "desc" },
   });
-  if (!version?.pdfBytes) return res.status(404).json(legacyError("PDF template is unavailable."));
+  if (!version || (!version.pdfBytes && !version.pdfPath)) return res.status(404).json(legacyError("PDF template is unavailable."));
   res.type("application/pdf");
+  if (version.pdfPath) {
+    const templatesRoot = path.resolve(__dirname, "..", "..", "form-template-export");
+    const filePath = path.resolve(templatesRoot, version.pdfPath);
+    if (!filePath.startsWith(`${templatesRoot}${path.sep}`)) return res.status(400).json(legacyError("Invalid PDF template path.", 400));
+    return res.sendFile(filePath);
+  }
   return res.send(Buffer.from(version.pdfBytes));
 });
 
