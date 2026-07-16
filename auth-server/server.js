@@ -20,7 +20,7 @@ const calculatorDataRoutes = require("./src/routes/calculatorDataRoutes");
 const formsRoutes = require("./src/routes/formsRoutes");
 
 const app = express();
-const REQUEST_SIZE_LIMIT = "5mb"; // room for base64 avatar uploads
+const REQUEST_SIZE_LIMIT = "30mb"; // supports a base64-encoded completed PDF up to the 20 MB Forms limit
 
 // ── CORS ────────────────────────────────────────────────────────────────────
 // Allow the Vercel frontend origin(s) from FRONTEND_URL (comma-separated

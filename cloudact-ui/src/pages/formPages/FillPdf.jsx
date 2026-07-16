@@ -17,7 +17,7 @@ import Loader from "../../components/Loader";
 import axios from "../../utils/axios";
 import { formsService } from "../../services/formsService";
 
-pdfjs.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
+pdfjs.GlobalWorkerOptions.workerSrc = `${process.env.PUBLIC_URL || ""}/pdf.worker.min.mjs`;
 
 const FillPdf = ({ currentUserRole }) => {
   const location = useLocation();
@@ -46,6 +46,14 @@ const FillPdf = ({ currentUserRole }) => {
   const [isSaving, setIsSaving] = useState(false);
   const [remoteDocument, setRemoteDocument] = useState(null);
   const [loadError, setLoadError] = useState("");
+
+  useEffect(() => () => {
+    if (pdfUrl) URL.revokeObjectURL(pdfUrl);
+  }, [pdfUrl]);
+
+  useEffect(() => () => {
+    if (blobUrl) URL.revokeObjectURL(blobUrl);
+  }, [blobUrl]);
 
   useEffect(() => {
     if (!routeMatterNumber || !routeDocumentId) return;
@@ -1769,6 +1777,24 @@ const FillPdf = ({ currentUserRole }) => {
     const pdfBytes = await pdfDoc.save();
     const blob = new Blob([pdfBytes], { type: 'application/pdf' });
     const pdfBlobUrl = URL.createObjectURL(blob);
+    const pdfBase64 = await new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onerror = () => reject(reader.error || new Error("Could not prepare PDF upload."));
+      reader.onload = () => resolve(reader.result);
+      reader.readAsDataURL(blob);
+    });
+    try {
+      const saved = await formsService.saveGeneratedPdf(routeMatterNumber, remoteDocument.id, pdfBase64);
+      toast.success(`Completed PDF revision ${saved.revision} saved.`);
+    } catch (error) {
+      URL.revokeObjectURL(pdfBlobUrl);
+      toast.error("Could not save the completed PDF.");
+      return;
+    }
+    const download = document.createElement("a");
+    download.href = pdfBlobUrl;
+    download.download = `${activeForm?.file_name || "completed-form"}`.replace(/\.pdf$/i, "") + "-completed.pdf";
+    download.click();
     setShowAddFolderModal(true);
     setBlobUrl(pdfBlobUrl);
   };
