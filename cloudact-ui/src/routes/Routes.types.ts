@@ -53,6 +53,7 @@ export enum AUTH_ROUTES {
   FIVE_STEPS = "/5-steps/:id",
   SINGLE_MATTER = "/single-matter/:id",
   FORMS_CREATE_NEW = "/forms/create-new",
+  FORMS_CREATE_NEW_FILL_PDF = "/forms/create-new/fill-pdf",
   FORMS_CREATE_NEW_FILL_INFORMATION = "/forms/create-new/fill-information",
 
   // Super admin
