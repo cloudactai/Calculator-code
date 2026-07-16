@@ -203,6 +203,7 @@ const CreateNewFormPage = ({ currentUserRole }) => {
                             <p>
                               Selected Matter Province:{" "}
                               <strong>{matterData.province}</strong>
+                            </p>
                             <p>
                               Client Name:{" "}
                               <strong>{matterData.client_id}</strong>
