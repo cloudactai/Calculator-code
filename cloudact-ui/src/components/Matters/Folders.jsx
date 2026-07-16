@@ -12,6 +12,27 @@ function MatterFormsList({ matterNumber, folderId }) {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
 
+    const renameDocument = async (document) => {
+        const name = window.prompt('Form name', document.file_name);
+        if (!name?.trim() || name.trim() === document.file_name) return;
+        try {
+            await formsService.renameDocument(matterNumber, document.id, name.trim());
+            setDocuments((current) => current.map((item) => item.id === document.id ? { ...item, file_name: name.trim() } : item));
+        } catch {
+            setError('Could not rename this form.');
+        }
+    };
+
+    const deleteDocument = async (document) => {
+        if (!window.confirm(`Delete ${document.file_name}?`)) return;
+        try {
+            await formsService.deleteDocument(matterNumber, document.id);
+            setDocuments((current) => current.filter((item) => item.id !== document.id));
+        } catch {
+            setError('Could not delete this form.');
+        }
+    };
+
     useEffect(() => {
         let active = true;
         setLoading(true);
@@ -36,7 +57,11 @@ function MatterFormsList({ matterNumber, folderId }) {
                             <td>{document.file_name}</td>
                             <td>{document.status.replace(/_/g, ' ')}</td>
                             <td>{new Date(document.updated).toLocaleDateString()}</td>
-                            <td><button className="btn btnPrimary rounded-pill" onClick={() => history.push(`/matters/${encodeURIComponent(matterNumber)}/forms/${document.id}`)}>Open</button></td>
+                            <td className="d-flex gap-2">
+                                <button className="btn btnPrimary rounded-pill" onClick={() => history.push(`/matters/${encodeURIComponent(matterNumber)}/forms/${document.id}`)}>Open</button>
+                                <button className="btn btnSecondary rounded-pill" onClick={() => renameDocument(document)}>Rename</button>
+                                <button className="btn btnSecondary rounded-pill" onClick={() => deleteDocument(document)}>Delete</button>
+                            </td>
                         </tr>
                     ))}
                 </tbody>
