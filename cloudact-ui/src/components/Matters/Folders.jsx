@@ -11,6 +11,46 @@ import { selectCreateFoldersData } from '../../utils/Apis/matters/createMatterFo
 import { createMatterFolder } from '../../utils/Apis/matters/createMatterFolders/createMatterFoldersActions';
 import { getMatterFolders } from '../../utils/Apis/matters/getMatterFolders/getMattersFoldersActions';
 import CalculationPDf from './Documents/CalculationPdf';
+import { formsService } from '../../services/formsService';
+
+function MatterFormsList({ matterNumber, folderId }) {
+    const history = useHistory();
+    const [documents, setDocuments] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState('');
+
+    useEffect(() => {
+        let active = true;
+        setLoading(true);
+        formsService.listDocuments(matterNumber, folderId)
+            .then((result) => active && setDocuments(result))
+            .catch(() => active && setError('Could not load forms in this folder.'))
+            .finally(() => active && setLoading(false));
+        return () => { active = false; };
+    }, [matterNumber, folderId]);
+
+    if (loading) return <div className="description">Loading forms…</div>;
+    if (error) return <div className="description text-danger" role="alert">{error}</div>;
+    if (!documents.length) return <div className="description">No forms have been created in this folder yet.</div>;
+
+    return (
+        <div className="documents-table mt-3">
+            <table className="table reports-table reports-table-primary">
+                <thead><tr><th>Form</th><th>Status</th><th>Updated</th><th /></tr></thead>
+                <tbody>
+                    {documents.map((document) => (
+                        <tr key={document.id}>
+                            <td>{document.file_name}</td>
+                            <td>{document.status.replace(/_/g, ' ')}</td>
+                            <td>{new Date(document.updated).toLocaleDateString()}</td>
+                            <td><button className="btn btnPrimary rounded-pill" onClick={() => history.push(`/matters/${encodeURIComponent(matterNumber)}/forms/${document.id}`)}>Open</button></td>
+                        </tr>
+                    ))}
+                </tbody>
+            </table>
+        </div>
+    );
+}
 
 function FolderStructure({ matter_id, matterData }) {
     console.log("🚀 ~ FolderStructure ~ matter_id:", matter_id)
@@ -222,9 +262,13 @@ function FolderStructure({ matter_id, matterData }) {
                 <div className="info">
                   <div className="breadcrumbs"> {currentFolder.title} </div>{" "}
                   <div className="description">
-                    Document management for this folder is coming soon.{" "}
+                    Forms created for this matter are saved here.
                   </div>{" "}
                 </div>
+                <MatterFormsList
+                  matterNumber={matter_id}
+                  folderId={currentFolder.id || currentFolder.folder_id}
+                />
               </>
             ) : (
               <>

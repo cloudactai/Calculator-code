@@ -443,6 +443,12 @@ const Routes = () => {
         </AuthUser>
       </Route>
 
+      <Route path="/matters/:matterNumber/forms/:documentId">
+        <AuthUser sidAccess={accessPagesState?.auth_forms} usersAuth={rl_all}>
+          <FillPdf />
+        </AuthUser>
+      </Route>
+
       <Route path={AUTH_ROUTES.MATTER_DASHBOARD}>
         <AuthUser sidAccess={accessPagesState?.auth_matters} usersAuth={rl_all}>
           <MatterDashboard />
@@ -452,12 +458,6 @@ const Routes = () => {
       <Route path={AUTH_ROUTES.SINGLE_MATTER}>
         <AuthUser sidAccess={accessPagesState?.auth_matters} usersAuth={rl_all}>
           <SingleMatter />
-        </AuthUser>
-      </Route>
-
-      <Route path="/matters/:matterNumber/forms/:documentId">
-        <AuthUser sidAccess={accessPagesState?.auth_forms} usersAuth={rl_all}>
-          <FillPdf />
         </AuthUser>
       </Route>
 
