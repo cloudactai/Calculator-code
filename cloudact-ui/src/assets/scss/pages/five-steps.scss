@@ -19,23 +19,6 @@ main {
 }
 
 .five-steps-page {
-  &__back {
-    display: inline-flex;
-    align-items: center;
-    gap: 7px;
-    padding: 0;
-    border: 0;
-    background: transparent;
-    color: #3498db;
-    font-size: 15px;
-    font-weight: 600;
-    cursor: pointer;
-
-    &:hover {
-      color: #56b4f5;
-    }
-  }
-
   .text {
     font-size: 16px;
     font-weight: 600;

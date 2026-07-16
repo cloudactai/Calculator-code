@@ -277,8 +277,20 @@ const FiveStepsPage = () => {
               <div className="col-12 col-md-3 d-flex align-items-center">
                 <button
                   type="button"
-                  className="five-steps-page__back"
+                  className="sm-back-btn"
                   onClick={() => history.push(`/single-matter/${id}`)}
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: "6px",
+                    background: "transparent",
+                    border: "none",
+                    color: "inherit",
+                    font: "inherit",
+                    cursor: "pointer",
+                    padding: "4px 0",
+                    opacity: 0.85,
+                  }}
                 >
                   <svg
                     width="18"
