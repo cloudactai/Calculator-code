@@ -14,11 +14,23 @@ function run(command, args) {
 }
 
 async function main() {
-  const count = await prisma.formTemplate.count();
+  const [count, incompleteVersions] = await Promise.all([
+    prisma.formTemplate.count(),
+    prisma.formTemplateVersion.count({
+      where: {
+        active: true,
+        OR: [
+          { pdfPath: null },
+          { pdfChecksum: null },
+          { mappingChecksum: null },
+        ],
+      },
+    }),
+  ]);
   await prisma.$disconnect();
-  if (count < catalog.length) {
-    console.log(`Forms catalog has ${count}/${catalog.length} templates; completing import.`);
-    run(process.execPath, [path.join(__dirname, "import-form-templates.js"), "form-template-export"]);
+  if (count < catalog.length || incompleteVersions > 0) {
+    console.log(`Forms catalog requires refresh (${count}/${catalog.length} templates, ${incompleteVersions} incomplete versions).`);
+    run(process.execPath, [path.join(__dirname, "import-form-templates-render-safe.js")]);
   } else {
     console.log(`Forms catalog already complete (${count}/${catalog.length}).`);
   }
