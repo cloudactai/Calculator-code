@@ -45,6 +45,14 @@ function renderPage() {
   );
 }
 
+test("Back to Tasks returns to the matter task list", async () => {
+  renderPage();
+
+  fireEvent.click(await screen.findByRole("button", { name: "Back to Tasks" }));
+
+  expect(await screen.findByText("TASK LIST")).toBeInTheDocument();
+});
+
 test("renders all sections (no crash) and auto-saves a section on edit", async () => {
   renderPage();
 
