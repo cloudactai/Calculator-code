@@ -19,6 +19,26 @@ router.use((req, res, next) => {
   return res.status(503).json({ message: "The Forms service is temporarily unavailable." });
 });
 
+const formsRequestMetricsEnabled = !["false", "0", "off"].includes(
+  String(process.env.FORMS_REQUEST_METRICS || "true").trim().toLowerCase()
+);
+router.use((req, res, next) => {
+  if (!formsRequestMetricsEnabled) return next();
+  const startedAt = process.hrtime.bigint();
+  res.on("finish", () => {
+    // Keep production telemetry free of matter numbers, user IDs, and field values.
+    if (req.method !== "GET" || res.statusCode >= 400) {
+      console.info(JSON.stringify({
+        event: "forms_request",
+        method: req.method,
+        status: res.statusCode,
+        durationMs: Number(process.hrtime.bigint() - startedAt) / 1e6,
+      }));
+    }
+  });
+  return next();
+});
+
 const normaliseFolderTitle = (value) => String(value || "").trim().replace(/\s+/g, " ").toLocaleLowerCase();
 
 async function matterForUser(userId, matterNumber) {
@@ -382,6 +402,10 @@ router.put("/matters/:matterNumber/forms/:documentId/pdf", async (req, res) => {
   if (!Number.isInteger(expectedRevision) || expectedRevision < 0) {
     return res.status(400).json({ message: "A generated PDF revision is required." });
   }
+  const generationMs = Number(req.body?.generationMs);
+  if (req.body?.generationMs != null && (!Number.isFinite(generationMs) || generationMs < 0 || generationMs > 30 * 60 * 1000)) {
+    return res.status(400).json({ message: "Invalid PDF generation duration." });
+  }
   const checksum = crypto.createHash("sha256").update(pdf).digest("hex");
   let document;
   try {
@@ -413,6 +437,12 @@ router.put("/matters/:matterNumber/forms/:documentId/pdf", async (req, res) => {
     throw error;
   }
   if (!document) return res.status(404).json({ message: "Form document not found." });
+  console.info(JSON.stringify({
+    event: "forms_pdf_saved",
+    revision: document.generatedPdfRevision,
+    pdfBytes: pdf.length,
+    ...(Number.isFinite(generationMs) ? { generationMs } : {}),
+  }));
   return res.json({ data: { checksum, revision: document.generatedPdfRevision, created: document.generatedAt } });
 });
 

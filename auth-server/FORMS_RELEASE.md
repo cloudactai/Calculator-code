@@ -16,3 +16,11 @@ specific administrators, set `FORMS_TEMPLATE_ADMIN_USER_IDS` to their comma-sepa
 database user IDs. If it is unset, publication is denied rather than relying on the
 client-side Super Admin route guard. Existing form documents continue to load the exact
 template version they were created with.
+
+## Monitoring signals
+
+Forms requests emit structured Render logs by default: `forms_request` for writes
+and failures (including `409` save conflicts), and `forms_pdf_saved` for completed
+PDF revisions. The latter includes only revision number, PDF byte size, and client
+generation duration—never a matter number, user ID, or field value. Set
+`FORMS_REQUEST_METRICS=false` only if this logging must be disabled.

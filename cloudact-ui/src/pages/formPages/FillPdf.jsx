@@ -1647,6 +1647,7 @@ const FillPdf = ({ currentUserRole }) => {
   }
 
   const savePdf = async () => {
+    const generationStartedAt = Date.now();
     if (!fields || !Array.isArray(fields)) {
       console.error("Fields is null or not an array.");
       return;
@@ -1785,7 +1786,13 @@ const FillPdf = ({ currentUserRole }) => {
       reader.readAsDataURL(blob);
     });
     try {
-      const saved = await formsService.saveGeneratedPdf(routeMatterNumber, remoteDocument.id, remoteDocument.generated_pdf_revision, pdfBase64);
+      const saved = await formsService.saveGeneratedPdf(
+        routeMatterNumber,
+        remoteDocument.id,
+        remoteDocument.generated_pdf_revision,
+        pdfBase64,
+        Date.now() - generationStartedAt
+      );
       setRemoteDocument((document) => ({ ...document, generated_pdf_revision: saved.revision }));
       toast.success(`Completed PDF revision ${saved.revision} saved.`);
     } catch (error) {
