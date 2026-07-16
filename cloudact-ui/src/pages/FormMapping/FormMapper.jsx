@@ -54,7 +54,7 @@ const FormMapper = () => {
 
   const fetchFormPdf = async (formName) => {
     try {
-      const response = await axios.get(`/fetch-pdf?fileName=${formName}.pdf`, {
+      const response = await axios.get(`/form-templates/${encodeURIComponent(formName)}/versions/1/pdf`, {
         responseType: "blob",
       });
       const pdfBlob = new Blob([response.data], { type: "application/pdf" });
@@ -67,7 +67,7 @@ const FormMapper = () => {
 
   const fetchFormJson = async (jsonName) => {
     try {
-      const response = await axios.get(`/fetch-json?fileName=${jsonName}.json`);
+      const response = await axios.get(`/form-templates/${encodeURIComponent(jsonName)}/versions/1/mapping`);
       setJsonData(response.data.staticFields);
     } catch (error) {
       console.error("Error fetching the JSON:", error);
@@ -76,7 +76,7 @@ const FormMapper = () => {
 
   const fetchProvinces = async () => {
     try {
-      const res = await axios.get("/get-form-provinces");
+      const res = await axios.get("/form-template-provinces");
       const options = res.data.data.map((prov) => ({
         label: provinceNameMap[prov.province] || prov.province,
         value: prov.province,

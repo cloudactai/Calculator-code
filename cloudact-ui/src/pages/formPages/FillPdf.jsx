@@ -69,6 +69,7 @@ const FillPdf = ({ currentUserRole }) => {
           shortTitle: document.file_name,
           folder_id: document.folder_id,
           revision: document.revision,
+          template_version: document.template_version,
         };
         setForms([form]);
         setActiveForm(form);
@@ -123,9 +124,9 @@ const FillPdf = ({ currentUserRole }) => {
     return initialForms.length > 0 ? initialForms[0] : null;
   });
 
-  const fetchFormPdf = async (formName) => {
+  const fetchFormPdf = async (form) => {
     try {
-      const response = await axios.get(`/fetch-pdf?fileName=${formName}.pdf`, {
+      const response = await axios.get(`/form-templates/${encodeURIComponent(form.docId)}/versions/${form.template_version}/pdf`, {
         responseType: "blob",
       });
       const pdfBlob = new Blob([response.data], { type: "application/pdf" });
@@ -138,7 +139,7 @@ const FillPdf = ({ currentUserRole }) => {
 
   useEffect(() => {
     if (activeForm?.docId) {
-      fetchFormPdf(activeForm.docId);
+      fetchFormPdf(activeForm);
     }
   }, [activeForm]);
 

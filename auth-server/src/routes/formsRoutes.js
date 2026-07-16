@@ -19,8 +19,6 @@ router.use((req, res, next) => {
   return res.status(503).json({ message: "The Forms service is temporarily unavailable." });
 });
 
-const legacyOk = (body) => ({ data: { code: 200, status: "success", body } });
-const legacyError = (message, code = 404) => ({ data: { code, status: "error", message } });
 const normaliseFolderTitle = (value) => String(value || "").trim().replace(/\s+/g, " ").toLocaleLowerCase();
 
 async function matterForUser(userId, matterNumber) {
@@ -71,6 +69,33 @@ function documentDto(document) {
     created: document.createdAt,
     updated: document.updatedAt,
   };
+}
+
+async function activeTemplateVersion(docId, version) {
+  return prisma.formTemplateVersion.findFirst({
+    where: {
+      active: true,
+      ...(Number.isInteger(version) ? { version } : {}),
+      template: { docId },
+    },
+    orderBy: { version: "desc" },
+  });
+}
+
+function sendTemplatePdf(res, version) {
+  if (!version || (!version.pdfBytes && !version.pdfPath)) {
+    return res.status(404).json({ message: "PDF template is unavailable." });
+  }
+  res.type("application/pdf");
+  if (version.pdfPath) {
+    const templatesRoot = path.resolve(__dirname, "..", "..", "form-template-export");
+    const filePath = path.resolve(templatesRoot, version.pdfPath);
+    if (!filePath.startsWith(`${templatesRoot}${path.sep}`)) {
+      return res.status(400).json({ message: "Invalid PDF template path." });
+    }
+    return res.sendFile(filePath);
+  }
+  return res.send(Buffer.from(version.pdfBytes));
 }
 
 async function buildPrefillData(matter, userId) {
@@ -145,6 +170,16 @@ router.get("/forms", async (req, res) => {
   return res.json({ data: templates.map(templateDto) });
 });
 
+router.get("/form-template-provinces", async (req, res) => {
+  const provinces = await prisma.formTemplate.findMany({
+    where: { productionReady: true, mappingReady: true },
+    distinct: ["province"],
+    select: { province: true },
+    orderBy: { province: "asc" },
+  });
+  return res.json({ data: provinces });
+});
+
 router.get("/matters", async (req, res) => {
   const matters = await prisma.matter.findMany({
     where: { userId: req.user.id },
@@ -187,32 +222,24 @@ router.put("/matters/:matterNumber/task-states/:taskKey", async (req, res) => {
   return res.json({ data: taskState });
 });
 
-router.get("/fetch-pdf", async (req, res) => {
-  const fileName = String(req.query.fileName || "");
-  if (!/^[\w.-]+\.pdf$/i.test(fileName)) return res.status(400).json(legacyError("Invalid file name.", 400));
-  const docId = fileName.replace(/\.pdf$/i, "");
-  const version = await prisma.formTemplateVersion.findFirst({
-    where: { active: true, template: { OR: [{ fileName }, { docId }] } },
-    orderBy: { version: "desc" },
-  });
-  if (!version || (!version.pdfBytes && !version.pdfPath)) return res.status(404).json(legacyError("PDF template is unavailable."));
-  res.type("application/pdf");
-  if (version.pdfPath) {
-    const templatesRoot = path.resolve(__dirname, "..", "..", "form-template-export");
-    const filePath = path.resolve(templatesRoot, version.pdfPath);
-    if (!filePath.startsWith(`${templatesRoot}${path.sep}`)) return res.status(400).json(legacyError("Invalid PDF template path.", 400));
-    return res.sendFile(filePath);
+router.get("/form-templates/:docId/versions/:version/pdf", async (req, res) => {
+  const docId = String(req.params.docId || "");
+  const version = Number(req.params.version);
+  if (!/^[\w.-]+$/.test(docId) || !Number.isInteger(version) || version < 1) {
+    return res.status(400).json({ message: "Invalid template version." });
   }
-  return res.send(Buffer.from(version.pdfBytes));
+  return sendTemplatePdf(res, await activeTemplateVersion(docId, version));
 });
 
-router.get("/fetch-json", async (req, res) => {
-  const fileName = String(req.query.fileName || "");
-  if (!/^[\w.-]+\.json$/i.test(fileName)) return res.status(400).json(legacyError("Invalid file name.", 400));
-  const stem = fileName.replace(/\.json$/i, "");
-  const version = await prisma.formTemplateVersion.findFirst({ where: { active: true, template: { docId: stem } }, orderBy: { version: "desc" } });
-  if (!version?.fieldMapping) return res.status(404).json(legacyError("Field mapping is unavailable."));
-  return res.json(version.fieldMapping);
+router.get("/form-templates/:docId/versions/:version/mapping", async (req, res) => {
+  const docId = String(req.params.docId || "");
+  const version = Number(req.params.version);
+  if (!/^[\w.-]+$/.test(docId) || !Number.isInteger(version) || version < 1) {
+    return res.status(400).json({ message: "Invalid template version." });
+  }
+  const templateVersion = await activeTemplateVersion(docId, version);
+  if (!templateVersion?.fieldMapping) return res.status(404).json({ message: "Field mapping is unavailable." });
+  return res.json(templateVersion.fieldMapping);
 });
 
 router.post("/matters/:matterNumber/forms", async (req, res) => {
