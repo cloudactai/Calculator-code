@@ -36,6 +36,14 @@ function templateDto(template) {
   };
 }
 
+function matterDto(matter) {
+  return {
+    matterNumber: matter.matterNumber,
+    client_id: matter.clientName,
+    province: matter.province,
+  };
+}
+
 function documentDto(document) {
   const template = document.templateVersion.template;
   return {
@@ -109,6 +117,21 @@ router.get("/forms", async (req, res) => {
   };
   const templates = await prisma.formTemplate.findMany({ where, orderBy: [{ sortOrder: "asc" }, { title: "asc" }] });
   return res.json({ data: templates.map(templateDto) });
+});
+
+router.get("/matters", async (req, res) => {
+  const matters = await prisma.matter.findMany({
+    where: { userId: req.user.id },
+    orderBy: { updatedAt: "desc" },
+    select: { matterNumber: true, clientName: true, province: true },
+  });
+  return res.json({ data: matters.map(matterDto) });
+});
+
+router.get("/matters/:matterNumber", async (req, res) => {
+  const matter = await matterForUser(req.user.id, req.params.matterNumber);
+  if (!matter) return res.status(404).json({ message: "Matter not found." });
+  return res.json({ data: matterDto(matter) });
 });
 
 router.get("/matters/:matterNumber/task-states", async (req, res) => {

@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useSelector, useDispatch } from "react-redux";
+import { useSelector } from "react-redux";
 import { useHistory } from "react-router-dom";
 
 import Layout from "../../components/LayoutComponents/Layout";
@@ -10,37 +10,22 @@ import new_form from "../../assets/images/new_form.svg";
 import laptop_gears from "../../assets/images/laptop_gears.svg";
 import searchIcon from "../../assets/images/search.svg";
 import cross from "../../assets/images/cross.svg";
-import { getAllMatters } from "../../utils/Apis/matters/getMatters/getMattersActions";
-import {
-  selectMattersData,
-  selectMattersLoading,
-} from "../../utils/Apis/matters/getMatters/getMattersSelectors";
 import Loader from "../../components/Loader";
 import CustomDropDown from "../../components/Matters/Form/CustomDropdown";
 import { FormsArray } from "../../utils/matterData/MatterFormData";
-import { selectSingleMatterData } from "../../utils/Apis/matters/getSingleMatter/getSingleMattersSelectors";
-import {
-  getSingleMatter,
-  getSingleMatterReset,
-} from "../../utils/Apis/matters/getSingleMatter/getSingleMattersActions";
 import { formsService } from "../../services/formsService";
 
 const CreateNewFormPage = ({ currentUserRole }) => {
-  const dispatch = useDispatch();
-
   const { response } = useSelector((state) => state.userProfileInfo);
   const [showAddFormModal, setShowAddFormModal] = useState(false);
   const [matterData, setMatterData] = useState(null);
+  const [matters, setMatters] = useState([]);
+  const [isMattersLoading, setIsMattersLoading] = useState(true);
 
   const [formData, setFormData] = useState({
     clientName: "",
     matterNumber: "",
   });
-
-  // useEffect(() => {
-  //     const { formsArrayData } = FormsArray(matterData?.province);
-  //     setForms(formsArrayData)
-  // }, [matterData])
 
   useEffect(() => {
     const fetchForms = async () => {
@@ -62,28 +47,13 @@ const CreateNewFormPage = ({ currentUserRole }) => {
   }, [matterData]);
 
   useEffect(() => {
-    if (formData.matterNumber) {
-      dispatch(getSingleMatter(formData?.matterNumber));
-    }
-
-    return () => {
-      // Reset the matter data when the component unmounts
-      dispatch(getSingleMatterReset());
-      setMatterData(null);
-    };
-  }, [dispatch, formData]);
-
-  const selectSingleMatter = useSelector(selectSingleMatterData);
-
-  useEffect(() => {
-    if (
-      selectSingleMatter &&
-      selectSingleMatter.body[0] &&
-      matterData === null
-    ) {
-      setMatterData(selectSingleMatter.body[0]);
-    }
-  }, [selectSingleMatter, matterData]);
+    if (!formData.matterNumber) return;
+    let active = true;
+    formsService.getMatterContext(formData.matterNumber)
+      .then((matter) => { if (active) setMatterData(matter); })
+      .catch(() => { if (active) setMatterData(null); });
+    return () => { active = false; };
+  }, [formData.matterNumber]);
 
   const [search, setSearch] = useState("");
 
@@ -97,21 +67,21 @@ const CreateNewFormPage = ({ currentUserRole }) => {
   };
 
   useEffect(() => {
-    dispatch(getAllMatters());
-  }, [dispatch]);
+    let active = true;
+    formsService.listMatters()
+      .then((result) => { if (active) setMatters(Array.isArray(result) ? result : []); })
+      .catch(() => { if (active) setMatters([]); })
+      .finally(() => { if (active) setIsMattersLoading(false); });
+    return () => { active = false; };
+  }, []);
 
-  const selectAllMatters = useSelector(selectMattersData);
-
-  const selectAllMattersLoading = useSelector(selectMattersLoading);
-
-  const mattersList = selectAllMatters?.body.map((item) => ({
+  const mattersList = matters.map((item) => ({
     name: item.matterNumber,
     value: item.matterNumber,
   }));
 
   const handleClientNumberChange = (e, li) => {
     setMatterData(null);
-    dispatch(getSingleMatterReset());
     setSelectedFolderId(null);
     setSelectedFolderTitle(null);
     setNewFolderTitle("");
@@ -190,8 +160,8 @@ const CreateNewFormPage = ({ currentUserRole }) => {
 
   return (
     <Layout title={`Welcome ${response?.username ? response.username : ""}`}>
-      {selectAllMattersLoading ? (
-        <Loader isLoading={selectAllMattersLoading} />
+      {isMattersLoading ? (
+        <Loader isLoading={isMattersLoading} />
       ) : (
         <div className="create-new-form-page panel trans">
           <div className="pBody">
@@ -216,7 +186,6 @@ const CreateNewFormPage = ({ currentUserRole }) => {
                               </label>
                               <CustomDropDown
                                 handleChange={handleClientNumberChange}
-                                // list={selectAllMatters.body}
                                 list={mattersList}
                                 curListItem={formData.matterNumber}
                               ></CustomDropDown>

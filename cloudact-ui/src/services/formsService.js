@@ -3,6 +3,8 @@ import axios from "../utils/axios";
 const body = (response) => response.data?.data ?? response.data;
 
 export const formsService = {
+  listMatters: async () => body(await axios.get("/matters")),
+  getMatterContext: async (matterNumber) => body(await axios.get(`/matters/${encodeURIComponent(matterNumber)}`)),
   listTemplates: async (province) => body(await axios.get("/forms", { params: { province, production_ready: true, mapping_ready: true } })),
   createDocuments: async (matterNumber, folderId, templateIds) => body(await axios.post(`/matters/${encodeURIComponent(matterNumber)}/forms`, { folderId, templateIds })),
   getDocument: async (matterNumber, documentId) => body(await axios.get(`/matters/${encodeURIComponent(matterNumber)}/forms/${documentId}`)),
