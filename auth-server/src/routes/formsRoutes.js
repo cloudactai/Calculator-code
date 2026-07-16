@@ -56,8 +56,32 @@ function readPath(source, path) {
 
 async function prefillFields(matter, mapping) {
   const records = await prisma.matterRecord.findMany({ where: { matterId: matter.id } });
-  const data = { matter: { matterNumber: matter.matterNumber, province: matter.province, clientName: matter.clientName } };
-  for (const record of records) data[record.dataType] = record.data;
+  const rows = (type) => {
+    const data = records.find((record) => record.dataType === type)?.data;
+    return Array.isArray(data) ? data : [];
+  };
+  const party = (role) => rows("background").find((item) => item.role === role) || {};
+  const lawyer = (person) => ({
+    fullLegalName: person.lawyerName || "", address: person.lawyerAddress || "",
+    phoneAndFax: person.lawyerPhone || "", email: person.lawyerEmail || "",
+  });
+  const person = (value) => ({
+    fullLegalName: value.name || "", address: value.address || "",
+    phoneAndFax: value.phoneAndFax || value.phone || "", email: value.email || "",
+  });
+  const client = party("Client");
+  const opposingParty = party("Opposing Party");
+  const court = rows("court")[0] || {};
+  const employmentRows = rows("employment");
+  const byRole = (collection, role) => collection.find((item) => item.role === role) || {};
+  const data = {
+    matter: { matterNumber: matter.matterNumber, province: matter.province, clientName: matter.clientName },
+    court_info: { courtName: court.court_name || "", courtFileNumber: court.file_number || "", courtOfficeAddress: court.address || "" },
+    applicant: person(client), applicantsLawyer: lawyer(client),
+    respondent: person(opposingParty), respondentsLawyer: lawyer(opposingParty),
+    employmentStatus: { client: byRole(employmentRows, "Client"), opposingParty: byRole(employmentRows, "Opposing Party") },
+    children: rows("children"), relationship: rows("relationship")[0] || {},
+  };
   const fields = Array.isArray(mapping?.staticFields) ? mapping.staticFields : [];
   const values = {};
   const provenance = {};
