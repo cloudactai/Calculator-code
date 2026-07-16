@@ -123,9 +123,9 @@ const normalizeAssetItem = (assetType, item) => {
 };
 
 // Matter helpers
-async function findMatter(userId, matterParam) {
+async function findMatter(userId, matterParam, db = prisma) {
   const asNumber = Number(matterParam);
-  return prisma.matter.findFirst({
+  return db.matter.findFirst({
     where: {
       userId,
       OR: [
@@ -158,15 +158,15 @@ function matterRow(matter) {
   };
 }
 
-async function getRecordRows(matterId, dataType) {
-  const record = await prisma.matterRecord.findUnique({
+async function getRecordRows(matterId, dataType, db = prisma) {
+  const record = await db.matterRecord.findUnique({
     where: { matterId_dataType: { matterId, dataType } },
   });
   return Array.isArray(record?.data) ? record.data : record?.data ?? [];
 }
 
-async function putRecord(matterId, dataType, data) {
-  await prisma.matterRecord.upsert({
+async function putRecord(matterId, dataType, data, db = prisma) {
+  await db.matterRecord.upsert({
     where: { matterId_dataType: { matterId, dataType } },
     create: { matterId, dataType, data },
     update: { data },
@@ -177,11 +177,11 @@ async function saveRecordRows(
   matterId,
   dataType,
   incomingRows,
-  { merge = false, ...mergeOptions } = {}
+  { merge = false, db = prisma, ...mergeOptions } = {}
 ) {
   let rows = toArray(incomingRows);
   if (merge) {
-    const existingRows = toArray(await getRecordRows(matterId, dataType));
+    const existingRows = toArray(await getRecordRows(matterId, dataType, db));
     rows = mergeRecordRows(existingRows, rows, mergeOptions);
   }
   // Patch mode can append to legacy rows whose ids are not contiguous. Reindex
@@ -189,7 +189,7 @@ async function saveRecordRows(
   const rowsWithIds = merge
     ? rows.map((row, index) => ({ ...row, id: index + 1 }))
     : assignIds(rows);
-  await putRecord(matterId, dataType, rowsWithIds);
+  await putRecord(matterId, dataType, rowsWithIds, db);
   return rowsWithIds;
 }
 
@@ -202,7 +202,7 @@ async function saveRecordRows(
 // the party discriminator the forms hydrate on.
 const withRole = (obj, role) => ({ ...(obj || {}), role });
 
-async function saveSections(matter, info, { merge = false } = {}) {
+async function saveSections(matter, info, { merge = false, db = prisma } = {}) {
   const matterPatch = {};
 
   if (info.Background) {
@@ -213,7 +213,7 @@ async function saveSections(matter, info, { merge = false } = {}) {
         withRole(info.Background.client, "Client"),
         withRole(info.Background.opposingParty, "Opposing Party"),
       ],
-      { merge, identityGroups: [["role"]] }
+      { merge, db, identityGroups: [["role"]] }
     );
   }
 
@@ -226,7 +226,7 @@ async function saveSections(matter, info, { merge = false } = {}) {
       file_number: c.file_number ?? c.fileNumber ?? "",
       address: c.address ?? "",
     }));
-    await saveRecordRows(matter.id, "court", courtRows, { merge, singleton: true });
+    await saveRecordRows(matter.id, "court", courtRows, { merge, db, singleton: true });
   }
 
   if (info.Children) {
@@ -235,7 +235,7 @@ async function saveSections(matter, info, { merge = false } = {}) {
       "children",
       Object.values(info.Children),
       {
-        merge,
+        merge, db,
         identityGroups: [
           ["childName", "dateOfBirth"],
           ["childName"],
@@ -266,7 +266,7 @@ async function saveSections(matter, info, { merge = false } = {}) {
         withRole(normalizeEmployment(info.EmploymentDetails.client), "Client"),
         withRole(normalizeEmployment(info.EmploymentDetails.opposingParty), "Opposing Party"),
       ],
-      { merge, identityGroups: [["role"]] }
+      { merge, db, identityGroups: [["role"]] }
     );
   }
 
@@ -292,8 +292,8 @@ async function saveSections(matter, info, { merge = false } = {}) {
       return [...tag(party.income, "income"), ...tag(party.benefit, "benefit")];
     });
     await saveRecordRows(matter.id, "income_benefits", rows, {
-      merge,
-      identityGroups: [["role", "incomeBenefit", "type"]],
+      merge, db,
+      identityGroups: [["role", "incomeBenefit", "type", "financialYear"]],
     });
     if (!isBlankValue(financialYear)) matterPatch.fyIncomeBenefits = financialYear;
   }
@@ -316,13 +316,13 @@ async function saveSections(matter, info, { merge = false } = {}) {
       matter.id,
       "expenses",
       collect("expenses", "expenses"),
-      { merge, identityGroups: [["role", "type"]] }
+      { merge, db, identityGroups: [["role", "type", "financialYear"]] }
     );
     await saveRecordRows(
       matter.id,
       "special_expenses",
       collect("specialChildExpenses", "specialChildExpenses"),
-      { merge, identityGroups: [["role", "type", "childName"]] }
+      { merge, db, identityGroups: [["role", "type", "childName", "financialYear"]] }
     );
     if (!isBlankValue(financialYear)) matterPatch.fyExpenses = financialYear;
   }
@@ -345,7 +345,7 @@ async function saveSections(matter, info, { merge = false } = {}) {
       }))
     );
     const assetRows = await saveRecordRows(matter.id, "assets", rows, {
-      merge,
+      merge, db,
       identityGroups: [
         ["asset_type", "address_of_property"],
         ["asset_type", "details_op"],
@@ -366,7 +366,7 @@ async function saveSections(matter, info, { merge = false } = {}) {
         ...(typeof mv === "object" && mv !== null ? mv : { value: mv }),
       }))
     );
-    await putRecord(matter.id, "assets_market_value", assignIds(marketValueRows));
+    await putRecord(matter.id, "assets_market_value", assignIds(marketValueRows), db);
     if (!isBlankValue(section.valuation_date)) {
       matterPatch.valuationDate = section.valuation_date;
     }
@@ -378,7 +378,7 @@ async function saveSections(matter, info, { merge = false } = {}) {
       "debts_liabilities",
       toArray(info.DebtsAndLiabilities),
       {
-        merge,
+        merge, db,
         identityGroups: [["category", "details"], ["details"]],
         uniqueFallbackFields: ["category"],
       }
@@ -390,12 +390,12 @@ async function saveSections(matter, info, { merge = false } = {}) {
       matter.id,
       "opih",
       toArray(info.OtherPersonsInHousehold),
-      { merge, singleton: true }
+      { merge, db, singleton: true }
     );
   }
 
   if (Object.keys(matterPatch).length > 0) {
-    await prisma.matter.update({ where: { id: matter.id }, data: matterPatch });
+    await db.matter.update({ where: { id: matter.id }, data: matterPatch });
   }
 }
 
@@ -438,6 +438,48 @@ function shapeAssets(assetRows) {
     grouped[type].push(row);
   }
   return grouped;
+}
+
+async function loadMatterDataAll(matter, matterId, db = prisma) {
+  const rowsOf = async (type) => matter ? toArray(await getRecordRows(matter.id, type, db)) : [];
+  const [background, children, court, employment, debts, relationship, opih, incomeBenefits,
+    marketValue, assets, expenses, special] = await Promise.all([
+    rowsOf("background"), rowsOf("children"), rowsOf("court"), rowsOf("employment"),
+    rowsOf("debts_liabilities"), rowsOf("relationship"), rowsOf("opih"),
+    rowsOf("income_benefits"), rowsOf("assets_market_value"), rowsOf("assets"),
+    rowsOf("expenses"), rowsOf("special_expenses"),
+  ]);
+  return {
+    matter_number: matter?.matterNumber || String(matterId), client_id: matter?.clientName || "",
+    valuation_date: matter?.valuationDate || "",
+    financial_year_income_benefits: matter?.fyIncomeBenefits || "",
+    financial_year_expenses: matter?.fyExpenses || "",
+    background, children, court_info: court, employment, debts_liabilities: debts,
+    relationship, other_persons: opih, income_benefits: incomeBenefits,
+    assets_market_value: marketValue, assets: shapeAssets(assets),
+    expenses: shapeExpenses(expenses, special),
+  };
+}
+
+// Completion is determined only from persisted values. This intentionally has
+// no language-model or reply-text input.
+function validateMatterIntake(data) {
+  const missing = [];
+  const party = (role) => data.background.find((row) => row.role === role) || {};
+  for (const role of ["Client", "Opposing Party"]) {
+    if (isBlankValue(party(role).name)) missing.push(`Background.${role === "Client" ? "client" : "opposingParty"}.name`);
+  }
+  const relationship = data.relationship[0] || {};
+  for (const field of ["dateOfMarriage", "dateOfSeparation"]) {
+    if (isBlankValue(relationship[field])) missing.push(`Relationship.${field}`);
+  }
+  for (const role of ["Client", "Opposing Party"]) {
+    const row = data.employment.find((item) => item.role === role) || {};
+    if (isBlankValue(row.employmentStatus)) missing.push(`EmploymentDetails.${role === "Client" ? "client" : "opposingParty"}.employmentStatus`);
+  }
+  if (!data.income_benefits.some((row) => row.role === "Client" && row.incomeBenefit === "income")) missing.push("IncomeAndBenefits.client.income");
+  if (!data.income_benefits.some((row) => row.role === "Opposing Party" && row.incomeBenefit === "income")) missing.push("IncomeAndBenefits.opposingParty.income");
+  return { complete: missing.length === 0, missing };
 }
 
 // dataType aliases: the UI dispatches a few names the legacy controller
@@ -546,6 +588,54 @@ router.post("/save_matter/:sid/:matter_id", async (req, res) => {
   } catch (err) {
     console.log("POST /v1/save_matter failed:", err?.message || err);
     return res.status(500).json(errorBody("Could not save matter.", 500));
+  }
+});
+
+const AI_PATCH_SECTIONS = new Set([
+  "Background", "Relationship", "Children", "IncomeAndBenefits",
+  "EmploymentDetails", "Expenses", "Assets", "DebtsAndLiabilities",
+  "Court", "OtherPersonsInHousehold",
+]);
+
+// Dedicated AI-only write path. Unlike save_matter, this endpoint never offers
+// replacement semantics and does not trust a client-provided save mode.
+router.post("/patch_matter_intake/:sid/:matter_id", async (req, res) => {
+  const patches = req.body?.patches;
+  if (req.body?.source !== "ai-intake" || !Array.isArray(patches)) {
+    return res.status(400).json(errorBody("AI intake patches are required.", 400));
+  }
+  if (patches.some((patch) => !patch || !AI_PATCH_SECTIONS.has(patch.section) || patch.data === undefined)) {
+    return res.status(400).json(errorBody("Each patch needs a supported section and data.", 400));
+  }
+
+  // Serializable prevents two concurrent chat replies from both merging against
+  // the same stale JSON record. Postgres reports a retryable conflict as P2034.
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    try {
+      const result = await prisma.$transaction(async (tx) => {
+        let matter = await findMatter(req.user.id, req.params.matter_id, tx);
+        if (!matter) {
+          matter = await tx.matter.create({
+            data: { userId: req.user.id, matterNumber: String(req.params.matter_id), clientName: "" },
+          });
+        }
+        for (const patch of patches) {
+          await saveSections(matter, { [patch.section]: patch.data }, { merge: true, db: tx });
+          // Header fields may have changed; the final read must be authoritative.
+          matter = await tx.matter.findUnique({ where: { id: matter.id } });
+        }
+        const savedMatter = await loadMatterDataAll(matter, req.params.matter_id, tx);
+        return { saved: true, matter: savedMatter, completion: validateMatterIntake(savedMatter) };
+      }, { isolationLevel: "Serializable" });
+      return res.json(ok(result));
+    } catch (err) {
+      if (err?.code === "P2034" && attempt < 2) continue;
+      if (err?.code === "AMBIGUOUS_PATCH") {
+        return res.status(409).json(errorBody(err.message, 409));
+      }
+      console.log("POST /v1/patch_matter_intake failed:", err?.message || err);
+      return res.status(500).json(errorBody("Could not apply AI intake patch.", 500));
+    }
   }
 });
 
@@ -718,16 +808,14 @@ router.post("/create_folder", async (req, res) => {
     const { matter_id, title, type } = req.body || {};
     const matter = await findMatter(req.user.id, matter_id);
     if (!matter) return res.status(404).json(errorBody("Matter not found."));
-    const folders = toArray(await getRecordRows(matter.id, "folders"));
-    const folder = {
-      id: folders.reduce((max, f) => Math.max(max, f.id || 0), 0) + 1,
-      title: title ?? "Untitled",
-      type: type ?? null,
-      matter_id: matter.matterNumber,
-      sid: req.user.id,
-      created: new Date().toISOString(),
-    };
-    await putRecord(matter.id, "folders", [...folders, folder]);
+    const rawTitle = String(title ?? "Untitled").trim();
+    const normalizedTitle = rawTitle.replace(/\s+/g, " ").toLocaleLowerCase();
+    const saved = await prisma.matterFolder.upsert({
+      where: { matterId_normalizedTitle: { matterId: matter.id, normalizedTitle } },
+      create: { matterId: matter.id, title: rawTitle, normalizedTitle, type: type ?? null },
+      update: {},
+    });
+    const folder = { id: saved.id, title: saved.title, type: saved.type, matter_id: matter.matterNumber, sid: req.user.id, created: saved.createdAt };
     return res.json(ok(folder));
   } catch (err) {
     console.log("POST /v1/create_folder failed:", err?.message || err);
@@ -738,7 +826,11 @@ router.post("/create_folder", async (req, res) => {
 router.get("/get_folders/:sid/:matter_id", async (req, res) => {
   try {
     const matter = await findMatter(req.user.id, req.params.matter_id);
-    const folders = matter ? toArray(await getRecordRows(matter.id, "folders")) : [];
+    if (!matter) return res.json(ok([]));
+    const normalized = await prisma.matterFolder.findMany({ where: { matterId: matter.id }, orderBy: { createdAt: "asc" } });
+    const folders = normalized.length
+      ? normalized.map((folder) => ({ id: folder.id, title: folder.title, type: folder.type, matter_id: matter.matterNumber, sid: req.user.id, created: folder.createdAt }))
+      : toArray(await getRecordRows(matter.id, "folders"));
     return res.json(ok(folders));
   } catch (err) {
     console.log("GET /v1/get_folders failed:", err?.message || err);
@@ -842,6 +934,10 @@ router.post("/calculator/save_values", async (req, res) => {
   try {
     const body = req.body || {};
     const fields = savedCalcFields(body);
+    if (fields.matterId) {
+      const matter = await findMatter(req.user.id, fields.matterId);
+      if (matter) fields.matterDbId = matter.id;
+    }
     if (body.id) {
       const existing = await prisma.savedCalculation.findFirst({
         where: { id: Number(body.id), userId: req.user.id },
@@ -880,14 +976,33 @@ router.patch("/calculator/save_values/:id", async (req, res) => {
       where: { id: Number(req.params.id), userId: req.user.id },
     });
     if (!existing) return res.status(404).json(errorBody("Not found."));
+    const fields = savedCalcFields(req.body || {});
+    if (fields.matterId) {
+      const matter = await findMatter(req.user.id, fields.matterId);
+      if (matter) fields.matterDbId = matter.id;
+    }
     const updated = await prisma.savedCalculation.update({
       where: { id: existing.id },
-      data: savedCalcFields(req.body || {}),
+      data: fields,
     });
     return res.json(ok({ id: updated.id }));
   } catch (err) {
     console.log("PATCH /v1/calculator/save_values failed:", err?.message || err);
     return res.status(500).json(errorBody("Could not update calculation.", 500));
+  }
+});
+
+router.get("/matters/:matter_id/calculations/latest/:type", async (req, res) => {
+  try {
+    const matter = await findMatter(req.user.id, req.params.matter_id);
+    if (!matter) return res.json(ok(null));
+    const calculation = await prisma.savedCalculation.findFirst({
+      where: { userId: req.user.id, matterDbId: matter.id, type: req.params.type, status: "completed" },
+      orderBy: { updatedAt: "desc" },
+    });
+    return res.json(ok(calculation ? { id: calculation.id, type: calculation.type, tax_year: calculation.taxYear, data: calculation.data, updated_at: calculation.updatedAt } : null));
+  } catch (err) {
+    return res.status(500).json(errorBody("Could not load calculation.", 500));
   }
 });
 

@@ -3,7 +3,12 @@ import axios from "../../utils/axios";
 
 export async function FormsArray(province, production_ready, mapping_ready) {
     try {
-        let api_url = `/forms?province=${province}`;
+        const normalizedProvince = {
+            ontario: "ON",
+            alberta: "AB",
+            "british columbia": "BC",
+        }[String(province || "").trim().toLowerCase()] || String(province || "").trim().toUpperCase();
+        let api_url = `/forms?province=${normalizedProvince}`;
         if(production_ready){
             api_url = api_url + `&production_ready=${production_ready}`;
         }
@@ -18,7 +23,7 @@ export async function FormsArray(province, production_ready, mapping_ready) {
         const forms = response.data.data;
         let formsArrayData = [];
         
-        if (province === 'AB' || province === 'ON' || province === 'BC') {
+        if (normalizedProvince === 'AB' || normalizedProvince === 'ON' || normalizedProvince === 'BC') {
             formsArrayData = [
                 {
                     category: "Divorce",
@@ -50,7 +55,7 @@ export async function FormsArray(province, production_ready, mapping_ready) {
                         "docId": form.doc_id
                     })),
                 },
-                ...province === 'Alberta' ? [
+                ...normalizedProvince === 'AB' ? [
                   {
                       category: "Completed",
                       categoryId: "GENERAL",

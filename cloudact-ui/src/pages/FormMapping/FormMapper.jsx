@@ -20,6 +20,7 @@ const FormMapper = () => {
   const [options, setOptions] = useState({});
   const [concatenatedValue, setConcatenatedValue] = useState("");
   const [selectedForm, setSelectedForm] = useState("");
+  const [selectedVersion, setSelectedVersion] = useState(null);
   const [pdfUrl, setPdfUrl] = useState("");
   const [jsonData, setJsonData] = useState(null);
   const [data, setData] = useState(null);
@@ -52,9 +53,9 @@ const FormMapper = () => {
     YT: "Yukon (YT)",
   };
 
-  const fetchFormPdf = async (formName) => {
+  const fetchFormPdf = async (formName, version) => {
     try {
-      const response = await axios.get(`/fetch-pdf?fileName=${formName}.pdf`, {
+      const response = await axios.get(`/form-templates/${encodeURIComponent(formName)}/versions/${version}/pdf`, {
         responseType: "blob",
       });
       const pdfBlob = new Blob([response.data], { type: "application/pdf" });
@@ -65,9 +66,9 @@ const FormMapper = () => {
     }
   };
 
-  const fetchFormJson = async (jsonName) => {
+  const fetchFormJson = async (jsonName, version) => {
     try {
-      const response = await axios.get(`/fetch-json?fileName=${jsonName}.json`);
+      const response = await axios.get(`/form-templates/${encodeURIComponent(jsonName)}/versions/${version}/mapping`);
       setJsonData(response.data.staticFields);
     } catch (error) {
       console.error("Error fetching the JSON:", error);
@@ -76,7 +77,7 @@ const FormMapper = () => {
 
   const fetchProvinces = async () => {
     try {
-      const res = await axios.get("/get-form-provinces");
+      const res = await axios.get("/form-template-provinces");
       const options = res.data.data.map((prov) => ({
         label: provinceNameMap[prov.province] || prov.province,
         value: prov.province,
@@ -146,11 +147,15 @@ const FormMapper = () => {
   useEffect(() => {
     if (selectedForm) {
       setLoading(true);
-      Promise.all([
-        fetchFormPdf(selectedForm),
-        fetchFormJson(selectedForm),
-        fetch(`/documents/data.json`).then((response) => response.json()),
-      ])
+      axios.get(`/form-templates/${encodeURIComponent(selectedForm)}/active`)
+        .then(({ data: { data: activeTemplate } }) => {
+          setSelectedVersion(activeTemplate.version);
+          return Promise.all([
+            fetchFormPdf(selectedForm, activeTemplate.version),
+            fetchFormJson(selectedForm, activeTemplate.version),
+            fetch(`/documents/data.json`).then((response) => response.json()),
+          ]);
+        })
         .then(([_, __, data]) => {
           setData(data);
           setLoading(false);
@@ -202,14 +207,8 @@ const FormMapper = () => {
   useEffect(() => {
     if (jsonData) {
       setFields(jsonData);
-      localStorage.setItem("jsonData", JSON.stringify(jsonData));
-      localStorage.setItem("fields", JSON.stringify(jsonData));
     }
   }, [jsonData]);
-
-  useEffect(() => {
-    localStorage.setItem("fields", JSON.stringify(fields));
-  }, [fields]);
 
   useEffect(() => {
     const newValue = concatenateObjectValues(selectedFields);
@@ -350,19 +349,12 @@ const FormMapper = () => {
     if (!pdfUrl || !fields) return;
 
     try {
-      const dataToSave = fields;
-      const formName = selectedForm.replace(".pdf", "");
-
-      const response = await axios.post("/upload-json", {
-        file_name: formName,
-        data: { staticFields: dataToSave },
+      if (!selectedVersion) return;
+      const response = await axios.post(`/form-templates/${encodeURIComponent(selectedForm)}/versions/${selectedVersion}/mapping`, {
+        mapping: { staticFields: fields },
       });
-
-      if (response.data.success) {
-        toast.success("JSON saved successfully!");
-      } else {
-        toast.error("Failed to save JSON");
-      }
+      setSelectedVersion(response.data.data.version);
+      toast.success(`Mapping published as version ${response.data.data.version}.`);
     } catch (error) {
       toast.error("Error saving JSON");
     }

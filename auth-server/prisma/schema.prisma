@@ -74,6 +74,10 @@ model Matter {
 
   user                 User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   records              MatterRecord[]
+  folders              MatterFolder[]
+  formDocuments        MatterFormDocument[]
+  taskStates           MatterTaskState[]
+  calculations         SavedCalculation[] @relation("MatterCalculations")
 
   @@unique([userId, matterNumber])
   @@index([userId])
@@ -109,6 +113,7 @@ model SavedCalculation {
   type           String?
   calculatorType String?
   matterId       String?
+  matterDbId     Int?
   data           String?
   reportUrl      String?
   reportData     String?
@@ -117,7 +122,112 @@ model SavedCalculation {
   updatedAt      DateTime @updatedAt
 
   user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  matter         Matter?  @relation("MatterCalculations", fields: [matterDbId], references: [id], onDelete: SetNull)
 
   @@unique([userId, label])
   @@index([userId])
+  @@index([matterDbId])
+}
+
+model FormTemplate {
+  id              Int                   @id @default(autoincrement())
+  docId           String                @unique
+  province        String
+  category        String
+  title           String
+  shortTitle      String?
+  fileName        String
+  footerText      String?
+  status          String                @default("active")
+  productionReady Boolean               @default(false)
+  mappingReady    Boolean               @default(false)
+  sortOrder       Int                   @default(0)
+  createdAt       DateTime              @default(now())
+  updatedAt       DateTime              @updatedAt
+  versions        FormTemplateVersion[]
+
+  @@index([province, productionReady, mappingReady])
+}
+
+model FormTemplateVersion {
+  id              Int                   @id @default(autoincrement())
+  templateId      Int
+  version         Int
+  pdfBytes        Bytes?
+  pdfPath         String?
+  fieldMapping    Json?
+  pageCount       Int?
+  pdfChecksum     String?
+  mappingChecksum String?
+  effectiveDate   DateTime?
+  active          Boolean               @default(true)
+  createdAt       DateTime              @default(now())
+  template        FormTemplate          @relation(fields: [templateId], references: [id], onDelete: Cascade)
+  documents       MatterFormDocument[]
+
+  @@unique([templateId, version])
+  @@index([templateId, active])
+}
+
+model MatterFolder {
+  id              Int                   @id @default(autoincrement())
+  matterId        Int
+  title           String
+  normalizedTitle String
+  type            String?
+  createdAt       DateTime              @default(now())
+  updatedAt       DateTime              @updatedAt
+  matter          Matter                @relation(fields: [matterId], references: [id], onDelete: Cascade)
+  formDocuments   MatterFormDocument[]
+
+  @@unique([matterId, normalizedTitle])
+  @@index([matterId])
+}
+
+model MatterFormDocument {
+  id                Int                 @id @default(autoincrement())
+  matterId          Int
+  folderId          Int?
+  templateVersionId Int
+  displayName       String
+  status            String              @default("OPEN")
+  fieldValues       Json                @default("{}")
+  fieldProvenance   Json                @default("{}")
+  generatedPdf      Bytes?
+  generatedAt       DateTime?
+  generatedPdfRevision Int              @default(0)
+  revision          Int                 @default(1)
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
+  matter            Matter              @relation(fields: [matterId], references: [id], onDelete: Cascade)
+  folder            MatterFolder?       @relation(fields: [folderId], references: [id], onDelete: SetNull)
+  templateVersion   FormTemplateVersion @relation(fields: [templateVersionId], references: [id], onDelete: Restrict)
+  pdfRevisions      MatterFormPdfRevision[]
+
+  @@index([matterId, folderId])
+}
+
+model MatterFormPdfRevision {
+  id          Int                 @id @default(autoincrement())
+  documentId  Int
+  revision    Int
+  checksum    String
+  pdf         Bytes
+  createdAt   DateTime            @default(now())
+  document    MatterFormDocument  @relation(fields: [documentId], references: [id], onDelete: Cascade)
+
+  @@unique([documentId, revision])
+  @@index([documentId, createdAt])
+}
+
+model MatterTaskState {
+  id        Int      @id @default(autoincrement())
+  matterId  Int
+  taskKey   String
+  status    String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  matter    Matter   @relation(fields: [matterId], references: [id], onDelete: Cascade)
+
+  @@unique([matterId, taskKey])
 }

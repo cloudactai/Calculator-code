@@ -274,7 +274,41 @@ const FiveStepsPage = () => {
           <div className="panel trans pt-4 five-steps-page">
             {/* Action Bar */}
             <div className="row">
-              <div className="col-12 col-md-3"></div>
+              <div className="col-12 col-md-3 d-flex align-items-center">
+                <button
+                  type="button"
+                  className="sm-back-btn"
+                  onClick={() => history.push(`/single-matter/${id}`)}
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: "6px",
+                    background: "transparent",
+                    border: "none",
+                    color: "inherit",
+                    font: "inherit",
+                    cursor: "pointer",
+                    padding: "4px 0",
+                    opacity: 0.85,
+                  }}
+                >
+                  <svg
+                    width="18"
+                    height="18"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    aria-hidden="true"
+                  >
+                    <path d="M19 12H5" />
+                    <path d="M12 19l-7-7 7-7" />
+                  </svg>
+                  Back to Tasks
+                </button>
+              </div>
               <div className="col-12 col-md-9 d-flex justify-content-between align-items-center">
                 <div
                   className="d-flex justify-content-between align-items-center"

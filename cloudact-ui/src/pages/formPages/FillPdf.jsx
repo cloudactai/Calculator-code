@@ -1,36 +1,29 @@
 import { useEffect, useRef, useState, useCallback } from "react";
-import { useDispatch, useSelector } from "react-redux";
+import { useSelector } from "react-redux";
 import Layout from "../../components/LayoutComponents/Layout";
-import { useLocation } from "react-router-dom";
+import { useLocation, useParams } from "react-router-dom";
 import { useHistory } from 'react-router-dom';
 // import { Margin, usePDF } from "react-to-pdf";
-import { selectSaveFileData, selectSaveFileDataError, selectSaveFileDataLoading } from "../../utils/Apis/matters/saveFileData/saveFileDataSelector";
-import { saveFileData, saveFileDataReset } from "../../utils/Apis/matters/saveFileData/saveFileDataActions";
 import toast from "react-hot-toast";
 import GeneralModal from "../../components/Matters/Modals/GeneralModal";
-import { FormInformation } from "../../utils/Apis/matters/CustomHook/PDFData";
 import { PDFDocument, PDFName, rgb, StandardFonts } from 'pdf-lib';
 import { pdfjs } from 'react-pdf';
 import '../../components/FormPages/forms/App.css'; // Ensure this CSS file is included for styles
 import 'react-resizable/css/styles.css';
-import { AssetsData } from "../../utils/Apis/matters/CustomHook/DocumentViewDataUpdate";
-import { AssetsDetails } from "../../utils/Apis/matters/CustomHook/AssetsData";
-import { fetchFieldData } from "../../utils/Apis/matters/CustomHook/fetchFieldData";
-import { selectGetFileData, selectGetFileDataLoading } from "../../utils/Apis/matters/getFileData/getFileDataSelector";
-import { getFileData } from "../../utils/Apis/matters/getFileData/getFileDataActions";
 import ModernToolbar from "../../components/FormPages/forms/newComponents/ModernToolbar";
 import CalculationManager from "../../components/FormPages/forms/newComponents/CalculationManager";
 import PDFViewer from "./PDFViewer";
 import Loader from "../../components/Loader";
 import axios from "../../utils/axios";
+import { formsService } from "../../services/formsService";
 
-pdfjs.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
+pdfjs.GlobalWorkerOptions.workerSrc = `${process.env.PUBLIC_URL || ""}/pdf.worker.min.mjs`;
 
 const FillPdf = ({ currentUserRole }) => {
   const location = useLocation();
+  const { matterNumber: routeMatterNumber, documentId: routeDocumentId } = useParams();
   const history = useHistory();
-  const formData = location.state?.formData;
-  const dispatch = useDispatch();
+  const formData = location.state?.formData || { matterNumber: routeMatterNumber };
   const [pdfUrl, setPdfUrl] = useState(null);
   const { response } = useSelector((state) => state.userProfileInfo);
   const [fields, setFields] = useState([]);
@@ -42,7 +35,6 @@ const FillPdf = ({ currentUserRole }) => {
   const [pdfDoc, setPdfDocument] = useState(null);
   const [selectedField, setSelectedField] = useState(null); // Track selected field for customization
   const [selectedFields, setSelectedFields] = useState([]);
-  const [documentData, setDocumentData] = useState(null);
   const [showAddFolderModal, setShowAddFolderModal] = useState(false)
   const [blobUrl, setBlobUrl] = useState(null)
   const [isLoading, setIsLoading] = useState(true); // Add loading state
@@ -50,18 +42,44 @@ const FillPdf = ({ currentUserRole }) => {
   const [isFormLoading, setIsFormLoading] = useState(false); // Add this new state
   const [shouldRenderPdf, setShouldRenderPdf] = useState(true);
 
-  let selectedForms = useSelector((state) => state.selectedForms);
   const readOnly = true;
-  const { documentInfo, loading } = FormInformation(formData.matterNumber);
-  const { selectAssetsData, selectAssetsDataLoading } = AssetsData(formData.matterNumber)
-  const { debtsArray, combinedAssets, propertiesAssets } = AssetsDetails(selectAssetsData, formData.matterNumber)
   const [isSaving, setIsSaving] = useState(false);
+  const [remoteDocument, setRemoteDocument] = useState(null);
+  const [loadError, setLoadError] = useState("");
+
+  useEffect(() => () => {
+    if (pdfUrl) URL.revokeObjectURL(pdfUrl);
+  }, [pdfUrl]);
+
+  useEffect(() => () => {
+    if (blobUrl) URL.revokeObjectURL(blobUrl);
+  }, [blobUrl]);
 
   useEffect(() => {
-    if (documentInfo) {
-      setDocumentData(documentInfo);
-    }
-  }, [loading, formData, documentInfo])
+    if (!routeMatterNumber || !routeDocumentId) return;
+    formsService.getDocument(routeMatterNumber, routeDocumentId)
+      .then((document) => {
+        setLoadError("");
+        setRemoteDocument(document);
+        const form = {
+          id: document.id,
+          docId: document.docId,
+          file_name: document.file_name,
+          title: document.file_name,
+          shortTitle: document.file_name,
+          folder_id: document.folder_id,
+          revision: document.revision,
+          template_version: document.template_version,
+        };
+        setForms([form]);
+        setActiveForm(form);
+      })
+      .catch(() => {
+        setLoadError("Could not load this saved form. Return to the matter and try again.");
+        setIsLoading(false);
+        toast.error("Could not load this saved form.");
+      });
+  }, [routeMatterNumber, routeDocumentId]);
 
   const handleEditField = (id, value) => {
     setFields(fields.map(field =>
@@ -94,13 +112,7 @@ const FillPdf = ({ currentUserRole }) => {
   };
 
   // First, create a helper function to get the initial forms
-  const getInitialForms = () => {
-    if (selectedForms && selectedForms.length > 0) {
-      return selectedForms;
-    }
-    const serializedCheckedForms = localStorage.getItem("checkedForms");
-    return serializedCheckedForms ? JSON.parse(serializedCheckedForms) : [];
-  };
+  const getInitialForms = () => [];
 
   // Initialize the forms
   const initialForms = getInitialForms();
@@ -112,9 +124,9 @@ const FillPdf = ({ currentUserRole }) => {
     return initialForms.length > 0 ? initialForms[0] : null;
   });
 
-  const fetchFormPdf = async (formName) => {
+  const fetchFormPdf = async (form) => {
     try {
-      const response = await axios.get(`/fetch-pdf?fileName=${formName}.pdf`, {
+      const response = await axios.get(`/form-templates/${encodeURIComponent(form.docId)}/versions/${form.template_version}/pdf`, {
         responseType: "blob",
       });
       const pdfBlob = new Blob([response.data], { type: "application/pdf" });
@@ -125,40 +137,15 @@ const FillPdf = ({ currentUserRole }) => {
     }
   };
 
-  const fetchFormJson = async (jsonName) => {
-    try {
-      const response = await axios.get(`/fetch-json?fileName=${jsonName}.json`);
-      return response.data.staticFields;
-    } catch (error) {
-      console.error("Error fetching the JSON:", error);
-    }
-  };
-
   useEffect(() => {
     if (activeForm?.docId) {
-      fetchFormPdf(activeForm.docId);
+      fetchFormPdf(activeForm);
     }
   }, [activeForm]);
 
 
   useEffect(() => {
-    if (activeForm?.id && formData?.matterNumber) {
-      let data = {
-        matterId: formData.matterNumber,
-        file_id: activeForm.docId,
-        folder_id: activeForm.folder_id,
-      }
-      dispatch(getFileData(data));
-    }
-  }, [activeForm, formData?.matterNumber]); // Depend on full activeForm object
-
-  // const selectFileData = '';
-
-  const selectFileData = useSelector(selectGetFileData);
-  const selectFileDataLoading = useSelector(selectGetFileDataLoading);
-
-  useEffect(() => {
-    if (!pdfUrl || !documentData) {
+    if (!pdfUrl || !remoteDocument) {
       return;
     }
 
@@ -173,26 +160,11 @@ const FillPdf = ({ currentUserRole }) => {
         setNumPages(pdfDoc.getPageCount());
         setPdfDocument(pdfDoc);
 
-        // Check selectFileData response
-        if (selectFileData && selectFileData.staticFields) {
-          const parsedData = selectFileData.staticFields;
-          setFields(parsedData);
-        } else {
-          const staticFields = await fetchFormJson(activeForm?.docId);
-
-          if (!staticFields) {
-            console.error('No static fields found');
-            return;
-          }
-          const updatedFields = bindFieldsToData(
-            staticFields,
-            documentData,
-            combinedAssets,
-            debtsArray,
-            propertiesAssets
-          );
-          setFields(updatedFields);
-        }
+        const staticFields = remoteDocument.mapping?.staticFields;
+        if (!Array.isArray(staticFields)) throw new Error('The form field mapping is unavailable.');
+        setFields(staticFields.map((field) => remoteDocument.fieldValues?.[field.id] !== undefined
+          ? { ...field, value: remoteDocument.fieldValues[field.id] }
+          : field));
 
         setFieldsReady(true);
       } catch (error) {
@@ -205,7 +177,7 @@ const FillPdf = ({ currentUserRole }) => {
     setIsFormLoading(true); // Ensure loading state is active
     setIsLoading(true);
     loadPdf();
-  }, [pdfUrl, activeForm, documentData, selectFileData, selectFileDataLoading]);
+  }, [pdfUrl, activeForm, remoteDocument]);
 
   // Add this function inside your PDFViewer component
   const formatDate = (date, format = 'MM/DD/YYYY') => {
@@ -230,7 +202,13 @@ const FillPdf = ({ currentUserRole }) => {
     }
   };
 
-  // Add this new function near your other field management functions
+  /*
+   * Retired legacy client-side prefill engine. Persisted forms now receive
+   * their mapping and prefilled values from the authenticated Forms API above.
+   * It remains excluded from execution pending its physical removal in a
+   * dedicated source-size cleanup; it must not be called by this editor.
+   */
+  /*
   const calculateAge = (dateOfBirth) => {
     if (!dateOfBirth) return '';
 
@@ -1646,47 +1624,30 @@ const FillPdf = ({ currentUserRole }) => {
 
     return `${formattedInteger}.${decimalPart}`;
   };
+  */
 
 
 
-  const selectSaveData = useSelector(selectSaveFileData);
-  const selectSaveDataLoading = useSelector(selectSaveFileDataLoading);
-  const selectSaveDataError = useSelector(selectSaveFileDataError);
-
-  const handleSave = () => {
+  const handleSave = async () => {
     setIsSaving(true); // Disable button when save starts
-    let data = {
-      matterId: formData.matterNumber,
-      file_id: activeForm.docId,
-      folder_id: activeForm.folder_id,
-      data: { staticFields: fields }
+    if (remoteDocument) {
+      try {
+        const fieldValues = Object.fromEntries(fields.map((field) => [field.id, field.value]));
+        const saved = await formsService.saveDocument(formData.matterNumber, remoteDocument.id, remoteDocument.revision, fieldValues, "IN_PROGRESS");
+        setRemoteDocument((document) => ({ ...document, revision: saved.revision }));
+        toast.success("Data Successfully Saved");
+      } catch (error) {
+        toast.error(error?.response?.status === 409 ? "This form changed elsewhere. Reload it before saving." : "Could not save this form.");
+      } finally {
+        setIsSaving(false);
+      }
+      return;
     }
-
-    dispatch(saveFileData(data))
+    setIsSaving(false);
   }
 
-  useEffect(() => {
-    if (selectSaveData) {
-      toast.success("Data Successfully Saved",
-        {
-          position: "top-right",
-          style: {
-            borderRadius: '10px',
-            background: '#FFF',
-            color: '#000',
-          },
-        })
-      dispatch(saveFileDataReset())
-      setIsSaving(false) // Re-enable button after save completes
-    }
-
-    // Also handle errors to re-enable the button
-    if (selectSaveDataError) {
-      setIsSaving(false)
-    }
-  }, [selectSaveDataLoading, selectSaveData, selectSaveDataError])
-
   const savePdf = async () => {
+    const generationStartedAt = Date.now();
     if (!fields || !Array.isArray(fields)) {
       console.error("Fields is null or not an array.");
       return;
@@ -1818,6 +1779,31 @@ const FillPdf = ({ currentUserRole }) => {
     const pdfBytes = await pdfDoc.save();
     const blob = new Blob([pdfBytes], { type: 'application/pdf' });
     const pdfBlobUrl = URL.createObjectURL(blob);
+    const pdfBase64 = await new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onerror = () => reject(reader.error || new Error("Could not prepare PDF upload."));
+      reader.onload = () => resolve(reader.result);
+      reader.readAsDataURL(blob);
+    });
+    try {
+      const saved = await formsService.saveGeneratedPdf(
+        routeMatterNumber,
+        remoteDocument.id,
+        remoteDocument.generated_pdf_revision,
+        pdfBase64,
+        Date.now() - generationStartedAt
+      );
+      setRemoteDocument((document) => ({ ...document, generated_pdf_revision: saved.revision }));
+      toast.success(`Completed PDF revision ${saved.revision} saved.`);
+    } catch (error) {
+      URL.revokeObjectURL(pdfBlobUrl);
+      toast.error(error?.response?.status === 409 ? "This completed PDF changed elsewhere. Reload it before saving." : "Could not save the completed PDF.");
+      return;
+    }
+    const download = document.createElement("a");
+    download.href = pdfBlobUrl;
+    download.download = `${activeForm?.file_name || "completed-form"}`.replace(/\.pdf$/i, "") + "-completed.pdf";
+    download.click();
     setShowAddFolderModal(true);
     setBlobUrl(pdfBlobUrl);
   };
@@ -1907,7 +1893,7 @@ const FillPdf = ({ currentUserRole }) => {
   };
 
   return (
-    <Layout title={`Welcome ${response.first_name} ${response.last_name}`}>
+    <Layout title={`Welcome ${response?.first_name || ""} ${response?.last_name || ""}`}>
       <div className="fill-information-page panel trans">
         <div className="pBody">
           <div className="row">
@@ -1937,7 +1923,9 @@ const FillPdf = ({ currentUserRole }) => {
                 </div>
                 <div className="body" style={{ backgroundColor: '#e3e3e3' }}>
                   <div id="pdf-content">
-                    {isLoading || isFormLoading || !shouldRenderPdf ? (
+                    {loadError ? (
+                      <div className="p-4 text-danger" role="alert">{loadError}</div>
+                    ) : isLoading || isFormLoading || !shouldRenderPdf ? (
                       <Loader isLoading={true} />
                     ) : pdfUrl && fieldsReady && shouldRenderPdf && fields.length > 0 ? (
                       <>
@@ -1999,7 +1987,7 @@ const FillPdf = ({ currentUserRole }) => {
                           handleFormSelection(index);
                         }}
                       >
-                        <button disabled={activeForm.shortTitle === form.shortTitle} className={`btn mb-2 w-100 ${activeForm.shortTitle === form.shortTitle ? 'btnSecondary' : 'btnPrimary'} btnForm`}>{form.title}</button>
+                        <button disabled={activeForm?.shortTitle === form.shortTitle} className={`btn mb-2 w-100 ${activeForm?.shortTitle === form.shortTitle ? 'btnSecondary' : 'btnPrimary'} btnForm`}>{form.title}</button>
                       </div>
                     ))}
                   </div>
@@ -2013,7 +2001,7 @@ const FillPdf = ({ currentUserRole }) => {
         show={showAddFolderModal}
         changeShow={() => setShowAddFolderModal(false)}
         handleClick={() => setShowAddFolderModal(false)}
-        heading={`Preview PDF: ${activeForm.title}`}
+        heading={`Preview PDF: ${activeForm?.title || "Form"}`}
         size='sm'
         dialogClassName={'matterModal'}
       >

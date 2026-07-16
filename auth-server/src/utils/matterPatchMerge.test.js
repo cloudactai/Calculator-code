@@ -243,3 +243,17 @@ test("an empty conversational row collection never deletes saved rows", () => {
   const saved = [{ id: 1, childName: "Emma Mitchell", age: "13" }];
   assert.deepEqual(mergeRecordRows(saved, [], {}), saved);
 });
+
+test("ambiguous partial identities are rejected instead of guessing", () => {
+  assert.throws(
+    () => mergeRecordRows(
+      [
+        { asset_type: "lands", address_of_property: "1 Main Street" },
+        { asset_type: "lands", address_of_property: "2 Main Street" },
+      ],
+      [{ asset_type: "lands", market_value: { client: { today: "900000" } } }],
+      { identityGroups: [["asset_type", "address_of_property"]], uniqueFallbackFields: ["asset_type"] }
+    ),
+    { code: "AMBIGUOUS_PATCH" }
+  );
+});

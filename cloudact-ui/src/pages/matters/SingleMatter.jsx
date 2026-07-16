@@ -28,6 +28,7 @@ import {
 } from "../../utils/Apis/matters/getSingleMatterData/getSingleMattersDataActions";
 import { getMatterData } from "../../utils/Apis/matters/getMatterData/getMatterDataActions";
 import { AUTH_ROUTES } from "../../routes/Routes.types";
+import { formsService } from "../../services/formsService";
 
 /**
  * SingleMatter — task-list-based workflow for a divorce matter.
@@ -55,6 +56,10 @@ const TASK_DEFS = [
   { id: "general_query", label: "GENERAL QUERY" },
 ];
 
+const initialTaskStatuses = () => Object.fromEntries(
+  TASK_DEFS.map((task) => [task.id, "not_started"])
+);
+
 const SingleMatter = () => {
   const { id } = useParams();
   console.log("[CLOUDACT-MATTER] SingleMatter mounted with id from URL params:", id);
@@ -63,22 +68,7 @@ const SingleMatter = () => {
 
   const [view, setView] = useState("tasks"); // tasks | intake_choice | intake_chat | support_choice | child_support | spousal_support
   const [matterData, setMatterData] = useState(null);
-  const [taskStatuses, setTaskStatuses] = useState(() => {
-    // Load persisted statuses from localStorage, falling back to not_started
-    const storageKey = `matterTaskStatuses_${id}`;
-    let saved = {};
-    try {
-      const raw = localStorage.getItem(storageKey);
-      if (raw) saved = JSON.parse(raw);
-    } catch (e) {
-      // ignore corrupt data
-    }
-    const initial = {};
-    TASK_DEFS.forEach((t) => {
-      initial[t.id] = saved[t.id] || "not_started";
-    });
-    return initial;
-  });
+  const [taskStatuses, setTaskStatuses] = useState(initialTaskStatuses);
 
   // Aggregated matter data for the chat context
   const [fullMatterData, setFullMatterData] = useState(null);
@@ -86,11 +76,25 @@ const SingleMatter = () => {
   // separate from the legacy support-calculator context above.
   const [intakeMatterData, setIntakeMatterData] = useState(null);
 
-  // Persist task statuses to localStorage whenever they change
   useEffect(() => {
-    const storageKey = `matterTaskStatuses_${id}`;
-    localStorage.setItem(storageKey, JSON.stringify(taskStatuses));
-  }, [taskStatuses, id]);
+    let active = true;
+    setTaskStatuses(initialTaskStatuses());
+    formsService.listTaskStates(id)
+      .then((states) => {
+        if (!active) return;
+        setTaskStatuses({
+          ...initialTaskStatuses(),
+          ...Object.fromEntries(
+            (Array.isArray(states) ? states : []).map(({ taskKey, status }) => [taskKey, status])
+          ),
+        });
+      })
+      .catch((error) => {
+        // The task list stays usable; a failed request must never fall back to browser storage.
+        console.error("Unable to load matter task states.", error);
+      });
+    return () => { active = false; };
+  }, [id]);
 
   const { response } = useSelector((state) => state.userProfileInfo);
   const selectSingleMatter = useSelector(selectSingleMatterData);
@@ -162,11 +166,14 @@ const SingleMatter = () => {
   const matterWasNotFound = !singleMatterLoading && !selectSingleMatter?.body?.[0];
 
   // Build task list with statuses and disabled states
-  // Only Matter Intake and Child & Spousal Support are enabled for now
+  // Forms work is backed by the new Forms API; remaining workflow steps stay
+  // unavailable until their corresponding database-backed experiences exist.
   const tasks = TASK_DEFS.map((t) => {
     const enabled =
       t.id === "matter_intake" ||
       t.id === "child_spousal_support" ||
+      t.id === "draft_divorce_docs" ||
+      t.id === "review_forms" ||
       t.id === "general_query";
 
     return {
@@ -176,13 +183,21 @@ const SingleMatter = () => {
     };
   });
 
-  // Helper: update a task status in both React state and localStorage
   function persistTaskStatus(taskId, status) {
-    const storageKey = `matterTaskStatuses_${id}`;
-    setTaskStatuses((s) => {
-      const updated = { ...s, [taskId]: status };
-      localStorage.setItem(storageKey, JSON.stringify(updated));
-      return updated;
+    setTaskStatuses((current) => ({ ...current, [taskId]: status }));
+    return formsService.setTaskState(id, taskId, status).catch((error) => {
+      console.error("Unable to save matter task state.", error);
+      // Reload the authoritative state if the optimistic update did not persist.
+      return formsService.listTaskStates(id).then((states) => {
+        setTaskStatuses({
+          ...initialTaskStatuses(),
+          ...Object.fromEntries(
+            (Array.isArray(states) ? states : []).map(({ taskKey, status: savedStatus }) => [taskKey, savedStatus])
+          ),
+        });
+      }).catch((refreshError) => {
+        console.error("Unable to refresh matter task states.", refreshError);
+      });
     });
   }
 
@@ -198,6 +213,16 @@ const SingleMatter = () => {
         persistTaskStatus("child_spousal_support", "in_progress");
       }
       setView("support_choice");
+    } else if (taskId === "draft_divorce_docs") {
+      if (taskStatuses.draft_divorce_docs === "not_started") {
+        persistTaskStatus("draft_divorce_docs", "in_progress");
+      }
+      history.push("/forms/create-new");
+    } else if (taskId === "review_forms") {
+      if (taskStatuses.review_forms === "not_started") {
+        persistTaskStatus("review_forms", "in_progress");
+      }
+      setView("profile_summary");
     } else if (taskId === "general_query") {
       // Future: open general query chat
     }
@@ -245,10 +270,7 @@ const SingleMatter = () => {
   }
 
   function handleChildSupportComplete() {
-    setTaskStatuses((s) => ({
-      ...s,
-      child_spousal_support: "completed",
-    }));
+    persistTaskStatus("child_spousal_support", "completed");
     setView("tasks");
   }
 
@@ -440,6 +462,10 @@ const SingleMatter = () => {
                   matterId={id}
                   onComplete={handleMatterIntakeComplete}
                   onBack={() => setView("tasks")}
+                  onSaved={(savedMatter) => {
+                    setIntakeMatterData(savedMatter);
+                    dispatch(getSingleMatter(id));
+                  }}
                 />
               ) : (
                 <Loader isLoading />
@@ -515,10 +541,7 @@ const SingleMatter = () => {
                 matterData={fullMatterData}
                 matterId={id}
                 onComplete={() => {
-                  setTaskStatuses((s) => ({
-                    ...s,
-                    child_spousal_support: "completed",
-                  }));
+                  persistTaskStatus("child_spousal_support", "completed");
                   setView("tasks");
                 }}
               />

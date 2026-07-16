@@ -8,6 +8,7 @@ const migratedDataEndpoints = [
     /^get_single_matter_data\//,
     /^get_single_matter_data_all\//,
     /^save_matter\//,
+    /^patch_matter_intake\//,
     /^update_matter\//,
     /^get_municipalities\//,
     /^get_courts\//,

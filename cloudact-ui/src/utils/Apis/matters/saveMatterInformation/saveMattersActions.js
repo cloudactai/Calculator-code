@@ -45,6 +45,25 @@ export const saveMatter = (saveData,state = {}, action) => async (dispatch) => {
     }
 }
 
+// AI intake is intentionally a separate endpoint: it can only patch stored
+// values and returns the authoritative saved snapshot plus completion state.
+export const patchMatterIntake = ({ matter_id, patches }) => async (dispatch) => {
+  dispatch(saveDataRequest());
+  try {
+    const { data } = await fetchRequest(
+      "post",
+      `patch_matter_intake/${getUserSID()}/${matter_id}`,
+      { source: "ai-intake", patches }
+    );
+    if (data?.data?.code !== 200) throw new Error("AI intake patch was rejected.");
+    dispatch({ type: types.SAVE_MATTERS_SUCCESS, payload: data.data.body });
+    return data.data.body;
+  } catch (err) {
+    dispatch({ type: types.SAVE_MATTERS_FAIL, payload: "Error" });
+    throw err;
+  }
+};
+
 export const saveMatterReset = () => async dispatch => {
   dispatch(saveDataReset());
 };

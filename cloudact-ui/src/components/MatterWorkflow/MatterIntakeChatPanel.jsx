@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import { useDispatch } from "react-redux";
 import { CALCULATOR_API } from "../../config";
-import { saveMatter } from "../../utils/Apis/matters/saveMatterInformation/saveMattersActions";
+import { patchMatterIntake } from "../../utils/Apis/matters/saveMatterInformation/saveMattersActions";
 import refreshIcon from "../../assets/images/refresh-icon.png";
 import {
   buildStoredMatterContextMessage,
@@ -53,6 +53,7 @@ export default function MatterIntakeChatPanel({
   matterId,
   onComplete,
   onBack,
+  onSaved,
 }) {
   const dispatch = useDispatch();
 
@@ -101,26 +102,18 @@ export default function MatterIntakeChatPanel({
   // Persist only the changes returned in this response. The AI route applies these
   // as non-destructive patches; the manual forms retain full-section save semantics.
   async function persistSections(sections) {
-    if (!Array.isArray(sections) || sections.length === 0) return;
+    const patches = (Array.isArray(sections) ? sections : [])
+      .filter(({ section, data }) => section && data !== undefined);
+    // Even a reply with no extracted fields gets an authoritative completion
+    // check against stored data.
 
-    const sectionPatch = {};
-    sections.forEach(({ section, data }) => {
-      if (!section) return;
-      capturedSectionsRef.current[section] = true;
-      sectionPatch[section] = data;
-    });
-
-    if (Object.keys(sectionPatch).length === 0) return;
-
-    await dispatch(
-      saveMatter({
-        matter_id: matterId,
-        save_mode: "merge",
-        data: sectionPatch,
-      })
-    );
-
+    // Preserve order and duplicates: two tool calls for Assets must become two
+    // sequential server patches, never a section-keyed object overwrite.
+    const result = await dispatch(patchMatterIntake({ matter_id: matterId, patches }));
+    patches.forEach(({ section }) => { capturedSectionsRef.current[section] = true; });
     setSavedSections(Object.keys(capturedSectionsRef.current));
+    if (result?.matter && onSaved) onSaved(result.matter);
+    return result;
   }
 
   async function send(text, { hideUserBubble = false } = {}) {
@@ -157,14 +150,10 @@ export default function MatterIntakeChatPanel({
         // Wait for persistence before marking the intake complete. The parent
         // refreshes matter-header fields (financial year / valuation date) in
         // response to completion, so firing it early creates a stale read race.
-        await persistSections(data.saved_sections);
-        // Prefer the service's explicit completion state. Keep wording detection
-        // as a compatibility fallback while older deployments are still active.
-        const replyText = data.reply || "";
-        const completionReply =
-          !/(?:not|isn't|is not|hasn't|has not)\s+(?:yet\s+)?(?:complete|completed|saved|been saved)/i.test(replyText) &&
-          /intake.{0,60}(?:complete|completed|saved)|complete and saved|(?:everything|all (?:sections|information|details)).{0,60}(?:complete|completed|captured|saved)/i.test(replyText);
-        if (data.intake_complete === true || completionReply) {
+        const saved = await persistSections(data.saved_sections);
+        // Only the backend's validation of the reloaded database record can
+        // complete intake. AI wording and its legacy intake_complete flag are UI text.
+        if (saved?.completion?.complete === true) {
           setIntakeComplete(true);
           if (onComplete) onComplete();
         }
@@ -174,7 +163,7 @@ export default function MatterIntakeChatPanel({
         ...b,
         {
           role: "assistant",
-          text: "Could not reach the intake service. Please try again.",
+          text: "Your message is still in this chat, but its intake update could not be saved. Please send it again.",
         },
       ]);
     } finally {

@@ -56,7 +56,7 @@ import FreCal from "../pages/freeCalculator/Calculator.tsx";
 import FreeCalApi from "../pages/freeCalculatorApi/Calculator.tsx";
 import InProgressCalc from "../pages/InProgressCalc/index";
 import SingleMatter from "../pages/matters/SingleMatter";
-import FillInformation from "../pages/formPages/FillInformation";
+import FillPdf from "../pages/formPages/FillPdf";
 import CreateNewFormPage from "../pages/formPages/CreateNewFormPage";
 import ReportIssue from "../pages/ReportIssue";
 import DemoApi from "../pages/calculator/screen4/DemoApi";
@@ -442,6 +442,12 @@ const Routes = () => {
         </AuthUser>
       </Route>
 
+      <Route path="/matters/:matterNumber/forms/:documentId">
+        <AuthUser sidAccess={accessPagesState?.auth_forms} usersAuth={rl_all}>
+          <FillPdf />
+        </AuthUser>
+      </Route>
+
       <Route path={AUTH_ROUTES.MATTER_DASHBOARD}>
         <AuthUser sidAccess={accessPagesState?.auth_matters} usersAuth={rl_all}>
           <MatterDashboard />
@@ -454,9 +460,15 @@ const Routes = () => {
         </AuthUser>
       </Route>
 
+      <Route path={AUTH_ROUTES.FORMS_CREATE_NEW_FILL_PDF}>
+        <AuthUser sidAccess={accessPagesState?.auth_forms} usersAuth={rl_all}>
+          <Redirect to={AUTH_ROUTES.FORMS_CREATE_NEW} />
+        </AuthUser>
+      </Route>
+
       <Route path={AUTH_ROUTES.FORMS_CREATE_NEW_FILL_INFORMATION}>
         <AuthUser sidAccess={accessPagesState?.auth_forms} usersAuth={rl_all}>
-          <FillInformation />
+          <Redirect to={AUTH_ROUTES.FORMS_CREATE_NEW} />
         </AuthUser>
       </Route>
 

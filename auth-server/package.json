@@ -8,8 +8,13 @@
     "node": ">=18"
   },
   "scripts": {
-    "start": "npx prisma migrate deploy && node server.js",
+    "start": "npx prisma migrate deploy && node scripts/bootstrap-forms.js && node server.js",
     "dev": "node server.js",
+    "forms:prepare-export": "node scripts/prepare-legacy-form-export.js",
+    "forms:validate-export": "node scripts/import-form-templates.js form-template-export --dry-run",
+    "forms:import": "node scripts/import-form-templates.js form-template-export",
+    "forms:import:render-safe": "node scripts/import-form-templates-render-safe.js",
+    "forms:bootstrap": "node scripts/bootstrap-forms.js",
     "postinstall": "prisma generate"
   },
   "dependencies": {
