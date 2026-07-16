@@ -12,6 +12,10 @@ let prisma;
 const dir = process.argv[2];
 if (!dir) throw new Error("Usage: node scripts/import-form-templates.js <export-directory>");
 const dryRun = process.argv.includes("--dry-run");
+const onlyDocId = process.argv.includes("--doc-id")
+  ? process.argv[process.argv.indexOf("--doc-id") + 1]
+  : null;
+if (process.argv.includes("--doc-id") && !onlyDocId) throw new Error("--doc-id requires a template docId.");
 const catalog = JSON.parse(fs.readFileSync(path.join(dir, "catalog.json"), "utf8"));
 if (!Array.isArray(catalog)) throw new Error("catalog.json must be an array.");
 const sha256 = (value) => crypto.createHash("sha256").update(value).digest("hex");
@@ -19,8 +23,10 @@ const sha256 = (value) => crypto.createHash("sha256").update(value).digest("hex"
 async function main() {
   if (!dryRun) prisma = require("../prismaClient");
   const seen = new Set();
-  for (let index = 0; index < catalog.length; index += 1) {
-    const item = catalog[index];
+  const selectedCatalog = onlyDocId ? catalog.filter((item) => item.docId === onlyDocId) : catalog;
+  if (onlyDocId && selectedCatalog.length !== 1) throw new Error(`Unknown template docId: ${onlyDocId}`);
+  for (let index = 0; index < selectedCatalog.length; index += 1) {
+    const item = selectedCatalog[index];
     if (!item.docId || seen.has(item.docId)) throw new Error(`Duplicate or missing docId: ${item.docId || "<missing>"}`);
     seen.add(item.docId);
     const pdf = fs.readFileSync(path.join(dir, `${item.docId}.pdf`));
@@ -43,4 +49,4 @@ async function main() {
   }
 }
 
-main().then(() => console.log(dryRun ? "Form template export validated." : "Form templates imported.")).finally(() => prisma?.$disconnect());
+main().then(() => console.log(dryRun ? "Form template export validated." : `Form template${onlyDocId ? ` ${onlyDocId}` : "s"} imported.`)).finally(() => prisma?.$disconnect());

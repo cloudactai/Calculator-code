@@ -17,3 +17,10 @@ import the templates:
 ```bash
 node scripts/import-form-templates.js form-template-export
 ```
+
+On Render's 512 MB instance, import one template per Shell command so each PDF
+buffer is released when the Node process exits:
+
+```bash
+node scripts/import-form-templates.js form-template-export --doc-id Form13_1
+```
