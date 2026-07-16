@@ -57,7 +57,6 @@ import FreeCalApi from "../pages/freeCalculatorApi/Calculator.tsx";
 import InProgressCalc from "../pages/InProgressCalc/index";
 import SingleMatter from "../pages/matters/SingleMatter";
 import FillPdf from "../pages/formPages/FillPdf";
-import FillInformation from "../pages/formPages/FillInformation";
 import CreateNewFormPage from "../pages/formPages/CreateNewFormPage";
 import ReportIssue from "../pages/ReportIssue";
 import DemoApi from "../pages/calculator/screen4/DemoApi";
@@ -463,13 +462,13 @@ const Routes = () => {
 
       <Route path={AUTH_ROUTES.FORMS_CREATE_NEW_FILL_PDF}>
         <AuthUser sidAccess={accessPagesState?.auth_forms} usersAuth={rl_all}>
-          <FillPdf />
+          <Redirect to={AUTH_ROUTES.FORMS_CREATE_NEW} />
         </AuthUser>
       </Route>
 
       <Route path={AUTH_ROUTES.FORMS_CREATE_NEW_FILL_INFORMATION}>
         <AuthUser sidAccess={accessPagesState?.auth_forms} usersAuth={rl_all}>
-          <FillInformation />
+          <Redirect to={AUTH_ROUTES.FORMS_CREATE_NEW} />
         </AuthUser>
       </Route>
 
