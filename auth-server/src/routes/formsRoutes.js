@@ -74,12 +74,28 @@ function documentDto(document) {
 async function activeTemplateVersion(docId, version) {
   return prisma.formTemplateVersion.findFirst({
     where: {
-      active: true,
-      ...(Number.isInteger(version) ? { version } : {}),
+      ...(Number.isInteger(version) ? { version } : { active: true }),
       template: { docId },
     },
     orderBy: { version: "desc" },
   });
+}
+
+function canManageTemplateMappings(userId) {
+  return new Set(
+    String(process.env.FORMS_TEMPLATE_ADMIN_USER_IDS || "")
+      .split(",")
+      .map((id) => id.trim())
+      .filter(Boolean)
+  ).has(String(userId));
+}
+
+function validFieldMapping(mapping) {
+  return mapping
+    && typeof mapping === "object"
+    && !Array.isArray(mapping)
+    && Array.isArray(mapping.staticFields)
+    && mapping.staticFields.every((field) => field && typeof field === "object" && !Array.isArray(field) && String(field.id || "").trim());
 }
 
 function sendTemplatePdf(res, version) {
@@ -180,6 +196,14 @@ router.get("/form-template-provinces", async (req, res) => {
   return res.json({ data: provinces });
 });
 
+router.get("/form-templates/:docId/active", async (req, res) => {
+  const docId = String(req.params.docId || "");
+  if (!/^[\w.-]+$/.test(docId)) return res.status(400).json({ message: "Invalid template." });
+  const version = await activeTemplateVersion(docId);
+  if (!version) return res.status(404).json({ message: "Template is unavailable." });
+  return res.json({ data: { docId, version: version.version } });
+});
+
 router.get("/matters", async (req, res) => {
   const matters = await prisma.matter.findMany({
     where: { userId: req.user.id },
@@ -240,6 +264,47 @@ router.get("/form-templates/:docId/versions/:version/mapping", async (req, res) 
   const templateVersion = await activeTemplateVersion(docId, version);
   if (!templateVersion?.fieldMapping) return res.status(404).json({ message: "Field mapping is unavailable." });
   return res.json(templateVersion.fieldMapping);
+});
+
+router.post("/form-templates/:docId/versions/:version/mapping", async (req, res) => {
+  if (!canManageTemplateMappings(req.user.id)) {
+    return res.status(403).json({ message: "You are not allowed to publish form template mappings." });
+  }
+  const docId = String(req.params.docId || "");
+  const version = Number(req.params.version);
+  const mapping = req.body?.mapping;
+  if (!/^[\w.-]+$/.test(docId) || !Number.isInteger(version) || version < 1 || !validFieldMapping(mapping)) {
+    return res.status(400).json({ message: "A valid template version and field mapping are required." });
+  }
+  const mappingChecksum = crypto.createHash("sha256").update(JSON.stringify(mapping)).digest("hex");
+  const published = await prisma.$transaction(async (tx) => {
+    const source = await tx.formTemplateVersion.findFirst({
+      where: { version, template: { docId } },
+      include: { template: true },
+    });
+    if (!source) return null;
+    const latest = await tx.formTemplateVersion.aggregate({ where: { templateId: source.templateId }, _max: { version: true } });
+    const nextVersion = (latest._max.version || 0) + 1;
+    await tx.formTemplateVersion.updateMany({ where: { templateId: source.templateId, active: true }, data: { active: false } });
+    const created = await tx.formTemplateVersion.create({
+      data: {
+        templateId: source.templateId,
+        version: nextVersion,
+        pdfBytes: source.pdfBytes,
+        pdfPath: source.pdfPath,
+        pageCount: source.pageCount,
+        pdfChecksum: source.pdfChecksum,
+        fieldMapping: mapping,
+        mappingChecksum,
+        effectiveDate: new Date(),
+        active: true,
+      },
+    });
+    await tx.formTemplate.update({ where: { id: source.templateId }, data: { mappingReady: true } });
+    return created;
+  });
+  if (!published) return res.status(404).json({ message: "Template version not found." });
+  return res.status(201).json({ data: { docId, version: published.version, mappingChecksum: published.mappingChecksum } });
 });
 
 router.post("/matters/:matterNumber/forms", async (req, res) => {
