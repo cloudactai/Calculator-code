@@ -24,3 +24,9 @@ buffer is released when the Node process exits:
 ```bash
 node scripts/import-form-templates.js form-template-export --doc-id Form13_1
 ```
+
+The equivalent Render Shell command for the complete catalog is:
+
+```bash
+npm run forms:import:render-safe && npm run forms:backfill
+```
