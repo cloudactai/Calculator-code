@@ -28,8 +28,15 @@ jest.mock("../../utils/helpers", () => ({
   getUserSID: () => "1",
 }));
 jest.mock("../../utils/fetchRequest", () => ({ fetchRequest: jest.fn() }));
+jest.mock("../../services/formsService", () => ({
+  formsService: {
+    listTaskStates: jest.fn(() => Promise.resolve([])),
+    setTaskState: jest.fn(() => Promise.resolve({})),
+  },
+}));
 
 import { fetchRequest } from "../../utils/fetchRequest";
+import { formsService } from "../../services/formsService";
 import store from "../../store";
 import SingleMatter from "./SingleMatter";
 
@@ -37,6 +44,8 @@ beforeEach(() => {
   localStorage.clear();
   mockMatterIntakeProps.mockClear();
   fetchRequest.mockResolvedValue({ data: { data: { body: [] } } });
+  formsService.listTaskStates.mockResolvedValue([]);
+  formsService.setTaskState.mockResolvedValue({});
 });
 
 function renderPage() {

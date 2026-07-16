@@ -128,15 +128,6 @@ const FillPdf = ({ currentUserRole }) => {
     }
   };
 
-  const fetchFormJson = async (jsonName) => {
-    try {
-      const response = await axios.get(`/fetch-json?fileName=${jsonName}.json`);
-      return response.data.staticFields;
-    } catch (error) {
-      console.error("Error fetching the JSON:", error);
-    }
-  };
-
   useEffect(() => {
     if (activeForm?.docId) {
       fetchFormPdf(activeForm.docId);
@@ -202,7 +193,13 @@ const FillPdf = ({ currentUserRole }) => {
     }
   };
 
-  // Add this new function near your other field management functions
+  /*
+   * Retired legacy client-side prefill engine. Persisted forms now receive
+   * their mapping and prefilled values from the authenticated Forms API above.
+   * It remains excluded from execution pending its physical removal in a
+   * dedicated source-size cleanup; it must not be called by this editor.
+   */
+  /*
   const calculateAge = (dateOfBirth) => {
     if (!dateOfBirth) return '';
 
@@ -1618,6 +1615,7 @@ const FillPdf = ({ currentUserRole }) => {
 
     return `${formattedInteger}.${decimalPart}`;
   };
+  */
 
 
 

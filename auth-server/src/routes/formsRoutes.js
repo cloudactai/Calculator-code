@@ -18,6 +18,8 @@ async function matterForUser(userId, matterNumber) {
   });
 }
 
+const TASK_STATUSES = new Set(["not_started", "in_progress", "completed"]);
+
 function templateDto(template) {
   return {
     form_id: template.id,
@@ -107,6 +109,33 @@ router.get("/forms", async (req, res) => {
   };
   const templates = await prisma.formTemplate.findMany({ where, orderBy: [{ sortOrder: "asc" }, { title: "asc" }] });
   return res.json({ data: templates.map(templateDto) });
+});
+
+router.get("/matters/:matterNumber/task-states", async (req, res) => {
+  const matter = await matterForUser(req.user.id, req.params.matterNumber);
+  if (!matter) return res.status(404).json({ message: "Matter not found." });
+  const states = await prisma.matterTaskState.findMany({
+    where: { matterId: matter.id },
+    select: { taskKey: true, status: true, updatedAt: true },
+  });
+  return res.json({ data: states });
+});
+
+router.put("/matters/:matterNumber/task-states/:taskKey", async (req, res) => {
+  const matter = await matterForUser(req.user.id, req.params.matterNumber);
+  const taskKey = String(req.params.taskKey || "").trim();
+  const status = String(req.body?.status || "").trim();
+  if (!matter) return res.status(404).json({ message: "Matter not found." });
+  if (!/^[a-z][a-z0-9_]{0,99}$/.test(taskKey) || !TASK_STATUSES.has(status)) {
+    return res.status(400).json({ message: "A valid task key and status are required." });
+  }
+  const taskState = await prisma.matterTaskState.upsert({
+    where: { matterId_taskKey: { matterId: matter.id, taskKey } },
+    create: { matterId: matter.id, taskKey, status },
+    update: { status },
+    select: { taskKey: true, status: true, updatedAt: true },
+  });
+  return res.json({ data: taskState });
 });
 
 router.get("/fetch-pdf", async (req, res) => {
