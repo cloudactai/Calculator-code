@@ -7,6 +7,17 @@ const { authMiddleware } = require("../middleware/authMiddleware");
 const router = express.Router();
 router.use(authMiddleware);
 
+// The database-backed Forms flow remains enabled by default so existing
+// production users are not interrupted. Set FORMS_DATABASE_BACKEND=false to
+// stop Forms traffic at this boundary during a controlled rollback.
+const formsDatabaseBackendEnabled = !["false", "0", "off"].includes(
+  String(process.env.FORMS_DATABASE_BACKEND || "true").trim().toLowerCase()
+);
+router.use((req, res, next) => {
+  if (formsDatabaseBackendEnabled) return next();
+  return res.status(503).json({ message: "The Forms service is temporarily unavailable." });
+});
+
 const legacyOk = (body) => ({ data: { code: 200, status: "success", body } });
 const legacyError = (message, code = 404) => ({ data: { code, status: "error", message } });
 const normaliseFolderTitle = (value) => String(value || "").trim().replace(/\s+/g, " ").toLocaleLowerCase();
@@ -61,11 +72,55 @@ function documentDto(document) {
 }
 
 function readPath(source, path) {
-  return String(path || "").split(".").reduce((value, key) => value == null ? undefined : value[key], source);
+  return String(path || "")
+    .replace(/\[(\d+)\]/g, ".$1")
+    .split(".")
+    .filter(Boolean)
+    .reduce((value, key) => value == null ? undefined : value[key], source);
 }
 
-async function prefillFields(matter, mapping) {
-  const records = await prisma.matterRecord.findMany({ where: { matterId: matter.id } });
+function resolveBinding(source, binding) {
+  const paths = String(binding || "").split(",").map((path) => path.trim()).filter(Boolean);
+  const values = paths.map((path) => readPath(source, path));
+  if (values.length <= 1) return values[0];
+  return values.map((value) => value == null ? "" : value).join(", ");
+}
+
+function parseStoredJson(value) {
+  if (value && typeof value === "object") return value;
+  if (typeof value !== "string" || !value.trim()) return {};
+  try {
+    const parsed = JSON.parse(value);
+    return parsed && typeof parsed === "object" ? parsed : {};
+  } catch {
+    return {};
+  }
+}
+
+function supportType(calculation) {
+  const value = `${calculation.type || ""} ${calculation.calculatorType || ""}`.toLowerCase();
+  if (value.includes("child")) return "child";
+  if (value.includes("spousal")) return "spousal";
+  return null;
+}
+
+async function buildPrefillData(matter, userId) {
+  const [records, profile, calculations] = await Promise.all([
+    prisma.matterRecord.findMany({ where: { matterId: matter.id } }),
+    prisma.user.findUnique({
+      where: { id: userId },
+      select: { firstName: true, lastName: true, name: true, email: true, phoneNumber: true, street: true, addressProvince: true, country: true },
+    }),
+    prisma.savedCalculation.findMany({
+      where: {
+        userId,
+        status: { equals: "completed", mode: "insensitive" },
+        OR: [{ matterDbId: matter.id }, { matterId: matter.matterNumber }],
+      },
+      select: { type: true, calculatorType: true, data: true, updatedAt: true },
+      orderBy: { updatedAt: "desc" },
+    }),
+  ]);
   const rows = (type) => {
     const data = records.find((record) => record.dataType === type)?.data;
     return Array.isArray(data) ? data : [];
@@ -84,20 +139,37 @@ async function prefillFields(matter, mapping) {
   const court = rows("court")[0] || {};
   const employmentRows = rows("employment");
   const byRole = (collection, role) => collection.find((item) => item.role === role) || {};
-  const data = {
+  const support = {};
+  for (const calculation of calculations) {
+    const type = supportType(calculation);
+    if (type && !support[type]) support[type] = parseStoredJson(calculation.data);
+  }
+  const applicantLawyer = lawyer(client);
+  const respondentLawyer = lawyer(opposingParty);
+  return {
     matter: { matterNumber: matter.matterNumber, province: matter.province, clientName: matter.clientName },
     court_info: { courtName: court.court_name || "", courtFileNumber: court.file_number || "", courtOfficeAddress: court.address || "" },
-    applicant: person(client), applicantsLawyer: lawyer(client),
-    respondent: person(opposingParty), respondentsLawyer: lawyer(opposingParty),
+    court: court,
+    applicant: person(client), applicantLawyer, applicantsLawyer: applicantLawyer,
+    respondent: person(opposingParty), respondentLawyer, respondentsLawyer: respondentLawyer,
     employmentStatus: { client: byRole(employmentRows, "Client"), opposingParty: byRole(employmentRows, "Opposing Party") },
     children: rows("children"), relationship: rows("relationship")[0] || {},
+    income: rows("incomeBenefits")[0] || rows("income_benefits")[0] || {},
+    expenses: rows("expenses")[0] || {},
+    assets: rows("assets")[0] || {},
+    debts: rows("debt")[0] || rows("debts_liabilities")[0] || {},
+    profile: profile || {},
+    support,
   };
+}
+
+function prefillFields(data, mapping) {
   const fields = Array.isArray(mapping?.staticFields) ? mapping.staticFields : [];
   const values = {};
   const provenance = {};
   for (const field of fields) {
     if (!field?.id || !field.bind) continue;
-    const value = readPath(data, field.bind);
+    const value = resolveBinding(data, field.bind);
     if (value !== undefined && value !== null && value !== "") {
       values[field.id] = value;
       provenance[field.id] = "prefill";
@@ -194,6 +266,7 @@ router.post("/matters/:matterNumber/forms", async (req, res) => {
   const { folderId, templateIds } = req.body || {};
   if (!matter || !Array.isArray(templateIds) || templateIds.length === 0) return res.status(400).json({ message: "A matter and at least one form are required." });
   const ids = [...new Set(templateIds.map(Number).filter(Number.isInteger))];
+  const prefillData = await buildPrefillData(matter, req.user.id);
   const result = await prisma.$transaction(async (tx) => {
     if (folderId != null) {
       const folder = await tx.matterFolder.findFirst({ where: { id: Number(folderId), matterId: matter.id } });
@@ -203,7 +276,7 @@ router.post("/matters/:matterNumber/forms", async (req, res) => {
     if (versions.length !== ids.length) throw Object.assign(new Error("One or more selected templates are not production ready."), { status: 400 });
     const documents = [];
     for (const version of versions) {
-      const initial = await prefillFields(matter, version.fieldMapping);
+      const initial = prefillFields(prefillData, version.fieldMapping);
       documents.push(await tx.matterFormDocument.create({ data: { matterId: matter.id, folderId: folderId == null ? null : Number(folderId), templateVersionId: version.id, displayName: version.template.fileName, fieldValues: initial.values, fieldProvenance: initial.provenance }, include: { templateVersion: { include: { template: true } } } }));
     }
     return documents;
