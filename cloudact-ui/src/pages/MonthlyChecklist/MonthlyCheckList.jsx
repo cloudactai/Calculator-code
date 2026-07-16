@@ -61,7 +61,7 @@ import { default as NumberFormat } from "react-number-format";
 import { AUTH_ROUTES } from "../../routes/Routes.types";
 import Loader from "../../components/Loader";
 import { getSvg } from "./checkListAssets/checklistAsset";
-// import ChecklistPdf from "./ChecklistPdf/ChecklistPdf";
+// PDF generation removed
 
 const MonthlyCheckList = ({ activeFormProp, monthlyChecklistIDProp }) => {
   const intervalIdRef = useRef(null);
@@ -1653,31 +1653,7 @@ const MonthlyCheckList = ({ activeFormProp, monthlyChecklistIDProp }) => {
     ],
   };
 
-  const generatePdf = async (type) => {
-    const step = new URLSearchParams(location.search).get("step");
-
-    try {
-      console.log("pdf");
-      const signOffinfo = await axios.post(`/pdf/generate`, {
-        task_id: getMonthlyChecklistId(),
-        user_id: getUserId(),
-        type: parseInt(step),
-        role: userRole.role,
-        prepinfo: {
-          id: history.location.state.task_preparer,
-          role: "PREPARER",
-        },
-        taxinfo: form6Data.taxFilingDetails,
-        // get report order based on type for general report we need to pass type 1 , for credit report 2 and for trust report 3 .
-        reportOrder: mapBasedOnChecklistType[type],
-      });
-
-      console.log("✌️signOffinfo --->", signOffinfo);
-    } catch (err) {
-      toast.error("Server Error:downloading checklist pdf");
-      throw err.message;
-    }
-  };
+  // PDF generation removed
 
   const postToDB = async (type, obj) => {
     const response = await axios.post(`/${type}`, obj);
@@ -5087,7 +5063,7 @@ const MonthlyCheckList = ({ activeFormProp, monthlyChecklistIDProp }) => {
                                   new Date().toISOString(),
                               }));
 
-                              generatePdf(1);
+                              // PDF generation removed
 
                               setTimeout(() => {
                                 Cookies.set(
@@ -5670,7 +5646,7 @@ const MonthlyCheckList = ({ activeFormProp, monthlyChecklistIDProp }) => {
                               new Date().toISOString(),
                           }));
 
-                          generatePdf(2);
+                          // PDF generation removed
 
                           setTimeout(() => {
                             Cookies.set(
@@ -6852,7 +6828,7 @@ const MonthlyCheckList = ({ activeFormProp, monthlyChecklistIDProp }) => {
                             new Date().toISOString(),
                         }));
 
-                        generatePdf(3);
+                        // PDF generation removed
 
                         setTimeout(() => {
                           Cookies.set(

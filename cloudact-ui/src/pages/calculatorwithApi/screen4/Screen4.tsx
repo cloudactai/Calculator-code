@@ -17,6 +17,8 @@ import {
 } from "../Calculator";
 //@ts-ignore
 import Reports from "../reports/Reports.tsx";
+//@ts-ignore
+import CalculationReport from "../../freeCalculatorApi/reports/CalculationReport.tsx";
 
 import {
   aboutTheRelationshipState,
@@ -79,6 +81,7 @@ const Screen4 = ({
 }: Props) => {
   const query = useQuery();
   let calculator_report = useRef(null);
+  const reportRef = useRef<HTMLDivElement>(null);
   const history = useHistory();
 
 
@@ -968,6 +971,43 @@ const Screen4 = ({
           >
             Home Page
           </button>
+          <ReactToPrint
+            trigger={() => (
+              <button
+                className="btn"
+                style={{
+                  backgroundColor: "#2d5aa0",
+                  color: "#fff",
+                  padding: "10px 30px",
+                  borderRadius: "50px",
+                  fontSize: "14px",
+                  fontWeight: "bold",
+                  cursor: "pointer",
+                  border: "none",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "8px",
+                }}
+              >
+                <i className="fa-solid fa-file-pdf" style={{ fontSize: "16px" }}></i>
+                Download Report
+              </button>
+            )}
+            content={() => reportRef.current}
+            documentTitle={`CloudAct_Calculation_Report_${screen1.background.party1FirstName}_${screen1.background.party2FirstName}`}
+            pageStyle={`
+              @page {
+                size: landscape;
+                margin: 10mm;
+              }
+              @media print {
+                body {
+                  -webkit-print-color-adjust: exact !important;
+                  print-color-adjust: exact !important;
+                }
+              }
+            `}
+          />
           {query.get("saveValues") === "true" && (
             <button
               onClick={() => {
@@ -994,7 +1034,7 @@ const Screen4 = ({
                 }}
                 trigger={() => (
                   <button className="btn btnPrimary rounded-pill">
-                    Download Report
+                    Download Full Report
                   </button>
                 )}
                 content={() => calculator_report.current}
@@ -1008,6 +1048,28 @@ const Screen4 = ({
           <Reports ref={calculator_report} data={reportData.data} />
         </div>
       )}
+
+      {/* Hidden Report Template for PDF Generation */}
+      <div
+        style={{
+          position: "absolute",
+          left: "-9999px",
+          top: 0,
+          opacity: 0,
+          visibility: "hidden",
+          pointerEvents: "none",
+        }}
+      >
+        <CalculationReport
+          ref={reportRef}
+          background={screen1.background}
+          aboutTheChildren={screen1.aboutTheChildren}
+          aboutTheRelationship={screen1.aboutTheRelationship}
+          screen2={screen2}
+          typeOfCalculatorSelected={typeOfCalculatorSelected}
+          supportQuantum={supportQuantum}
+        />
+      </div>
 
     </>
   );

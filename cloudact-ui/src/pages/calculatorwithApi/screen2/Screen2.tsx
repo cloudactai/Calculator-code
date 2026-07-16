@@ -880,6 +880,19 @@ const Screen2 = ({
     party2: 0,
   });
 
+  const disposableIncomeRef = useRef({
+    party1Low: 0, party1Mid: 0, party1High: 0,
+    party2Low: 0, party2Mid: 0, party2High: 0,
+  });
+  const taxesFromApiRef = useRef({
+    party1Low: 0, party1Mid: 0, party1High: 0,
+    party2Low: 0, party2Mid: 0, party2High: 0,
+  });
+  const benefitsFromApiRef = useRef({
+    party1Low: 0, party1Mid: 0, party1High: 0,
+    party2Low: 0, party2Mid: 0, party2High: 0,
+  });
+
   const changeInTaxesAndBenefitLow = useRef<twoPartyStates>({
     party1: 0,
     party2: 0,
@@ -2316,6 +2329,9 @@ const Screen2 = ({
       basicPersonalAmountProvincialFixed: basicPersonalAmountProvincialFixed,
       amountForEligibleDependentProvincialFixed:
         amountForEligibleDependentProvincialFixed,
+      disposableIncome: disposableIncomeRef.current,
+      taxesFromApi: taxesFromApiRef.current,
+      benefitsFromApi: benefitsFromApiRef.current,
     };
 
     syncUpParty1Deduction(specialExpensesArr, "21400");
@@ -5180,6 +5196,65 @@ const Screen2 = ({
       // instead of the local JS formula when building screen2.spousalSupport.
       if (spousalIterativeResult) {
         spousalSupportIterativeRef.current = spousalIterativeResult;
+
+        // Store INDI (disposable income) values, mapping payor/recipient → party1/party2
+        const payorIsParty1 = party1GrossAnnual >= party2GrossAnnual;
+        if (payorIsParty1) {
+          disposableIncomeRef.current = {
+            party1Low: spousalIterativeResult.payor_indi_low ?? 0,
+            party1Mid: spousalIterativeResult.payor_indi_mid ?? 0,
+            party1High: spousalIterativeResult.payor_indi_high ?? 0,
+            party2Low: spousalIterativeResult.recipient_indi_low ?? 0,
+            party2Mid: spousalIterativeResult.recipient_indi_mid ?? 0,
+            party2High: spousalIterativeResult.recipient_indi_high ?? 0,
+          };
+        } else {
+          disposableIncomeRef.current = {
+            party1Low: spousalIterativeResult.recipient_indi_low ?? 0,
+            party1Mid: spousalIterativeResult.recipient_indi_mid ?? 0,
+            party1High: spousalIterativeResult.recipient_indi_high ?? 0,
+            party2Low: spousalIterativeResult.payor_indi_low ?? 0,
+            party2Mid: spousalIterativeResult.payor_indi_mid ?? 0,
+            party2High: spousalIterativeResult.payor_indi_high ?? 0,
+          };
+        }
+
+        // Store taxes and benefits from API, mapping payor/recipient → party1/party2
+        if (payorIsParty1) {
+          taxesFromApiRef.current = {
+            party1Low: spousalIterativeResult.payor_taxes_low ?? 0,
+            party1Mid: spousalIterativeResult.payor_taxes_mid ?? 0,
+            party1High: spousalIterativeResult.payor_taxes_high ?? 0,
+            party2Low: spousalIterativeResult.recipient_taxes_low ?? 0,
+            party2Mid: spousalIterativeResult.recipient_taxes_mid ?? 0,
+            party2High: spousalIterativeResult.recipient_taxes_high ?? 0,
+          };
+          benefitsFromApiRef.current = {
+            party1Low: spousalIterativeResult.payor_benefits_low ?? 0,
+            party1Mid: spousalIterativeResult.payor_benefits_mid ?? 0,
+            party1High: spousalIterativeResult.payor_benefits_high ?? 0,
+            party2Low: spousalIterativeResult.recipient_benefits_low ?? 0,
+            party2Mid: spousalIterativeResult.recipient_benefits_mid ?? 0,
+            party2High: spousalIterativeResult.recipient_benefits_high ?? 0,
+          };
+        } else {
+          taxesFromApiRef.current = {
+            party1Low: spousalIterativeResult.recipient_taxes_low ?? 0,
+            party1Mid: spousalIterativeResult.recipient_taxes_mid ?? 0,
+            party1High: spousalIterativeResult.recipient_taxes_high ?? 0,
+            party2Low: spousalIterativeResult.payor_taxes_low ?? 0,
+            party2Mid: spousalIterativeResult.payor_taxes_mid ?? 0,
+            party2High: spousalIterativeResult.payor_taxes_high ?? 0,
+          };
+          benefitsFromApiRef.current = {
+            party1Low: spousalIterativeResult.recipient_benefits_low ?? 0,
+            party1Mid: spousalIterativeResult.recipient_benefits_mid ?? 0,
+            party1High: spousalIterativeResult.recipient_benefits_high ?? 0,
+            party2Low: spousalIterativeResult.payor_benefits_low ?? 0,
+            party2Mid: spousalIterativeResult.payor_benefits_mid ?? 0,
+            party2High: spousalIterativeResult.payor_benefits_high ?? 0,
+          };
+        }
       }
 
       Cookies.set('demo_cal_data', JSON.stringify(objforApi), { path: '/' });
@@ -5450,6 +5525,9 @@ const Screen2 = ({
         basicPersonalAmountProvincialFixed: basicPersonalAmountProvincialFixed,
         amountForEligibleDependentProvincialFixed:
           amountForEligibleDependentProvincialFixed,
+        disposableIncome: disposableIncomeRef.current,
+        taxesFromApi: taxesFromApiRef.current,
+        benefitsFromApi: benefitsFromApiRef.current,
       },
     };
 

@@ -353,16 +353,6 @@ const ReportHeader = ({
                         !ArchiveFilter && 
                         selectedReports.length > 1 && <div className="btnGroup">
                             <button
-                                disabled={disableDownloadReport}
-                                className={`pdf ${disableDownloadReport ? "disabled" : ""}`}
-                                onClick={() => {
-                                    downloadReports("pdf");
-                                    disabledTheDownloadReportButtons();
-                                }}
-                            >
-                                <i className="fa-solid fa-file-pdf"></i> PDF
-                            </button>
-                            <button
 
                                 disabled={disableDownloadReport}
                                 onClick={() => {

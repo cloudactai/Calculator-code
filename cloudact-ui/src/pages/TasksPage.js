@@ -77,19 +77,6 @@ const TasksPage = ({ currentUserRole }) => {
   //     });
   // }, [pageNumber, currentUserRole]);
 
-  // const handlePrint = (e) => {
-  //   const { task_month, task_type } = e;
-  //   console.log("print component", printComponent);
-  //   const task_form_download = document.querySelector("#task_form_download");
-  //   console.log("task_form_download", task_form_download);
-
-  //   const settings = {
-  //     filename: `${task_type.replaceAll(" ", "_")}_${task_month}`,
-  //   };
-
-  //   html2pdf().set(settings).from(task_form_download).save();
-  // };
-
   return (
     <Layout title="Tasks">
       {/* {!loaded && (

@@ -1,17 +1,13 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { TbDeviceFloppy } from "react-icons/tb";
 import { useHistory } from "react-router";
 import { Edit, Trash } from "tabler-icons-react";
-import html2canvas from "html2canvas";
-import { jsPDF } from "jspdf";
-import moment from "moment";
 import toast from "react-hot-toast";
 import Search from "../../assets/images/search.png";
 import InputCustom from "../../components/InputCustom";
 import ModalInputCenter from "../../components/ModalInputCenter";
 import withConditionalFeedback from "../../HOC/withConditionalFeedback";
 import useAPI from "../../hooks/useAPI";
-import Reports from "../../pages/calculator/reports/Reports";
 import { AUTH_ROUTES } from "../../routes/Routes.types";
 import { apiCalculatorById } from "../../utils/Apis/calculator/Calculator_values_id";
 import { getUserSID } from "../../utils/helpers";
@@ -58,65 +54,6 @@ const ExistingCalculations = ({
 
   const headings = ["Label", "Client Name", "Status", "Actions"];
 
-  const [reportData, setReportData] = useState(null);
-  const [generatingId, setGeneratingId] = useState(null);
-  let calculator_report = useRef(null);
-
-  // Once reportData is set and Reports renders offscreen, generate & download PDF
-  useEffect(() => {
-    if (!reportData || !generatingId) return;
-
-    const timer = setTimeout(async () => {
-      try {
-        const element = calculator_report.current;
-        if (!element) {
-          toast.error("Report content not ready");
-          return;
-        }
-
-        const pages = element.querySelectorAll(".pagePDF");
-        if (pages.length === 0) {
-          toast.error("No report pages found");
-          return;
-        }
-
-        const pdf = new jsPDF("p", "mm", "letter");
-        const pdfWidth = pdf.internal.pageSize.getWidth();
-        const pdfHeight = pdf.internal.pageSize.getHeight();
-
-        for (let i = 0; i < pages.length; i++) {
-          const canvas = await html2canvas(pages[i], {
-            scale: 2,
-            useCORS: true,
-            logging: false,
-            backgroundColor: "#ffffff",
-          });
-
-          const imgData = canvas.toDataURL("image/jpeg", 0.95);
-          const imgWidth = pdfWidth;
-          const imgHeight = (canvas.height * pdfWidth) / canvas.width;
-
-          if (i > 0) pdf.addPage();
-          pdf.addImage(imgData, "JPEG", 0, 0, imgWidth, Math.min(imgHeight, pdfHeight));
-        }
-
-        const party1 = reportData?.background?.party1FirstName || "Party1";
-        const party2 = reportData?.background?.party2FirstName || "Party2";
-        const date = moment().format("YYYY-MM-DD");
-        pdf.save(`CloudAct_Report_${party1}_${party2}_${date}.pdf`);
-        toast.success("PDF downloaded successfully");
-      } catch (err) {
-        console.error("PDF generation failed", err);
-        toast.error("Failed to generate PDF");
-      } finally {
-        setGeneratingId(null);
-        setReportData(null);
-      }
-    }, 1500);
-
-    return () => clearTimeout(timer);
-  }, [reportData, generatingId]);
-
   return (
     <div className="row">
       <div className="col-md-7">
@@ -149,16 +86,11 @@ const ExistingCalculations = ({
                 </thead>
                 <tbody>
                 
-                  <CalculationValuesTasks setReportData={setReportData} generatingId={generatingId} setGeneratingId={setGeneratingId} isLoading={isLoading} data={getSearchedCalculations()} setEditModal={setEditModal} />
+                  <CalculationValuesTasks isLoading={isLoading} data={getSearchedCalculations()} setEditModal={setEditModal} />
                 </tbody>
               </table>
             </div>
             
-            {reportData && (
-              <div style={{position: "absolute",left: "-999rem",opacity: 0,visibility: "hidden",}}>
-                <Reports ref={calculator_report} data={reportData} />
-              </div>
-            )}
           </div>
         <span className='moreBtn'><svg width="16" height="10" viewBox="0 0 16 10" fill="none" xmlns="http://www.w3.org/2000/svg"> <path d="M2.5625 1.625C2.5625 1.81042 2.50752 1.99168 2.4045 2.14585C2.30149 2.30002 2.15507 2.42018 1.98377 2.49114C1.81246 2.56209 1.62396 2.58066 1.4421 2.54449C1.26025 2.50831 1.0932 2.41902 0.962088 2.28791C0.830976 2.1568 0.741688 1.98975 0.705514 1.8079C0.669341 1.62604 0.687906 1.43754 0.758863 1.26623C0.829821 1.09493 0.949982 0.948511 1.10415 0.845498C1.25832 0.742484 1.43958 0.6875 1.625 0.6875C1.87364 0.6875 2.1121 0.786272 2.28791 0.962088C2.46373 1.1379 2.5625 1.37636 2.5625 1.625ZM8 0.6875C7.81458 0.6875 7.63332 0.742484 7.47915 0.845498C7.32498 0.948511 7.20482 1.09493 7.13386 1.26623C7.06291 1.43754 7.04434 1.62604 7.08051 1.8079C7.11669 1.98975 7.20598 2.1568 7.33709 2.28791C7.4682 2.41902 7.63525 2.50831 7.8171 2.54449C7.99896 2.58066 8.18746 2.56209 8.35877 2.49114C8.53007 2.42018 8.67649 2.30002 8.7795 2.14585C8.88252 1.99168 8.9375 1.81042 8.9375 1.625C8.9375 1.37636 8.83873 1.1379 8.66291 0.962088C8.4871 0.786272 8.24864 0.6875 8 0.6875ZM14.375 2.5625C14.5604 2.5625 14.7417 2.50752 14.8958 2.4045C15.05 2.30149 15.1702 2.15507 15.2411 1.98377C15.3121 1.81246 15.3307 1.62396 15.2945 1.4421C15.2583 1.26025 15.169 1.0932 15.0379 0.962088C14.9068 0.830976 14.7398 0.741688 14.5579 0.705514C14.376 0.66934 14.1875 0.687906 14.0162 0.758864C13.8449 0.829821 13.6985 0.949982 13.5955 1.10415C13.4925 1.25832 13.4375 1.43958 13.4375 1.625C13.4375 1.87364 13.5363 2.1121 13.7121 2.28791C13.8879 2.46373 14.1264 2.5625 14.375 2.5625ZM1.625 7.4375C1.43958 7.4375 1.25832 7.49248 1.10415 7.5955C0.949982 7.69851 0.829821 7.84493 0.758863 8.01624C0.687906 8.18754 0.669341 8.37604 0.705514 8.5579C0.741688 8.73975 0.830976 8.9068 0.962088 9.03791C1.0932 9.16903 1.26025 9.25831 1.4421 9.29449C1.62396 9.33066 1.81246 9.3121 1.98377 9.24114C2.15507 9.17018 2.30149 9.05002 2.4045 8.89585C2.50752 8.74168 2.5625 8.56042 2.5625 8.375C2.5625 8.12636 2.46373 7.8879 2.28791 7.71209C2.1121 7.53627 1.87364 7.4375 1.625 7.4375ZM8 7.4375C7.81458 7.4375 7.63332 7.49248 7.47915 7.5955C7.32498 7.69851 7.20482 7.84493 7.13386 8.01624C7.06291 8.18754 7.04434 8.37604 7.08051 8.5579C7.11669 8.73975 7.20598 8.9068 7.33709 9.03791C7.4682 9.16903 7.63525 9.25831 7.8171 9.29449C7.99896 9.33066 8.18746 9.3121 8.35877 9.24114C8.53007 9.17018 8.67649 9.05002 8.7795 8.89585C8.88252 8.74168 8.9375 8.56042 8.9375 8.375C8.9375 8.12636 8.83873 7.8879 8.66291 7.71209C8.4871 7.53627 8.24864 7.4375 8 7.4375ZM14.375 7.4375C14.1896 7.4375 14.0083 7.49248 13.8542 7.5955C13.7 7.69851 13.5798 7.84493 13.5089 8.01624C13.4379 8.18754 13.4193 8.37604 13.4555 8.5579C13.4917 8.73975 13.581 8.9068 13.7121 9.03791C13.8432 9.16903 14.0102 9.25831 14.1921 9.29449C14.374 9.33066 14.5625 9.3121 14.7338 9.24114C14.9051 9.17018 15.0515 9.05002 15.1545 8.89585C15.2575 8.74168 15.3125 8.56042 15.3125 8.375C15.3125 8.12636 15.2137 7.8879 15.0379 7.71209C14.8621 7.53627 14.6236 7.4375 14.375 7.4375Z" fill="#171D34"/> </svg></span>
         </div>
@@ -327,9 +259,6 @@ const BaseCalculationTasks = ({
   data,
   setEditModal,
   isLoading,
-  setReportData,
-  generatingId,
-  setGeneratingId,
 }) => {
   const history = useHistory();
 
@@ -340,23 +269,6 @@ const BaseCalculationTasks = ({
       window.location.reload();
     }
   };
-
-  const handleDownloadPdf = async (calcId) => {
-    if (generatingId) return;
-    setGeneratingId(calcId);
-
-    try {
-      const data = await apiCalculatorById.get_value(calcId);
-      const extracted = JSON.parse(data.report_data);
-      setReportData(extracted);
-    } catch (err) {
-      console.error("Failed to fetch report data", err);
-      toast.error("Failed to load calculation data");
-      setGeneratingId(null);
-    }
-  };
-
-  const isGenerating = !!generatingId;
 
   return data.map((e, index: number) => {
     return (
@@ -392,22 +304,7 @@ const BaseCalculationTasks = ({
           <span>{e.status}</span>
         </td>
         <td className="actions">
-            {e.status === "DONE" ? (
-                <button
-                  className="redColor"
-                  style={{ cursor: generatingId === e.id ? "wait" : "pointer" }}
-                  onClick={() => handleDownloadPdf(e.id)}
-                  disabled={isGenerating}
-                >
-                  {generatingId === e.id ? (
-                    <><i className="fas fa-spinner fa-spin"></i> Generating...</>
-                  ) : (
-                    <><i className="fa-solid fa-download"></i> Download PDF</>
-                  )}
-                </button>
-            ) : (
-                <button className="blueColor" onClick={() => setEditModal((prev) => ({ ...prev, show: true, idToChange: e.id, label: e.label, description: e.description,}))}><i className="fa-solid fa-pen-to-square"></i> Edit</button>
-            )}
+            <button className="blueColor" onClick={() => setEditModal((prev) => ({ ...prev, show: true, idToChange: e.id, label: e.label, description: e.description,}))}><i className="fa-solid fa-pen-to-square"></i> Edit</button>
             <button className="redColor" onClick={() => onDeleteCalculatorValues(e.id)}><i className="fa-solid fa-trash-can"></i> Delete{" "}</button>{" "}
         </td>
       </tr>

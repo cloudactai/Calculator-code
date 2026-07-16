@@ -12,11 +12,8 @@ import { useHistory, useParams } from "react-router";
 import axios from "../../utils/axios";
 import CheckOutlinedIcon from '@mui/icons-material/CheckOutlined';
 import toast from "react-hot-toast";
-import html2pdf from 'html2pdf.js';
 import { getShortFirmname, getUserId, getUserSID } from "../../utils/helpers";
 import Loader from "../../components/Loader";
-import html2canvas from "html2canvas";
-import jsPDF from "jspdf";
 
 const WorkflowLayout = () => {
   const [isNavOpen, setIsNavOpen] = useState(false);
@@ -100,86 +97,9 @@ const WorkflowLayout = () => {
       const resp = await axios.patch("/updateWorkflowStatus", { workflowId });
       setRefreshChild((prev) => !prev);
       if (resp) {
-        // handleCallChild();
-        const element = document.getElementById("capture");
-        setTimeout(async () => {
-          const canvas = await html2canvas(element, {
-            logging: true,
-            useCORS: true,
-            letterRendering: 1,
-          });
-
-          const imgData = canvas.toDataURL("image/jpeg", 0.7);
-          const pdf = new jsPDF({
-            orientation: "p",
-            unit: "mm",
-            format: "a4",
-            compress: true,
-          });
-          const pageWidth = pdf.internal.pageSize.getWidth();
-          const pageHeight = (canvas.height * pageWidth) / canvas.width;
-
-          pdf.addImage(imgData, "PNG", 0, 0, pageWidth, pageHeight);
-
-          const pdfBlob = pdf.output("blob");
-
-          const formData = new FormData();
-          formData.append("files", pdfBlob, "snapshot.pdf");
-          formData.append("short_firmname", getShortFirmname());
-          formData.append("sid", getUserSID());
-          formData.append("path", `${workflowId}`);
-          formData.append("workflow_id", workflowId);
-          formData.append("file_title", "Reconciliation Workflow");
-
-          // 7) send it
-          try {
-            await axios.post("/upload_workflow_completion_document", formData, {
-              headers: { "Content-Type": "multipart/form-data" },
-            });
-            toast.success("Bank reconciliation flow completed!");
-            setLoading(false);
-            history.push("/workflow/workflow-list");
-          } catch (err) {
-            console.error("Upload failed:", err);
-            toast.error("Could not save flow. Something went wrong!");
-            setLoading(false);
-          }
-
-          // old code below
-          // html2pdf()
-          // .set(opt)
-          // .from(element)
-          // .outputPdf('blob')
-          // .then(async(pdfBlob) => {
-          //   const formData = new FormData();
-          //   formData.append('files', pdfBlob, 'snapshot.pdf');
-          //   let path = `${workflowId}`;
-          //   const short_firmname = getShortFirmname();
-          //   const sid = getUserSID();
-          //   const currentUserId = getUserId();
-          //   formData.append("short_firmname", short_firmname);
-          //   formData.append("sid", sid);
-          //   formData.append("path", path);
-          //   formData.append("workflow_id", workflowId);
-          //   formData.append("file_title", "Reconciliation Workflow")
-
-          //   try {
-          //     const response = await axios.post("/upload_workflow_completion_document", formData, {
-          //       headers: {
-          //         "Content-Type": "multipart/form-data",
-          //       },
-          //     });
-          //     toast.success("Bank reconciliation flow completed!");
-          //     history.push("/workflow/workflow-list")
-          //   } catch (error) {
-          //     console.error("Upload failed:", error);
-          //     toast.error("Could not save flow. Something went wrong!");
-          //   }
-          // })
-          // .catch(error => {
-          //   console.error('Error generating PDF:', error);
-          // });
-        }, 1000);
+        toast.success("Bank reconciliation flow completed!");
+        setLoading(false);
+        history.push("/workflow/workflow-list");
       }
     } catch (error) {
       toast.error("Cannot complete workflow");

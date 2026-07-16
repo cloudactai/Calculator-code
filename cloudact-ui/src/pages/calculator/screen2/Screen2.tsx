@@ -897,6 +897,19 @@ const Screen2 = ({
     party2: 0,
   });
 
+  const disposableIncomeRef = useRef({
+    party1Low: 0, party1Mid: 0, party1High: 0,
+    party2Low: 0, party2Mid: 0, party2High: 0,
+  });
+  const taxesFromApiRef = useRef({
+    party1Low: 0, party1Mid: 0, party1High: 0,
+    party2Low: 0, party2Mid: 0, party2High: 0,
+  });
+  const benefitsFromApiRef = useRef({
+    party1Low: 0, party1Mid: 0, party1High: 0,
+    party2Low: 0, party2Mid: 0, party2High: 0,
+  });
+
   // Stores the Flask-determined spousal payor direction so
   // spousalSupportGivenTo() works even when amounts are $0.
   const flaskSpousalPayorIsParty1 = useRef<boolean | null>(null);
@@ -2033,6 +2046,9 @@ const Screen2 = ({
       report_type: typeOfReport.current,
       calculator_type: typeOfCalculatorSelected,
       updated_at: new Date(),
+      disposableIncome: disposableIncomeRef.current,
+      taxesFromApi: taxesFromApiRef.current,
+      benefitsFromApi: benefitsFromApiRef.current,
     };
 
     const _report_data = {
@@ -2429,6 +2445,9 @@ const Screen2 = ({
 
       amountForEligibleDependentProvincialFixed:
         amountForEligibleDependentProvincialFixed,
+      disposableIncome: disposableIncomeRef.current,
+      taxesFromApi: taxesFromApiRef.current,
+      benefitsFromApi: benefitsFromApiRef.current,
     };
 
     syncUpParty1Deduction(specialExpensesArr, "21400");
@@ -5743,6 +5762,64 @@ const Screen2 = ({
           spousalSupportHigh.current.party2 = 0;
         }
         console.log('[Flask] refs after override - low:', spousalSupportLow.current, 'med:', spousalSupportMed.current, 'high:', spousalSupportHigh.current);
+
+        // Store INDI (disposable income) values, mapping payor/recipient → party1/party2
+        if (payorIsParty1) {
+          disposableIncomeRef.current = {
+            party1Low: flaskResult.payor_indi_low ?? 0,
+            party1Mid: flaskResult.payor_indi_mid ?? 0,
+            party1High: flaskResult.payor_indi_high ?? 0,
+            party2Low: flaskResult.recipient_indi_low ?? 0,
+            party2Mid: flaskResult.recipient_indi_mid ?? 0,
+            party2High: flaskResult.recipient_indi_high ?? 0,
+          };
+        } else {
+          disposableIncomeRef.current = {
+            party1Low: flaskResult.recipient_indi_low ?? 0,
+            party1Mid: flaskResult.recipient_indi_mid ?? 0,
+            party1High: flaskResult.recipient_indi_high ?? 0,
+            party2Low: flaskResult.payor_indi_low ?? 0,
+            party2Mid: flaskResult.payor_indi_mid ?? 0,
+            party2High: flaskResult.payor_indi_high ?? 0,
+          };
+        }
+
+        // Store taxes and benefits from API, mapping payor/recipient → party1/party2
+        if (payorIsParty1) {
+          taxesFromApiRef.current = {
+            party1Low: flaskResult.payor_taxes_low ?? 0,
+            party1Mid: flaskResult.payor_taxes_mid ?? 0,
+            party1High: flaskResult.payor_taxes_high ?? 0,
+            party2Low: flaskResult.recipient_taxes_low ?? 0,
+            party2Mid: flaskResult.recipient_taxes_mid ?? 0,
+            party2High: flaskResult.recipient_taxes_high ?? 0,
+          };
+          benefitsFromApiRef.current = {
+            party1Low: flaskResult.payor_benefits_low ?? 0,
+            party1Mid: flaskResult.payor_benefits_mid ?? 0,
+            party1High: flaskResult.payor_benefits_high ?? 0,
+            party2Low: flaskResult.recipient_benefits_low ?? 0,
+            party2Mid: flaskResult.recipient_benefits_mid ?? 0,
+            party2High: flaskResult.recipient_benefits_high ?? 0,
+          };
+        } else {
+          taxesFromApiRef.current = {
+            party1Low: flaskResult.recipient_taxes_low ?? 0,
+            party1Mid: flaskResult.recipient_taxes_mid ?? 0,
+            party1High: flaskResult.recipient_taxes_high ?? 0,
+            party2Low: flaskResult.payor_taxes_low ?? 0,
+            party2Mid: flaskResult.payor_taxes_mid ?? 0,
+            party2High: flaskResult.payor_taxes_high ?? 0,
+          };
+          benefitsFromApiRef.current = {
+            party1Low: flaskResult.recipient_benefits_low ?? 0,
+            party1Mid: flaskResult.recipient_benefits_mid ?? 0,
+            party1High: flaskResult.recipient_benefits_high ?? 0,
+            party2Low: flaskResult.payor_benefits_low ?? 0,
+            party2Mid: flaskResult.payor_benefits_mid ?? 0,
+            party2High: flaskResult.payor_benefits_high ?? 0,
+          };
+        }
       } else {
         setLoading(false);
         setShowFlaskError(true);
@@ -5976,6 +6053,9 @@ const Screen2 = ({
         basicPersonalAmountProvincialFixed: basicPersonalAmountProvincialFixed,
         amountForEligibleDependentProvincialFixed:
           amountForEligibleDependentProvincialFixed,
+        disposableIncome: disposableIncomeRef.current,
+        taxesFromApi: taxesFromApiRef.current,
+        benefitsFromApi: benefitsFromApiRef.current,
       },
     };
 

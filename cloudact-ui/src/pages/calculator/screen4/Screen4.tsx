@@ -1,7 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
+import ReactToPrint from "react-to-print";
 import { useHistory , Link} from "react-router-dom";
-import html2canvas from "html2canvas";
-import { jsPDF } from "jspdf";
 import moment from "moment";
 import toast from "react-hot-toast";
 import InputCustom from "../../../components/InputCustom";
@@ -20,6 +19,8 @@ import {
 } from "../Calculator";
 //@ts-ignore
 import Reports from "../reports/Reports.tsx";
+//@ts-ignore
+import CalculationReport from "../../freeCalculatorApi/reports/CalculationReport.tsx";
 
 import {
   aboutTheRelationshipState,
@@ -78,6 +79,7 @@ const Screen4 = ({
 }: Props) => {
   const query = useQuery();
   let calculator_report = useRef(null);
+  const reportRef = useRef<HTMLDivElement>(null);
   const history = useHistory();
 
   const {
@@ -1565,59 +1567,45 @@ const Screen4 = ({
           >
             Home Page
           </button>
-          {query.get("saveValues") === "true" && (
-            <button
-              onClick={async () => {
-                changeReportIncompleteToComplete(
-                  getCalculatorIdFromQuery(query)
-                );
-                const element = calculator_report.current;
-                if (!element) {
-                  toast.error("Report content not ready");
-                  return;
+          <ReactToPrint
+            trigger={() => (
+              <button
+                className="btn"
+                style={{
+                  backgroundColor: "#2d5aa0",
+                  color: "#fff",
+                  padding: "10px 30px",
+                  borderRadius: "50px",
+                  fontSize: "14px",
+                  fontWeight: "bold",
+                  cursor: "pointer",
+                  border: "none",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "8px",
+                }}
+              >
+                <i className="fa-solid fa-file-pdf" style={{ fontSize: "16px" }}></i>
+                Download Report
+              </button>
+            )}
+            content={() => reportRef.current}
+            documentTitle={`CloudAct_Calculation_Report_${screen1.background.party1FirstName}_${screen1.background.party2FirstName}`}
+            pageStyle={`
+              @page {
+                size: landscape;
+                margin: 10mm;
+              }
+              @media print {
+                body {
+                  -webkit-print-color-adjust: exact !important;
+                  print-color-adjust: exact !important;
                 }
-                const pages = element.querySelectorAll(".pagePDF");
-                if (pages.length === 0) {
-                  toast.error("No report pages found");
-                  return;
-                }
-                try {
-                  const pdf = new jsPDF("p", "mm", "letter");
-                  const pdfWidth = pdf.internal.pageSize.getWidth();
-                  const pdfHeight = pdf.internal.pageSize.getHeight();
-                  for (let i = 0; i < pages.length; i++) {
-                    const canvas = await html2canvas(pages[i] as HTMLElement, {
-                      scale: 2,
-                      useCORS: true,
-                      logging: false,
-                      backgroundColor: "#ffffff",
-                    });
-                    const imgData = canvas.toDataURL("image/jpeg", 0.95);
-                    const imgWidth = pdfWidth;
-                    const imgHeight = (canvas.height * pdfWidth) / canvas.width;
-                    if (i > 0) pdf.addPage();
-                    pdf.addImage(imgData, "JPEG", 0, 0, imgWidth, Math.min(imgHeight, pdfHeight));
-                  }
-                  const party1 = reportData?.data?.background?.party1FirstName || "Party1";
-                  const party2 = reportData?.data?.background?.party2FirstName || "Party2";
-                  const date = moment().format("YYYY-MM-DD");
-                  pdf.save(`CloudAct_Report_${party1}_${party2}_${date}.pdf`);
-                  toast.success("PDF downloaded successfully");
-                } catch (err) {
-                  console.error("PDF generation failed", err);
-                  toast.error("Failed to generate PDF");
-                }
-              }}
-              className="btn btnPrimary rounded-pill"
-            >
-              Download Report
-            </button>
-          )}
+              }
+            `}
+          />
         </div>
-      </div>    
-
-
-
+      </div>
 
 
       {reportData.data && (
@@ -1633,6 +1621,28 @@ const Screen4 = ({
           <Reports ref={calculator_report} data={reportData.data} />
         </div>
       )}
+
+      {/* Hidden Report Template for PDF Generation */}
+      <div
+        style={{
+          position: "absolute",
+          left: "-9999px",
+          top: 0,
+          opacity: 0,
+          visibility: "hidden",
+          pointerEvents: "none",
+        }}
+      >
+        <CalculationReport
+          ref={reportRef}
+          background={screen1.background}
+          aboutTheChildren={screen1.aboutTheChildren}
+          aboutTheRelationship={screen1.aboutTheRelationship}
+          screen2={screen2}
+          typeOfCalculatorSelected={typeOfCalculatorSelected}
+          supportQuantum={supportQuantum}
+        />
+      </div>
 
     </>
   );

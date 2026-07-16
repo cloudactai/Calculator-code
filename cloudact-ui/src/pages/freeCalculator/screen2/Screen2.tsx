@@ -751,6 +751,19 @@ const Screen2 = ({
     party2: 0,
   });
 
+  const disposableIncomeRef = useRef({
+    party1Low: 0, party1Mid: 0, party1High: 0,
+    party2Low: 0, party2Mid: 0, party2High: 0,
+  });
+  const taxesFromApiRef = useRef({
+    party1Low: 0, party1Mid: 0, party1High: 0,
+    party2Low: 0, party2Mid: 0, party2High: 0,
+  });
+  const benefitsFromApiRef = useRef({
+    party1Low: 0, party1Mid: 0, party1High: 0,
+    party2Low: 0, party2Mid: 0, party2High: 0,
+  });
+
   const changeInTaxesAndBenefitLow = useRef<twoPartyStates>({
     party1: 0,
     party2: 0,
@@ -1037,9 +1050,12 @@ const Screen2 = ({
       basicPersonalAmountProvincialFixed: basicPersonalAmountProvincialFixed,
       amountForEligibleDependentProvincialFixed:
         amountForEligibleDependentProvincialFixed,
+      disposableIncome: disposableIncomeRef.current,
+      taxesFromApi: taxesFromApiRef.current,
+      benefitsFromApi: benefitsFromApiRef.current,
     };
 
-   
+
 
   
 
@@ -3676,6 +3692,64 @@ console.log('getProvinceOfParty1()',getProvinceOfParty2());
           spousalSupportHigh.current.party2 = 0;
         }
 
+        // Store INDI (disposable income) values, mapping payor/recipient → party1/party2
+        if (payorIsParty1) {
+          disposableIncomeRef.current = {
+            party1Low: flaskResult.payor_indi_low ?? 0,
+            party1Mid: flaskResult.payor_indi_mid ?? 0,
+            party1High: flaskResult.payor_indi_high ?? 0,
+            party2Low: flaskResult.recipient_indi_low ?? 0,
+            party2Mid: flaskResult.recipient_indi_mid ?? 0,
+            party2High: flaskResult.recipient_indi_high ?? 0,
+          };
+        } else {
+          disposableIncomeRef.current = {
+            party1Low: flaskResult.recipient_indi_low ?? 0,
+            party1Mid: flaskResult.recipient_indi_mid ?? 0,
+            party1High: flaskResult.recipient_indi_high ?? 0,
+            party2Low: flaskResult.payor_indi_low ?? 0,
+            party2Mid: flaskResult.payor_indi_mid ?? 0,
+            party2High: flaskResult.payor_indi_high ?? 0,
+          };
+        }
+
+        // Store taxes and benefits from API, mapping payor/recipient → party1/party2
+        if (payorIsParty1) {
+          taxesFromApiRef.current = {
+            party1Low: flaskResult.payor_taxes_low ?? 0,
+            party1Mid: flaskResult.payor_taxes_mid ?? 0,
+            party1High: flaskResult.payor_taxes_high ?? 0,
+            party2Low: flaskResult.recipient_taxes_low ?? 0,
+            party2Mid: flaskResult.recipient_taxes_mid ?? 0,
+            party2High: flaskResult.recipient_taxes_high ?? 0,
+          };
+          benefitsFromApiRef.current = {
+            party1Low: flaskResult.payor_benefits_low ?? 0,
+            party1Mid: flaskResult.payor_benefits_mid ?? 0,
+            party1High: flaskResult.payor_benefits_high ?? 0,
+            party2Low: flaskResult.recipient_benefits_low ?? 0,
+            party2Mid: flaskResult.recipient_benefits_mid ?? 0,
+            party2High: flaskResult.recipient_benefits_high ?? 0,
+          };
+        } else {
+          taxesFromApiRef.current = {
+            party1Low: flaskResult.recipient_taxes_low ?? 0,
+            party1Mid: flaskResult.recipient_taxes_mid ?? 0,
+            party1High: flaskResult.recipient_taxes_high ?? 0,
+            party2Low: flaskResult.payor_taxes_low ?? 0,
+            party2Mid: flaskResult.payor_taxes_mid ?? 0,
+            party2High: flaskResult.payor_taxes_high ?? 0,
+          };
+          benefitsFromApiRef.current = {
+            party1Low: flaskResult.recipient_benefits_low ?? 0,
+            party1Mid: flaskResult.recipient_benefits_mid ?? 0,
+            party1High: flaskResult.recipient_benefits_high ?? 0,
+            party2Low: flaskResult.payor_benefits_low ?? 0,
+            party2Mid: flaskResult.payor_benefits_mid ?? 0,
+            party2High: flaskResult.payor_benefits_high ?? 0,
+          };
+        }
+
         // Set report type for downstream report generation
         if (totalNumberOfChildren(screen1.aboutTheChildren) === 0) {
           typeOfReport.current = WITHOUT_CHILD_FORMULA;
@@ -3936,6 +4010,9 @@ console.log('getProvinceOfParty1()',getProvinceOfParty2());
         basicPersonalAmountProvincialFixed: basicPersonalAmountProvincialFixed,
         amountForEligibleDependentProvincialFixed:
           amountForEligibleDependentProvincialFixed,
+        disposableIncome: disposableIncomeRef.current,
+        taxesFromApi: taxesFromApiRef.current,
+        benefitsFromApi: benefitsFromApiRef.current,
       },
     };
 

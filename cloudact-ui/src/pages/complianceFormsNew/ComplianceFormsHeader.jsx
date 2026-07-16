@@ -45,7 +45,6 @@ const ComplianceFormsHeader = ({
         month: false
     });
 
-    const [disableDownloadReport, setDisableDownloadReport] = useState(false);
     const [modalShow, setModalShow] = useState(false);
 
 
@@ -212,100 +211,6 @@ const ComplianceFormsHeader = ({
 
     }
 
-    const makeReportObjects = (
-        filename,
-        from_date,
-        to_date,
-        short_firmname,
-        type,
-        pdf_file
-    ) => {
-        return {
-            filename: `${filename}`,
-            from_date: from_date,
-            to_date: to_date,
-            short_firmname: `${short_firmname}`,
-            ext: type,
-            full_report_name: pdf_file,
-        };
-    };
-
-    const downloadReports = (type) => {
-
-        let selectedReportsId = dataMonthWise[currentSelectedMonthYear].data.filter((report) => {
-            return selectedReports.includes(report.id);
-        });
-
-        let downloadtype = selectAllChecked ? "all" : "individual";
-        let [monthString, secondString] = currentSelectedMonthYear.split(' ');
-
-        let year = secondString
-        let month = getDigitFromMonth(monthString);
-
-        if (secondString == 'Checklist') {
-            headerdata.year ? year = headerdata.year : year = new Date().getFullYear();
-        }
-
-        if (secondString == 'Checklist') {
-            if (selectAllChecked) {
-                downloadtype = 'total'
-            }
-        }
-
-        const allReportObjs = [];
-        let full_report_name;
-
-
-        selectedReportsId.forEach((e) => {
-            const { filename, from_date, to_date, short_firmname, pdf_file } = e;
-            full_report_name = pdf_file.split(".")[0];
-
-            allReportObjs.push(
-                makeReportObjects(
-                    filename,
-                    from_date,
-                    to_date,
-                    short_firmname,
-                    type,
-                    full_report_name
-                )
-            );
-        });
-
-        setModalShow(true);
-
-        axios
-            .post(
-                `/download/report/inbulk`, {
-                month: month,
-                year: year,
-                ext: type,
-                sid: getUserSID(),
-                object: JSON.stringify(allReportObjs),
-                type: downloadtype,
-                reportType: headerdata.reportType,
-                archive: headerdata.archive
-            }
-
-            )
-            .then((res) => {
-                console.log("res", res);
-                if (res.data.data.code === 200) {
-                    console.log("downloads send to email");
-                }
-            })
-            .catch((err) => {
-                console.log("err", err);
-            });
-    };
-
-
-    const disabledTheDownloadReportButtons = () => {
-        setDisableDownloadReport(true);
-
-        setTimeout(() => setDisableDownloadReport(false), 5000);
-    };
-
     const handleChangetab=(e)=>{
         setArchiveFilter(e)
     }
@@ -364,35 +269,6 @@ const ComplianceFormsHeader = ({
                             />{" "}
                         </svg>
                         Compliance form
-
-                        {/* {
-                        !ArchiveFilter && 
-                        selectedReports.length > 1 && <div className="btnGroup">
-                            <button
-                                disabled={disableDownloadReport}
-                                className={`pdf ${disableDownloadReport ? "disabled" : ""}`}
-                                onClick={() => {
-                                    downloadReports("pdf");
-                                    disabledTheDownloadReportButtons();
-                                }}
-                            >
-                                <i className="fa-solid fa-file-pdf"></i> PDF
-                            </button>
-                            <button
-
-                                disabled={disableDownloadReport}
-                                onClick={() => {
-                                    downloadReports("xlsx");
-                                    disabledTheDownloadReportButtons();
-                                }}
-                                className={`excel ${disableDownloadReport ? "disabled" : ""}`}
-
-                            >
-                                <i className="fa-regular fa-file-excel"></i> Excel
-                            </button>
-                        </div>
-                    } */}
-
 
                         {
                             selectedReports.length > 0 && <div className="btnGroup">
