@@ -66,6 +66,7 @@ function documentDto(document) {
     docId: template.docId,
     status: document.status,
     revision: document.revision,
+    generated_pdf_revision: document.generatedPdfRevision,
     template_version: document.templateVersion.version,
     created: document.createdAt,
     updated: document.updatedAt,
@@ -285,18 +286,53 @@ router.put("/matters/:matterNumber/forms/:documentId/pdf", async (req, res) => {
   const encoded = String(req.body?.pdfBase64 || "").replace(/^data:application\/pdf;base64,/, "");
   const pdf = Buffer.from(encoded, "base64");
   if (!matter || !encoded || pdf.length > 20 * 1024 * 1024 || pdf.subarray(0, 4).toString() !== "%PDF") return res.status(400).json({ message: "A PDF under 20 MB is required." });
-  const updated = await prisma.matterFormDocument.updateMany({ where: { id: Number(req.params.documentId), matterId: matter.id }, data: { generatedPdf: pdf, generatedAt: new Date() } });
-  if (!updated.count) return res.status(404).json({ message: "Form document not found." });
-  return res.json({ data: { checksum: crypto.createHash("sha256").update(pdf).digest("hex") } });
+  const checksum = crypto.createHash("sha256").update(pdf).digest("hex");
+  const document = await prisma.$transaction(async (tx) => {
+    const existing = await tx.matterFormDocument.findFirst({
+      where: { id: Number(req.params.documentId), matterId: matter.id },
+      select: { id: true, generatedPdfRevision: true },
+    });
+    if (!existing) return null;
+    const generatedPdfRevision = existing.generatedPdfRevision + 1;
+    await tx.matterFormPdfRevision.create({
+      data: { documentId: existing.id, revision: generatedPdfRevision, checksum, pdf },
+    });
+    return tx.matterFormDocument.update({
+      where: { id: existing.id },
+      data: { generatedPdf: pdf, generatedAt: new Date(), generatedPdfRevision },
+      select: { generatedPdfRevision: true, generatedAt: true },
+    });
+  });
+  if (!document) return res.status(404).json({ message: "Form document not found." });
+  return res.json({ data: { checksum, revision: document.generatedPdfRevision, created: document.generatedAt } });
 });
 
 router.get("/matters/:matterNumber/forms/:documentId/pdf", async (req, res) => {
   const matter = await matterForUser(req.user.id, req.params.matterNumber);
-  const document = matter && await prisma.matterFormDocument.findFirst({ where: { id: Number(req.params.documentId), matterId: matter.id }, select: { generatedPdf: true, displayName: true } });
+  const document = matter && await prisma.matterFormDocument.findFirst({ where: { id: Number(req.params.documentId), matterId: matter.id }, select: { generatedPdf: true, displayName: true, generatedPdfRevision: true } });
   if (!document?.generatedPdf) return res.status(404).json({ message: "Generated PDF not found." });
   res.type("application/pdf");
   res.attachment(document.displayName.replace(/\.pdf$/i, "") + "-completed.pdf");
   return res.send(Buffer.from(document.generatedPdf));
+});
+
+router.get("/matters/:matterNumber/forms/:documentId/pdf/revisions", async (req, res) => {
+  const matter = await matterForUser(req.user.id, req.params.matterNumber);
+  const document = matter && await prisma.matterFormDocument.findFirst({
+    where: { id: Number(req.params.documentId), matterId: matter.id },
+    select: { id: true },
+  });
+  if (!document) return res.status(404).json({ message: "Form document not found." });
+  const revisions = await prisma.matterFormPdfRevision.findMany({
+    where: { documentId: document.id },
+    select: { revision: true, checksum: true, createdAt: true },
+    orderBy: { revision: "desc" },
+  });
+  return res.json({ data: revisions.map((revision) => ({
+    revision: revision.revision,
+    checksum: revision.checksum,
+    created: revision.createdAt,
+  })) });
 });
 
 router.post("/matters/:matterNumber/folders", async (req, res) => {

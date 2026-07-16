@@ -195,14 +195,29 @@ model MatterFormDocument {
   fieldProvenance   Json                @default("{}")
   generatedPdf      Bytes?
   generatedAt       DateTime?
+  generatedPdfRevision Int              @default(0)
   revision          Int                 @default(1)
   createdAt         DateTime            @default(now())
   updatedAt         DateTime            @updatedAt
   matter            Matter              @relation(fields: [matterId], references: [id], onDelete: Cascade)
   folder            MatterFolder?       @relation(fields: [folderId], references: [id], onDelete: SetNull)
   templateVersion   FormTemplateVersion @relation(fields: [templateVersionId], references: [id], onDelete: Restrict)
+  pdfRevisions      MatterFormPdfRevision[]
 
   @@index([matterId, folderId])
+}
+
+model MatterFormPdfRevision {
+  id          Int                 @id @default(autoincrement())
+  documentId  Int
+  revision    Int
+  checksum    String
+  pdf         Bytes
+  createdAt   DateTime            @default(now())
+  document    MatterFormDocument  @relation(fields: [documentId], references: [id], onDelete: Cascade)
+
+  @@unique([documentId, revision])
+  @@index([documentId, createdAt])
 }
 
 model MatterTaskState {
