@@ -395,3 +395,39 @@ button:disabled {
 opacity: 0.6;
 cursor: not-allowed;
 }
+
+.fill-information-page .form-list-button {
+background: transparent !important;
+border: 1px solid #6f7279 !important;
+border-radius: 50px !important;
+color: #aeb0b5 !important;
+opacity: 1;
+transition: border-color 180ms ease-out, color 180ms ease-out, background-color 180ms ease-out;
+}
+
+.fill-information-page .form-list-button:hover:not(:disabled),
+.fill-information-page .form-list-button:focus-visible:not(:disabled) {
+background: rgba(255, 255, 255, 0.04) !important;
+border-color: #bfc1c6 !important;
+color: #f3f3f4 !important;
+}
+
+.fill-information-page .form-list-button:focus-visible {
+outline: 2px solid #73c3fd;
+outline-offset: 2px;
+}
+
+.fill-information-page .form-list-button.is-active,
+.fill-information-page .form-list-button.is-active:disabled {
+background: transparent !important;
+border-color: #f6bd3d !important;
+color: #f6bd3d !important;
+cursor: default;
+opacity: 1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+.fill-information-page .form-list-button {
+transition: none;
+}
+}

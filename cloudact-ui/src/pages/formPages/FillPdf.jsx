@@ -2003,20 +2003,22 @@ const FillPdf = ({ currentUserRole }) => {
                       currentPage={currentPage}
                     />
 
-                    {forms.map((form, index) => (
-
-                      <div
-                        className="form-checkbox"
-                        key={index}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          e.preventDefault();
-                          handleFormSelection(index);
-                        }}
-                      >
-                        <button disabled={activeForm?.shortTitle === form.shortTitle} className={`btn mb-2 w-100 ${activeForm?.shortTitle === form.shortTitle ? 'btnSecondary' : 'btnPrimary'} btnForm`}>{form.title}</button>
-                      </div>
-                    ))}
+                    {forms.map((form, index) => {
+                      const isActive = String(activeForm?.id) === String(form.id);
+                      return (
+                        <div className="form-checkbox" key={form.id}>
+                          <button
+                            type="button"
+                            disabled={isActive}
+                            aria-current={isActive ? "page" : undefined}
+                            className={`btn mb-2 w-100 btnForm form-list-button${isActive ? " is-active" : ""}`}
+                            onClick={() => handleFormSelection(index)}
+                          >
+                            {form.title}
+                          </button>
+                        </div>
+                      );
+                    })}
                   </div>
                 </div>
               </div>

@@ -61,7 +61,10 @@ test("clicking the current form in the sidebar leaves the loaded PDF visible", a
   );
 
   await screen.findByText("PDF VIEWER");
-  fireEvent.click(screen.getByRole("button", { name: "Form14.pdf" }).parentElement);
+  const activeFormButton = screen.getByRole("button", { name: "Form14.pdf" });
+  expect(activeFormButton).toHaveClass("is-active");
+  expect(activeFormButton).toHaveAttribute("aria-current", "page");
+  fireEvent.click(activeFormButton);
 
   await waitFor(() => expect(screen.getByText("PDF VIEWER")).toBeInTheDocument());
   expect(axios.get).toHaveBeenCalledTimes(1);
@@ -104,8 +107,10 @@ test("shows every saved form for the matter and opens the selected document", as
     </Provider>
   );
 
-  await screen.findByRole("button", { name: "Form13_1.pdf" });
-  fireEvent.click(screen.getByRole("button", { name: "Form13_1.pdf" }).parentElement);
+  const inactiveFormButton = await screen.findByRole("button", { name: "Form13_1.pdf" });
+  expect(inactiveFormButton).toHaveClass("form-list-button");
+  expect(inactiveFormButton).not.toHaveClass("is-active");
+  fireEvent.click(inactiveFormButton);
 
   await waitFor(() => expect(formsService.getDocument).toHaveBeenCalledWith("TEST-FORMS", "10"));
   await waitFor(() => expect(axios.get).toHaveBeenCalledWith(
