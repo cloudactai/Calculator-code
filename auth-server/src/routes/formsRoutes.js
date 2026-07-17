@@ -393,17 +393,18 @@ router.delete("/matters/:matterNumber/forms/:documentId", async (req, res) => {
   return res.status(204).end();
 });
 
-router.put("/matters/:matterNumber/forms/:documentId/pdf", async (req, res) => {
+router.put("/matters/:matterNumber/forms/:documentId/pdf", express.raw({ type: "application/pdf", limit: "20mb" }), async (req, res) => {
   const matter = await matterForUser(req.user.id, req.params.matterNumber);
   const encoded = String(req.body?.pdfBase64 || "").replace(/^data:application\/pdf;base64,/, "");
-  const pdf = Buffer.from(encoded, "base64");
-  if (!matter || !encoded || pdf.length > 20 * 1024 * 1024 || pdf.subarray(0, 4).toString() !== "%PDF") return res.status(400).json({ message: "A PDF under 20 MB is required." });
-  const expectedRevision = Number(req.body?.revision);
+  const pdf = Buffer.isBuffer(req.body) ? req.body : Buffer.from(encoded, "base64");
+  if (!matter || (!Buffer.isBuffer(req.body) && !encoded) || pdf.length > 20 * 1024 * 1024 || pdf.subarray(0, 4).toString() !== "%PDF") return res.status(400).json({ message: "A PDF under 20 MB is required." });
+  const expectedRevision = Number(req.query.revision ?? req.body?.revision);
   if (!Number.isInteger(expectedRevision) || expectedRevision < 0) {
     return res.status(400).json({ message: "A generated PDF revision is required." });
   }
-  const generationMs = Number(req.body?.generationMs);
-  if (req.body?.generationMs != null && (!Number.isFinite(generationMs) || generationMs < 0 || generationMs > 30 * 60 * 1000)) {
+  const generationDuration = req.query.generationMs ?? req.body?.generationMs;
+  const generationMs = Number(generationDuration);
+  if (generationDuration != null && (!Number.isFinite(generationMs) || generationMs < 0 || generationMs > 30 * 60 * 1000)) {
     return res.status(400).json({ message: "Invalid PDF generation duration." });
   }
   const checksum = crypto.createHash("sha256").update(pdf).digest("hex");

@@ -1779,18 +1779,12 @@ const FillPdf = ({ currentUserRole }) => {
     const pdfBytes = await pdfDoc.save();
     const blob = new Blob([pdfBytes], { type: 'application/pdf' });
     const pdfBlobUrl = URL.createObjectURL(blob);
-    const pdfBase64 = await new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onerror = () => reject(reader.error || new Error("Could not prepare PDF upload."));
-      reader.onload = () => resolve(reader.result);
-      reader.readAsDataURL(blob);
-    });
     try {
       const saved = await formsService.saveGeneratedPdf(
         routeMatterNumber,
         remoteDocument.id,
         remoteDocument.generated_pdf_revision,
-        pdfBase64,
+        blob,
         Date.now() - generationStartedAt
       );
       setRemoteDocument((document) => ({ ...document, generated_pdf_revision: saved.revision }));

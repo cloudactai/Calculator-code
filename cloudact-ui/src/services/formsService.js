@@ -9,7 +9,11 @@ export const formsService = {
   createDocuments: async (matterNumber, folderId, templateIds) => body(await axios.post(`/matters/${encodeURIComponent(matterNumber)}/forms`, { folderId, templateIds })),
   getDocument: async (matterNumber, documentId) => body(await axios.get(`/matters/${encodeURIComponent(matterNumber)}/forms/${documentId}`)),
   saveDocument: async (matterNumber, documentId, revision, fieldValues, status) => body(await axios.patch(`/matters/${encodeURIComponent(matterNumber)}/forms/${documentId}`, { revision, fieldValues, status })),
-  saveGeneratedPdf: async (matterNumber, documentId, revision, pdfBase64, generationMs) => body(await axios.put(`/matters/${encodeURIComponent(matterNumber)}/forms/${documentId}/pdf`, { revision, pdfBase64, generationMs })),
+  saveGeneratedPdf: async (matterNumber, documentId, revision, pdfBlob, generationMs) => body(await axios.put(
+    `/matters/${encodeURIComponent(matterNumber)}/forms/${documentId}/pdf`,
+    pdfBlob,
+    { params: { revision, generationMs }, headers: { "Content-Type": "application/pdf" } }
+  )),
   listPdfRevisions: async (matterNumber, documentId) => body(await axios.get(`/matters/${encodeURIComponent(matterNumber)}/forms/${documentId}/pdf/revisions`)),
   listDocuments: async (matterNumber, folderId) => body(await axios.get(`/matters/${encodeURIComponent(matterNumber)}/forms`, { params: folderId ? { folderId } : undefined })),
   createFolder: async (matterNumber, title, type = "forms") => body(await axios.post(`/matters/${encodeURIComponent(matterNumber)}/folders`, { title, type })),
