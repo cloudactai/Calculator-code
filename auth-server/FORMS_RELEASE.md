@@ -38,3 +38,7 @@ already-deployed clients can finish a save during the rollout window.
 Completed-PDF writes have a 30-second transaction timeout because several
 production templates are multi-megabyte files; ordinary Forms transactions keep
 Prisma's default timeout.
+
+Chunk payloads are committed independently; a short final transaction makes a
+revision visible only after every chunk is stored and advances the document's
+revision pointer. Incomplete revisions are never served or listed.

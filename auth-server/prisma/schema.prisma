@@ -213,6 +213,7 @@ model MatterFormPdfRevision {
   revision    Int
   checksum    String
   pdf         Bytes
+  complete    Boolean             @default(true)
   createdAt   DateTime            @default(now())
   document    MatterFormDocument  @relation(fields: [documentId], references: [id], onDelete: Cascade)
   chunks      MatterFormPdfChunk[]

@@ -417,18 +417,30 @@ router.put("/matters/:matterNumber/forms/:documentId/pdf", express.raw({ type: "
     return res.status(400).json({ message: "Invalid PDF generation duration." });
   }
   const checksum = crypto.createHash("sha256").update(pdf).digest("hex");
+  const existing = await prisma.matterFormDocument.findFirst({
+    where: { id: Number(req.params.documentId), matterId: matter.id },
+    select: { id: true, generatedPdfRevision: true },
+  });
+  if (!existing) return res.status(404).json({ message: "Form document not found." });
+  if (existing.generatedPdfRevision !== expectedRevision) {
+    return res.status(409).json({ message: "This completed PDF changed elsewhere. Reload it before saving.", revision: existing.generatedPdfRevision });
+  }
+  const generatedPdfRevision = expectedRevision + 1;
+  let savedRevision;
   let document;
   try {
-    document = await prisma.$transaction(async (tx) => {
-      const existing = await tx.matterFormDocument.findFirst({
-        where: { id: Number(req.params.documentId), matterId: matter.id },
-        select: { id: true, generatedPdfRevision: true },
+    savedRevision = await prisma.matterFormPdfRevision.create({
+      // The payload is inserted below in independent bounded writes. Keeping
+      // those writes outside an interactive transaction prevents Prisma from
+      // retaining every chunk in Render's constrained process memory.
+      data: { documentId: existing.id, revision: generatedPdfRevision, checksum, pdf: Buffer.alloc(0), complete: false },
+    });
+    for (let offset = 0, position = 0; offset < pdf.length; offset += PDF_CHUNK_BYTES, position += 1) {
+      await prisma.matterFormPdfChunk.create({
+        data: { revisionId: savedRevision.id, position, pdf: pdf.subarray(offset, offset + PDF_CHUNK_BYTES) },
       });
-      if (!existing) return null;
-      if (existing.generatedPdfRevision !== expectedRevision) {
-        throw Object.assign(new Error("This completed PDF changed elsewhere. Reload it before saving."), { status: 409, revision: existing.generatedPdfRevision });
-      }
-      const generatedPdfRevision = expectedRevision + 1;
+    }
+    document = await prisma.$transaction(async (tx) => {
       const generatedAt = new Date();
       const updated = await tx.matterFormDocument.updateMany({
         where: { id: existing.id, generatedPdfRevision: expectedRevision },
@@ -439,24 +451,15 @@ router.put("/matters/:matterNumber/forms/:documentId/pdf", express.raw({ type: "
       if (!updated.count) {
         throw Object.assign(new Error("This completed PDF changed elsewhere. Reload it before saving."), { status: 409 });
       }
-      const savedRevision = await tx.matterFormPdfRevision.create({
-        // Keep the legacy column empty for new revisions. The payload is stored
-        // below in bounded chunks to avoid Prisma serializing a multi-megabyte
-        // BYTEA parameter on Render's 512 MB instance.
-        data: { documentId: existing.id, revision: generatedPdfRevision, checksum, pdf: Buffer.alloc(0) },
-      });
-      for (let offset = 0, position = 0; offset < pdf.length; offset += PDF_CHUNK_BYTES, position += 1) {
-        await tx.matterFormPdfChunk.create({
-          data: { revisionId: savedRevision.id, position, pdf: pdf.subarray(offset, offset + PDF_CHUNK_BYTES) },
-        });
-      }
+      await tx.matterFormPdfRevision.update({ where: { id: savedRevision.id }, data: { complete: true } });
       return { generatedPdfRevision, generatedAt };
     }, { maxWait: 10_000, timeout: 30_000 });
   } catch (error) {
+    if (savedRevision) await prisma.matterFormPdfRevision.delete({ where: { id: savedRevision.id } }).catch(() => {});
     if (error.status === 409) return res.status(409).json({ message: error.message, revision: error.revision });
+    if (error.code === "P2002") return res.status(409).json({ message: "This completed PDF changed elsewhere. Reload it before saving." });
     throw error;
   }
-  if (!document) return res.status(404).json({ message: "Form document not found." });
   console.info(JSON.stringify({
     event: "forms_pdf_saved",
     revision: document.generatedPdfRevision,
@@ -474,6 +477,7 @@ router.get("/matters/:matterNumber/forms/:documentId/pdf", async (req, res) => {
       generatedPdf: true,
       displayName: true,
       pdfRevisions: {
+        where: { complete: true },
         orderBy: { revision: "desc" },
         take: 1,
         select: { id: true, pdf: true },
@@ -512,7 +516,7 @@ router.get("/matters/:matterNumber/forms/:documentId/pdf/revisions", async (req,
   });
   if (!document) return res.status(404).json({ message: "Form document not found." });
   const revisions = await prisma.matterFormPdfRevision.findMany({
-    where: { documentId: document.id },
+    where: { documentId: document.id, complete: true },
     select: { revision: true, checksum: true, createdAt: true },
     orderBy: { revision: "desc" },
   });
