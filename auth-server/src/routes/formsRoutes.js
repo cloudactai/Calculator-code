@@ -422,7 +422,9 @@ router.put("/matters/:matterNumber/forms/:documentId/pdf", async (req, res) => {
       const generatedAt = new Date();
       const updated = await tx.matterFormDocument.updateMany({
         where: { id: existing.id, generatedPdfRevision: expectedRevision },
-        data: { generatedPdf: pdf, generatedAt, generatedPdfRevision },
+        // The immutable revision is the source of truth. Do not duplicate large
+        // completed PDFs in MatterFormDocument as well as MatterFormPdfRevision.
+        data: { generatedAt, generatedPdfRevision },
       });
       if (!updated.count) {
         throw Object.assign(new Error("This completed PDF changed elsewhere. Reload it before saving."), { status: 409 });
@@ -448,11 +450,19 @@ router.put("/matters/:matterNumber/forms/:documentId/pdf", async (req, res) => {
 
 router.get("/matters/:matterNumber/forms/:documentId/pdf", async (req, res) => {
   const matter = await matterForUser(req.user.id, req.params.matterNumber);
-  const document = matter && await prisma.matterFormDocument.findFirst({ where: { id: Number(req.params.documentId), matterId: matter.id }, select: { generatedPdf: true, displayName: true, generatedPdfRevision: true } });
-  if (!document?.generatedPdf) return res.status(404).json({ message: "Generated PDF not found." });
+  const document = matter && await prisma.matterFormDocument.findFirst({
+    where: { id: Number(req.params.documentId), matterId: matter.id },
+    select: {
+      generatedPdf: true,
+      displayName: true,
+      pdfRevisions: { orderBy: { revision: "desc" }, take: 1, select: { pdf: true } },
+    },
+  });
+  const pdf = document?.pdfRevisions?.[0]?.pdf || document?.generatedPdf;
+  if (!pdf) return res.status(404).json({ message: "Generated PDF not found." });
   res.type("application/pdf");
   res.attachment(document.displayName.replace(/\.pdf$/i, "") + "-completed.pdf");
-  return res.send(Buffer.from(document.generatedPdf));
+  return res.send(Buffer.from(pdf));
 });
 
 router.get("/matters/:matterNumber/forms/:documentId/pdf/revisions", async (req, res) => {

@@ -24,3 +24,7 @@ and failures (including `409` save conflicts), and `forms_pdf_saved` for complet
 PDF revisions. The latter includes only revision number, PDF byte size, and client
 generation duration—never a matter number, user ID, or field value. Set
 `FORMS_REQUEST_METRICS=false` only if this logging must be disabled.
+
+Completed PDFs are stored once per immutable revision. The document record keeps
+only the latest revision number and timestamp; reads still fall back to the older
+`generatedPdf` column for documents created before revision storage was added.
