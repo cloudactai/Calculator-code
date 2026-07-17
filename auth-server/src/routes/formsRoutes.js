@@ -49,6 +49,7 @@ async function matterForUser(userId, matterNumber) {
 }
 
 const TASK_STATUSES = new Set(["not_started", "in_progress", "completed"]);
+const PDF_CHUNK_BYTES = 512 * 1024;
 
 function templateDto(template) {
   return {
@@ -430,9 +431,17 @@ router.put("/matters/:matterNumber/forms/:documentId/pdf", express.raw({ type: "
       if (!updated.count) {
         throw Object.assign(new Error("This completed PDF changed elsewhere. Reload it before saving."), { status: 409 });
       }
-      await tx.matterFormPdfRevision.create({
-        data: { documentId: existing.id, revision: generatedPdfRevision, checksum, pdf },
+      const savedRevision = await tx.matterFormPdfRevision.create({
+        // Keep the legacy column empty for new revisions. The payload is stored
+        // below in bounded chunks to avoid Prisma serializing a multi-megabyte
+        // BYTEA parameter on Render's 512 MB instance.
+        data: { documentId: existing.id, revision: generatedPdfRevision, checksum, pdf: Buffer.alloc(0) },
       });
+      for (let offset = 0, position = 0; offset < pdf.length; offset += PDF_CHUNK_BYTES, position += 1) {
+        await tx.matterFormPdfChunk.create({
+          data: { revisionId: savedRevision.id, position, pdf: pdf.subarray(offset, offset + PDF_CHUNK_BYTES) },
+        });
+      }
       return { generatedPdfRevision, generatedAt };
     }, { maxWait: 10_000, timeout: 30_000 });
   } catch (error) {
@@ -456,10 +465,17 @@ router.get("/matters/:matterNumber/forms/:documentId/pdf", async (req, res) => {
     select: {
       generatedPdf: true,
       displayName: true,
-      pdfRevisions: { orderBy: { revision: "desc" }, take: 1, select: { pdf: true } },
+      pdfRevisions: {
+        orderBy: { revision: "desc" },
+        take: 1,
+        select: { pdf: true, chunks: { orderBy: { position: "asc" }, select: { pdf: true } } },
+      },
     },
   });
-  const pdf = document?.pdfRevisions?.[0]?.pdf || document?.generatedPdf;
+  const savedRevision = document?.pdfRevisions?.[0];
+  const pdf = savedRevision?.chunks?.length
+    ? Buffer.concat(savedRevision.chunks.map((chunk) => Buffer.from(chunk.pdf)))
+    : savedRevision?.pdf || document?.generatedPdf;
   if (!pdf) return res.status(404).json({ message: "Generated PDF not found." });
   res.type("application/pdf");
   res.attachment(document.displayName.replace(/\.pdf$/i, "") + "-completed.pdf");

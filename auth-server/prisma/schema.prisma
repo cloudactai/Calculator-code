@@ -215,9 +215,21 @@ model MatterFormPdfRevision {
   pdf         Bytes
   createdAt   DateTime            @default(now())
   document    MatterFormDocument  @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  chunks      MatterFormPdfChunk[]
 
   @@unique([documentId, revision])
   @@index([documentId, createdAt])
+}
+
+model MatterFormPdfChunk {
+  id         Int                    @id @default(autoincrement())
+  revisionId Int
+  position   Int
+  pdf        Bytes
+  revision   MatterFormPdfRevision  @relation(fields: [revisionId], references: [id], onDelete: Cascade)
+
+  @@unique([revisionId, position])
+  @@index([revisionId, position])
 }
 
 model MatterTaskState {
