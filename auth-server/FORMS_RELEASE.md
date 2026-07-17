@@ -32,3 +32,7 @@ only the latest revision number and timestamp; reads still fall back to the olde
 The active client uploads completed PDFs as binary `application/pdf`, avoiding
 base64 request expansion. The API retains JSON/base64 input only temporarily so
 already-deployed clients can finish a save during the rollout window.
+
+Completed-PDF writes have a 30-second transaction timeout because several
+production templates are multi-megabyte files; ordinary Forms transactions keep
+Prisma's default timeout.

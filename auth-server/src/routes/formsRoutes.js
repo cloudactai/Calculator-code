@@ -434,7 +434,7 @@ router.put("/matters/:matterNumber/forms/:documentId/pdf", express.raw({ type: "
         data: { documentId: existing.id, revision: generatedPdfRevision, checksum, pdf },
       });
       return { generatedPdfRevision, generatedAt };
-    });
+    }, { maxWait: 10_000, timeout: 30_000 });
   } catch (error) {
     if (error.status === 409) return res.status(409).json({ message: error.message, revision: error.revision });
     throw error;
