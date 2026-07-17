@@ -1,4 +1,5 @@
 const crypto = require("crypto");
+const { once } = require("events");
 const express = require("express");
 const path = require("path");
 const prisma = require("../../prismaClient");
@@ -22,8 +23,15 @@ router.use((req, res, next) => {
 const formsRequestMetricsEnabled = !["false", "0", "off"].includes(
   String(process.env.FORMS_REQUEST_METRICS || "true").trim().toLowerCase()
 );
+function isFormsRequestPath(pathname) {
+  return pathname === "/forms"
+    || pathname === "/form-template-provinces"
+    || pathname.startsWith("/form-templates/")
+    || pathname === "/matters"
+    || /^\/matters\/[^/]+(?:$|\/(?:forms|folders|task-states)(?:\/|$))/.test(pathname);
+}
 router.use((req, res, next) => {
-  if (!formsRequestMetricsEnabled) return next();
+  if (!formsRequestMetricsEnabled || !isFormsRequestPath(req.path)) return next();
   const startedAt = process.hrtime.bigint();
   res.on("finish", () => {
     // Keep production telemetry free of matter numbers, user IDs, and field values.
@@ -489,7 +497,7 @@ router.get("/matters/:matterNumber/forms/:documentId/pdf", async (req, res) => {
         select: { pdf: true },
       });
       if (!chunk) return res.destroy(new Error("Generated PDF is incomplete."));
-      res.write(Buffer.from(chunk.pdf));
+      if (!res.write(Buffer.from(chunk.pdf))) await once(res, "drain");
     }
     return res.end();
   }
