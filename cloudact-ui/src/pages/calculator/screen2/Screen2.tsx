@@ -2058,6 +2058,13 @@ const Screen2 = ({
       aboutTheChildren: screen1.aboutTheChildren,
     };
 
+    // Persist report_data to the DB so Screen4 can load it
+    if (id && !isNaN(id) && saveValues) {
+      await apiCalculatorById.edit_value(id, {
+        report_data: _report_data,
+      });
+    }
+
     settingScreen2StateFromChild({ ..._obj, report_data: _report_data });
 
     history.push(
