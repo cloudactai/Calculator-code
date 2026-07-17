@@ -125,6 +125,9 @@ const FillPdf = ({ currentUserRole }) => {
   });
 
   const fetchFormPdf = async (form) => {
+    setLoadError("");
+    setIsLoading(true);
+    setIsFormLoading(true);
     try {
       const response = await axios.get(`/form-templates/${encodeURIComponent(form.docId)}/versions/${form.template_version}/pdf`, {
         responseType: "blob",
@@ -134,6 +137,10 @@ const FillPdf = ({ currentUserRole }) => {
       setPdfUrl(pdfUrl);
     } catch (error) {
       console.error("Error fetching the PDF:", error);
+      setLoadError("Could not load this form's PDF. Return to the matter and try again.");
+      setIsLoading(false);
+      setIsFormLoading(false);
+      toast.error("Could not load this form's PDF.");
     }
   };
 
@@ -169,6 +176,8 @@ const FillPdf = ({ currentUserRole }) => {
         setFieldsReady(true);
       } catch (error) {
         console.error('Error loading the PDF:', error);
+        setLoadError("Could not open this form's PDF. Return to the matter and try again.");
+        toast.error("Could not open this form's PDF.");
       } finally {
         setIsLoading(false);
         setIsFormLoading(false); // End loading state
@@ -1869,6 +1878,12 @@ const FillPdf = ({ currentUserRole }) => {
 
   // Add this new function before the return statement
   const handleFormSelection = (index) => {
+    const selectedForm = forms[index];
+    // The button is disabled for the current form, but its wrapper remains
+    // clickable. Re-selecting the same object cleared the viewer without
+    // changing activeForm, so the PDF effect never ran again.
+    if (!selectedForm || selectedForm.id === activeForm?.id) return;
+
     setIsFormLoading(true);
     setShouldRenderPdf(false); // Unmount PDFViewer
     setFields([]); // Clear fields immediately
@@ -1876,8 +1891,10 @@ const FillPdf = ({ currentUserRole }) => {
 
     // Small delay to ensure clean state before switching
     setTimeout(() => {
-      const newForms = [...forms];
-      newForms[index].checked = !newForms[index].checked;
+      const newForms = forms.map((form, formIndex) => ({
+        ...form,
+        checked: formIndex === index,
+      }));
       setForms(newForms);
       setActiveForm(newForms[index]);
       setNumPages(null);
