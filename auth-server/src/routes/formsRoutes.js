@@ -468,17 +468,31 @@ router.get("/matters/:matterNumber/forms/:documentId/pdf", async (req, res) => {
       pdfRevisions: {
         orderBy: { revision: "desc" },
         take: 1,
-        select: { pdf: true, chunks: { orderBy: { position: "asc" }, select: { pdf: true } } },
+        select: { id: true, pdf: true },
       },
     },
   });
   const savedRevision = document?.pdfRevisions?.[0];
-  const pdf = savedRevision?.chunks?.length
-    ? Buffer.concat(savedRevision.chunks.map((chunk) => Buffer.from(chunk.pdf)))
-    : savedRevision?.pdf || document?.generatedPdf;
-  if (!pdf) return res.status(404).json({ message: "Generated PDF not found." });
+  const lastChunk = savedRevision && await prisma.matterFormPdfChunk.aggregate({
+    where: { revisionId: savedRevision.id },
+    _max: { position: true },
+  });
+  const chunkCount = lastChunk?._max.position == null ? 0 : lastChunk._max.position + 1;
+  const pdf = savedRevision?.pdf || document?.generatedPdf;
+  if (!chunkCount && !pdf) return res.status(404).json({ message: "Generated PDF not found." });
   res.type("application/pdf");
   res.attachment(document.displayName.replace(/\.pdf$/i, "") + "-completed.pdf");
+  if (chunkCount) {
+    for (let position = 0; position < chunkCount; position += 1) {
+      const chunk = await prisma.matterFormPdfChunk.findUnique({
+        where: { revisionId_position: { revisionId: savedRevision.id, position } },
+        select: { pdf: true },
+      });
+      if (!chunk) return res.destroy(new Error("Generated PDF is incomplete."));
+      res.write(Buffer.from(chunk.pdf));
+    }
+    return res.end();
+  }
   return res.send(Buffer.from(pdf));
 });
 

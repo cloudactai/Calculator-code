@@ -28,7 +28,8 @@ generation duration—never a matter number, user ID, or field value. Set
 Completed PDFs are stored once per immutable revision in 512 KB PostgreSQL
 chunks. The document record keeps only the latest revision number and timestamp;
 reads still fall back to the older `generatedPdf` column for documents created
-before revision storage was added.
+before revision storage was added. Chunked revisions are streamed back one chunk
+at a time so downloads stay within Render's memory limit as well.
 
 The active client uploads completed PDFs as binary `application/pdf`, avoiding
 base64 request expansion. The API retains JSON/base64 input only temporarily so
