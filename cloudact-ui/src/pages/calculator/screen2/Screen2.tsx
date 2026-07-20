@@ -9255,10 +9255,16 @@ const Screen2 = ({
                   }
                   handleClick={() => {
                     console.log("[SAVE-BUTTON] pressed save");
-                    passStateToParentAndNextPage(
-                      Number(getCalculatorIdFromQuery(calculatorId)),
-                      false
-                    );
+                    if (storedMatterNumber) {
+                      console.log("[SAVE-BUTTON] matter selected:", storedMatterNumber, "— saving to DB");
+                      saveValuesToDB(allValuesObjToStoreInDB());
+                    } else {
+                      console.log("[SAVE-BUTTON] no matter selected — skipping save, going to Screen4");
+                      passStateToParentAndNextPage(
+                        Number(getCalculatorIdFromQuery(calculatorId)),
+                        false
+                      );
+                    }
                   }}
                 >
                   <>
