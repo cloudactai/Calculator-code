@@ -1991,6 +1991,7 @@ const Screen2 = ({
     id: number,
     saveValues: boolean
   ) => {
+    console.log("[SAVE-DEBUG] Step 6: passStateToParentAndNextPage entered", { id, saveValues });
 
     // Build the minimal object Screen4 needs — all heavy computation skipped.
     const _spousalSupport = {
@@ -2058,18 +2059,39 @@ const Screen2 = ({
       aboutTheChildren: screen1.aboutTheChildren,
     };
 
+    console.log("[SAVE-DEBUG] Step 7: _report_data built", {
+      hasBackground: !!_report_data.background,
+      hasChildren: !!_report_data.aboutTheChildren,
+      hasCppDeductions: !!_report_data.cppDeductions,
+      hasEnhancedCPPDeduction: !!_report_data.enhancedCPPDeduction,
+      hasSpousalSupport: !!_report_data.spousalSupport,
+      hasChildSupport: !!_report_data.childSupport,
+      report_type: _report_data.report_type,
+      calculator_type: _report_data.calculator_type,
+      keys: Object.keys(_report_data),
+    });
+
     // Persist report_data to the DB so Screen4 can load it
     if (id && !isNaN(id) && saveValues) {
-      await apiCalculatorById.edit_value(id, {
-        report_data: _report_data,
-      });
+      console.log("[SAVE-DEBUG] Step 8: PATCHing report_data to DB for id =", id);
+      try {
+        const patchResult = await apiCalculatorById.edit_value(id, {
+          report_data: _report_data,
+        });
+        console.log("[SAVE-DEBUG] Step 9: PATCH succeeded", patchResult);
+      } catch (err) {
+        console.error("[SAVE-DEBUG] Step 9 FAILED: PATCH error", err);
+      }
+    } else {
+      console.log("[SAVE-DEBUG] Step 8: Skipping PATCH (saveValues =", saveValues, ", id =", id, ")");
     }
 
+    console.log("[SAVE-DEBUG] Step 10: Setting screen2 state and navigating to Screen4");
     settingScreen2StateFromChild({ ..._obj, report_data: _report_data });
 
-    history.push(
-      `${AUTH_ROUTES.CALCULATOR}?id=${getCalculatorIdFromQuery(calculatorId)}&step=3&saveValues=${saveValues}`
-    );
+    const navUrl = `${AUTH_ROUTES.CALCULATOR}?id=${getCalculatorIdFromQuery(calculatorId)}&step=3&saveValues=${saveValues}`;
+    console.log("[SAVE-DEBUG] Step 11: Navigating to", navUrl);
+    history.push(navUrl);
     return;
 
     // ── DEAD CODE BELOW — original heavy computation kept for reference ──
@@ -2645,8 +2667,6 @@ const Screen2 = ({
       supportReceived.current.party2 -
       // specialExpenses.party2 -
       getTotalDeductionsParty2()
-
-      console.log("getTaxableIncomeAfterSupportParty2>>",val)
 
     return val;
   };
@@ -6084,9 +6104,12 @@ const Screen2 = ({
   };
 
   const saveValuesToDB = async (obj: any) => {
+    console.log("[SAVE-DEBUG] Step 3: saveValuesToDB called, POSTing to /v1/calculator/save_values...");
     const data = await SaveAllCalculatorValuesByID(obj);
+    console.log("[SAVE-DEBUG] Step 4: POST response received", { data, id: data?.id, status: data?.status });
 
     if (data.status === "error") {
+      console.log("[SAVE-DEBUG] Step 4 FAILED: Duplicate label error");
       setStoredCalculatorValues((prev) => ({
         ...prev,
         error: `Label name with ${prev.label} already exists. Please Change Label Name`,
@@ -6103,6 +6126,7 @@ const Screen2 = ({
 
       Cookies.set("calculatorId", JSON.stringify(data.id), { path: "/" });
 
+      console.log("[SAVE-DEBUG] Step 5: Calling passStateToParentAndNextPage with id =", data.id, ", saveValues = true");
       passStateToParentAndNextPage(data.id, true);
     }
   };
@@ -9131,14 +9155,19 @@ const Screen2 = ({
                     const { label, description, savedBy } =
                       storedCalculatorValues;
 
+                    console.log("[SAVE-DEBUG] Step 1: Save button clicked", { label, description, savedBy });
+
                     if (label && description && savedBy) {
                       Cookies.set(
                         "calculatorLabel",
                         JSON.stringify(storedCalculatorValues),
                         { path: "/" }
                       );
-                      saveValuesToDB(allValuesObjToStoreInDB());
+                      const dbObj = allValuesObjToStoreInDB();
+                      console.log("[SAVE-DEBUG] Step 2: Built DB object", { id: dbObj.id, matter_id: dbObj.matter_id, label: dbObj.label, hasData: !!dbObj.data });
+                      saveValuesToDB(dbObj);
                     } else if (!label || !description || !savedBy) {
+                      console.log("[SAVE-DEBUG] Step 1 FAILED: Missing fields", { label: !!label, description: !!description, savedBy: !!savedBy });
                       setStoredCalculatorValues((prev) => ({
                         ...prev,
                         error: "Please Fill all the values",

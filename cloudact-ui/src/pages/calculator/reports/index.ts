@@ -65,7 +65,6 @@ export const showElementForReportType = (
   Page: number | string,
   elem: string
 ) => {
-  console.log("conidtinchildparent",type ,calculator_type )
 
   if (conditionForOnlyChild(type, calculator_type)) {
     console.log("conidtinchild",type ,calculator_type )
@@ -73,12 +72,10 @@ export const showElementForReportType = (
   }
 
   if (conditionForWithoutChild(type, calculator_type)) {
-    console.log("conditionForWithoutChild",type ,calculator_type )
 
     return showElementForReportType1(Page, elem);
   }
   if (conditionForCustodialFormula(type, calculator_type)) {
-    console.log("conditionForCustodialFormula",type ,calculator_type )
 
     return showElementForReportType2(Page, elem);
   }

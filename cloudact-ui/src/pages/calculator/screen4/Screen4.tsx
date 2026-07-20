@@ -235,7 +235,7 @@ const Screen4 = ({
   };
 
   const [reportData, setReportData] = useState({
-    data: {},
+    data: null as any,
     showReportTemplate: true,
   });
 
@@ -259,24 +259,42 @@ const Screen4 = ({
   }, []);
 
   const downloadReports = async (id: number) => {
-    if (!id || isNaN(id)) return;
-    let data: any;
-    try {
-      data = await apiCalculatorById.get_value(id);
-    } catch {
+    console.log("[SAVE-DEBUG] Screen4 Step 1: downloadReports called with id =", id);
+    if (!id || isNaN(id)) {
+      console.log("[SAVE-DEBUG] Screen4 Step 1 SKIPPED: invalid id", id);
       return;
     }
-    if (!data?.report_data) return;
+    let data: any;
+    try {
+      console.log("[SAVE-DEBUG] Screen4 Step 2: Fetching saved calculation from DB...");
+      data = await apiCalculatorById.get_value(id);
+      console.log("[SAVE-DEBUG] Screen4 Step 3: GET response received", {
+        hasData: !!data,
+        hasReportData: !!data?.report_data,
+        reportDataLength: data?.report_data?.length,
+        dataKeys: data ? Object.keys(data) : [],
+      });
+    } catch (err) {
+      console.error("[SAVE-DEBUG] Screen4 Step 3 FAILED: GET error", err);
+      return;
+    }
+    if (!data?.report_data) {
+      console.log("[SAVE-DEBUG] Screen4 Step 3 SKIPPED: no report_data in response");
+      return;
+    }
     const ExtractedData = JSON.parse(data.report_data);
-    // setRestructioring(ExtractedData.restructioring)
+    console.log("[SAVE-DEBUG] Screen4 Step 4: Parsed report_data", {
+      keys: Object.keys(ExtractedData),
+      hasCppDeductions: !!ExtractedData.cppDeductions,
+      hasEnhancedCPPDeduction: !!ExtractedData.enhancedCPPDeduction,
+      hasBackground: !!ExtractedData.background,
+      hasAboutTheChildren: !!ExtractedData.aboutTheChildren,
+      report_type: ExtractedData.report_type,
+      calculator_type: ExtractedData.calculator_type,
+    });
     console.log("ExtractedData",ExtractedData.restructioring)
 
-    // const TaxAmountForLumpSumAndInsurence = JSON.parse(data.report_data)?.valueswithoutSpousalSupport
-    // if(TaxAmountForLumpSumAndInsurence){
-    //   setRestructioring(true)
-    // }
-
-
+    console.log("[SAVE-DEBUG] Screen4 Step 5: Setting reportData state — reports will render");
     setReportData((prev) => ({
       data: ExtractedData,
       showReportTemplate: false,
