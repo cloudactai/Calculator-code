@@ -3597,7 +3597,8 @@
 .fill-information-page .page-sidebar {
   display: flex;
   flex-direction: column;
-  height: calc(100vh - 200px);
+  height: calc(100vh - 218px);
+  margin-top: 18px;
   position: -webkit-sticky;
   position: sticky;
   top: 0;
@@ -3606,7 +3607,8 @@
 .fill-information-page .page-content {
   display: flex;
   flex-direction: column;
-  height: calc(100vh - 200px);
+  height: calc(100vh - 218px);
+  margin-top: 18px;
 }
 
 .fill-information-page .page-content .head {
