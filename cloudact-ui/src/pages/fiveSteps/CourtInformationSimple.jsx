@@ -1,9 +1,11 @@
 import { useState, useEffect } from 'react'
 
 import InputCustom from "../../components/InputCustom";
+import CourtNameSelect from "../../components/Matters/Form/CourtNameSelect";
 
 import { CourtData } from '../../utils/Apis/matters/CustomHook/CourtData';
 import Loader from '../../components/Loader'
+import { getCurrentUserFromCookies } from '../../utils/helpers';
 
 const CourtInformationSimple = ({ matterId, onUpdateFormData }) => {
 
@@ -45,6 +47,16 @@ const CourtInformationSimple = ({ matterId, onUpdateFormData }) => {
 
     }
 
+    // Picking a directory court fills its name and auto-populates the address.
+    // A custom (non-directory) court keeps whatever address was already typed.
+    const handleCourtSelect = ({ name, court }) => {
+        setFormData((prev) => ({
+            ...prev,
+            name,
+            address: court ? court.address : prev.address,
+        }));
+    }
+
     return (
         <>
             {loading ? (
@@ -55,12 +67,10 @@ const CourtInformationSimple = ({ matterId, onUpdateFormData }) => {
                         <div className="col-12 col-xl-4">
                             <div className="form-group">
                                 <label className="form-label">Name*</label>
-                                <InputCustom
-                                    type="text"
-                                    placeholder="Enter Court Name"
-                                    name="name"
+                                <CourtNameSelect
                                     value={formData.name}
-                                    handleChange={handleFormDataChange}
+                                    province={getCurrentUserFromCookies()?.province}
+                                    onChange={handleCourtSelect}
                                 />
                             </div>
                         </div>

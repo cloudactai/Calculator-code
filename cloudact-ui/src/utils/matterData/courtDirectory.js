@@ -1,0 +1,121 @@
+// Ontario court directory. Source: https://www.ontario.ca/locations/courts
+// Generated from "Court directory template 1.xlsx". Each entry powers the
+// searchable Court Name dropdown and auto-fills the address on selection.
+
+export const ontarioCourts = [
+  { province: "ON", name: "Armstrong Courthouse", address: "ARDC Building 111 Queen St, PO Box 2000, Armstrong, Ontario P0T 1A0", email: "", phone: "807-626-7100" },
+  { province: "ON", name: "Attawapiskat Courthouse", address: "Reg Louttit Sportsplex, Attawapiskat, Ontario P0L 1A0", email: "Kerrin.Genier@ontario.ca", phone: "705-272-4256" },
+  { province: "ON", name: "Bancroft Courthouse", address: "5 Fairway Blvd, Bancroft, Ontario K0L 1C0", email: "Maureen.Johnston@ontario.ca", phone: "613-962-9106" },
+  { province: "ON", name: "Barrie Courthouse", address: "75 Mulcaster Street, Barrie, Ontario L4M 3P2", email: "Francois.starke@ontario.ca", phone: "705-739-6143" },
+  { province: "ON", name: "Bearskin Lake Courthouse", address: "Community Centre, General Delivery, Bearskin Lake, Ontario P0V 1G0", email: "Yvonne.Lacroix@ontario.ca", phone: "807-468-2547" },
+  { province: "ON", name: "Belleville Courthouse", address: "15 Bridge Street West, Belleville, Ontario K8P 0C7", email: "tanya.swan.fox@ontario.ca", phone: "613-962-9106" },
+  { province: "ON", name: "Big Trout Lake Courthouse", address: "Community Hall, Big Trout Lake, Ontario P0V 1G0", email: "", phone: "807-223-2348" },
+  { province: "ON", name: "Bracebridge (Muskoka District) Courthouse", address: "3A Dominion St., Bracebridge, Ontario P1L 2E6", email: "carey.l.thompson@ontario.ca", phone: "705-645-7499" },
+  { province: "ON", name: "Brampton (A. Grenville and William Davis) Courthouse", address: "7755 Hurontario Street, Brampton, Ontario L6W 4T1", email: "Dorothy.Spraggett@ontario.ca", phone: "905-456-4743" },
+  { province: "ON", name: "Brantford Courthouse", address: "70 Wellington St., Brantford, Ontario N3T 2L9", email: "Darrel.Shelton@ontario.ca", phone: "519-752-6350" },
+  { province: "ON", name: "Brockville Courthouse", address: "41 Court House Square, Brockville, Ontario K6V 7N3", email: "cynthia.pilla@ontario.ca", phone: "613-341-2806" },
+  { province: "ON", name: "Cat Lake Courthouse", address: "School Gym, Cat Lake, Ontario P0V 1J0", email: "", phone: "807-468-2842" },
+  { province: "ON", name: "Cayuga Courthouse", address: "55 Munsee St. N., Cayuga, Ontario N0A 1E0", email: "Marlene.Los@ontario.ca", phone: "905-772-3335" },
+  { province: "ON", name: "Chapleau Courthouse", address: "Civic Centre - 20 Pine St. W, Chapleau, Ontario P0M 1K0", email: "Samantha.Mcallister@ontario.ca", phone: "705-267-7799" },
+  { province: "ON", name: "Chatham Courthouse", address: "425 Grand Ave W (Entire Bldg), Chatham, Ontario N7M 6M8", email: "Susan.Beach@ontario.ca", phone: "519-333-2950" },
+  { province: "ON", name: "Cobourg (Northumberland County) Courthouse", address: "860 William St., Cobourg, Ontario K9A 3A9", email: "kristal.davies@ontario.ca", phone: "905-372-3751" },
+  { province: "ON", name: "Cochrane Courthouse", address: "149 Fourth Ave Box 638, Cochrane, Ontario P0L 1C0", email: "kristal.davies@ontario.ca", phone: "905-372-3751" },
+  { province: "ON", name: "Collingwood Courthouse", address: "49 Huron St., Collingwood, Ontario L9Y 1C5", email: "Francois.starke@ontario.ca", phone: "705-739-6143" },
+  { province: "ON", name: "Cornwall Courthouse", address: "29 Second St. W., Cornwall, Ontario K6J 1G3", email: "Lianne.Racine@ontario.ca", phone: "613-930-4544" },
+  { province: "ON", name: "Deer Lake Courthouse", address: "David Meekis Memorial School, Deer Lake, Ontario P0V 1N0", email: "Yvonne.Lacroix@ontario.ca", phone: "807-468-2547" },
+  { province: "ON", name: "Dryden Courthouse", address: "479 Government St. Box 1, Dryden, Ontario P8N 3K9", email: "Jacqie.Gramdmont@ontario.ca", phone: "807-223-2348" },
+  { province: "ON", name: "Elliot Lake Courthouse", address: "200 Ontario Ave, Elliot Lake, Ontario P5A 1Y5", email: "mikayla.fahrer@ontario.ca", phone: "705-945-8000" },
+  { province: "ON", name: "Espanola Courthouse", address: "100 Tudhope St.,2nd fl, Suite 3, Espanola, Ontario P5E 1S6", email: "Kyla.Nadorozny@ontario.ca", phone: "705-282-2461" },
+  { province: "ON", name: "Fort Albany Courthouse", address: "Mundo Peetabeck Academy, Fort Albany, Ontario P0L 1H0", email: "", phone: "705-267-7799" },
+  { province: "ON", name: "Fort Frances Courthouse", address: "333 Church St., Fort Frances, Ontario P9A 1C9", email: "", phone: "807-274-4977" },
+  { province: "ON", name: "Fort Hope Courthouse", address: "Co-Op Building, Fort Hope, Ontario", email: "", phone: "807-626-7100" },
+  { province: "ON", name: "Fort Severn Courthouse", address: "Wasaho 1st Nation School, Fort Severn, Ontario P0V 1W0", email: "Yvonne.Lacroix@ontario.ca", phone: "807-468-2547" },
+  { province: "ON", name: "Geraldton Courthouse", address: "299 East Street Cultural Centre, Geraldton, Ontario P0T 1M0", email: "Janette.Sprovieri@ontario.ca", phone: "807-626-7041" },
+  { province: "ON", name: "Goderich Courthouse", address: "1 Courthouse Sq., Goderich, Ontario N7A 1M2", email: "Karen.d.Littlejohn@ontario.ca", phone: "519-524-9221" },
+  { province: "ON", name: "Gogama Courthouse", address: "Community Centre Hwy 661, Gogama, Ontario P0M 1W0", email: "Samantha.Mcallister@ontario.ca", phone: "705-267-7799" },
+  { province: "ON", name: "Gore Bay Courthouse", address: "27 Phipps Street, Gore Bay, Ontario P0P 1H0", email: "Kyla.Nadorozny@ontario.ca", phone: "705-282-2461" },
+  { province: "ON", name: "Guelph Courthouse", address: "74 Woolwich St., Guelph, Ontario N1H 3T9", email: "Kyla.Nadorozny@ontario.ca", phone: "705-282-2461" },
+  { province: "ON", name: "Haileybury Courthouse", address: "393 Main St. Box 609, Haileybury, Ontario P0J 1K0", email: "Nadine.Auger@ontario.ca", phone: "705-672-3321" },
+  { province: "ON", name: "Hamilton Courthouse", address: "55 Main St. W., Hamilton, Ontario L8P 1H4", email: "Nadine.Auger@ontario.ca", phone: "705-672-3321" },
+  { province: "ON", name: "Hearst Courthouse", address: "141 Gaspésie Road, Hearst, Ontario P0L 1R0", email: "Kerrin.Genier@ontario.ca", phone: "705-272-4256" },
+  { province: "ON", name: "Hornepayne Courthouse", address: "48 - 6th Ave, Hornepayne, Ontario P0M 1Z0", email: "Kerrin.Genier@ontario.ca", phone: "705-272-4256" },
+  { province: "ON", name: "Ignace Courthouse", address: "North Woods Motor Inn, Highway #17, Ignace, Ontario", email: "carey.l.thompson@ontario.ca", phone: "705-645-7499" },
+  { province: "ON", name: "Kapuskasing Courthouse", address: "Civic Centre, 88 Riverside Dr., Kapuskasing, Ontario P5N 1B3", email: "Kerrin.Genier@ontario.ca", phone: "705-272-4256" },
+  { province: "ON", name: "Kasabonika Courthouse", address: "Community School, Kasabonika, Ontario", email: "Dion.Desserre@ontario.ca", phone: "807-223-2348" },
+  { province: "ON", name: "Kashechewan Courthouse", address: "Kaschechewan School Auditorium, Kashechewan, Ontario P0L 1S0", email: "Lynn.Shier@ontario.ca", phone: "705-272-4256" },
+  { province: "ON", name: "Kenora Courthouse", address: "216 Water Street, Kenora, Ontario P9N 1S4", email: "", phone: "807-468-2842" },
+  { province: "ON", name: "Kingfisher Courthouse", address: "Mission Building, Kingfisher, Ontario", email: "", phone: "807-468-2842" },
+  { province: "ON", name: "Kirkland Lake Courthouse", address: "140 Government Rd, E. PO Box 730, Kirkland Lake, Ontario P2N 3K1", email: "melanie.langlois@ontario.ca", phone: "705-567-9381" },
+  { province: "ON", name: "Waterloo Region Courthouse", address: "85 Frederick Street, Kitchener, Ontario N2H 0A7", email: "", phone: "519-741-3200" },
+  { province: "ON", name: "Lansdowne House Courthouse", address: "Neskantage Community Centre, Lansdowne House, Ontario", email: "Alison.Schnarr@ontario.ca", phone: "807-626-7000" },
+  { province: "ON", name: "Leamington Courthouse", address: "7 Clark St. West, Leamington, Ontario N8H 1E5", email: "Maryanne.docherty@ontario.ca", phone: "519-973-6689" },
+  { province: "ON", name: "Lindsay Courthouse", address: "440 Kent St. W., Lindsay, Ontario K9V 6K2", email: "Jo-Anne.Irvine@ontario.ca", phone: "705-324-1400" },
+  { province: "ON", name: "London Courthouse", address: "80 Dundas St., London, Ontario N6A 6A3", email: "Tracie.campbellwilson@ontario.ca", phone: "519-660-3050" },
+  { province: "ON", name: "Longlac Courthouse", address: "117 Dieppe Rd., Royal Canadian Legion, Longlac, Ontario P0T 2A0", email: "Alison.Schnarr@ontario.ca", phone: "807-626-7000" },
+  { province: "ON", name: "Manitouwadge Courthouse", address: "1 Mississauga Dr, Manitouwadge, Ontario P0T 2C0", email: "Alison.Schnarr@ontario.ca", phone: "807-626-7000" },
+  { province: "ON", name: "Marathon Courthouse", address: "37 Peninsula Rd., Marathon, Ontario P0T 2E0", email: "", phone: "807-626-7100" },
+  { province: "ON", name: "Midland Courthouse", address: "605 Yonge St., Midland, Ontario L4R 2E1", email: "Francois.starke@ontario.ca", phone: "705-739-6143" },
+  { province: "ON", name: "Milton Courthouse", address: "491 Steeles Ave E., Milton, Ontario L9T 1Y7", email: "Rashmi.Patel@ontario.ca", phone: "905-693-3065" },
+  { province: "ON", name: "Mishkeegogamang Courthouse", address: "Community Centre, Mishkeegogamang First Nation, Mishkeegogamang, Ontario P0V 2H0", email: "", phone: "807-223-2348" },
+  { province: "ON", name: "Moosonee Courthouse", address: "38 Revillion Rd. North, Moosonee, Ontario P0L 1Y0", email: "Samantha.Mcallister@ontario.ca", phone: "705-267-7799" },
+  { province: "ON", name: "Newmarket Courthouse", address: "50 Eagle St. W., Newmarket, Ontario L3Y 6B1", email: "Fayorn.john@ontario.ca", phone: "905-853-4860" },
+  { province: "ON", name: "Nipigon Courthouse", address: "138 Wadsworth St. Recreation Centre, Nipigon, Ontario P0T 2J0", email: "Alison Schnarr@ontario.ca", phone: "807-626-7000" },
+  { province: "ON", name: "North Bay Courthouse", address: "360 Plouffe Street, North Bay, Ontario P1B 9L5", email: "Shelley.Southwell@ontario.ca", phone: "705-495-8309" },
+  { province: "ON", name: "North Spirit Lake Courthouse", address: "Nursing Station, North Spirit Lake, Ontario P0V 2G0", email: "Shelley.Southwell@ontario.ca", phone: "" },
+  { province: "ON", name: "Ogoki Post Courthouse", address: "Community Centre, Ogoki Post, Ontario P0T 2L0", email: "Yvonne.Lacroix@ontario.ca", phone: "807-468-2547" },
+  { province: "ON", name: "Orangeville (County of Dufferin) Courthouse", address: "10 Louisa St., Orangeville, Ontario L9W 3P9", email: "Darcie.Delany@ontario.ca", phone: "519-941-7460" },
+  { province: "ON", name: "Orillia Courthouse", address: "700 Memorial Ave. Cottage C, P.O. Box #218, Orillia, Ontario L3V 6J3", email: "dana.bush@ontario.ca", phone: "705-326-2084" },
+  { province: "ON", name: "Lieutenant-Colonel Samuel S. Sharpe, DSO, MP Courthouse", address: "150 Bond Street East, Oshawa, Ontario L1G 0A2", email: "Karen.Wyles@ontario.ca", phone: "905-743-2633" },
+  { province: "ON", name: "Ottawa Courthouse", address: "161 Elgin St., 2nd Fl., Ottawa, Ontario K2P 2K1", email: "ottawa.accessibility@ontario.ca", phone: "613-239-1034" },
+  { province: "ON", name: "Owen Sound Courthouse", address: "611 - 9th Ave. East, Owen Sound, Ontario N4K 6Z4", email: "Paul.Beaumont@ontario.ca", phone: "519-370-2444" },
+  { province: "ON", name: "Parry Sound Courthouse", address: "89 James St., Parry Sound, Ontario P2A 1T7", email: "Susan.Crawford@ontario.ca", phone: "705-746-4237" },
+  { province: "ON", name: "Peawanuck Courthouse", address: "Church basement, Peawanuck, Ontario P0L 2HO", email: "Susan.Crawford@ontario.ca", phone: "705-746-4237" },
+  { province: "ON", name: "Pembroke (Renfrew County) Courthouse", address: "297 Pembroke St E, Pembroke, Ontario K8A 3K2", email: "Anna.Fischer@ontario.ca", phone: "613-732-8581" },
+  { province: "ON", name: "Perth Courthouse", address: "43 Drummond St E, Perth, Ontario K7H 1G1", email: "Angela.Roosendaal@ontario.ca", phone: "613-267-2021" },
+  { province: "ON", name: "Peterborough Courthouse", address: "470 Water St., Peterborough, Ontario K9H 3M3", email: "Ashlee.hartwick@ontario.ca", phone: "705-876-3815" },
+  { province: "ON", name: "Picton Courthouse", address: "44 Union St., Picton, Ontario K0K 2T0", email: "Susan.Prevost@ontario.ca", phone: "613-962-9106" },
+  { province: "ON", name: "Pikangikum Courthouse", address: "Hotel, Pikangikum, Ontario P0V 2L0", email: "", phone: "807-468-2842" },
+  { province: "ON", name: "Poplar Hill Courthouse", address: "Community Centre, Poplar Hill, Ontario P0V 3E0", email: "", phone: "807-468-2842" },
+  { province: "ON", name: "Sachigo Lake Courthouse", address: "Resource Centre, Sachigo Lake, Ontario P0V 2P0", email: "Yvonne.Lacroix@ontario.ca", phone: "807-468-2547" },
+  { province: "ON", name: "Sandy Lake Courthouse", address: "School, Sandy Lake, Ontario P0V 1V0", email: "Yvonne.Lacroix@ontario.ca", phone: "807-468-2547" },
+  { province: "ON", name: "Sarnia Courthouse", address: "700 N. Christina Street, Sarnia, Ontario N7V 3C2", email: "Susan.Beach@ontario.ca", phone: "519-333-2950" },
+  { province: "ON", name: "Sault Ste. Marie Courthouse", address: "426 Queen St. E., Sault Ste. Marie, Ontario P6A 6W2", email: "mikayla.fahrer@ontario.ca", phone: "705-945-8000" },
+  { province: "ON", name: "Schreiber Courthouse", address: "100 Langworthy Street Recreation Centre, Schreiber, Ontario P0T 2S5", email: "Alison.Schnarr@ontario.ca", phone: "807-626-7000" },
+  { province: "ON", name: "Simcoe Courthouse", address: "Suite 301 - 50 Frederick Hobson VC Drive, Simcoe, Ontario N3Y 0E4", email: "Guylaine.Vassallo@ontario.ca", phone: "519-426-2982" },
+  { province: "ON", name: "Smooth Rock Falls Courthouse", address: "195 5th St., Smooth Rock Falls, Ontario P0L 2B0", email: "Kerrin.Genier@ontario.ca", phone: "705-272-4256" },
+  { province: "ON", name: "St. Catharines Courthouse", address: "59 Church Street, St. Catharines, Ontario L2R 7N8", email: "Jillian.Matthews@ontario.ca", phone: "905-988-6200" },
+  { province: "ON", name: "Elgin County Courthouse", address: "4 Wellington Street, St. Thomas, Ontario N5R 2P2", email: "Kelly.Dale@ontario.ca", phone: "519-637-4027" },
+  { province: "ON", name: "Stratford Courthouse", address: "100 St. Patrick St., Stratford, Ontario N5A 7W1", email: "Sarah.carnahan@ontario.ca", phone: "519-271-2670" },
+  { province: "ON", name: "Sudbury Courthouse", address: "155 Elm St, Sudbury, Ontario P3C 1T9", email: "Lori.ivanovski@ontario.ca", phone: "705-564-7926" },
+  { province: "ON", name: "Summer Beaver Courthouse", address: "School, Summer Beaver, Ontario P0T 3B0", email: "Alison.Schnarr@ontario.ca", phone: "807-626-7000" },
+  { province: "ON", name: "Sundridge Courthouse", address: "Sundridge Strong and Joly Arena, 14 Albert St. N., Sundridge, Ontario P0A 1Z0", email: "Susan.Crawford@ontario.ca", phone: "705-746-4237" },
+  { province: "ON", name: "Thunder Bay Courthouse", address: "125 Brodie Street North, Thunder Bay, Ontario P7C 0A3", email: "Alison.Schnarr@ontario.ca", phone: "807-626-7000" },
+  { province: "ON", name: "Timmins Courthouse", address: "38 Pine Street N., Timmins, Ontario P4N 6K6", email: "Samantha.Mcallister@ontario.ca", phone: "705-267-7799" },
+  { province: "ON", name: "Walkerton (County of Bruce) Courthouse", address: "207 Cayley St. PO Box 39, Walkerton, Ontario N0G 2VO", email: "Kelly.Mayers@ontario.ca", phone: "519-881-3547" },
+  { province: "ON", name: "Wapekeka Courthouse", address: "School, Wapekeka, Ontario", email: "Dion.Desserre@ontario.ca", phone: "807 223-2348" },
+  { province: "ON", name: "Wawa Courthouse", address: "40 Broadway Ave., Wawa, Ontario P0S 1C2", email: "mikayla.fahrer@ontario.ca", phone: "705-945-8000" },
+  { province: "ON", name: "Weagamow Lake Courthouse", address: "Recreational Hall, Weagamow Lake, Ontario P0V 2Y0", email: "Dion.Desserre@ontario.ca", phone: "807-223-2348" },
+  { province: "ON", name: "Webequie Courthouse", address: "Webequie Band Hall, Webequie, Ontario P0T 3A0", email: "Alison.Schnarr@ontario.ca", phone: "807-626-7100" },
+  { province: "ON", name: "Welland Courthouse", address: "102 East Main Street, Welland, Ontario L3B 3W6", email: "Daniel.Ventresca@ontario.ca", phone: "905-735-0010" },
+  { province: "ON", name: "Wikwemikong Courthouse", address: "2338 Wikwemikong Way Wikwemikong Recreation and Cultural Centre, Wikwemikong, Ontario P0P 2J0", email: "Kyla.Nadorozny@ontario.ca", phone: "705-282-2461" },
+  { province: "ON", name: "Windsor Courthouse", address: "200 Chatham St. E., Windsor, Ontario N9A 2W3", email: "Maryanne.docherty@ontario.ca", phone: "519-973-6669" },
+  { province: "ON", name: "Woodstock (Oxford County) Courthouse", address: "415 Hunter St., Woodstock, Ontario N4S 4G6", email: "Leana.Swanson@ontario.ca", phone: "519-539-8177" },
+  { province: "ON", name: "Wunnumin Lake Courthouse", address: "Gym, Wunnumin Lake, Ontario", email: "Yvonne.Lacroix@ontario.ca", phone: "807-468-2547" },
+];
+
+// All courts across supported provinces (currently Ontario only).
+export const allCourts = [...ontarioCourts];
+
+export function getCourtsForProvince(province) {
+  if (!province) return allCourts;
+  const p = String(province).toUpperCase();
+  const matches = allCourts.filter((c) => c.province === p);
+  return matches.length ? matches : allCourts;
+}
+
+export function findCourtByName(name) {
+  if (!name) return null;
+  return allCourts.find((c) => c.name === name) || null;
+}
+
+export default allCourts;

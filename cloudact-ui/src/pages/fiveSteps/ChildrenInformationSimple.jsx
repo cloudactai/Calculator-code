@@ -6,6 +6,7 @@ import InputCustom from "../../components/InputCustom";
 import lawyer from "../../assets/images/lawyer.svg";
 import { useDispatch } from 'react-redux';
 import { ChildrenData } from '../../utils/Apis/matters/CustomHook/DocumentViewDataUpdate';
+import { BackgroundData } from '../../utils/Apis/matters/CustomHook/BackgroundData';
 import Loader from '../../components/Loader';
 import { calculateAge } from '../../utils/matterValidations/matterValidation';
 const ChildrenInformationSimple = ({ matterId, onUpdateFormData, activeTab, setActiveTab }) => {
@@ -16,6 +17,8 @@ const ChildrenInformationSimple = ({ matterId, onUpdateFormData, activeTab, setA
     const dispatch = useDispatch()
 
     const { selectChildrenData, selectChildrenDataLoading } = ChildrenData(matterId)
+    // Party names entered in Background feed the "Now lives with" options.
+    const { backgroundData } = BackgroundData(matterId)
 
     useEffect(() => {
 
@@ -178,15 +181,14 @@ const ChildrenInformationSimple = ({ matterId, onUpdateFormData, activeTab, setA
         }
     }
 
+    // Offer the parties entered in Background (client + opposing party), plus
+    // "Both"/"Other" as fallbacks. De-duplicate and drop any blank names.
+    const partyNames = [backgroundData?.client?.name, backgroundData?.opposingParty?.name]
+        .map((n) => (n || "").trim())
+        .filter((n, i, arr) => n && arr.indexOf(n) === i);
+
     const nowLivesWithList = [
-        {
-            name: "Mother",
-            value: "Mother",
-        },
-        {
-            name: "Father",
-            value: "Father",
-        },
+        ...partyNames.map((n) => ({ name: n, value: n })),
         {
             name: "Both",
             value: "Both",
