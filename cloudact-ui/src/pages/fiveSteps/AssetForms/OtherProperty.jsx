@@ -237,7 +237,7 @@ const OtherProperty = ({ OtherPropertyData, assetsData }) => {
                             <div className='inputs inputs-4'>
                                 <label className='form-label mb-0'>Market value (Client)</label>
                                 <InputCustom
-                                    type='text'
+                                    type='amount'
                                     name='on_date_of_marriage'
                                     label='on Date of marriage'
                                     placeholder='Amount'
@@ -245,7 +245,7 @@ const OtherProperty = ({ OtherPropertyData, assetsData }) => {
                                     handleChange={handleClientLandsChange}
                                 />
                                 <InputCustom
-                                    type='text'
+                                    type='amount'
                                     name='on_valuation_date'
                                     label='on Valuation date'
                                     placeholder='Amount'
@@ -253,7 +253,7 @@ const OtherProperty = ({ OtherPropertyData, assetsData }) => {
                                     handleChange={handleClientLandsChange}
                                 />
                                 <InputCustom
-                                    type='text'
+                                    type='amount'
                                     name='today'
                                     label='Today'
                                     placeholder='Amount'
@@ -267,7 +267,7 @@ const OtherProperty = ({ OtherPropertyData, assetsData }) => {
                                         Market value (Opposing Party)
                                     </label>
                                     <InputCustom
-                                        type='text'
+                                        type='amount'
                                         name='on_date_of_marriage'
                                         label='on Date of marriage'
                                         placeholder='Amount'
@@ -276,7 +276,7 @@ const OtherProperty = ({ OtherPropertyData, assetsData }) => {
                                         handleChange={handleOpposingPartyLandsChange}
                                     />
                                     <InputCustom
-                                        type='text'
+                                        type='amount'
                                         name='on_valuation_date'
                                         label='on Valuation date'
                                         placeholder='Amount'
@@ -285,7 +285,7 @@ const OtherProperty = ({ OtherPropertyData, assetsData }) => {
                                         handleChange={handleOpposingPartyLandsChange}
                                     />
                                     <InputCustom
-                                        type='text'
+                                        type='amount'
                                         name='today'
                                         label='Today'
                                         placeholder='Amount'

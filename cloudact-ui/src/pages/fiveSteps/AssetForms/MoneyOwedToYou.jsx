@@ -189,7 +189,7 @@ const MoneyOwedToYou = ({ MoneyOwedToYouData, assetsData }) => {
                                     Amount
                                 </label>
                                 <InputCustom
-                                    type="text"
+                                    type="amount"
                                     name="on_date_of_marriage"
                                     label="on Date of marriage"
                                     placeholder="Amount"
@@ -197,7 +197,7 @@ const MoneyOwedToYou = ({ MoneyOwedToYouData, assetsData }) => {
                                     handleChange={handleClientLandsChange}
                                 />
                                 <InputCustom
-                                    type="text"
+                                    type="amount"
                                     name="on_valuation_date"
                                     label="on Valuation date"
                                     placeholder="Amount"
@@ -205,7 +205,7 @@ const MoneyOwedToYou = ({ MoneyOwedToYouData, assetsData }) => {
                                     handleChange={handleClientLandsChange}
                                 />
                                 <InputCustom
-                                    type="text"
+                                    type="amount"
                                     name="today"
                                     label="Today"
                                     placeholder="Amount"

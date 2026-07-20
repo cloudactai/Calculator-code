@@ -19,7 +19,6 @@ import ExpensesSimple from "./ExpensesSimple";
 import AssetsSimple from "./AssetsSimple";
 import DebtsAndLiabilitiesSimple from "./DebtsAndLiabilitiesSimple";
 import OtherPersonsInHouseholdSimple from "./OtherPersonsInHouseholdSimple";
-import FinancialSummary from "./FinancialSummary";
 
 import background_information from "../../assets/images/background_information.svg";
 import court_information from "../../assets/images/court_information.svg";
@@ -394,10 +393,6 @@ const FiveStepsPage = () => {
                           <div className="text">{s.label}</div>
                         </div>
                       ))}
-                      <div className="item">
-                        <div className="circle" />
-                        <div className="text">Financial summary</div>
-                      </div>
                     </div>
                   </div>
 
@@ -460,7 +455,6 @@ const FiveStepsPage = () => {
                         </Accordion.Item>
                       );
                     })}
-                    <FinancialSummary />
                   </Accordion>
                 </div>
                 {/* End of Accordion */}

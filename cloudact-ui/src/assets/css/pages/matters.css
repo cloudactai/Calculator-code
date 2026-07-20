@@ -660,11 +660,9 @@
 }
 
 .five-steps-page .sidebar .btn.btnPrimary {
-  position: relative;
-  bottom: 0px;
-  top: calc(555px + 30px + 20px);
-  /* width: fit-content; */
-  width: 100%
+  position: static;
+  width: 100%;
+  margin-top: 16px;
 }
 
 .five-steps-page .sidebar .timeline {
@@ -672,21 +670,20 @@
   margin-top: 30px;
 }
 
+/* Line connects the first and last circle; top/bottom insets keep it from
+   dangling past the last item as the number of sections changes. */
 .five-steps-page .sidebar .timeline .status-line {
   width: 0;
-  height: 555px;
   left: 11px;
-  top: 2px;
+  top: 12px;
+  bottom: 12px;
   position: absolute;
   border: 1px #307ff4 solid;
 }
 
 .five-steps-page .sidebar .timeline .items {
   width: 249px;
-  height: 564px;
-  left: 0;
-  top: 0;
-  position: absolute;
+  position: relative;
   flex-direction: column;
   justify-content: flex-start;
   align-items: flex-start;
@@ -753,7 +750,7 @@
 
 .five-steps-page .accordion .accordion-collapse .accordion-body {
   background-color: #ffffff;
-  padding: 30px 30px 0px;
+  padding: 30px 30px 30px;
 }
 
 .five-steps-page .accordion .accordion-collapse .accordion-body .tab-actions {
@@ -3597,7 +3594,8 @@
 .fill-information-page .page-sidebar {
   display: flex;
   flex-direction: column;
-  height: calc(100vh - 200px);
+  height: calc(100vh - 218px);
+  margin-top: 18px;
   position: -webkit-sticky;
   position: sticky;
   top: 0;
@@ -3606,7 +3604,8 @@
 .fill-information-page .page-content {
   display: flex;
   flex-direction: column;
-  height: calc(100vh - 200px);
+  height: calc(100vh - 218px);
+  margin-top: 18px;
 }
 
 .fill-information-page .page-content .head {
@@ -4030,4 +4029,57 @@
   width: 100%;
   border: unset;
   padding: 10px;
+}
+/* New Form page: keep everything within the viewport so the Create button is
+   always visible without scrolling the whole page. Only the form content
+   scrolls; the action bar stays pinned at the bottom of the panel. */
+.create-new-form-page.panel {
+  height: calc(100vh - 150px);
+  min-height: 0;
+  margin-bottom: 0;
+  overflow: hidden;
+}
+.create-new-form-page.panel .pBody {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+.create-new-form-page .pBody > .row.matterType {
+  flex: 1 1 auto;
+  min-height: 0;
+}
+.create-new-form-page .pBody > .row.matterType > [class*="col-"] {
+  height: 100%;
+}
+.create-new-form-page .new-form-container {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+}
+.create-new-form-page .new-form-container .body {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  margin-top: 16px;
+}
+.create-new-form-page .new-form-container .body .content-container {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  margin-bottom: 12px;
+}
+.create-new-form-page .new-form-container .body .action {
+  flex: 0 0 auto;
+  margin-top: 0;
+  padding-top: 8px;
+}
+.create-new-form-page .new-form-container .body .content-container .img {
+  width: 300px;
+  height: 300px;
+  flex-shrink: 0;
 }

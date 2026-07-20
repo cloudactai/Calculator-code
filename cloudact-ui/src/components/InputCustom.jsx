@@ -1,5 +1,5 @@
 import React from "react";
-import { currencyFormat, formatNumber } from '../utils/helpers/Formatting'
+import { currencyFormat, formatNumber, formatDollars } from '../utils/helpers/Formatting'
 interface IinputCustom {
   type: String,
   label: String,
@@ -34,6 +34,26 @@ const InputCustom = ({
   placeholder = placeholder ? placeholder : label;
 
   
+
+  if (type === 'amount') {
+    // Money field: show grouped, whole-dollar values (e.g. 160,000) while
+    // handing callers back a plain numeric string so their parseFloat still works.
+    const fieldName = name ? name : label;
+    const onAmountChange = (e) => {
+      // Hand callers a plain whole-dollar numeric string (no grouping, no cents).
+      // Mutate the real event's target rather than a synthetic one so handlers
+      // that walk the DOM (e.g. parentElement lookups) keep working.
+      const n = parseFloat(e.target.value.replace(/[^0-9.-]/g, ""));
+      e.target.value = isNaN(n) ? "" : String(Math.round(n));
+      handleChange(e);
+    };
+    return (
+      <div className={`form-group ${hide ? "d-none" : ""} ${formGroupClassNames ? formGroupClassNames : ""}`}>
+        {label && <label className={`form-label ${labelClassNames ? labelClassNames : ""}`} htmlFor={label}>{label}</label>}
+        <input required type="text" inputMode="numeric" placeholder={placeholder} label={label} className={`form-control ${disabled ? "disabled" : ""} ${classNames}`} name={fieldName} disabled={disabled || false} id={label} value={formatDollars(value)} onChange={onAmountChange} />
+      </div>
+    )
+  }
 
   if(type === 'currency'){
     return (

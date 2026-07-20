@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useSelector } from "react-redux";
-import { useHistory } from "react-router-dom";
+import { useHistory, useLocation } from "react-router-dom";
 
 import Layout from "../../components/LayoutComponents/Layout";
 import GeneralModal from "../../components/Matters/Modals/GeneralModal";
@@ -22,9 +22,16 @@ const CreateNewFormPage = ({ currentUserRole }) => {
   const [matters, setMatters] = useState([]);
   const [isMattersLoading, setIsMattersLoading] = useState(true);
 
+  // When arriving from a matter task, the matter number is passed in via
+  // navigation state so the dropdown and downstream lookups start pre-filled.
+  const location = useLocation();
+  const prefilledMatterNumber = location.state?.matterNumber
+    ? String(location.state.matterNumber)
+    : "";
+
   const [formData, setFormData] = useState({
     clientName: "",
-    matterNumber: "",
+    matterNumber: prefilledMatterNumber,
   });
 
   useEffect(() => {

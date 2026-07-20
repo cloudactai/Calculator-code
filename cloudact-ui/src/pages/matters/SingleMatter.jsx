@@ -217,7 +217,8 @@ const SingleMatter = () => {
       if (taskStatuses.draft_divorce_docs === "not_started") {
         persistTaskStatus("draft_divorce_docs", "in_progress");
       }
-      history.push("/forms/create-new");
+      // Carry the matter number through so the create-new form page pre-selects it.
+      history.push("/forms/create-new", { matterNumber: id });
     } else if (taskId === "review_forms") {
       if (taskStatuses.review_forms === "not_started") {
         persistTaskStatus("review_forms", "in_progress");
@@ -450,6 +451,7 @@ const SingleMatter = () => {
                 matterName={matterName}
                 onChoose={handleIntakeChoice}
                 onBack={handleBackToTasks}
+                manualLabel="Manual Intake"
               />
             )}
 
