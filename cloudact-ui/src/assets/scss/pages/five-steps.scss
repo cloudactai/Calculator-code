@@ -34,10 +34,9 @@ main {
 
     .btn {
       &.btnPrimary {
-        position: relative;
-        bottom: 0px;
-        top: calc(555px + 30px + 20px);
-        width: fit-content;
+        position: static;
+        width: 100%;
+        margin-top: 16px;
       }
     }
 
@@ -47,21 +46,20 @@ main {
       position: relative;
       margin-top: 30px;
 
+      // Line connects the first and last circle; top/bottom insets keep it from
+      // dangling past the last item as the number of sections changes.
       .status-line {
         width: 0;
-        height: 555px;
         left: 11px;
-        top: 2px;
+        top: 12px;
+        bottom: 12px;
         position: absolute;
         border: 1px $primary solid;
       }
 
       .items {
         width: 249px;
-        height: 564px;
-        left: 0;
-        top: 0;
-        position: absolute;
+        position: relative;
         flex-direction: column;
         justify-content: flex-start;
         align-items: flex-start;

@@ -660,11 +660,9 @@
 }
 
 .five-steps-page .sidebar .btn.btnPrimary {
-  position: relative;
-  bottom: 0px;
-  top: calc(555px + 30px + 20px);
-  /* width: fit-content; */
-  width: 100%
+  position: static;
+  width: 100%;
+  margin-top: 16px;
 }
 
 .five-steps-page .sidebar .timeline {
@@ -672,21 +670,20 @@
   margin-top: 30px;
 }
 
+/* Line connects the first and last circle; top/bottom insets keep it from
+   dangling past the last item as the number of sections changes. */
 .five-steps-page .sidebar .timeline .status-line {
   width: 0;
-  height: 555px;
   left: 11px;
-  top: 2px;
+  top: 12px;
+  bottom: 12px;
   position: absolute;
   border: 1px #307ff4 solid;
 }
 
 .five-steps-page .sidebar .timeline .items {
   width: 249px;
-  height: 564px;
-  left: 0;
-  top: 0;
-  position: absolute;
+  position: relative;
   flex-direction: column;
   justify-content: flex-start;
   align-items: flex-start;
