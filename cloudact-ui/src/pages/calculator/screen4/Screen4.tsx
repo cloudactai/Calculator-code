@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from "react";
 import ReactToPrint from "react-to-print";
 import { useHistory , Link} from "react-router-dom";
 import moment from "moment";
+import toast from "react-hot-toast";
 import InputCustom from "../../../components/InputCustom";
 import useQuery from "../../../hooks/useQuery";
 import { AUTH_ROUTES } from "../../../routes/Routes.types";
@@ -947,7 +948,17 @@ const Screen4 = ({
     setRestructioring(checked);
   };
 
+  const [saveWarning, setSaveWarning] = useState("");
 
+  const saveCalculation = () => {
+    const storedMatterId = JSON.parse(localStorage.getItem('selectedCalculatorMatterNumber') || '""');
+    if (!storedMatterId) {
+      setSaveWarning("No matter was selected — computation cannot be saved. A report can still be downloaded.");
+      return;
+    }
+    setSaveWarning("");
+    // TODO: implement save logic
+  };
 
   const handleChildData=(value)=>{
        
@@ -1495,7 +1506,7 @@ const Screen4 = ({
         >
           Back
         </button>
-        <div className="d-flex">
+        <div className="d-flex align-items-center">
           <button
             className="btn btnPrimary rounded-pill me-3"
             onClick={() => {
@@ -1503,6 +1514,13 @@ const Screen4 = ({
             }}
           >
             Home Page
+          </button>
+          <button
+            className="btn btnPrimary rounded-pill me-3"
+            onClick={saveCalculation}
+          >
+            <i className="fa-solid fa-save" style={{ marginRight: "6px" }}></i>
+            Save To Matter
           </button>
           <ReactToPrint
             trigger={() => (
@@ -1544,6 +1562,22 @@ const Screen4 = ({
         </div>
       </div>
 
+      {saveWarning && (
+        <div
+          style={{
+            backgroundColor: "#fff3cd",
+            color: "#856404",
+            border: "1px solid #ffc107",
+            borderRadius: "8px",
+            padding: "12px 20px",
+            marginBottom: "16px",
+            fontSize: "14px",
+          }}
+        >
+          <i className="fa-solid fa-triangle-exclamation" style={{ marginRight: "8px" }}></i>
+          {saveWarning}
+        </div>
+      )}
 
       {/* Hidden Report Template for PDF Generation */}
       <div
