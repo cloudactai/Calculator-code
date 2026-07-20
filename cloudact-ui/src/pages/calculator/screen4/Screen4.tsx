@@ -235,7 +235,7 @@ const Screen4 = ({
   };
 
   const [reportData, setReportData] = useState({
-    data: {},
+    data: null as any,
     showReportTemplate: true,
   });
 

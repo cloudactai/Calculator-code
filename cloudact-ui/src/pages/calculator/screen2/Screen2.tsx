@@ -2646,8 +2646,6 @@ const Screen2 = ({
       // specialExpenses.party2 -
       getTotalDeductionsParty2()
 
-      console.log("getTaxableIncomeAfterSupportParty2>>",val)
-
     return val;
   };
 
