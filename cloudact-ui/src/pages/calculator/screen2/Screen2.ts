@@ -765,8 +765,6 @@ export const separateValuesDB = (
 };
 
 export const findRateForFederalTax = (allValues: any[], incomeOver: number) => {
-  console.log("allValuesfinrateforfederalTax",allValues)
-  console.log("allValuesfinrateforfederalTax incomeOver",incomeOver)
 
   return allValues.filter(
     ({ From, To }) => From <= incomeOver && To >= incomeOver
