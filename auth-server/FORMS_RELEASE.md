@@ -25,9 +25,11 @@ PDF revisions. The latter includes only revision number, PDF byte size, and clie
 generation duration—never a matter number, user ID, or field value. Set
 `FORMS_REQUEST_METRICS=false` only if this logging must be disabled.
 
-Completed PDFs are stored once per immutable revision. The document record keeps
-only the latest revision number and timestamp; reads still fall back to the older
-`generatedPdf` column for documents created before revision storage was added.
+Completed PDFs are stored once per immutable revision in 512 KB PostgreSQL
+chunks. The document record keeps only the latest revision number and timestamp;
+reads still fall back to the older `generatedPdf` column for documents created
+before revision storage was added. Chunked revisions are streamed back one chunk
+at a time so downloads stay within Render's memory limit as well.
 
 The active client uploads completed PDFs as binary `application/pdf`, avoiding
 base64 request expansion. The API retains JSON/base64 input only temporarily so
@@ -36,3 +38,7 @@ already-deployed clients can finish a save during the rollout window.
 Completed-PDF writes have a 30-second transaction timeout because several
 production templates are multi-megabyte files; ordinary Forms transactions keep
 Prisma's default timeout.
+
+Chunk payloads are committed independently; a short final transaction makes a
+revision visible only after every chunk is stored and advances the document's
+revision pointer. Incomplete revisions are never served or listed.

@@ -57,11 +57,32 @@ const FillPdf = ({ currentUserRole }) => {
 
   useEffect(() => {
     if (!routeMatterNumber || !routeDocumentId) return;
-    formsService.getDocument(routeMatterNumber, routeDocumentId)
-      .then((document) => {
+    let active = true;
+    setLoadError("");
+    setIsLoading(true);
+    setIsFormLoading(true);
+    setFieldsReady(false);
+    setPdfUrl(null);
+
+    Promise.all([
+      formsService.getDocument(routeMatterNumber, routeDocumentId),
+      formsService.listDocuments(routeMatterNumber),
+    ])
+      .then(([document, documents]) => {
+        if (!active) return;
         setLoadError("");
         setRemoteDocument(document);
-        const form = {
+        const savedForms = (Array.isArray(documents) ? documents : []).map((savedDocument) => ({
+          id: savedDocument.id,
+          docId: savedDocument.docId,
+          file_name: savedDocument.file_name,
+          title: savedDocument.file_name,
+          shortTitle: savedDocument.file_name,
+          folder_id: savedDocument.folder_id,
+          revision: savedDocument.revision,
+          template_version: savedDocument.template_version,
+        }));
+        const selectedForm = savedForms.find((form) => String(form.id) === String(document.id)) || {
           id: document.id,
           docId: document.docId,
           file_name: document.file_name,
@@ -71,14 +92,20 @@ const FillPdf = ({ currentUserRole }) => {
           revision: document.revision,
           template_version: document.template_version,
         };
-        setForms([form]);
-        setActiveForm(form);
+        if (!savedForms.some((form) => String(form.id) === String(selectedForm.id))) {
+          savedForms.unshift(selectedForm);
+        }
+        setForms(savedForms);
+        setActiveForm(selectedForm);
       })
       .catch(() => {
+        if (!active) return;
         setLoadError("Could not load this saved form. Return to the matter and try again.");
         setIsLoading(false);
+        setIsFormLoading(false);
         toast.error("Could not load this saved form.");
       });
+    return () => { active = false; };
   }, [routeMatterNumber, routeDocumentId]);
 
   const handleEditField = (id, value) => {
@@ -125,6 +152,9 @@ const FillPdf = ({ currentUserRole }) => {
   });
 
   const fetchFormPdf = async (form) => {
+    setLoadError("");
+    setIsLoading(true);
+    setIsFormLoading(true);
     try {
       const response = await axios.get(`/form-templates/${encodeURIComponent(form.docId)}/versions/${form.template_version}/pdf`, {
         responseType: "blob",
@@ -134,6 +164,10 @@ const FillPdf = ({ currentUserRole }) => {
       setPdfUrl(pdfUrl);
     } catch (error) {
       console.error("Error fetching the PDF:", error);
+      setLoadError("Could not load this form's PDF. Return to the matter and try again.");
+      setIsLoading(false);
+      setIsFormLoading(false);
+      toast.error("Could not load this form's PDF.");
     }
   };
 
@@ -169,6 +203,8 @@ const FillPdf = ({ currentUserRole }) => {
         setFieldsReady(true);
       } catch (error) {
         console.error('Error loading the PDF:', error);
+        setLoadError("Could not open this form's PDF. Return to the matter and try again.");
+        toast.error("Could not open this form's PDF.");
       } finally {
         setIsLoading(false);
         setIsFormLoading(false); // End loading state
@@ -1869,21 +1905,18 @@ const FillPdf = ({ currentUserRole }) => {
 
   // Add this new function before the return statement
   const handleFormSelection = (index) => {
-    setIsFormLoading(true);
-    setShouldRenderPdf(false); // Unmount PDFViewer
-    setFields([]); // Clear fields immediately
-    setFieldsReady(false);
+    const selectedForm = forms[index];
+    // The button is disabled for the current form, but its wrapper remains
+    // clickable. Re-selecting the same object cleared the viewer without
+    // changing activeForm, so the PDF effect never ran again.
+    if (!selectedForm || selectedForm.id === activeForm?.id) return;
 
-    // Small delay to ensure clean state before switching
-    setTimeout(() => {
-      const newForms = [...forms];
-      newForms[index].checked = !newForms[index].checked;
-      setForms(newForms);
-      setActiveForm(newForms[index]);
-      setNumPages(null);
-      setCurrentPage(1);
-      setShouldRenderPdf(true);
-    }, 0);
+    setIsFormLoading(true);
+    setFields([]);
+    setFieldsReady(false);
+    setNumPages(null);
+    setCurrentPage(1);
+    history.push(`/matters/${encodeURIComponent(routeMatterNumber)}/forms/${selectedForm.id}`);
   };
 
   return (
@@ -1937,7 +1970,7 @@ const FillPdf = ({ currentUserRole }) => {
                           position: 'relative',
                         }}>
                           <PDFViewer
-                            key={`${activeForm?.file_id}-${fields.length}`}
+                            key={`${activeForm?.id}-${fields.length}`}
                             pdfUrl={pdfUrl}
                             currentPage={currentPage}
                             scale={scale}
@@ -1970,20 +2003,22 @@ const FillPdf = ({ currentUserRole }) => {
                       currentPage={currentPage}
                     />
 
-                    {forms.map((form, index) => (
-
-                      <div
-                        className="form-checkbox"
-                        key={index}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          e.preventDefault();
-                          handleFormSelection(index);
-                        }}
-                      >
-                        <button disabled={activeForm?.shortTitle === form.shortTitle} className={`btn mb-2 w-100 ${activeForm?.shortTitle === form.shortTitle ? 'btnSecondary' : 'btnPrimary'} btnForm`}>{form.title}</button>
-                      </div>
-                    ))}
+                    {forms.map((form, index) => {
+                      const isActive = String(activeForm?.id) === String(form.id);
+                      return (
+                        <div className="form-checkbox" key={form.id}>
+                          <button
+                            type="button"
+                            disabled={isActive}
+                            aria-current={isActive ? "page" : undefined}
+                            className={`btn mb-2 w-100 btnForm form-list-button${isActive ? " is-active" : ""}`}
+                            onClick={() => handleFormSelection(index)}
+                          >
+                            {form.title}
+                          </button>
+                        </div>
+                      );
+                    })}
                   </div>
                 </div>
               </div>
