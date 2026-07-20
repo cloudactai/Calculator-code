@@ -143,6 +143,18 @@ function sendTemplatePdf(res, version) {
   return res.send(Buffer.from(version.pdfBytes));
 }
 
+// Whole-year age from an ISO/parseable birthdate; "" when unknown or invalid.
+function ageFromDob(dob) {
+  if (!dob) return "";
+  const born = new Date(dob);
+  if (Number.isNaN(born.getTime())) return "";
+  const now = new Date();
+  let age = now.getFullYear() - born.getFullYear();
+  const monthDelta = now.getMonth() - born.getMonth();
+  if (monthDelta < 0 || (monthDelta === 0 && now.getDate() < born.getDate())) age -= 1;
+  return age >= 0 && age < 200 ? String(age) : "";
+}
+
 async function buildPrefillData(matter, userId) {
   const [records, profile, calculations] = await Promise.all([
     prisma.matterRecord.findMany({ where: { matterId: matter.id } }),
@@ -169,10 +181,18 @@ async function buildPrefillData(matter, userId) {
     fullLegalName: person.lawyerName || "", address: person.lawyerAddress || "",
     phoneAndFax: person.lawyerPhone || "", email: person.lawyerEmail || "",
   });
-  const person = (value) => ({
-    fullLegalName: value.name || "", address: value.address || "",
-    phoneAndFax: value.phoneAndFax || value.phone || "", email: value.email || "",
-  });
+  const person = (value) => {
+    const municipality = value.municipality || "";
+    const provinceCode = value.province || "";
+    return {
+      fullLegalName: value.name || "", address: value.address || "",
+      phoneAndFax: value.phoneAndFax || value.phone || "", email: value.email || "",
+      dateOfBirth: value.dateOfBirth || "", age: ageFromDob(value.dateOfBirth),
+      municipality, province: provinceCode,
+      // "Resident in (municipality & province)" on the family-history forms.
+      residence: [municipality, provinceCode].filter(Boolean).join(", "),
+    };
+  };
   const client = party("Client");
   const opposingParty = party("Opposing Party");
   const court = rows("court")[0] || {};
