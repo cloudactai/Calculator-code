@@ -2,7 +2,6 @@ import React, { useEffect, useRef, useState } from "react";
 import ReactToPrint from "react-to-print";
 import { useHistory , Link} from "react-router-dom";
 import moment from "moment";
-import toast from "react-hot-toast";
 import InputCustom from "../../../components/InputCustom";
 import useQuery from "../../../hooks/useQuery";
 import { AUTH_ROUTES } from "../../../routes/Routes.types";
@@ -948,17 +947,7 @@ const Screen4 = ({
     setRestructioring(checked);
   };
 
-  const [saveWarning, setSaveWarning] = useState("");
 
-  const savePdf = () => {
-    const storedMatterId = JSON.parse(localStorage.getItem('selectedCalculatorMatterNumber') || '""');
-    if (!storedMatterId) {
-      setSaveWarning("No matter was selected — computation cannot be saved. A report can still be downloaded.");
-      return;
-    }
-    setSaveWarning("");
-    // TODO: implement save logic once matter is selected
-  };
 
   const handleChildData=(value)=>{
        
@@ -1506,7 +1495,7 @@ const Screen4 = ({
         >
           Back
         </button>
-        <div className="d-flex align-items-center">
+        <div className="d-flex">
           <button
             className="btn btnPrimary rounded-pill me-3"
             onClick={() => {
@@ -1514,26 +1503,6 @@ const Screen4 = ({
             }}
           >
             Home Page
-          </button>
-          <button
-            className="btn me-3"
-            style={{
-              backgroundColor: "#28a745",
-              color: "#fff",
-              padding: "10px 30px",
-              borderRadius: "50px",
-              fontSize: "14px",
-              fontWeight: "bold",
-              cursor: "pointer",
-              border: "none",
-              display: "flex",
-              alignItems: "center",
-              gap: "8px",
-            }}
-            onClick={savePdf}
-          >
-            <i className="fa-solid fa-save" style={{ fontSize: "16px" }}></i>
-            Save PDF
           </button>
           <ReactToPrint
             trigger={() => (
@@ -1575,22 +1544,6 @@ const Screen4 = ({
         </div>
       </div>
 
-      {saveWarning && (
-        <div
-          style={{
-            backgroundColor: "#fff3cd",
-            color: "#856404",
-            border: "1px solid #ffc107",
-            borderRadius: "8px",
-            padding: "12px 20px",
-            marginBottom: "16px",
-            fontSize: "14px",
-          }}
-        >
-          <i className="fa-solid fa-triangle-exclamation" style={{ marginRight: "8px" }}></i>
-          {saveWarning}
-        </div>
-      )}
 
       {/* Hidden Report Template for PDF Generation */}
       <div
