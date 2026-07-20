@@ -6,6 +6,7 @@ import Loader from '../../components/Loader'
 import { IncomeBenefits } from '../../utils/Apis/matters/CustomHook/DocumentViewDataUpdate';
 import { financialYear, incomeDetails, incomeDetailsON, incomeDetailsBC } from '../../utils/matterData/categoryData';
 import { getCurrentUserFromCookies } from '../../utils/helpers';
+import { formatDollars } from '../../utils/helpers/Formatting';
 
 const IncomeAndBenefitsSimple = ({ matterId, onUpdateFormData, matterData, activeTab, setActiveTab }) => {
     // const [loading, setLoading] = useState(true)
@@ -230,9 +231,9 @@ const IncomeAndBenefitsSimple = ({ matterId, onUpdateFormData, matterData, activ
 
         if (role === 'client' && type === 'income') {
             const newFormData = { ...formData };
-            const monthly = parseFloat(e.value) || '';
+            const monthly = Math.round(parseFloat(e.value)) || '';
             newFormData.client.income[index][e.name] = monthly;
-            const yearly = monthly * 12;
+            const yearly = Math.round(monthly * 12);
             newFormData.client.income[index]['yearlyAmount'] = yearly;
             setFormData(newFormData);
 
@@ -240,9 +241,9 @@ const IncomeAndBenefitsSimple = ({ matterId, onUpdateFormData, matterData, activ
 
         if (role === 'client' && type === 'benefit') {
             const newFormData = { ...formData };
-            const monthly = parseFloat(e.value) || '';
+            const monthly = Math.round(parseFloat(e.value)) || '';
             newFormData.client.benefit[index][e.name] = monthly;
-            const yearly = monthly * 12;
+            const yearly = Math.round(monthly * 12);
             newFormData.client.benefit[index]['yearlyAmount'] = yearly;
             setFormData(newFormData);
 
@@ -250,9 +251,9 @@ const IncomeAndBenefitsSimple = ({ matterId, onUpdateFormData, matterData, activ
 
         if (role === 'opposingParty' && type === 'income') {
             const newFormData = { ...formData };
-            const monthly = parseFloat(e.value) || '';
+            const monthly = Math.round(parseFloat(e.value)) || '';
             newFormData.opposingParty.income[index][e.name] = monthly;
-            const yearly = monthly * 12;
+            const yearly = Math.round(monthly * 12);
             newFormData.opposingParty.income[index]['yearlyAmount'] = yearly;
             setFormData(newFormData);
 
@@ -260,9 +261,9 @@ const IncomeAndBenefitsSimple = ({ matterId, onUpdateFormData, matterData, activ
 
         if (role === 'opposingParty' && type === 'benefit') {
             const newFormData = { ...formData };
-            const monthly = parseFloat(e.value) || '';
+            const monthly = Math.round(parseFloat(e.value)) || '';
             newFormData.opposingParty.benefit[index][e.name] = monthly;
-            const yearly = monthly * 12;
+            const yearly = Math.round(monthly * 12);
             newFormData.opposingParty.benefit[index]['yearlyAmount'] = yearly;
             setFormData(newFormData);
 
@@ -274,36 +275,36 @@ const IncomeAndBenefitsSimple = ({ matterId, onUpdateFormData, matterData, activ
 
         if (role === 'client' && type === 'income') {
             const newFormData = { ...formData };
-            const yearly = parseFloat(e.value) || '';
+            const yearly = Math.round(parseFloat(e.value)) || '';
             newFormData.client.income[index][e.name] = yearly;
-            const monthly = parseFloat(yearly / 12);
+            const monthly = Math.round(yearly / 12);
             newFormData.client.income[index]['monthlyAmount'] =  monthly;
             setFormData(newFormData);
         }
 
         if (role === 'client' && type === 'benefit') {
             const newFormData = { ...formData };
-            const yearly = parseFloat(e.value) || '';
+            const yearly = Math.round(parseFloat(e.value)) || '';
             newFormData.client.benefit[index][e.name] = yearly;
-            const monthly = parseFloat(yearly / 12);
+            const monthly = Math.round(yearly / 12);
             newFormData.client.benefit[index]['monthlyAmount'] = monthly;
             setFormData(newFormData);
         }
 
         if (role === 'opposingParty' && type === 'income') {
             const newFormData = { ...formData };
-            const yearly = parseFloat(e.value) || '';
+            const yearly = Math.round(parseFloat(e.value)) || '';
             newFormData.opposingParty.income[index][e.name] = yearly;
-            const monthly = parseFloat(yearly / 12);
+            const monthly = Math.round(yearly / 12);
             newFormData.opposingParty.income[index]['monthlyAmount'] = monthly;
             setFormData(newFormData);
         }
 
         if (role === 'opposingParty' && type === 'benefit') {
             const newFormData = { ...formData };
-            const yearly = parseFloat(e.value) || '';
+            const yearly = Math.round(parseFloat(e.value)) || '';
             newFormData.opposingParty.benefit[index][e.name] = yearly;
-            const monthly = parseFloat(yearly / 12);
+            const monthly = Math.round(yearly / 12);
             newFormData.opposingParty.benefit[index]['monthlyAmount'] = monthly;
             setFormData(newFormData);
         }
@@ -427,14 +428,14 @@ return (
                                                 ></Dropdown>
                                             </div>
                                             <InputCustom
-                                                type="text"
+                                                type="amount"
                                                 name="monthlyAmount"
                                                 label="Monthly Amount"
                                                 value={item.monthlyAmount}
                                                 handleChange={(e) => handleMonthlyChange(index, e.target, 'client', 'income')}
                                             />
                                             <InputCustom
-                                                type="text"
+                                                type="amount"
                                                 name="yearlyAmount"
                                                 label="Yearly Amount"
                                                 value={item.yearlyAmount}
@@ -467,13 +468,13 @@ return (
                                         type="text"
                                         placeholder="$0"
                                         disabled={true}
-                                        value={`$${totals.client.income.monthlyAmount}`}
+                                        value={`$${formatDollars(totals.client.income.monthlyAmount)}`}
                                     />
                                     <InputCustom
                                         type="text"
                                         placeholder="$0"
                                         disabled={true}
-                                        value={`$${totals.client.income.yearlyAmount}`}
+                                        value={`$${formatDollars(totals.client.income.yearlyAmount)}`}
                                     />
                                 </div>
                                 <div className="action"></div>
@@ -495,7 +496,7 @@ return (
                                                 ></Dropdown>
                                             </div>
                                             <InputCustom
-                                                type="text"
+                                                type="amount"
                                                 name="monthlyAmount"
                                                 label="Monthly Amount"
                                                 value={item.monthlyAmount}
@@ -503,7 +504,7 @@ return (
                                                 handleChange={(e) => handleMonthlyChange(index, e.target, 'client', 'benefit')}
                                             />
                                             <InputCustom
-                                                type="text"
+                                                type="amount"
                                                 name="yearlyAmount"
                                                 label="Yearly Amount"
                                                 value={item.yearlyAmount}
@@ -538,14 +539,14 @@ return (
                                         type="text"
                                         placeholder="$0"
                                         disabled={true}
-                                        value={`$${totals.client.benefit.monthlyAmount}` || 0}
+                                        value={`$${formatDollars(totals.client.benefit.monthlyAmount)}` || 0}
                                     />
 
                                     <InputCustom
                                         type="text"
                                         placeholder="$0"
                                         disabled={true}
-                                        value={`$${totals.client.benefit.yearlyAmount}` || 0}
+                                        value={`$${formatDollars(totals.client.benefit.yearlyAmount)}` || 0}
                                     />
                                 </div>
                                 <div className="action"></div>
@@ -569,14 +570,14 @@ return (
                                                 ></Dropdown>
                                             </div>
                                             <InputCustom
-                                                type="currency"
+                                                type="amount"
                                                 name="monthlyAmount"
                                                 label="Monthly Amount"
                                                 value={item.monthlyAmount}
                                                 handleChange={(e) => handleMonthlyChange(index, e.target, 'opposingParty', 'income')}
                                             />
                                             <InputCustom
-                                                type="text"
+                                                type="amount"
                                                 name="yearlyAmount"
                                                 label="Yearly Amount"
                                                 value={item.yearlyAmount}
@@ -609,13 +610,13 @@ return (
                                         type="text"
                                         placeholder="$0"
                                         disabled={true}
-                                        value={`$${totals.opposingParty.income.monthlyAmount}`}
+                                        value={`$${formatDollars(totals.opposingParty.income.monthlyAmount)}`}
                                     />
                                     <InputCustom
                                         type="text"
                                         placeholder="$0"
                                         disabled={true}
-                                        value={`$${totals.opposingParty.income.yearlyAmount}`}
+                                        value={`$${formatDollars(totals.opposingParty.income.yearlyAmount)}`}
                                     />
                                 </div>
                                 <div className="action"></div>
@@ -637,14 +638,14 @@ return (
                                                 ></Dropdown>
                                             </div>
                                             <InputCustom
-                                                type="text"
+                                                type="amount"
                                                 name="monthlyAmount"
                                                 label="Monthly Amount"
                                                 value={item.monthlyAmount}
                                                 handleChange={(e) => handleMonthlyChange(index, e.target, 'opposingParty', 'benefit')}
                                             />
                                             <InputCustom
-                                                type="text"
+                                                type="amount"
                                                 name="yearlyAmount"
                                                 label="Yearly Amount"
                                                 value={item.yearlyAmount}
@@ -677,13 +678,13 @@ return (
                                         type="text"
                                         placeholder="$0"
                                         disabled={true}
-                                        value={`$${totals.opposingParty.benefit.monthlyAmount}`}
+                                        value={`$${formatDollars(totals.opposingParty.benefit.monthlyAmount)}`}
                                     />
                                     <InputCustom
                                         type="text"
                                         placeholder="$0"
                                         disabled={true}
-                                        value={`$${totals.opposingParty.benefit.yearlyAmount}`}
+                                        value={`$${formatDollars(totals.opposingParty.benefit.yearlyAmount)}`}
                                     />
                                 </div>
                                 <div className="action"></div>

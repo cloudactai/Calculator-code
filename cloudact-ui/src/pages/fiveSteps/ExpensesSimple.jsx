@@ -9,6 +9,7 @@ import { ExpenseData } from '../../utils/Apis/matters/CustomHook/ExpenseData'
 import { expenseDetails, expenseDetailsBC, financialYear, specialExpenses } from '../../utils/matterData/categoryData'
 import NumberFormat from 'react-number-format'
 import { getCurrentUserFromCookies } from '../../utils/helpers'
+import { formatDollars } from '../../utils/helpers/Formatting'
 
 const ExpensesSimple = ({ matterId, onUpdateFormData, matterData, activeTab, setActiveTab }) => {
   const getExpenseList = () => {
@@ -280,18 +281,18 @@ const ExpensesSimple = ({ matterId, onUpdateFormData, matterData, activeTab, set
 
     if (role === 'client') {
       const newFormData = { ...formData };
-      const monthly = parseFloat(e.value) || '';
+      const monthly = Math.round(parseFloat(e.value)) || '';
       newFormData.client.expenses[index][e.name] = monthly;
-      const yearly = parseFloat(monthly) * 12;
+      const yearly = Math.round(parseFloat(monthly) * 12);
       newFormData.client.expenses[index]['yearlyAmount'] = yearly;
       setFormData(newFormData);
     }
 
     if (role === 'opposingParty') {
       const newFormData = { ...formData };
-      const monthly = parseFloat(e.value) || '';
+      const monthly = Math.round(parseFloat(e.value)) || '';
       newFormData.opposingParty.expenses[index][e.name] = monthly;
-      const yearly = parseFloat(monthly) * 12;
+      const yearly = Math.round(parseFloat(monthly) * 12);
       newFormData.opposingParty.expenses[index]['yearlyAmount'] = yearly;
       setFormData(newFormData);
   }
@@ -304,10 +305,10 @@ const ExpensesSimple = ({ matterId, onUpdateFormData, matterData, activeTab, set
     if (role === 'client') {
       const newFormData = { ...formData };
 
-      const yearly = parseFloat(e.value) || 0;
+      const yearly = Math.round(parseFloat(e.value)) || 0;
 
       newFormData.client.expenses[index][e.name] = yearly;
-      const monthly = parseFloat(yearly) / 12;
+      const monthly = Math.round(parseFloat(yearly) / 12);
 
       newFormData.client.expenses[index]['monthlyAmount'] = monthly;
 
@@ -317,10 +318,10 @@ const ExpensesSimple = ({ matterId, onUpdateFormData, matterData, activeTab, set
     if (role === 'opposingParty') {
       const newFormData = { ...formData };
 
-      const yearly = parseFloat(e.value) || '';
+      const yearly = Math.round(parseFloat(e.value)) || '';
 
       newFormData.opposingParty.expenses[index][e.name] = yearly;
-      const monthly = parseFloat(yearly) / 12;
+      const monthly = Math.round(parseFloat(yearly) / 12);
 
       newFormData.opposingParty.expenses[index]['monthlyAmount'] = monthly;
 
@@ -443,7 +444,7 @@ const ExpensesSimple = ({ matterId, onUpdateFormData, matterData, activeTab, set
                         </div>
                       
                         <InputCustom
-                          type='text'
+                          type='amount'
                           name='monthlyAmount'
                           label='Monthly Amount'
                           value={item.monthlyAmount}
@@ -451,7 +452,7 @@ const ExpensesSimple = ({ matterId, onUpdateFormData, matterData, activeTab, set
                           handleChange={(e) => handleMonthlyChange(index, e.target, 'client')}
                         />
                         <InputCustom
-                          type='text'
+                          type='amount'
                           name='yearlyAmount'
                           label='Yearly Amount'
                           value={item.yearlyAmount}
@@ -492,7 +493,7 @@ const ExpensesSimple = ({ matterId, onUpdateFormData, matterData, activeTab, set
                       className='form-control'
                       inputMode='numeric'
                       thousandSeparator={true}
-                      decimalScale={3}
+                      decimalScale={0}
                       defaultValue={0}
                       prefix={'$'}
                       disabled={true}
@@ -508,7 +509,7 @@ const ExpensesSimple = ({ matterId, onUpdateFormData, matterData, activeTab, set
                       className='form-control'
                       inputMode='numeric'
                       thousandSeparator={true}
-                      decimalScale={3}
+                      decimalScale={0}
                       defaultValue={0}
                       prefix={'$'}
                       disabled={true}
@@ -538,7 +539,7 @@ const ExpensesSimple = ({ matterId, onUpdateFormData, matterData, activeTab, set
                           </div>
 
                           <InputCustom
-                            type='text'
+                            type='amount'
                             name='amount'
                             label='Amount'
                             value={item.amount}
@@ -623,7 +624,7 @@ const ExpensesSimple = ({ matterId, onUpdateFormData, matterData, activeTab, set
                           ></Dropdown>
                         </div>
                         <InputCustom
-                          type='text'
+                          type='amount'
                           name='monthlyAmount'
                           label='Monthly Amount'
                           value={item.monthlyAmount}
@@ -631,7 +632,7 @@ const ExpensesSimple = ({ matterId, onUpdateFormData, matterData, activeTab, set
                           handleChange={(e) => handleMonthlyChange(index, e.target, 'opposingParty')}
                         />
                         <InputCustom
-                          type='text'
+                          type='amount'
                           name='yearlyAmount'
                           label='Yearly Amount'
                           value={item.yearlyAmount}
@@ -669,13 +670,13 @@ const ExpensesSimple = ({ matterId, onUpdateFormData, matterData, activeTab, set
                     <InputCustom
                       type='text'
                       placeholder='$0'
-                      value={`$${total.opposingParty.monthlyAmount}`}
+                      value={`$${formatDollars(total.opposingParty.monthlyAmount)}`}
                       disabled={true}
                     />
                     <InputCustom
                       type='text'
                       placeholder='$0'
-                      value={`$${total.opposingParty.yearlyAmount}`}
+                      value={`$${formatDollars(total.opposingParty.yearlyAmount)}`}
                       disabled={true}
                     />
                   </div>
@@ -712,7 +713,7 @@ const ExpensesSimple = ({ matterId, onUpdateFormData, matterData, activeTab, set
                         }
                       /> */}
                           <InputCustom
-                            type='text'
+                            type='amount'
                             name='amount'
                             label='Amount'
                             value={item.amount}

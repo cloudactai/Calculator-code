@@ -61,6 +61,15 @@ const currencyFormat = (val: number) => {
   }
 }
 
+// Plain thousands-separated dollars, rounded to the nearest dollar, no symbol.
+// e.g. 160000 -> "160,000", 13333.333 -> "13,333". Empty/invalid -> "".
+const formatDollars = (val: number | string): string => {
+  if (val === "" || val === null || val === undefined) return "";
+  const n = Number(String(val).replace(/[^0-9.-]/g, ""));
+  if (isNaN(n)) return "";
+  return Math.round(n).toLocaleString("en-US");
+};
+
 const convertDate = (isoString: string) => {
   return isoString.split('T')[0];
 };
@@ -84,5 +93,6 @@ export {
   convertCurrencyFormattingToText,
   convertDate,
   currencyFormat,
-  formatNumberWithCommasAndDecimals
+  formatNumberWithCommasAndDecimals,
+  formatDollars
 };

@@ -5,6 +5,7 @@ import CustomDropDown from '../../components/Matters/Form/CustomDropdown'
 import { debtsDetails } from '../../utils/matterData/categoryData'
 import { DebtData } from '../../utils/Apis/matters/CustomHook/DebtData'
 import Loader from '../../components/Loader'
+import { formatDollars } from '../../utils/helpers/Formatting'
 
 const DebtsAndLiabilitiesSimple = ({ matterId, onUpdateFormData }) => {
   const [loading, setLoading] = useState(true)
@@ -152,7 +153,7 @@ const DebtsAndLiabilitiesSimple = ({ matterId, onUpdateFormData }) => {
                             Amount/Value
                           </label>
                           <InputCustom
-                            type='text'
+                            type='amount'
                             name='on_date_of_marriage'
                             label='on Date of marriage'
                             placeholder='N/A'
@@ -160,7 +161,7 @@ const DebtsAndLiabilitiesSimple = ({ matterId, onUpdateFormData }) => {
                             handleChange={handleChange}
                           />
                           <InputCustom
-                            type='text'
+                            type='amount'
                             name='on_valuation_date'
                             label='on Valuation date'
                             placeholder='N/A'
@@ -168,7 +169,7 @@ const DebtsAndLiabilitiesSimple = ({ matterId, onUpdateFormData }) => {
                             handleChange={handleChange}
                           />
                           <InputCustom
-                            type='text'
+                            type='amount'
                             name='today'
                             label='Today'
                             placeholder='N/A'
@@ -223,21 +224,21 @@ const DebtsAndLiabilitiesSimple = ({ matterId, onUpdateFormData }) => {
                   label="on Date of marriage"
                   placeholder="$0"
                   disabled={true}
-                  value={`$${totals.totalOnDateOfMarriage.toFixed(2)}`}
+                  value={`$${formatDollars(totals.totalOnDateOfMarriage)}`}
                 />
                 <InputCustom
                   type="text"
                   label="on Valuation date"
                   placeholder="$0"
                   disabled={true}
-                  value={`$ ${totals.totalOnValuationDate.toFixed(2)}`}
+                  value={`$ ${formatDollars(totals.totalOnValuationDate)}`}
                 />
                 <InputCustom
                   type="text"
                   label="Today"
                   placeholder="$0"
                   disabled={true}
-                  value={`$${totals.totaltoday.toFixed(2)}`}
+                  value={`$${formatDollars(totals.totaltoday)}`}
                 />
               </div>
               <div className="action"></div>
