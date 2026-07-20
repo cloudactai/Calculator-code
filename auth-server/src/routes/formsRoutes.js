@@ -5,6 +5,7 @@ const path = require("path");
 const prisma = require("../../prismaClient");
 const { authMiddleware } = require("../middleware/authMiddleware");
 const { parseStoredJson, prefillFields, supportType } = require("../utils/formPrefillResolver");
+const { buildLegacyPrefill } = require("../utils/formPrefillCompat");
 
 const router = express.Router();
 router.use(authMiddleware);
@@ -205,6 +206,10 @@ async function buildPrefillData(matter, userId) {
   }
   const applicantLawyer = lawyer(client);
   const respondentLawyer = lawyer(opposingParty);
+  // Legacy compatibility: the form field maps expect the old cloud-act-api
+  // shape (income.client.*, expenses.client.*.*, mortgages[], theChildren[], ...).
+  // Rebuild it from the live records and override the flat versions below.
+  const legacy = buildLegacyPrefill(rows, rows("relationship")[0]);
   return {
     matter: { matterNumber: matter.matterNumber, province: matter.province, clientName: matter.clientName },
     court_info: { courtName: court.court_name || "", courtFileNumber: court.file_number || "", courtOfficeAddress: court.address || "" },
@@ -213,12 +218,10 @@ async function buildPrefillData(matter, userId) {
     respondent: person(opposingParty), respondentLawyer, respondentsLawyer: respondentLawyer,
     employmentStatus: { client: byRole(employmentRows, "Client"), opposingParty: byRole(employmentRows, "Opposing Party") },
     children: rows("children"), relationship: rows("relationship")[0] || {},
-    income: rows("incomeBenefits")[0] || rows("income_benefits")[0] || {},
-    expenses: rows("expenses")[0] || {},
-    assets: rows("assets")[0] || {},
-    debts: rows("debt")[0] || rows("debts_liabilities")[0] || {},
     profile: profile || {},
     support,
+    // Legacy-shaped financials/children/relationship the field maps bind to.
+    ...legacy,
   };
 }
 
