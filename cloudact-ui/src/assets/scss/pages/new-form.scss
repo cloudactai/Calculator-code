@@ -1,10 +1,32 @@
 .create-new-form-page {
+  // Keep everything within the viewport so the Create button is always visible
+  // without scrolling the whole page. Only the form content scrolls; the action
+  // bar stays pinned at the bottom of the panel.
   &.panel {
+    height: calc(100vh - 150px);
+    min-height: 0;
+    margin-bottom: 0;
+    overflow: hidden;
+
     .pHead {
       min-height: auto;
     }
     .pBody {
       padding-right: 10px !important;
+      flex: 1 1 auto;
+      min-height: 0;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+
+      > .row.matterType {
+        flex: 1 1 auto;
+        min-height: 0;
+
+        > [class*="col-"] {
+          height: 100%;
+        }
+      }
     }
   }
 
@@ -36,15 +58,28 @@
 
   .new-form-container {
     @extend .box-container;
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    min-height: 0;
     .body {
       padding: 12px;
+      flex: 1 1 auto;
+      min-height: 0;
+      display: flex;
+      flex-direction: column;
+      margin-top: 16px;
 
       .content-container {
         display: flex;
         justify-content: space-between;
         align-items: flex-start;
-        margin-bottom: 30px;
+        margin-bottom: 12px;
         gap: 40px;
+        flex: 1 1 auto;
+        min-height: 0;
+        overflow-y: auto;
+        overflow-x: hidden;
 
         .content {
           p {
@@ -134,8 +169,9 @@
           }
         }
         .img {
-          width: 380px;
-          height: 380px;
+          width: 300px;
+          height: 300px;
+          flex-shrink: 0;
           background-size: contain;
           background-repeat: no-repeat;
           background-position: top center;
@@ -143,7 +179,9 @@
       }
 
       .action {
-        margin-top: -40px;
+        flex: 0 0 auto;
+        margin-top: 0;
+        padding-top: 8px;
         button {
           float: right;
         }
