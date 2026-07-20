@@ -438,6 +438,15 @@ const InfoHeader = ({ title }) => {
   };
 
   const curClientList = userInfo?.role;
+
+  // Header profile label: truncate to 20 characters with an ellipsis so long
+  // values (e.g. an email used as the name) don't overflow the header.
+  const profileName = `${userProfileInfo?.first_name ?? ""} ${
+    userProfileInfo?.last_name ?? ""
+  }`.trim();
+  const profileNameShort =
+    profileName.length > 20 ? `${profileName.slice(0, 20)}...` : profileName;
+
   const menuList = [
     {
       option: "Profile",
@@ -1291,18 +1300,7 @@ const InfoHeader = ({ title }) => {
             <button className="dropdownBtn">
               <img src={userInfo?.profile_pic || ProfilePic} alt="unknown" />
               <span>
-                <strong>
-                  {" "}
-                  {`${
-                    userProfileInfo?.first_name != undefined
-                      ? userProfileInfo?.first_name
-                      : ""
-                  } ${
-                    userProfileInfo?.last_name != undefined
-                      ? userProfileInfo?.last_name
-                      : ""
-                  }`}
-                </strong>
+                <strong title={profileName}> {profileNameShort}</strong>
                 {userRole.role === "ADMIN" ? "Administrator" : userRole.role}
               </span>
             </button>
