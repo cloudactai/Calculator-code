@@ -25,8 +25,6 @@ import { calcChildSupportFlask } from "../../../utils/Apis/calculator/calcChildS
 import useQuery from "../../../hooks/useQuery";
 import { AUTH_ROUTES } from "../../../routes/Routes.types";
 import { apiCalculatorById } from "../../../utils/Apis/calculator/Calculator_values_id";
-import { SaveAllCalculatorValuesByID } from "../../../utils/Apis/calculator/SaveAllCalculatorValuesByID";
-import { FEATURES } from "../../../config/features";
 import { fetchSpecificTaxandDeductionforAmount } from "../../../utils/Apis/calculator/fetchSpecificTaxandDeductionforAmount";
 import { getDistinctYearsInTaxRef } from "../../../utils/Apis/getDistinctYearsInTaxRef";
 import {
@@ -508,9 +506,6 @@ const Screen2 = ({
     allYears: [{ year: 2025 }],
     selectedYear: 2025,
   });
-
-  const [showSaveCalculatorValues, setShowSaveCalculatorValues] =
-    useState(false);
 
   //arrays for matching the values and know when to stop iteration.
 
@@ -998,16 +993,6 @@ const Screen2 = ({
   const specialExpensesRef = useRef<twoPartyStates>({
     party1: 0,
     party2: 0,
-  });
-
-  const [storedCalculatorValues, setStoredCalculatorValues] = useState({
-    label: calculatorState.label || getCalculatorLabelFromCookies()?.label || "",
-    description:
-      calculatorState.description ||
-      getCalculatorLabelFromCookies()?.description ||
-      screen1.background.party1FirstName,
-    savedBy: calculatorState.savedBy || getAllUserInfo()?.username || "",
-    error: "",
   });
 
   let allCreditsParty1 = useRef<calculateAllCreditsInterface>({
@@ -6134,103 +6119,11 @@ const Screen2 = ({
     };
   };
 
-  const allValuesObjToStoreInDB = () => {
-    const { label, description, savedBy } = storedCalculatorValues;
-
-    const requiredValues = {
-      sid: getUserSID(),
-      matter_id: storedMatterNumber,
-      label,
-      description,
-      status: "INPROGRESS",
-      created_by: savedBy,
-      type: typeOfReport.current,
-      calculator_type: typeOfCalculatorSelected,
-      id: getCalculatorIdFromQuery(calculatorId),
-      report_url: " ",
-    };
-
-    const obj = {
-      ...requiredValues,
-      data: {
-        income,
-        undueHardshipIncome,
-        otherhouseholdmember,
-        nonTaxableincome,
-        undueHardship,
-        deductions,
-        benefits,
-        guidelineIncome,
-        specialExpensesArr,
-        aboutTheChildren: screen1.aboutTheChildren,
-        background: screen1.background,
-        aboutTheRelationship: screen1.aboutTheRelationship,
-        tax_year: distinctYears.selectedYear,
-        calculator_type: typeOfCalculatorSelected,
-        canadaChildBenefitFixed: canadaChildBenefitFixed,
-        provChildBenefitFixed: provChildBenefitFixed,
-        GSTHSTBenefitFixed: GSTHSTBenefitFixed,
-        ClimateActionBenefitFixed: ClimateActionBenefitFixed,
-        salesTaxBenefitFixed: salesTaxBenefitFixed,
-        basicPersonalAmountFederalFixed: basicPersonalAmountFederalFixed,
-        basicPartyDisabilityFixed: basicPartyDisabilityFixed,
-        basicPartyDisabilityProvFixed: basicPartyDisabilityProvFixed,
-        amountForEligibleDependentFixed: amountForEligibleDependentFixed,
-        baseCPPContributionFixed: baseCPPContributionFixed,
-        eiPremiumFixed: eiPremiumFixed,
-        canadaEmploymentAmountFixed: canadaEmploymentAmountFixed,
-        basicPersonalAmountProvincialFixed: basicPersonalAmountProvincialFixed,
-        amountForEligibleDependentProvincialFixed:
-          amountForEligibleDependentProvincialFixed,
-        disposableIncome: disposableIncomeRef.current,
-        taxesFromApi: taxesFromApiRef.current,
-        benefitsFromApi: benefitsFromApiRef.current,
-      },
-    };
-
-    return obj;
-  };
-
-  // Saved calculations live on the legacy law-firm backend, which the
-  // personal build doesn't run. When the feature is off, skip the save
-  // prompt entirely and continue exactly like "Don't Save and Next".
   const promptSaveOrContinue = () => {
-    if (FEATURES.SAVED_CALCULATIONS) {
-      setShowSaveCalculatorValues(true);
-    } else {
-      passStateToParentAndNextPage(
-        Number(getCalculatorIdFromQuery(calculatorId)),
-        false
-      );
-    }
-  };
-
-  const saveValuesToDB = async (obj: any) => {
-    console.log("[SAVE-DEBUG] Step 3: saveValuesToDB called, POSTing to /v1/calculator/save_values...");
-    const data = await SaveAllCalculatorValuesByID(obj);
-    console.log("[SAVE-DEBUG] Step 4: POST response received", { data, id: data?.id, status: data?.status });
-
-    if (data.status === "error") {
-      console.log("[SAVE-DEBUG] Step 4 FAILED: Duplicate label error");
-      setStoredCalculatorValues((prev) => ({
-        ...prev,
-        error: `Label name with ${prev.label} already exists. Please Change Label Name`,
-      }));
-    } else {
-      setStoredCalculatorValues((prev) => ({
-        ...prev,
-        error: "",
-      }));
-
-      calculatorId.set("id", data.id);
-
-      setShowSaveCalculatorValues(false);
-
-      Cookies.set("calculatorId", JSON.stringify(data.id), { path: "/" });
-
-      console.log("[SAVE-DEBUG] Step 5: Calling passStateToParentAndNextPage with id =", data.id, ", saveValues = true");
-      passStateToParentAndNextPage(data.id, true);
-    }
+    passStateToParentAndNextPage(
+      Number(getCalculatorIdFromQuery(calculatorId)),
+      false
+    );
   };
 
 
@@ -9239,75 +9132,6 @@ const Screen2 = ({
 
               {/* conditional rendering for undue hardship end-- */}
 
-              {showSaveCalculatorValues && (
-                <ModalInputCenter
-                  show={showSaveCalculatorValues}
-                  heading="Do you want to save your progress"
-                  action="Save and Next"
-                  size="md"
-                  optionalWidth={false}
-                  cancelOption="Don't Save and Next"
-                  changeShow={() =>
-                    passStateToParentAndNextPage(
-                      Number(getCalculatorIdFromQuery(calculatorId)),
-                      false
-                    )
-                  }
-                  handleClick={() => {
-                    // Save logic removed — button intentionally does nothing
-                  }}
-                >
-                  <>
-                    <InputCustom
-                      type="text"
-                      margin="1.8rem 0rem"
-                      label="Name"
-                      disabled={getCalculatorIdFromQuery(calculatorId)}
-                      value={storedCalculatorValues.label}
-                      handleChange={(
-                        e: React.ChangeEvent<HTMLInputElement>
-                      ) => {
-                        setStoredCalculatorValues((prev) => ({
-                          ...prev,
-                          label: e.target.value,
-                        }));
-                        setBackground({ label: e.target.value });
-                      }}
-                    />
-                    <InputCustom
-                      type="text"
-                      margin="1.8rem 0rem"
-                      label="Client Name"
-                      disabled={getCalculatorIdFromQuery(calculatorId)}
-                      value={storedCalculatorValues.description}
-                      handleChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                        setStoredCalculatorValues((prev) => ({
-                          ...prev,
-                          description: e.target.value,
-                        }))
-                      }
-                    />
-                    <InputCustom
-                      type="text"
-                      margin="1.8rem 0rem"
-                      label="Saved By"
-                      disabled={true}
-                      value={storedCalculatorValues.savedBy}
-                      handleChange={() =>
-                        setStoredCalculatorValues((prev) => ({
-                          ...prev,
-                          savedBy: getAllUserInfo().username,
-                        }))
-                      }
-                    />
-                    {storedCalculatorValues.error && (
-                      <div className="heading-5 text-danger">
-                        {storedCalculatorValues.error}
-                      </div>
-                    )}
-                  </>
-                </ModalInputCenter>
-              )}
               <div className="pHead">
                 <span className="h5">
                   <svg
