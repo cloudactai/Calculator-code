@@ -86,12 +86,12 @@ const Screen4 = ({
     highparty2: lumpsumHigh,
     midparty2: lumpsumMid,
     lowparty2: lumpsumLow,
-  } = screen2.lumpsumReport;
+  } = screen2.lumpsumReport || {};
   const {
     highparty2: lifeinsurenceHigh,
     midparty2: lifeinsurenceMid,
     lowparty2: lifeinsurenceLow,
-  } = screen2.insurenceReport;
+  } = screen2.insurenceReport || {};
 
 
   console.log("screen2",screen2)
