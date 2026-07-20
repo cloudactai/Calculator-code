@@ -10,3 +10,5 @@ node_modules/
 /frontend/
 templates/spousal-chat.html
 cloudact-ui/src/utils/devBypass.js
+# Local Claude Code permissions/settings — keep off the repo
+.claude/settings.local.json
