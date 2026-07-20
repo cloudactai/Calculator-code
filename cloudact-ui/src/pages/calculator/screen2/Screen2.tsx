@@ -9254,27 +9254,11 @@ const Screen2 = ({
                     )
                   }
                   handleClick={() => {
-                    const { label, description, savedBy } =
-                      storedCalculatorValues;
-
-                    console.log("[SAVE-DEBUG] Step 1: Save button clicked", { label, description, savedBy });
-
-                    if (label && description && savedBy) {
-                      Cookies.set(
-                        "calculatorLabel",
-                        JSON.stringify(storedCalculatorValues),
-                        { path: "/" }
-                      );
-                      const dbObj = allValuesObjToStoreInDB();
-                      console.log("[SAVE-DEBUG] Step 2: Built DB object", { id: dbObj.id, matter_id: dbObj.matter_id, label: dbObj.label, hasData: !!dbObj.data });
-                      saveValuesToDB(dbObj);
-                    } else if (!label || !description || !savedBy) {
-                      console.log("[SAVE-DEBUG] Step 1 FAILED: Missing fields", { label: !!label, description: !!description, savedBy: !!savedBy });
-                      setStoredCalculatorValues((prev) => ({
-                        ...prev,
-                        error: "Please Fill all the values",
-                      }));
-                    }
+                    console.log("[SAVE-BUTTON] pressed save");
+                    passStateToParentAndNextPage(
+                      Number(getCalculatorIdFromQuery(calculatorId)),
+                      false
+                    );
                   }}
                 >
                   <>
