@@ -2,12 +2,10 @@ import React, { useEffect, useRef, useState } from "react";
 import ReactToPrint from "react-to-print";
 import { useHistory , Link} from "react-router-dom";
 import moment from "moment";
-import toast from "react-hot-toast";
 import InputCustom from "../../../components/InputCustom";
 import useQuery from "../../../hooks/useQuery";
 import { AUTH_ROUTES } from "../../../routes/Routes.types";
 import { childSupportDetails } from "../../../utils/Apis/calcChildSupport";
-import { apiCalculatorById } from "../../../utils/Apis/calculator/Calculator_values_id";
 import { replaceLastThreeChars } from "../../../utils/helpers";
 import { formulaForChildSupport } from "../../../utils/helpers/calculator/taxCalculationFormula";
 import { formatNumberInThousands } from "../../../utils/helpers/Formatting";
@@ -17,8 +15,6 @@ import {
   calculatorScreen2State,
   getCalculatorIdFromQuery,
 } from "../Calculator";
-//@ts-ignore
-import Reports from "../reports/Reports.tsx";
 //@ts-ignore
 import CalculationReport from "../../freeCalculatorApi/reports/CalculationReport.tsx";
 
@@ -78,7 +74,6 @@ const Screen4 = ({
   setRestructioring
 }: Props) => {
   const query = useQuery();
-  let calculator_report = useRef(null);
   const reportRef = useRef<HTMLDivElement>(null);
   const history = useHistory();
 
@@ -234,11 +229,6 @@ const Screen4 = ({
     }
   };
 
-  const [reportData, setReportData] = useState({
-    data: null as any,
-    showReportTemplate: true,
-  });
-
   useEffect(() => {
     // Minus the number of shared children as we are always adding in the screen2.tsx in modifyScreen1PropsIfChildShared.
     if (
@@ -253,62 +243,6 @@ const Screen4 = ({
         screen1.aboutTheChildren.count.shared;
     }
   }, []);
-
-  useEffect(() => {
-    // If we just came from Screen2, report_data is already in the screen2 prop
-    // — use it directly instead of fetching from DB (avoids JSON round-trip issues).
-    if (screen2.report_data) {
-      console.log("[SAVE-DEBUG] Screen4: Using report_data from screen2 prop (skip DB fetch)");
-      setReportData({ data: screen2.report_data, showReportTemplate: false });
-    } else {
-      downloadReports(getCalculatorIdFromQuery(query));
-    }
-  }, []);
-
-  const downloadReports = async (id: number) => {
-    console.log("[SAVE-DEBUG] Screen4 Step 1: downloadReports called with id =", id);
-    if (!id || isNaN(id)) {
-      console.log("[SAVE-DEBUG] Screen4 Step 1 SKIPPED: invalid id", id);
-      return;
-    }
-    let data: any;
-    try {
-      console.log("[SAVE-DEBUG] Screen4 Step 2: Fetching saved calculation from DB...");
-      data = await apiCalculatorById.get_value(id);
-      console.log("[SAVE-DEBUG] Screen4 Step 3: GET response received", {
-        hasData: !!data,
-        hasReportData: !!data?.report_data,
-        reportDataLength: data?.report_data?.length,
-        dataKeys: data ? Object.keys(data) : [],
-      });
-    } catch (err) {
-      console.error("[SAVE-DEBUG] Screen4 Step 3 FAILED: GET error", err);
-      return;
-    }
-    if (!data?.report_data) {
-      console.log("[SAVE-DEBUG] Screen4 Step 3 SKIPPED: no report_data in response");
-      return;
-    }
-    const ExtractedData = JSON.parse(data.report_data);
-    console.log("[SAVE-DEBUG] Screen4 Step 4: Parsed report_data", {
-      keys: Object.keys(ExtractedData),
-      hasCppDeductions: !!ExtractedData.cppDeductions,
-      hasEnhancedCPPDeduction: !!ExtractedData.enhancedCPPDeduction,
-      hasBackground: !!ExtractedData.background,
-      hasAboutTheChildren: !!ExtractedData.aboutTheChildren,
-      report_type: ExtractedData.report_type,
-      calculator_type: ExtractedData.calculator_type,
-    });
-    console.log("ExtractedData",ExtractedData.restructioring)
-
-    console.log("[SAVE-DEBUG] Screen4 Step 5: Setting reportData state — reports will render");
-    setReportData((prev) => ({
-      data: ExtractedData,
-      showReportTemplate: false,
-    }));
-  };
-
-  const reportType = reportData?.data?.report_type;
   const [supportQuantum, setSupportQuantum] = useState<supportQuantum>({
     support1: {
       spousalSupport: spousalSupportLowGreater(),
@@ -1013,23 +947,6 @@ const Screen4 = ({
     setRestructioring(checked);
   };
 
- 
-  const saveScenariotoDB = async () => {
-    let allreportresult = {
-      ...screen2.report_data,
-      scenarios: scenarios,
-      restructioring:restructioring
-    };
-    if (getCalculatorIdFromQuery(query)) {
-      await apiCalculatorById.edit_value(getCalculatorIdFromQuery(query), {
-        report_data: allreportresult,
-      });
-
-      downloadReports(getCalculatorIdFromQuery(query));
-    } else {
-      alert("Please fill provice data first");
-    }
-  };
 
 
   const handleChildData=(value)=>{
@@ -1557,11 +1474,6 @@ const Screen4 = ({
        />
 </div>
 
-<div className="d-flex justify-content-center mt-4">
-            <button className="btn btnPrimary rounded-pill" onClick={saveScenariotoDB}>
-              Save
-            </button>
-</div>
 
 
 </div>  
@@ -1632,20 +1544,6 @@ const Screen4 = ({
         </div>
       </div>
 
-
-      {reportData.data && (
-        <div style={{
-          position: "fixed",
-          left: "-9999px",
-          top: 0,
-          width: "816px",
-          height: "auto",
-          zIndex: -9999,
-          pointerEvents: "none",
-        }}>
-          <Reports ref={calculator_report} data={reportData.data} />
-        </div>
-      )}
 
       {/* Hidden Report Template for PDF Generation */}
       <div
