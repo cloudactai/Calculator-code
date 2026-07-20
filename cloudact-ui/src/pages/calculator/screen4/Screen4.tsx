@@ -255,7 +255,14 @@ const Screen4 = ({
   }, []);
 
   useEffect(() => {
-    downloadReports(getCalculatorIdFromQuery(query));
+    // If we just came from Screen2, report_data is already in the screen2 prop
+    // — use it directly instead of fetching from DB (avoids JSON round-trip issues).
+    if (screen2.report_data) {
+      console.log("[SAVE-DEBUG] Screen4: Using report_data from screen2 prop (skip DB fetch)");
+      setReportData({ data: screen2.report_data, showReportTemplate: false });
+    } else {
+      downloadReports(getCalculatorIdFromQuery(query));
+    }
   }, []);
 
   const downloadReports = async (id: number) => {
