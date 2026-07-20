@@ -1,2 +1,1 @@
--- AlterTable
-ALTER TABLE "SavedCalculation" ADD COLUMN "reportPdf" BYTEA;
+-- This migration is intentionally empty (reverted before deployment)
