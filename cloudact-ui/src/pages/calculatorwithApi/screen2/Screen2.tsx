@@ -5429,8 +5429,6 @@ const Screen2 = ({
       });
     }
 
-    console.log('totalCppdedu',total)
-
     // console.log(
     //   "Enhanced CPP deductions",
     //   total,

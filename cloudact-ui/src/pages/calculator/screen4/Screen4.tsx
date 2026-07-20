@@ -38,6 +38,8 @@ import {
 import NPVCalculator from "../npvCalculation/NPVCalculator";
 import CustomCheckbox from "../../../components/LayoutComponents/CustomCheckbox/CustomCheckbox";
 import Restructuring from "./restructure/Restructuring.tsx";
+import html2pdf from "html2pdf.js";
+import dataAxios from "../../../utils/dataAxios";
 
 type Props = {
   settingScreen4StateFromChild: (obj: any) => void;
@@ -264,6 +266,50 @@ const Screen4 = ({
       downloadReports(getCalculatorIdFromQuery(query));
     }
   }, []);
+
+  // Auto-generate and upload PDF to the matter when saveValues=true
+  const pdfUploaded = useRef(false);
+  useEffect(() => {
+    const saveValuesParam = query.get("saveValues");
+    const calcId = getCalculatorIdFromQuery(query);
+    if (
+      saveValuesParam !== "true" ||
+      !reportData.data ||
+      !reportRef.current ||
+      pdfUploaded.current
+    )
+      return;
+
+    // Wait for the report to fully render before generating PDF
+    const timer = setTimeout(async () => {
+      try {
+        console.log("[SAVE-DEBUG] Screen4: Generating PDF for upload...");
+        const pdfBlob: Blob = await html2pdf()
+          .set({
+            margin: 10,
+            filename: "report.pdf",
+            image: { type: "jpeg", quality: 0.95 },
+            html2canvas: { scale: 2, useCORS: true },
+            jsPDF: { unit: "mm", format: "a4", orientation: "landscape" },
+          })
+          .from(reportRef.current)
+          .outputPdf("blob");
+
+        console.log("[SAVE-DEBUG] Screen4: PDF generated, size =", pdfBlob.size, "bytes. Uploading...");
+        await dataAxios.put(
+          `calculator/save_report_pdf/${calcId}`,
+          pdfBlob,
+          { headers: { "Content-Type": "application/pdf" }, timeout: 120000 }
+        );
+        pdfUploaded.current = true;
+        console.log("[SAVE-DEBUG] Screen4: PDF uploaded successfully for calc id =", calcId);
+      } catch (err) {
+        console.error("[SAVE-DEBUG] Screen4: PDF generation/upload failed:", err);
+      }
+    }, 2000); // 2s delay to let report render
+
+    return () => clearTimeout(timer);
+  }, [reportData.data]);
 
   const downloadReports = async (id: number) => {
     console.log("[SAVE-DEBUG] Screen4 Step 1: downloadReports called with id =", id);

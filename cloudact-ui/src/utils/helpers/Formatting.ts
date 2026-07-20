@@ -3,7 +3,6 @@ const formatNumberInThousands = (
   val: number | string,
   fractions: number = 0
 ) => {
-  console.log('checkVale',typeof val , val)
   if (typeof val === "string") {
     return val;
   } else {

@@ -1031,6 +1031,80 @@ router.get("/calculator/get_values/:sid", async (req, res) => {
   }
 });
 
+// Save report PDF for a saved calculation
+router.put("/calculator/save_report_pdf/:id", express.raw({ type: "application/pdf", limit: "20mb" }), async (req, res) => {
+  try {
+    const pdf = Buffer.isBuffer(req.body) ? req.body : null;
+    if (!pdf || pdf.length === 0) return res.status(400).json(errorBody("PDF body is required."));
+    const existing = await prisma.savedCalculation.findFirst({
+      where: { id: Number(req.params.id), userId: req.user.id },
+    });
+    if (!existing) return res.status(404).json(errorBody("Calculation not found."));
+    await prisma.savedCalculation.update({
+      where: { id: existing.id },
+      data: { reportPdf: pdf },
+    });
+    return res.json(ok({ id: existing.id, pdfBytes: pdf.length }));
+  } catch (err) {
+    console.log("PUT /v1/calculator/save_report_pdf failed:", err?.message || err);
+    return res.status(500).json(errorBody("Could not save report PDF.", 500));
+  }
+});
+
+// Serve report PDF for a saved calculation
+router.get("/calculator/get_report_pdf/:id", async (req, res) => {
+  try {
+    const row = await prisma.savedCalculation.findFirst({
+      where: { id: Number(req.params.id), userId: req.user.id },
+      select: { reportPdf: true, label: true },
+    });
+    if (!row?.reportPdf) return res.status(404).json(errorBody("No PDF found for this calculation."));
+    res.type("application/pdf");
+    res.set("Content-Disposition", `inline; filename="${(row.label || "report").replace(/[^a-zA-Z0-9_-]/g, "_")}.pdf"`);
+    return res.send(row.reportPdf);
+  } catch (err) {
+    console.log("GET /v1/calculator/get_report_pdf failed:", err?.message || err);
+    return res.status(500).json(errorBody("Could not retrieve report PDF.", 500));
+  }
+});
+
+router.get("/calculator/get_values_by_matter/:matter_id", async (req, res) => {
+  try {
+    const matter = await findMatter(req.user.id, req.params.matter_id);
+    if (!matter) return res.json(ok([]));
+    const rows = await prisma.savedCalculation.findMany({
+      where: { userId: req.user.id, matterDbId: matter.id },
+      orderBy: { createdAt: "desc" },
+      select: {
+        id: true, label: true, description: true, status: true,
+        calculatorType: true, createdBy: true, createdAt: true,
+        reportPdf: false,
+      },
+    });
+    // Check which rows have a PDF without loading the bytes
+    const idsWithPdf = new Set(
+      (await prisma.$queryRaw`SELECT id FROM "SavedCalculation" WHERE "matterDbId" = ${matter.id} AND "reportPdf" IS NOT NULL`).map((r) => r.id)
+    );
+    return res.json(
+      ok(
+        rows.map((row) => ({
+          id: row.id,
+          label: row.label,
+          description: row.description,
+          status: row.status,
+          calculator_type: row.calculatorType,
+          created_by: row.createdBy,
+          created_at: row.createdAt,
+          has_pdf: idsWithPdf.has(row.id),
+        }))
+      )
+    );
+  } catch (err) {
+    console.log("GET /v1/calculator/get_values_by_matter failed:", err?.message || err);
+    return res.status(500).json(errorBody("Could not list calculations for matter.", 500));
+  }
+});
+
 router.get("/calculator/get_data_by_stored_id/:id", async (req, res) => {
   try {
     const row = await prisma.savedCalculation.findFirst({

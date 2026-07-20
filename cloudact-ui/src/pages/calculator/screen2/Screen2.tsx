@@ -27,6 +27,7 @@ import { AUTH_ROUTES } from "../../../routes/Routes.types";
 import { apiCalculatorById } from "../../../utils/Apis/calculator/Calculator_values_id";
 import { SaveAllCalculatorValuesByID } from "../../../utils/Apis/calculator/SaveAllCalculatorValuesByID";
 import { FEATURES } from "../../../config/features";
+import { formsService } from "../../../services/formsService";
 import { fetchSpecificTaxandDeductionforAmount } from "../../../utils/Apis/calculator/fetchSpecificTaxandDeductionforAmount";
 import { getDistinctYearsInTaxRef } from "../../../utils/Apis/getDistinctYearsInTaxRef";
 import {
@@ -6085,7 +6086,7 @@ const Screen2 = ({
       });
     }
 
-    console.log('totalCppdedu',total)
+
 
     // console.log(
     //   "Enhanced CPP deductions",
@@ -6227,6 +6228,22 @@ const Screen2 = ({
       setShowSaveCalculatorValues(false);
 
       Cookies.set("calculatorId", JSON.stringify(data.id), { path: "/" });
+
+      // Ensure a "Saved Calculations" folder exists for this matter
+      if (storedMatterNumber) {
+        try {
+          const existingFolders = await formsService.listFolders(storedMatterNumber);
+          const hasFolder = existingFolders.some(
+            (f: any) => f.title === "Saved Calculations"
+          );
+          if (!hasFolder) {
+            console.log("[SAVE-DEBUG] Creating 'Saved Calculations' folder for matter", storedMatterNumber);
+            await formsService.createFolder(storedMatterNumber, "Saved Calculations", "Folder");
+          }
+        } catch (err) {
+          console.error("[SAVE-DEBUG] Could not create Saved Calculations folder:", err);
+        }
+      }
 
       console.log("[SAVE-DEBUG] Step 5: Calling passStateToParentAndNextPage with id =", data.id, ", saveValues = true");
       passStateToParentAndNextPage(data.id, true);
