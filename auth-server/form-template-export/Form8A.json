@@ -2139,6 +2139,79 @@
       "background": "none",
       "border": "none",
       "page": 6
+    },
+    {
+      "id": "p5-sep-date",
+      "type": "TextField",
+      "x": 357,
+      "y": 525,
+      "width": 315,
+      "height": 20,
+      "value": "",
+      "fontSize": 10,
+      "color": [
+        0,
+        0,
+        0
+      ],
+      "background": "none",
+      "border": "none",
+      "page": 5,
+      "bind": "relationship.data.dateOfSeparation"
+    },
+    {
+      "id": "p5-adultery-name",
+      "type": "TextField",
+      "x": 170,
+      "y": 609,
+      "width": 477,
+      "height": 20,
+      "value": "",
+      "fontSize": 10,
+      "color": [
+        0,
+        0,
+        0
+      ],
+      "background": "none",
+      "border": "none",
+      "page": 5
+    },
+    {
+      "id": "p5-cruelty-name1",
+      "type": "TextField",
+      "x": 170,
+      "y": 682,
+      "width": 477,
+      "height": 20,
+      "value": "",
+      "fontSize": 10,
+      "color": [
+        0,
+        0,
+        0
+      ],
+      "background": "none",
+      "border": "none",
+      "page": 5
+    },
+    {
+      "id": "p5-cruelty-name2",
+      "type": "TextField",
+      "x": 85,
+      "y": 700,
+      "width": 400,
+      "height": 20,
+      "value": "",
+      "fontSize": 10,
+      "color": [
+        0,
+        0,
+        0
+      ],
+      "background": "none",
+      "border": "none",
+      "page": 5
     }
   ]
 }
