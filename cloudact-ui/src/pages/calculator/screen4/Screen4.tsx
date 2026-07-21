@@ -4,6 +4,7 @@ import { useHistory , Link} from "react-router-dom";
 import moment from "moment";
 import toast from "react-hot-toast";
 import InputCustom from "../../../components/InputCustom";
+import ModalInputCenter from "../../../components/ModalInputCenter";
 import useQuery from "../../../hooks/useQuery";
 import { AUTH_ROUTES } from "../../../routes/Routes.types";
 import { childSupportDetails } from "../../../utils/Apis/calcChildSupport";
@@ -949,6 +950,8 @@ const Screen4 = ({
   };
 
   const [saveWarning, setSaveWarning] = useState("");
+  const [showSaveModal, setShowSaveModal] = useState(false);
+  const [saveFileName, setSaveFileName] = useState("");
 
   const saveCalculation = () => {
     const storedMatterId = JSON.parse(localStorage.getItem('selectedCalculatorMatterNumber') || '""');
@@ -957,7 +960,17 @@ const Screen4 = ({
       return;
     }
     setSaveWarning("");
-    // TODO: implement save logic
+    setSaveFileName(`${screen1.background.party1FirstName}_${screen1.background.party2FirstName}_Calculation`);
+    setShowSaveModal(true);
+  };
+
+  const handleSaveConfirm = () => {
+    if (!saveFileName.trim()) {
+      toast.error("Please enter a file name.");
+      return;
+    }
+    setShowSaveModal(false);
+    // TODO: implement save to matter logic with saveFileName
   };
 
   const handleChildData=(value)=>{
@@ -1578,6 +1591,28 @@ const Screen4 = ({
           {saveWarning}
         </div>
       )}
+
+      <ModalInputCenter
+        show={showSaveModal}
+        heading="Save Calculation"
+        action="Save"
+        handleClick={handleSaveConfirm}
+        changeShow={() => setShowSaveModal(false)}
+        cancelOption="Cancel"
+      >
+        <div style={{ padding: "10px 0" }}>
+          <label style={{ display: "block", marginBottom: "8px", fontWeight: 500 }}>
+            File Name
+          </label>
+          <input
+            type="text"
+            className="form-control"
+            value={saveFileName}
+            onChange={(e) => setSaveFileName(e.target.value)}
+            placeholder="Enter file name"
+          />
+        </div>
+      </ModalInputCenter>
 
       {/* Hidden Report Template for PDF Generation */}
       <div
