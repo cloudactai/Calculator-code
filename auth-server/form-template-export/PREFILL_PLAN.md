@@ -5,7 +5,27 @@ counts. Goal for every form: **auto-fill the standard client data on first
 generation, and make every remaining blank an editable text box** — the Form 8A /
 Form 13 page-1 standard._
 
-## Status
+## Status — UPDATE (Phase 0 complete)
+
+**The backend compatibility adapter is DONE** — `formPrefillCompat.js`
+(`buildLegacyPrefill`) rebuilds the full legacy vocabulary from live records and
+is spread over `buildPrefillData`. Verified with the real resolver against **all
+25 field maps**: every bound field resolves to correct values (income yearly,
+expenses monthly, special expenses, generic + structured `assets`, net-family-
+property `items`, `mortgages`/`debts.items`, `theChildren`, `relationshipDates`,
+`matter_data`). Backend-only, field maps unchanged → no re-import; effective on
+auth-server restart, for newly generated documents. One intentionally-blank
+field: `expenses.client.transportation.repairsAndMaintenance` (indistinguishable
+from the housing label in the live data → left editable).
+
+**So every form now auto-fills its existing mapped fields.** What remains per form
+is the *"editable box on every blank"* part — adding NEW fields where the PDF has
+a write-in area but none exists yet (needs per-form visual/OCR placement on the
+image-based PDFs). Fully finished incl. new placement: **Form 8A, Form 13**.
+
+---
+
+## Status (original)
 - **Form 8A — DONE & verified.** Page-1 general heading + page-3 family
   history/children auto-fill; backend exposes `age`/`dateOfBirth`/`residence`;
   bootstrap re-imports a template when its field map changes (auto-deploy).
