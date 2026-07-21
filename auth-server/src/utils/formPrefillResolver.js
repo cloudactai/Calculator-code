@@ -10,7 +10,10 @@ function resolveBinding(source, binding) {
   const paths = String(binding || "").split(",").map((path) => path.trim()).filter(Boolean);
   const values = paths.map((path) => readPath(source, path));
   if (values.length <= 1) return values[0];
-  return values.map((value) => value == null ? "" : value).join(", ");
+  const cleaned = values.map((value) => (value == null ? "" : String(value)));
+  // Don't emit bare separators (", ") when every joined part is empty.
+  if (cleaned.every((value) => value.trim() === "")) return "";
+  return cleaned.join(", ");
 }
 
 function parseStoredJson(value) {
