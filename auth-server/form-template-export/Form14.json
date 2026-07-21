@@ -273,6 +273,25 @@
       "background": "none",
       "border": "none",
       "page": 2
+    },
+    {
+      "id": "p1-name-address",
+      "type": "TextArea",
+      "x": 315,
+      "y": 578,
+      "width": 405,
+      "height": 96,
+      "value": "",
+      "bind": "applicant.fullLegalName,applicant.address,applicant.municipality,applicant.phoneAndFax,applicant.email",
+      "fontSize": 10,
+      "color": [
+        0,
+        0,
+        0
+      ],
+      "background": "none",
+      "border": "none",
+      "page": 1
     }
   ]
 }
