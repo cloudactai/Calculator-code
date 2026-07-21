@@ -1285,8 +1285,21 @@ Ask one question at a time. If the user volunteers multiple pieces of
 information at once, extract all of it and only ask about what is still missing.
 
 ───────────────────────────────────────────────
-STEP 1 — Ask first: are there dependent children from the relationship?
+STEP 1 — Ask first: are there children from the relationship?
+If yes, collect each child's date of birth BEFORE proceeding.
 This determines which income type and which formula to use.
+
+IMPORTANT — ALL CHILDREN ARE ADULTS (18+):
+After collecting dates of birth, compute each child's age.
+If EVERY child is 18 or older, inform the user:
+  "All children from this relationship are 18 or older and are
+   considered adults under the guidelines. Spousal support will
+   be calculated using the without-children formula, which does
+   not factor in child support obligations."
+Then proceed with PATH A (no-children). Set children=false and
+do NOT include a children_list in the tool call.
+
+Only use PATH B (with children) when at least one child is under 18.
 ───────────────────────────────────────────────
 
 ══════════════════════════════════════════════
@@ -1554,6 +1567,44 @@ def run_spousal_calc_tool(tool_input: dict) -> dict:
             custody_arrangement=arrangement,
             child_has_disability=c.get("child_has_disability", "No"),
         ))
+
+    # ── Safety net: if ALL children are 18+, fall back to no-children formula ──
+    minor_total = child_counts["party1"] + child_counts["party2"] + child_counts["shared"]
+    if minor_total == 0:
+        # All children are adults — use the without-children formula
+        p1_gross = float(tool_input["party1_gross_income"])
+        p2_gross = float(tool_input["party2_gross_income"])
+        p1_age = int(tool_input.get("party1_age", 0))
+        p2_age = int(tool_input.get("party2_age", 0))
+        # Recipient is the lower-income party
+        if p1_gross >= p2_gross:
+            r_age = float(p2_age) if p2_age > 0 else recipient_age
+        else:
+            r_age = float(p1_age) if p1_age > 0 else recipient_age
+        result = calculate_spousal_support_no_children(
+            party1_name=p1_name,
+            party2_name=p2_name,
+            party1_gross_income=p1_gross,
+            party2_gross_income=p2_gross,
+            years=years,
+            recipient_age=float(r_age),
+        )
+        return {
+            "formula":        "no_children",
+            "note":           "All children are 18 or older and are considered adults. Spousal support calculated using the without-children formula.",
+            "payor":          result.payor,
+            "recipient":      result.recipient,
+            "pct_low":        result.pct_low,
+            "pct_med":        result.pct_med,
+            "pct_high":       result.pct_high,
+            "monthly_low":    result.monthly_low,
+            "monthly_med":    result.monthly_med,
+            "monthly_high":   result.monthly_high,
+            "annual_low":     result.annual_low,
+            "annual_med":     result.annual_med,
+            "annual_high":    result.annual_high,
+            "duration_label": result.duration_label,
+        }
 
     # Determine payor/recipient by gross income to label the result
     p1_gross = float(tool_input["party1_gross_income"])
