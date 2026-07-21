@@ -24,6 +24,8 @@ from intake_chat_guard import (
 from spousal_support import calculate_spousal_support_no_children, calculate_spousal_support_with_children, SpousalSupportResult, calculate_spousal_support_iterative
 from tax import ChildInfo as TaxChildInfo
 
+CURRENT_YEAR = date.today().year
+
 def calculate_spousal_support(
     party1_name:                    str,
     party2_name:                    str,
@@ -1290,7 +1292,9 @@ If yes, collect each child's date of birth BEFORE proceeding.
 This determines which income type and which formula to use.
 
 IMPORTANT — ALL CHILDREN ARE ADULTS (18+):
-After collecting dates of birth, compute each child's age.
+After collecting dates of birth, compute each child's age using the
+current year ({current_year}). Simply subtract the birth year from
+{current_year} — do not worry about the exact date or month.
 If EVERY child is 18 or older, inform the user:
   "All children from this relationship are 18 or older and are
    considered adults under the guidelines. Spousal support will
@@ -1701,7 +1705,7 @@ def spousal_chat():
             response = client.messages.create(
                 model=os.getenv("CLAUDE_MODEL", "claude-sonnet-4-6"),
                 max_tokens=1024,
-                system=SPOUSAL_CHAT_SYSTEM,
+                system=SPOUSAL_CHAT_SYSTEM.format(current_year=CURRENT_YEAR),
                 tools=[SPOUSAL_CALC_TOOL],
                 messages=messages,
             )
