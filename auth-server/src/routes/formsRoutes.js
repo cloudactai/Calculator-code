@@ -212,6 +212,7 @@ async function buildPrefillData(matter, userId) {
   const legacy = buildLegacyPrefill(rows, rows("relationship")[0]);
   return {
     matter: { matterNumber: matter.matterNumber, province: matter.province, clientName: matter.clientName },
+    matter_data: { financial_year_expenses: matter.fyExpenses || "", financial_year_income_benefits: matter.fyIncomeBenefits || "" },
     court_info: { courtName: court.court_name || "", courtFileNumber: court.file_number || "", courtOfficeAddress: court.address || "" },
     court: court,
     applicant: person(client), applicantLawyer, applicantsLawyer: applicantLawyer,
