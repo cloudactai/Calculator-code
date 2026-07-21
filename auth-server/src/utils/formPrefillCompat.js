@@ -203,7 +203,21 @@ function buildAssets(rows) {
     account_number: r.account_number || "", description: r.description_bassp || "",
   }));
   flat.land = of("lands").map((r) => mvMap(r, { address: r.address_of_property || "", ownership: r.nature_and_type_of_ownership || "" }));
-  flat.household = of("general_household_items_and_vehicles").map((r) => mvMap(r, { description: r.description_ghiav || r.item || "", isInPossession: r.isInPossession || "" }));
+  // General household & vehicles split by their item category so each table row
+  // (goods/furniture, vehicles, jewellery/art, other special) fills separately.
+  const hhRow = (r) => mvMap(r, { description: r.description_ghiav || "", isInPossession: r.isInPossession || "" });
+  const hhCat = (r) => {
+    const s = String(r?.item || "").toLowerCase();
+    if (/car|boat|vehicle/.test(s)) return "vehicles";
+    if (/jewel|art|electronic|tool|sport|hobby/.test(s)) return "jewellery";
+    if (/other\s+special/.test(s)) return "otherItems";
+    return "household"; // goods / furniture / fixtures / default
+  };
+  const hh = of("general_household_items_and_vehicles");
+  flat.household = hh.filter((r) => hhCat(r) === "household").map(hhRow);
+  flat.vehicles = hh.filter((r) => hhCat(r) === "vehicles").map(hhRow);
+  flat.jewellery = hh.filter((r) => hhCat(r) === "jewellery").map(hhRow);
+  flat.otherItems = hh.filter((r) => hhCat(r) === "otherItems").map(hhRow);
   flat.interests = of("business_interest").map((r) => mvMap(r, { firm_name: r.firm_name || "", interest: r.interest || "" }));
   flat.life = of("life_and_disability_insurance").map((r) => mvMap(r, { policy_no: r.policy_no || "", owner: r.owner || "", beneficiary: r.beneficiary || "", face_amount: asText(num(r.face_amount)) }));
   flat.moneyOwed = of("money_owed_to_you").map((r) => mvMap(r, { details: r.details_moty || "" }));
