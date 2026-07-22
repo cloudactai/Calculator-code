@@ -352,6 +352,10 @@ export default function ChildSupportChatPanel({
 
         {bubbles.map((b, i) => {
           const downloadUrl = b.role === "assistant" ? extractDownloadUrl(b.text) : null;
+          if (b.role === "assistant") {
+            console.log(`[ChildChat] Bubble ${i} downloadUrl:`, downloadUrl);
+            console.log(`[ChildChat] Bubble ${i} text snippet:`, b.text?.slice(-150));
+          }
           return (
             <div key={i} className={`mw-chat-row mw-chat-row--${b.role}`}>
               <div className="mw-chat-row__label">
