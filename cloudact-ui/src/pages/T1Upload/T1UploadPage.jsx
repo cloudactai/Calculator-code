@@ -626,10 +626,11 @@ export default function T1UploadPage() {
                   <div className="mw-chat-row__label">AI Assistant</div>
                   <div className="mw-chat-bubble">
                     <span className="t1-success">
-                      ✓ Saved to matter {savedMatter}.
+                      ✓ Fields populated.
                     </span>{" "}
-                    The client's details and income now appear in that matter's
-                    intake, ready for calculations and court forms.
+                    Saved to matter {savedMatter}. The client's identification and
+                    income are now in the matter's intake and will populate the
+                    forms and calculator.
                     <div className="mw-chat-panel__starters">
                       <button className="mw-chip" onClick={resetFlow}>
                         Upload another T1
