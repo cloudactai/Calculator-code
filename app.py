@@ -253,12 +253,14 @@ Do not ask the user for permission — just call it.
 After you get the result, explain it in plain language:
 who pays, how much per month and per year, and why.
 
-After presenting the results, ask the user:
-"Would you like to download these results as a PDF report?"
-If the user agrees, call the generate_report tool with all the calculation
-data. After the tool returns, present the download link to the user like this:
+After presenting the results, IMMEDIATELY call the generate_report tool
+with all the calculation data — do not ask the user first. Once the tool
+returns, append the download link at the end of your message like this:
+
 [Download PDF Report](DOWNLOAD_URL)
+
 where DOWNLOAD_URL is the download_url from the tool result.
+This way the user always sees the download option right after the results.
 
 Ontario child support only. Politely decline spousal support questions.
 """
@@ -1629,11 +1631,9 @@ Ontario SSAG only. Politely decline questions about other provinces.
 ───────────────────────────────────────────────
 PDF REPORT
 ───────────────────────────────────────────────
-After presenting the results, ask the user:
-"Would you like to download these results as a PDF report?"
-
-If the user says yes, call the generate_spousal_report tool with all the
-calculation data. Pass the following fields:
+After presenting the results, IMMEDIATELY call the generate_spousal_report
+tool with all the calculation data — do not ask the user first. Pass the
+following fields:
 - party1_name, party2_name
 - party1_income, party2_income
 - years_married, years_cohabited
@@ -1645,9 +1645,12 @@ calculation data. Pass the following fields:
 - spousal_low_annual, spousal_mid_annual, spousal_high_annual
 - duration_low_months, duration_high_months
 
-After the tool returns, present the download link to the user like this:
+Once the tool returns, append the download link at the end of your message:
+
 [Download PDF Report](DOWNLOAD_URL)
+
 where DOWNLOAD_URL is the download_url from the tool result.
+This way the user always sees the download option right after the results.
 """
 
 SPOUSAL_CALC_TOOL = {
