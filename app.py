@@ -12,7 +12,7 @@ import math
 import os
 import sys
 from datetime import date, datetime, timezone
-from flask import Flask, request, jsonify, render_template
+from flask import Flask, request, jsonify, render_template, send_from_directory
 from flask_cors import CORS
 import anthropic
 from intake_chat_guard import (
@@ -23,6 +23,7 @@ from intake_chat_guard import (
 )
 from spousal_support import calculate_spousal_support_no_children, calculate_spousal_support_with_children, SpousalSupportResult, calculate_spousal_support_iterative
 from tax import ChildInfo as TaxChildInfo
+from report_pdf import generate_child_support_report, generate_spousal_support_report, REPORTS_DIR
 
 CURRENT_YEAR = date.today().year
 
@@ -116,6 +117,11 @@ def spousal_chat_ui():
 @app.route("/frontend/<path:filename>")
 def frontend_static(filename):
     return send_from_directory(FRONTEND_DIR, filename)
+
+@app.route("/download-report/<filename>")
+def download_report(filename):
+    """Serve a generated PDF report for download."""
+    return send_from_directory(REPORTS_DIR, filename, as_attachment=True)
 
 
 @app.route("/calculate", methods=["POST"])
@@ -247,6 +253,13 @@ Do not ask the user for permission — just call it.
 After you get the result, explain it in plain language:
 who pays, how much per month and per year, and why.
 
+After presenting the results, ask the user:
+"Would you like to download these results as a PDF report?"
+If the user agrees, call the generate_report tool with all the calculation
+data. After the tool returns, present the download link to the user like this:
+[Download PDF Report](DOWNLOAD_URL)
+where DOWNLOAD_URL is the download_url from the tool result.
+
 Ontario child support only. Politely decline spousal support questions.
 """
 
@@ -315,6 +328,62 @@ CALC_TOOL = {
         }
     }
 }
+
+CS_REPORT_TOOL = {
+    "name": "generate_report",
+    "description": "Generate a PDF report of the child support calculation results for the user to download.",
+    "input_schema": {
+        "type": "object",
+        "required": ["party1_name", "party2_name", "party1_income", "party2_income",
+                      "children", "scenario", "net_payer", "net_monthly", "net_annual"],
+        "properties": {
+            "party1_name":    {"type": "string", "description": "Name of Party 1"},
+            "party2_name":    {"type": "string", "description": "Name of Party 2"},
+            "party1_income":  {"type": "number", "description": "Party 1 annual guideline income"},
+            "party2_income":  {"type": "number", "description": "Party 2 annual guideline income"},
+            "children": {
+                "type": "array",
+                "description": "List of children with their details",
+                "items": {
+                    "type": "object",
+                    "properties": {
+                        "name":                {"type": "string"},
+                        "dob":                 {"type": "string"},
+                        "custody_arrangement":  {"type": "string"},
+                        "is_adult":            {"type": "boolean"},
+                    }
+                }
+            },
+            "scenario":       {"type": "string", "description": "Type of splitting scenario"},
+            "net_payer":      {"type": "string", "description": "Who pays child support"},
+            "net_monthly":    {"type": "number", "description": "Net monthly child support amount"},
+            "net_annual":     {"type": "number", "description": "Net annual child support amount"},
+            "child_support_ref": {
+                "type": "object",
+                "description": "Per-party child support breakdown (optional)",
+                "properties": {
+                    "party1_monthly": {"type": "number"},
+                    "party2_monthly": {"type": "number"},
+                    "party1_annual":  {"type": "number"},
+                    "party2_annual":  {"type": "number"},
+                }
+            },
+        }
+    }
+}
+
+
+def run_cs_report_tool(tool_input: dict) -> dict:
+    """Generate a child support PDF report and return the download URL."""
+    try:
+        filename = generate_child_support_report(tool_input)
+        return {
+            "status": "success",
+            "download_url": f"/download-report/{filename}",
+            "message": "PDF report generated successfully.",
+        }
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
 
 
 def run_calc_tool(tool_input):
@@ -409,7 +478,7 @@ def chat():
                 model=os.getenv("CLAUDE_MODEL", "claude-sonnet-4-6"),
                 max_tokens=1024,
                 system=CHAT_SYSTEM,
-                tools=[CALC_TOOL],
+                tools=[CALC_TOOL, CS_REPORT_TOOL],
                 messages=messages,
             )
 
@@ -431,11 +500,14 @@ def chat():
                 )
                 return jsonify({"reply": reply, "messages": messages})
 
-            # Claude called the tool — run the calculator and feed the result back
+            # Claude called a tool — run it and feed the result back
             tool_results = []
             for block in assistant_content:
                 if block.get("type") == "tool_use":
-                    result = run_calc_tool(block["input"])
+                    if block["name"] == "generate_report":
+                        result = run_cs_report_tool(block["input"])
+                    else:
+                        result = run_calc_tool(block["input"])
                     tool_results.append({
                         "type":        "tool_result",
                         "tool_use_id": block["id"],
@@ -1553,6 +1625,29 @@ Payor INDI (mid):   $X,XXX / year
 Recipient INDI (mid): $X,XXX / year
 
 Ontario SSAG only. Politely decline questions about other provinces.
+
+───────────────────────────────────────────────
+PDF REPORT
+───────────────────────────────────────────────
+After presenting the results, ask the user:
+"Would you like to download these results as a PDF report?"
+
+If the user says yes, call the generate_spousal_report tool with all the
+calculation data. Pass the following fields:
+- party1_name, party2_name
+- party1_income, party2_income
+- years_married, years_cohabited
+- payor, recipient
+- formula ("no_children" or "with_children")
+- child_support_paid (monthly amount, 0 if no children)
+- children (array of child objects, or empty array)
+- spousal_low_monthly, spousal_mid_monthly, spousal_high_monthly
+- spousal_low_annual, spousal_mid_annual, spousal_high_annual
+- duration_low_months, duration_high_months
+
+After the tool returns, present the download link to the user like this:
+[Download PDF Report](DOWNLOAD_URL)
+where DOWNLOAD_URL is the download_url from the tool result.
 """
 
 SPOUSAL_CALC_TOOL = {
@@ -1661,6 +1756,65 @@ SPOUSAL_CALC_TOOL = {
         }
     }
 }
+
+SPOUSAL_REPORT_TOOL = {
+    "name": "generate_spousal_report",
+    "description": "Generate a PDF report of the spousal support calculation results for the user to download.",
+    "input_schema": {
+        "type": "object",
+        "required": ["party1_name", "party2_name", "party1_income", "party2_income",
+                      "payor", "recipient", "formula"],
+        "properties": {
+            "party1_name":    {"type": "string"},
+            "party2_name":    {"type": "string"},
+            "party1_income":  {"type": "number", "description": "Party 1 annual guideline income"},
+            "party2_income":  {"type": "number", "description": "Party 2 annual guideline income"},
+            "years_married":  {"type": "number"},
+            "years_cohabited": {"type": "number"},
+            "payor":          {"type": "string", "description": "Name of the payor"},
+            "recipient":      {"type": "string", "description": "Name of the recipient"},
+            "formula":        {"type": "string", "description": "no_children or with_children"},
+            "child_support_paid": {"type": "number", "description": "Monthly child support paid by payor (0 if no children)"},
+            "children": {
+                "type": "array",
+                "description": "List of children (empty array if no children)",
+                "items": {
+                    "type": "object",
+                    "properties": {
+                        "name": {"type": "string"},
+                        "dob":  {"type": "string"},
+                        "custody_arrangement": {"type": "string"},
+                    }
+                }
+            },
+            "spousal_low_monthly":  {"type": "number"},
+            "spousal_mid_monthly":  {"type": "number"},
+            "spousal_high_monthly": {"type": "number"},
+            "spousal_low_annual":   {"type": "number"},
+            "spousal_mid_annual":   {"type": "number"},
+            "spousal_high_annual":  {"type": "number"},
+            "duration_low_months":  {"type": "number"},
+            "duration_high_months": {"type": "number"},
+            "calculation_details": {
+                "type": "object",
+                "description": "Detailed breakdown for LOW/MID/HIGH scenarios (optional)",
+            },
+        }
+    }
+}
+
+
+def run_spousal_report_tool(tool_input: dict) -> dict:
+    """Generate a spousal support PDF report and return the download URL."""
+    try:
+        filename = generate_spousal_support_report(tool_input)
+        return {
+            "status": "success",
+            "download_url": f"/download-report/{filename}",
+            "message": "PDF report generated successfully.",
+        }
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
 
 
 def run_spousal_calc_tool(tool_input: dict) -> dict:
@@ -1872,7 +2026,7 @@ def spousal_chat():
                 model=os.getenv("CLAUDE_MODEL", "claude-sonnet-4-6"),
                 max_tokens=1024,
                 system=SPOUSAL_CHAT_SYSTEM.format(current_year=CURRENT_YEAR),
-                tools=[SPOUSAL_CALC_TOOL],
+                tools=[SPOUSAL_CALC_TOOL, SPOUSAL_REPORT_TOOL],
                 messages=messages,
             )
 
@@ -1894,7 +2048,10 @@ def spousal_chat():
             tool_results = []
             for block in assistant_content:
                 if block.get("type") == "tool_use":
-                    result = run_spousal_calc_tool(block["input"])
+                    if block["name"] == "generate_spousal_report":
+                        result = run_spousal_report_tool(block["input"])
+                    else:
+                        result = run_spousal_calc_tool(block["input"])
                     tool_results.append({
                         "type":        "tool_result",
                         "tool_use_id": block["id"],

@@ -61,7 +61,25 @@ function appendBubble(role, text) {
   row.className = `msg-row ${role}`;
   const bubble = document.createElement("div");
   bubble.className = "bubble";
-  bubble.textContent = text;
+  if (role === "assistant" && typeof marked !== "undefined") {
+    bubble.innerHTML = marked.parse(text);
+  } else {
+    bubble.textContent = text;
+  }
+  // Convert download links into styled buttons
+  if (role === "assistant") {
+    bubble.querySelectorAll('a[href*="/download-report/"]').forEach(a => {
+      // Resolve relative download URL against the API base
+      const href = a.getAttribute("href");
+      if (href.startsWith("/")) {
+        const base = apiUrl.replace(/\/chat\/?$/, "");
+        a.setAttribute("href", base + href);
+      }
+      a.className = "download-btn";
+      a.setAttribute("download", "");
+      a.setAttribute("target", "_blank");
+    });
+  }
   row.appendChild(bubble);
   win.appendChild(row);
   scrollToBottom();
