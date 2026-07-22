@@ -1544,6 +1544,10 @@ Then proceed with PATH A (no-children). Set children=false and
 do NOT include a children_list in the tool call.
 
 Only use PATH B (with children) when at least one child is under 18.
+When there ARE minor children, do NOT mention age calculations, formula
+selection, or that you are using the with-children formula. Just silently
+proceed with PATH B. The adult-children message above should ONLY appear
+when ALL children are 18 or older.
 ───────────────────────────────────────────────
 
 ══════════════════════════════════════════════
