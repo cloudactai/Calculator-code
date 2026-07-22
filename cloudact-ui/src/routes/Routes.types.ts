@@ -50,6 +50,7 @@ export enum AUTH_ROUTES {
 
   // Matter Routes
   MATTER_DASHBOARD = "/matters",
+  T1_UPLOAD = "/t1-upload",
   FIVE_STEPS = "/5-steps/:id",
   SINGLE_MATTER = "/single-matter/:id",
   FORMS_CREATE_NEW = "/forms/create-new",

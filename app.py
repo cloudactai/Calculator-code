@@ -854,6 +854,172 @@ def intake_chat():
         return jsonify({"error": str(e)}), 500
 
 
+# ── /t1-extract ─────────────────────────────────────────────────────────────────
+
+T1_EXTRACT_SYSTEM = """
+You are a document-extraction assistant for CloudAct, an Ontario family-law
+platform. You are given one uploaded file that should be a Canadian T1 Income
+Tax and Benefit Return (it may be a scan or photo). Read it and record the
+intake-relevant data by calling the record_t1_data tool exactly once.
+
+Rules:
+- NEVER extract or output the Social Insurance Number (SIN) or any part of it.
+- Never invent values. If a field is not present or not legible, use "" for it.
+- Amounts are yearly CAD figures as plain number strings with two decimals and
+  no currency symbols or thousands separators (e.g. "85000.00").
+- "province" is the full province name (e.g. "Ontario", not "ON").
+- Dates are YYYY-MM-DD.
+- incomeLines: one entry per income line on the return that has a non-zero
+  amount (employment income 10100, other employment income 10400, OAS 11300,
+  CPP/QPP 11400, other pensions 11500, split pension 11600, UCCB 11700,
+  EI benefits 11900, taxable dividends 12000, interest/investment 12100,
+  partnership 12200, RDSP 12500, rental 12600, taxable capital gains 12700,
+  support payments received 12800, RRSP income 12900, other income 13000,
+  self-employment lines 13500/13700/13900/14100/14300, workers' compensation
+  14400, social assistance 14500, net federal supplements 14600). Use a short
+  human label for "label" (e.g. "Employment income") and the line number for
+  "line".
+- If the file is NOT a T1 return (or you cannot find any T1 content), set
+  is_t1 to false and leave everything else empty.
+"""
+
+T1_ALLOWED_MEDIA_TYPES = {"application/pdf", "image/png", "image/jpeg", "image/webp"}
+
+T1_RECORD_TOOL = {
+    "name": "record_t1_data",
+    "description": (
+        "Record the intake-relevant data extracted from the uploaded T1 income "
+        "tax return. Call exactly once. Leave unknown fields as empty strings."
+    ),
+    "input_schema": {
+        "type": "object",
+        "required": ["is_t1"],
+        "properties": {
+            "is_t1": {
+                "type": "boolean",
+                "description": "True only if the uploaded document is a Canadian T1 income tax return.",
+            },
+            "taxYear": {
+                "type": "string",
+                "description": "The tax year the return covers, e.g. '2025'.",
+            },
+            "taxpayer": {
+                "type": "object",
+                "properties": {
+                    "firstName":     {"type": "string"},
+                    "lastName":      {"type": "string"},
+                    "dateOfBirth":   {"type": "string", "description": "YYYY-MM-DD"},
+                    "maritalStatus": {"type": "string", "description": "As ticked on the return, e.g. 'Married', 'Separated'."},
+                    "address":       {"type": "string", "description": "Street address incl. apt/unit. No city/province."},
+                    "city":          {"type": "string"},
+                    "province":      {"type": "string", "description": "Full name, e.g. 'Ontario'."},
+                    "postalCode":    {"type": "string"},
+                    "phone":         {"type": "string"},
+                    "email":         {"type": "string"},
+                },
+            },
+            "incomeLines": {
+                "type": "array",
+                "items": {
+                    "type": "object",
+                    "required": ["label", "amount"],
+                    "properties": {
+                        "line":   {"type": "string", "description": "T1 line number, e.g. '10100'."},
+                        "label":  {"type": "string", "description": "Short income-type label, e.g. 'Employment income'."},
+                        "amount": {"type": "string", "description": "Yearly CAD amount, e.g. '85000.00'."},
+                    },
+                },
+            },
+            "totalIncome":   {"type": "string", "description": "Line 15000 (total income)."},
+            "netIncome":     {"type": "string", "description": "Line 23600 (net income)."},
+            "taxableIncome": {"type": "string", "description": "Line 26000 (taxable income)."},
+        },
+    },
+}
+
+
+@app.route("/t1-extract", methods=["POST"])
+def t1_extract():
+    """Extract intake-relevant data from an uploaded T1 income tax return.
+
+    Accepts JSON { media_type, data } where data is the base64-encoded file
+    (PDF or image). Sends the document to Claude with a forced tool call and
+    returns the structured extraction. Like /intake-chat, this endpoint never
+    writes to the matter database — the authenticated frontend persists the
+    (user-reviewed) data via its existing patch_matter_intake action. The raw
+    file is not stored anywhere server-side.
+    """
+    try:
+        body = request.get_json(force=True)
+        media_type = body.get("media_type")
+        file_data = body.get("data") or ""
+
+        if media_type not in T1_ALLOWED_MEDIA_TYPES:
+            return jsonify({"error": "Unsupported file type. Please upload a PDF or an image (PNG, JPEG or WebP)."}), 400
+        # The API rejects base64 containing whitespace/newlines.
+        file_data = "".join(file_data.split())
+        if not file_data:
+            return jsonify({"error": "No file was received. Please try the upload again."}), 400
+        if len(file_data) > 43_000_000:  # ~32 MB decoded, the API request cap
+            return jsonify({"error": "That file is too large. Please upload a copy under 30 MB."}), 400
+
+        block_type = "document" if media_type == "application/pdf" else "image"
+
+        client = anthropic.Anthropic()  # reads ANTHROPIC_API_KEY from env
+        try:
+            response = client.messages.create(
+                model=os.getenv("CLAUDE_MODEL", "claude-sonnet-4-6"),
+                max_tokens=4096,
+                system=T1_EXTRACT_SYSTEM,
+                tools=[T1_RECORD_TOOL],
+                tool_choice={"type": "tool", "name": "record_t1_data"},
+                messages=[{
+                    "role": "user",
+                    "content": [
+                        {
+                            "type": block_type,
+                            "source": {
+                                "type": "base64",
+                                "media_type": media_type,
+                                "data": file_data,
+                            },
+                        },
+                        {
+                            "type": "text",
+                            "text": "Extract the intake-relevant data from this T1 income tax return.",
+                        },
+                    ],
+                }],
+            )
+        except anthropic.BadRequestError:
+            # The document/image couldn't be decoded or rendered (corrupt file,
+            # unreadable scan, empty page, etc.). Surface a user-friendly message
+            # instead of leaking the raw API error.
+            return jsonify({
+                "error": "That file couldn't be read. Please upload a clearer copy "
+                         "of the T1 — a good-quality PDF or a sharp, well-lit photo."
+            }), 422
+
+        extracted = None
+        for block in response.content:
+            if getattr(block, "type", None) == "tool_use" and block.name == "record_t1_data":
+                extracted = block.input
+                break
+
+        if not isinstance(extracted, dict):
+            return jsonify({"error": "The document could not be read. Please try a clearer copy."}), 502
+        if not extracted.get("is_t1"):
+            return jsonify({
+                "error": "That file doesn't look like a T1 Income Tax and Benefit Return. "
+                         "Please upload the client's T1 (a scan or photo is fine)."
+            }), 422
+
+        return jsonify({"extracted": extracted})
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
 def _parse_dob(dob) -> str:
     """Normalise a date-of-birth value to 'YYYY-MM-DD'.
 
