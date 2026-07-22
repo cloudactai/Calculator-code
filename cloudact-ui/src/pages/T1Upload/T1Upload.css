@@ -374,6 +374,18 @@
   outline: none;
 }
 
+/* Fixed matter label shown instead of the picker when launched from a matter. */
+.t1-savebar__matter {
+  flex: 0 0 auto;
+  padding: 8px 12px;
+  border-radius: 8px;
+  background: #eef1fb;
+  border: 1px solid #d8dcea;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: #1e1e2f;
+}
+
 .t1-savebar__save:disabled {
   opacity: 0.55;
   cursor: not-allowed;

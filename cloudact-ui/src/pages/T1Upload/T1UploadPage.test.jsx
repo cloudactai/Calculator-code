@@ -32,6 +32,12 @@ jest.mock("../../utils/Apis/matters/saveMatterInformation/saveMattersActions", (
   patchMatterIntake: (payload) => ({ type: "PATCH_MATTER_INTAKE", payload }),
 }));
 
+// Navigation state carries the matter number when launched from a matter task.
+let mockLocationState = null;
+jest.mock("react-router-dom", () => ({
+  useLocation: () => ({ state: mockLocationState }),
+}));
+
 import T1UploadPage from "./T1UploadPage";
 
 const EXTRACTION = {
@@ -62,6 +68,7 @@ function uploadPdf() {
 }
 
 beforeEach(() => {
+  mockLocationState = null;
   mockDispatch.mockClear();
   global.fetch = jest.fn().mockResolvedValue({
     ok: true,
@@ -140,6 +147,25 @@ test("declining saves nothing", async () => {
   expect(mockDispatch).not.toHaveBeenCalledWith(
     expect.objectContaining({ type: "PATCH_MATTER_INTAKE" })
   );
+});
+
+test("launched from a matter: saves to that matter, no picker", async () => {
+  mockLocationState = { matterNumber: "CA-2026-00002" };
+  render(<T1UploadPage />);
+  uploadPdf();
+  await screen.findByDisplayValue("Alex");
+
+  // The fixed matter is shown and the picker is hidden.
+  expect(screen.getByText(/Matter CA-2026-00002/i)).toBeInTheDocument();
+  expect(screen.queryByRole("combobox")).not.toBeInTheDocument();
+
+  fireEvent.click(screen.getByRole("button", { name: /Save to matter/i }));
+  expect(await screen.findByText(/Saved to matter CA-2026-00002/i)).toBeInTheDocument();
+
+  const action = mockDispatch.mock.calls
+    .map(([a]) => a)
+    .find((a) => a && a.type === "PATCH_MATTER_INTAKE");
+  expect(action.payload.matter_id).toBe("CA-2026-00002");
 });
 
 test("extraction errors surface in the chat with a fresh upload box", async () => {

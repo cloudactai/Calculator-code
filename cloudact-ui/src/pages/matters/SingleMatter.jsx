@@ -43,6 +43,7 @@ import { formsService } from "../../services/formsService";
 // Task definitions matching the Excel workflow document
 const TASK_DEFS = [
   { id: "matter_intake", label: "MATTER INTAKE" },
+  { id: "matter_intake_tax_return", label: "MATTER INTAKE USING TAX RETURN" },
   { id: "child_spousal_support", label: "CALCULATE CHILD & SPOUSAL SUPPORT" },
   { id: "draft_divorce_docs", label: "DRAFT DIVORCE APPLICATION DOCUMENTS" },
   { id: "review_forms", label: "REVIEW FORMS" },
@@ -170,6 +171,7 @@ const SingleMatter = () => {
   const tasks = TASK_DEFS.map((t) => {
     const enabled =
       t.id === "matter_intake" ||
+      t.id === "matter_intake_tax_return" ||
       t.id === "child_spousal_support" ||
       t.id === "draft_divorce_docs" ||
       t.id === "review_forms" ||
@@ -207,6 +209,12 @@ const SingleMatter = () => {
       }
       // Show the AI-vs-manual choice screen (handleIntakeChoice routes from there).
       setView("intake_choice");
+    } else if (taskId === "matter_intake_tax_return") {
+      if (taskStatuses.matter_intake_tax_return === "not_started") {
+        persistTaskStatus("matter_intake_tax_return", "in_progress");
+      }
+      // T1 upload → AI extraction → review → saves into THIS matter's intake.
+      history.push(AUTH_ROUTES.T1_UPLOAD, { matterNumber: id });
     } else if (taskId === "child_spousal_support") {
       if (taskStatuses.child_spousal_support === "not_started") {
         persistTaskStatus("child_spousal_support", "in_progress");

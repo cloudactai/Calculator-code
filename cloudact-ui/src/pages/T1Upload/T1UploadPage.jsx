@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
+import { useLocation } from "react-router-dom";
 import Layout from "../../components/LayoutComponents/Layout";
 import { CALCULATOR_API } from "../../config";
 import { getAllMatters } from "../../utils/Apis/matters/getMatters/getMattersActions";
@@ -146,9 +147,16 @@ function buildPatches(data) {
 
 export default function T1UploadPage() {
   const dispatch = useDispatch();
+  const location = useLocation();
   const { response } = useSelector((state) => state.userProfileInfo);
   const userMatters = useSelector(selectMattersData);
   const matters = Array.isArray(userMatters?.body) ? userMatters.body : [];
+
+  // When launched from a matter's task list, the matter is fixed — the T1 data
+  // saves straight into it and the matter picker is hidden.
+  const lockedMatter = location.state?.matterNumber
+    ? String(location.state.matterNumber)
+    : "";
 
   // upload → scanning → review → saving → saved | declined ("error" pairs with uploadError)
   const [stage, setStage] = useState("upload");
@@ -156,7 +164,7 @@ export default function T1UploadPage() {
   const [data, setData] = useState(null); // editable extraction
   const [uploadError, setUploadError] = useState(null);
   const [saveError, setSaveError] = useState(null);
-  const [selectedMatter, setSelectedMatter] = useState("");
+  const [selectedMatter, setSelectedMatter] = useState(lockedMatter);
   const [savedMatter, setSavedMatter] = useState("");
 
   const fileInputRef = useRef(null);
@@ -178,7 +186,7 @@ export default function T1UploadPage() {
     setData(null);
     setUploadError(null);
     setSaveError(null);
-    setSelectedMatter("");
+    setSelectedMatter(lockedMatter);
     setSavedMatter("");
     if (fileInputRef.current) fileInputRef.current.value = "";
   }
@@ -554,19 +562,25 @@ export default function T1UploadPage() {
                           Should I save this to a matter?
                         </span>
                         <div className="t1-savebar__controls">
-                          <select
-                            value={selectedMatter}
-                            disabled={stage === "saving"}
-                            onChange={(e) => setSelectedMatter(e.target.value)}
-                          >
-                            <option value="">Select a matter…</option>
-                            {matters.map((m) => (
-                              <option key={m.matterNumber} value={m.matterNumber}>
-                                {m.matterNumber}
-                                {m.client_id ? ` — ${m.client_id}` : ""}
-                              </option>
-                            ))}
-                          </select>
+                          {lockedMatter ? (
+                            <span className="t1-savebar__matter">
+                              Matter {lockedMatter}
+                            </span>
+                          ) : (
+                            <select
+                              value={selectedMatter}
+                              disabled={stage === "saving"}
+                              onChange={(e) => setSelectedMatter(e.target.value)}
+                            >
+                              <option value="">Select a matter…</option>
+                              {matters.map((m) => (
+                                <option key={m.matterNumber} value={m.matterNumber}>
+                                  {m.matterNumber}
+                                  {m.client_id ? ` — ${m.client_id}` : ""}
+                                </option>
+                              ))}
+                            </select>
+                          )}
                           <button
                             type="button"
                             className="btn btnPrimary rounded-pill t1-savebar__save"
