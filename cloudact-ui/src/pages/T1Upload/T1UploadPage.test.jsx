@@ -49,11 +49,13 @@ const EXTRACTION = {
     dateOfBirth: "1985-03-14",
     maritalStatus: "Separated",
     address: "12 Main St",
+    poBox: "PO 45",
     city: "Toronto",
     province: "Ontario",
     postalCode: "M1M 1M1",
     phone: "",
     email: "",
+    spouseName: "Jamie Smith",
   },
   incomeLines: [{ line: "10100", label: "Employment income", amount: "85000.00" }],
   totalIncome: "86000.00",
@@ -126,6 +128,9 @@ test("saving sends Background and IncomeAndBenefits patches to the chosen matter
   const background = action.payload.patches[0].data.client;
   expect(background.name).toBe("Alex Smith");
   expect(background.address).toBe("12 Main St, Toronto");
+  expect(background.poBox).toBe("PO 45");
+  // Spouse from the T1 becomes the opposing party.
+  expect(action.payload.patches[0].data.opposingParty.name).toBe("Jamie Smith");
 
   const income = action.payload.patches[1].data;
   expect(income.financialYear).toBe("2025");

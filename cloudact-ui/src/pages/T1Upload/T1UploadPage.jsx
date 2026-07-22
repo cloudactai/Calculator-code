@@ -49,11 +49,13 @@ const EMPTY_TAXPAYER = {
   dateOfBirth: "",
   maritalStatus: "",
   address: "",
+  poBox: "",
   city: "",
   province: "",
   postalCode: "",
   phone: "",
   email: "",
+  spouseName: "",
 };
 
 const WELCOME_TEXT =
@@ -116,15 +118,22 @@ function buildPatches(data) {
   if (t.dateOfBirth) client.dateOfBirth = t.dateOfBirth;
   const address = [t.address, t.city].map((s) => String(s || "").trim()).filter(Boolean).join(", ");
   if (address) client.address = address;
+  if (String(t.poBox || "").trim()) client.poBox = String(t.poBox).trim();
   if (t.province) client.province = t.province;
   if (t.postalCode) client.postalCode = t.postalCode;
   if (t.phone) client.phone = t.phone;
   if (t.email) client.email = t.email;
-  if (Object.keys(client).length > 0) {
-    patches.push({
-      section: "Background",
-      data: { client: { role: "Client", ...client } },
-    });
+
+  // The taxpayer's spouse (per the T1) is the opposing party on the matter.
+  const opposingParty = {};
+  const spouseName = String(t.spouseName || "").trim();
+  if (spouseName) opposingParty.name = spouseName;
+
+  const background = {};
+  if (Object.keys(client).length > 0) background.client = { role: "Client", ...client };
+  if (Object.keys(opposingParty).length > 0) background.opposingParty = { role: "Opposing Party", ...opposingParty };
+  if (Object.keys(background).length > 0) {
+    patches.push({ section: "Background", data: background });
   }
 
   const income = (data.incomeLines || [])
@@ -465,11 +474,13 @@ export default function T1UploadPage() {
                             ["lastName", "Last name"],
                             ["dateOfBirth", "Date of birth"],
                             ["address", "Street address"],
+                            ["poBox", "PO Box"],
                             ["city", "City"],
                             ["province", "Province"],
                             ["postalCode", "Postal code"],
                             ["phone", "Phone"],
                             ["email", "Email"],
+                            ["spouseName", "Spouse name"],
                           ].map(([key, label]) => (
                             <label key={key}>
                               {label}

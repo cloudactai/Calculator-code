@@ -906,11 +906,13 @@ T1_RECORD_TOOL = {
                     "dateOfBirth":   {"type": "string", "description": "YYYY-MM-DD"},
                     "maritalStatus": {"type": "string", "description": "As ticked on the return, e.g. 'Married', 'Separated'."},
                     "address":       {"type": "string", "description": "Street address incl. apt/unit. No city/province."},
+                    "poBox":         {"type": "string", "description": "PO Box, if the mailing address uses one."},
                     "city":          {"type": "string"},
                     "province":      {"type": "string", "description": "Full name, e.g. 'Ontario'."},
                     "postalCode":    {"type": "string"},
                     "phone":         {"type": "string"},
                     "email":         {"type": "string"},
+                    "spouseName":    {"type": "string", "description": "Full name of the taxpayer's spouse or common-law partner, if shown on the return."},
                 },
             },
             "incomeLines": {
