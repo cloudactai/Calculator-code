@@ -12,7 +12,7 @@ import math
 import os
 import sys
 from datetime import date, datetime, timezone
-from flask import Flask, request, jsonify, render_template, send_from_directory
+from flask import Flask, request, jsonify, send_from_directory
 from flask_cors import CORS
 import anthropic
 from intake_chat_guard import (
@@ -103,20 +103,6 @@ def compute_child_counts(children: list) -> dict:
 
 
 # ── Routes ────────────────────────────────────────────────────────────────────
-
-@app.route("/")
-def index():
-    return render_template("calculator.html")
-
-FRONTEND_DIR = os.path.join(THIS_DIR, "frontend")
-
-@app.route("/spousal-chat-ui")
-def spousal_chat_ui():
-    return send_from_directory(FRONTEND_DIR, "spousal-chat.html")
-
-@app.route("/frontend/<path:filename>")
-def frontend_static(filename):
-    return send_from_directory(FRONTEND_DIR, filename)
 
 @app.route("/download-report/<filename>")
 def download_report(filename):

@@ -75,11 +75,13 @@ function renderText(text) {
     .replace(/>/g, "&gt;");
   return escaped
     .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
-    .replace(
-      /\[(.+?)\]\((\/download-report\/[^)]+)\)/g,
-      `<a class="mw-download-btn" href="${CALCULATOR_API}$2" target="_blank" download>$1</a>`
-    )
+    .replace(/\[(.+?)\]\((\/download-report\/[^)]+)\)/g, "")
     .replace(/\n/g, "<br/>");
+}
+
+function extractDownloadUrl(text) {
+  const match = String(text).match(/\[.+?\]\((\/download-report\/[^)]+)\)/);
+  return match ? `${CALCULATOR_API}${match[1]}` : null;
 }
 
 export default function FamilyLawChat() {
@@ -289,14 +291,28 @@ export default function FamilyLawChat() {
                 </div>
               )}
 
-              {chat.bubbles.map((b, i) => (
-                <div key={i} className={`flc-row flc-${b.role}`}>
-                  <div
-                    className="flc-bubble"
-                    dangerouslySetInnerHTML={{ __html: renderText(b.text) }}
-                  />
-                </div>
-              ))}
+              {chat.bubbles.map((b, i) => {
+                const downloadUrl = b.role === "assistant" ? extractDownloadUrl(b.text) : null;
+                return (
+                  <div key={i} className={`flc-row flc-${b.role}`}>
+                    <div
+                      className="flc-bubble"
+                      dangerouslySetInnerHTML={{ __html: renderText(b.text) }}
+                    />
+                    {downloadUrl && (
+                      <a
+                        className="mw-download-btn"
+                        href={downloadUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        download
+                      >
+                        Download PDF Report
+                      </a>
+                    )}
+                  </div>
+                );
+              })}
 
               {showTyping && (
                 <div className="flc-row flc-assistant">
