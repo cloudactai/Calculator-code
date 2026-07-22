@@ -2036,15 +2036,21 @@ def spousal_chat():
                 reply = "".join(
                     b["text"] for b in assistant_content if b.get("type") == "text"
                 )
+                has_download = "/download-report/" in reply
+                print(f"[spousal-chat] Final reply has download link: {has_download}", flush=True)
+                if not has_download:
+                    print(f"[spousal-chat] Reply (last 200 chars): ...{reply[-200:]}", flush=True)
                 return jsonify({"reply": reply, "messages": messages})
 
             tool_results = []
             for block in assistant_content:
                 if block.get("type") == "tool_use":
+                    print(f"[spousal-chat] Tool called: {block['name']}", flush=True)
                     if block["name"] == "generate_spousal_report":
                         result = run_spousal_report_tool(block["input"])
                     else:
                         result = run_spousal_calc_tool(block["input"])
+                    print(f"[spousal-chat] Tool result keys: {list(result.keys()) if isinstance(result, dict) else 'not dict'}", flush=True)
                     tool_results.append({
                         "type":        "tool_result",
                         "tool_use_id": block["id"],
