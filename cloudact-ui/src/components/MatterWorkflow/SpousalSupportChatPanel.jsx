@@ -272,6 +272,10 @@ export default function SpousalSupportChatPanel({
       });
       const data = await res.json();
 
+      console.log("[SpousalChat] raw reply:", data.reply);
+      console.log("[SpousalChat] extractDownloadUrl:", extractDownloadUrl(data.reply || ""));
+      console.log("[SpousalChat] full response data:", JSON.stringify(data).slice(0, 500));
+
       if (data.error) {
         setBubbles((b) => [
           ...b,
