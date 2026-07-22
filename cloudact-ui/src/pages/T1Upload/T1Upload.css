@@ -1,0 +1,429 @@
+/* T1 Upload page — builds on the mw-chat-* shell from MatterWorkflow.css. */
+
+/* Page shell: reuse the single-matter chat viewport lock, keep the tagline tidy. */
+.t1-page .pHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.t1-page__tagline {
+  font-size: 13px;
+  color: #7a7f95;
+}
+
+/* ── User-side upload box ─────────────────────────────────────────────────── */
+
+.t1-upload-box {
+  width: 190px;
+  height: 170px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border: 2px dashed #aab3d0;
+  border-radius: 14px;
+  background: #f6f8ff;
+  color: #3f4664;
+  cursor: pointer;
+  transition: border-color 0.15s ease, background 0.15s ease, transform 0.15s ease;
+}
+
+.t1-upload-box:hover {
+  border-color: #4d64ff;
+  background: #eef2ff;
+  transform: translateY(-1px);
+}
+
+.t1-upload-box__icon {
+  color: #4d64ff;
+  display: inline-flex;
+}
+
+.t1-upload-box__title {
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.t1-upload-box__hint {
+  font-size: 11.5px;
+  color: #7a7f95;
+  padding: 0 10px;
+  text-align: center;
+}
+
+/* File chip shown in the user's bubble once a file is chosen. */
+.t1-file-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-weight: 600;
+  word-break: break-all;
+}
+
+.t1-file-chip em {
+  font-style: normal;
+  font-weight: 400;
+  opacity: 0.75;
+  white-space: nowrap;
+}
+
+/* ── Skeleton T1 "scanning" animation ─────────────────────────────────────── */
+
+.t1-scan-bubble {
+  max-width: 420px;
+  width: 100%;
+}
+
+.t1-skel__page {
+  position: relative;
+  overflow: hidden;
+  background: #fff;
+  border: 1px solid #e3e6f2;
+  border-radius: 10px;
+  padding: 14px 16px 16px;
+  box-shadow: 0 1px 4px rgba(23, 29, 52, 0.06);
+}
+
+.t1-skel__header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.t1-skel__badge {
+  width: 26px;
+  height: 18px;
+  border-radius: 4px;
+  flex-shrink: 0;
+}
+
+.t1-skel__band {
+  height: 22px;
+  border-radius: 6px;
+  margin-bottom: 12px;
+}
+
+.t1-skel__row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 9px;
+}
+
+.t1-skel__line {
+  height: 9px;
+  border-radius: 5px;
+}
+
+.t1-skel__line--title {
+  height: 12px;
+  width: 65%;
+}
+
+.t1-skel__box {
+  width: 68px;
+  height: 14px;
+  border-radius: 4px;
+  flex-shrink: 0;
+}
+
+/* Shared shimmer for every placeholder block. */
+.t1-skel__badge,
+.t1-skel__band,
+.t1-skel__line,
+.t1-skel__box {
+  background: linear-gradient(90deg, #e9ecf6 25%, #f5f7fd 45%, #e9ecf6 65%);
+  background-size: 220% 100%;
+  animation: t1-shimmer 1.4s ease-in-out infinite;
+}
+
+@keyframes t1-shimmer {
+  0% {
+    background-position: 180% 0;
+  }
+  100% {
+    background-position: -60% 0;
+  }
+}
+
+/* Scan beam sweeping down the page. */
+.t1-skel__beam {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: -30%;
+  height: 34px;
+  background: linear-gradient(
+    180deg,
+    rgba(77, 100, 255, 0) 0%,
+    rgba(77, 100, 255, 0.16) 50%,
+    rgba(77, 100, 255, 0) 100%
+  );
+  border-top: 1px solid rgba(77, 100, 255, 0.35);
+  animation: t1-beam 2.2s ease-in-out infinite;
+  pointer-events: none;
+}
+
+@keyframes t1-beam {
+  0% {
+    top: -12%;
+  }
+  55% {
+    top: 100%;
+  }
+  100% {
+    top: 100%;
+  }
+}
+
+.t1-skel__caption {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 10px;
+  font-size: 13px;
+  color: #565d7a;
+  font-weight: 600;
+}
+
+.t1-skel__caption .mw-dot:first-of-type {
+  margin-left: 4px;
+}
+
+/* ── Review card (editable extraction) ────────────────────────────────────── */
+
+/* Let the review bubble use the full chat width — it's a form, not a sentence. */
+.mw-chat-bubble.t1-review {
+  max-width: 96%;
+  width: 96%;
+}
+
+.t1-review__intro {
+  margin: 0 0 12px;
+}
+
+.t1-review__card {
+  background: #fff;
+  border: 1px solid #e3e6f2;
+  border-radius: 12px;
+  padding: 4px 16px 14px;
+}
+
+.t1-review__section {
+  padding-top: 12px;
+}
+
+.t1-review__section + .t1-review__section {
+  margin-top: 12px;
+  border-top: 1px solid #eef0f7;
+}
+
+.t1-review__section h4 {
+  font-size: 13px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #565d7a;
+  margin: 0 0 10px;
+}
+
+.t1-review__note {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: none;
+  letter-spacing: 0;
+  color: #9aa0b5;
+  background: #f2f4fa;
+  border-radius: 20px;
+  padding: 2px 9px;
+  margin-left: 6px;
+  vertical-align: middle;
+}
+
+.t1-review__grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px 14px;
+}
+
+.t1-review__grid label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #565d7a;
+  margin: 0;
+}
+
+.t1-review__grid input,
+.t1-income-row input {
+  border: 1px solid #d8dcea;
+  border-radius: 8px;
+  padding: 7px 10px;
+  font-size: 13.5px;
+  color: #1e1e2f;
+  background: #fbfcff;
+  outline: none;
+  width: 100%;
+  transition: border-color 0.15s ease;
+}
+
+.t1-review__grid input:focus,
+.t1-income-row input:focus {
+  border-color: #4d64ff;
+  background: #fff;
+}
+
+.t1-review__grid input:disabled,
+.t1-income-row input:disabled {
+  background: #f2f3f8;
+  color: #6a6f87;
+}
+
+.t1-review__empty {
+  font-size: 13px;
+  color: #7a7f95;
+  margin: 0 0 8px;
+}
+
+/* Income line rows */
+.t1-income-row {
+  display: grid;
+  grid-template-columns: 82px minmax(0, 1fr) 140px 30px;
+  gap: 8px;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.t1-income-row__remove {
+  width: 28px;
+  height: 28px;
+  border: none;
+  border-radius: 50%;
+  background: transparent;
+  color: #9aa0b5;
+  font-size: 13px;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.t1-income-row__remove:hover {
+  background: #fdecec;
+  color: #d64545;
+}
+
+.t1-add-line {
+  border: 1px dashed #aab3d0;
+  background: transparent;
+  border-radius: 20px;
+  color: #4d64ff;
+  font-size: 12.5px;
+  font-weight: 600;
+  padding: 5px 14px;
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.t1-add-line:hover {
+  background: #eef2ff;
+  border-color: #4d64ff;
+}
+
+/* ── Save bar ─────────────────────────────────────────────────────────────── */
+
+.t1-savebar {
+  margin-top: 14px;
+  padding: 12px 14px;
+  background: #f6f8ff;
+  border: 1px solid #e3e6f2;
+  border-radius: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.t1-savebar__question {
+  font-weight: 700;
+  color: #1e1e2f;
+}
+
+.t1-savebar__controls {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.t1-savebar__controls select {
+  flex: 1 1 220px;
+  max-width: 340px;
+  border: 1px solid #d8dcea;
+  border-radius: 8px;
+  padding: 8px 10px;
+  font-size: 13.5px;
+  color: #1e1e2f;
+  background: #fff;
+  outline: none;
+}
+
+.t1-savebar__save:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.t1-savebar__decline {
+  border: none;
+  background: transparent;
+  color: #7a7f95;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 8px 10px;
+}
+
+.t1-savebar__decline:hover {
+  color: #d64545;
+}
+
+.t1-savebar__hint {
+  font-size: 11.5px;
+  color: #9aa0b5;
+  line-height: 1.45;
+}
+
+/* ── Status text ──────────────────────────────────────────────────────────── */
+
+.t1-error {
+  color: #c03434;
+  font-weight: 600;
+}
+
+.t1-success {
+  color: #1d9e57;
+  font-weight: 700;
+}
+
+/* ── Responsive ───────────────────────────────────────────────────────────── */
+
+@media (max-width: 900px) {
+  .t1-review__grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 600px) {
+  .t1-review__grid {
+    grid-template-columns: 1fr;
+  }
+
+  .t1-income-row {
+    grid-template-columns: 70px minmax(0, 1fr) 110px 28px;
+  }
+}
