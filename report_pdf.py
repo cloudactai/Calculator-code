@@ -18,7 +18,7 @@ from reportlab.lib.pagesizes import letter
 from reportlab.lib.units import inch
 from reportlab.lib.colors import HexColor
 from reportlab.platypus import (
-    SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer, KeepTogether
+    SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
 )
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 
@@ -293,13 +293,10 @@ def generate_spousal_support_report(data: dict) -> str:
     )
     elements = []
 
-    LEFT_W = 4.4 * inch   # left column total
-    RIGHT_W = 4.0 * inch  # right column total
-
     # ── Title ──
     elements.append(Paragraph("CLOUDACT FAMILY LAW TOOLS", styles["title"]))
     elements.append(Spacer(1, 2))
-    line_table = Table([[""]],  colWidths=[(LEFT_W + RIGHT_W)])
+    line_table = Table([[""]],  colWidths=[7*inch])
     line_table.setStyle(TableStyle([
         ("LINEBELOW", (0, 0), (-1, 0), 2, ACCENT_BLUE),
         ("TOPPADDING", (0, 0), (-1, -1), 0),
@@ -326,26 +323,10 @@ def generate_spousal_support_report(data: dict) -> str:
 
     cs_paid = data.get("monthly_cs_paid", 0)
 
-    # ── Left column: Calculation Input + Children ──
-    lc0 = 1.8 * inch
-    lc1 = 1.3 * inch
-    lc2 = 1.3 * inch
-
-    # Calculation Input header
-    input_header = Table(
-        [[Paragraph("Calculation Input", styles["section"]), "", ""]],
-        colWidths=[lc0, lc1, lc2],
-    )
-    input_header.setStyle(TableStyle([
-        ("BACKGROUND", (0, 0), (-1, 0), HEADER_BG),
-        ("SPAN", (0, 0), (-1, 0)),
-        ("TOPPADDING", (0, 0), (-1, 0), 4),
-        ("BOTTOMPADDING", (0, 0), (-1, 0), 4),
-        ("LEFTPADDING", (0, 0), (-1, 0), 6),
-    ]))
-
-    # Calculation Input body
-    input_data = [
+    # ── Calculation Input + Important Dates (side by side) ──
+    # Left: Calculation Input
+    left_data = [
+        [Paragraph("Calculation Input", styles["section"]), "", ""],
         ["", p1, p2],
         ["", "Payor" if p1 == payor else "Recipient",
              "Payor" if p2 == payor else "Recipient"],
@@ -353,70 +334,31 @@ def generate_spousal_support_report(data: dict) -> str:
     p1_age = data.get("party1_age", "")
     p2_age = data.get("party2_age", "")
     if p1_age or p2_age:
-        input_data.append(["Age", str(p1_age) if p1_age else "", str(p2_age) if p2_age else ""])
+        left_data.append(["Age", str(p1_age) if p1_age else "", str(p2_age) if p2_age else ""])
     p1_prov = data.get("party1_province", "")
     p2_prov = data.get("party2_province", "")
     if p1_prov or p2_prov:
-        input_data.append(["Province", p1_prov, p2_prov])
-    input_data.append(["Employment income", _fmt(p1_income), _fmt(p2_income)])
+        left_data.append(["Province", p1_prov, p2_prov])
+    left_data.append(["Employment income", _fmt(p1_income), _fmt(p2_income)])
     p1_claims = data.get("party1_claims_dependent", "")
     p2_claims = data.get("party2_claims_dependent", "")
     if p1_claims or p2_claims:
-        input_data.append(["Claims dependent credit", p1_claims, p2_claims])
+        left_data.append(["Claims dependent credit", p1_claims, p2_claims])
 
-    input_table = Table(input_data, colWidths=[lc0, lc1, lc2])
+    left_table = Table(left_data, colWidths=[1.8*inch, 1.3*inch, 1.3*inch])
     ts = _base_table_style()
     ts += [
-        ("FONTNAME", (0, 0), (-1, 1), "Helvetica-Bold"),
-        ("BACKGROUND", (0, 0), (-1, 0), LIGHT_GREY),
+        ("BACKGROUND", (0, 0), (-1, 0), HEADER_BG),
+        ("SPAN", (0, 0), (-1, 0)),
+        ("FONTNAME", (0, 1), (-1, 2), "Helvetica-Bold"),
+        ("BACKGROUND", (0, 1), (-1, 1), LIGHT_GREY),
         ("ALIGN", (1, 0), (-1, -1), "RIGHT"),
+        ("TOPPADDING", (0, 0), (-1, 0), 4),
+        ("BOTTOMPADDING", (0, 0), (-1, 0), 4),
     ]
-    input_table.setStyle(TableStyle(ts))
+    left_table.setStyle(TableStyle(ts))
 
-    # Build left column elements list
-    left_elements = [input_header, input_table]
-
-    # Children table (part of left column, matching frontend)
-    if has_children and children_list:
-        ch_data = [["Children", "Lives with", "CSG Table"]]
-        today = date.today()
-        for c in children_list:
-            name = c.get("name", "")
-            dob_str = str(c.get("date_of_birth", c.get("dob", "")))[:10]
-            try:
-                dob = date.fromisoformat(dob_str)
-                age = today.year - dob.year - ((today.month, today.day) < (dob.month, dob.day))
-                label = f"{name} / {age} yrs" if name else f"Child {age} yrs"
-            except Exception:
-                label = name or "Child"
-            custody = c.get("custody_arrangement", c.get("custodyArrangement", ""))
-            csg = c.get("csg_table", "Yes")
-            ch_data.append([label, custody, csg])
-
-        ch_table = Table(ch_data, colWidths=[lc0, lc1, lc2])
-        ts = _base_table_style()
-        ts += [
-            ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
-            ("BACKGROUND", (0, 0), (-1, 0), LIGHT_GREY),
-            ("ALIGN", (1, 0), (-1, -1), "RIGHT"),
-        ]
-        ch_table.setStyle(TableStyle(ts))
-        left_elements.append(Spacer(1, 6))
-        left_elements.append(ch_table)
-
-    # Wrap left column elements into a single cell
-    left_col = Table([[e] for e in left_elements], colWidths=[LEFT_W])
-    left_col.setStyle(TableStyle([
-        ("LEFTPADDING",  (0, 0), (-1, -1), 0),
-        ("RIGHTPADDING", (0, 0), (-1, -1), 0),
-        ("TOPPADDING",   (0, 0), (-1, -1), 0),
-        ("BOTTOMPADDING",(0, 0), (-1, -1), 0),
-    ]))
-
-    # ── Right column: Important dates ──
-    rc0 = 2.4 * inch
-    rc1 = 1.5 * inch
-
+    # Right: Important Dates
     right_data = [
         [Paragraph("Important dates", styles["section"]), ""],
     ]
@@ -451,7 +393,7 @@ def generate_spousal_support_report(data: dict) -> str:
     if tax_year:
         right_data.append(["Tax year", str(tax_year)])
 
-    right_table = Table(right_data, colWidths=[rc0, rc1])
+    right_table = Table(right_data, colWidths=[2.4*inch, 1.6*inch])
     ts = _base_table_style()
     ts += [
         ("BACKGROUND", (0, 0), (-1, 0), HEADER_BG),
@@ -464,25 +406,60 @@ def generate_spousal_support_report(data: dict) -> str:
 
     # Combine side by side
     combined = Table(
-        [[left_col, right_table]],
-        colWidths=[LEFT_W + 0.2 * inch, RIGHT_W],
+        [[left_table, right_table]],
+        colWidths=[4.5*inch, 4.1*inch],
     )
     combined.setStyle(TableStyle([
         ("VALIGN", (0, 0), (-1, -1), "TOP"),
-        ("LEFTPADDING",  (0, 0), (-1, -1), 0),
-        ("RIGHTPADDING", (0, 0), (-1, -1), 0),
-        ("TOPPADDING",   (0, 0), (-1, -1), 0),
-        ("BOTTOMPADDING",(0, 0), (-1, -1), 0),
     ]))
     elements.append(combined)
     elements.append(Spacer(1, 8))
 
-    # ── Result (half-width, matching frontend) ──
-    result_w = LEFT_W  # same width as left column
+    # ── Children table (if applicable) ──
+    if has_children and children_list:
+        ch_header = Table(
+            [[Paragraph("Children", styles["section"]), "", ""]],
+            colWidths=[3*inch, 2*inch, 2*inch],
+        )
+        ch_header.setStyle(TableStyle([
+            ("BACKGROUND", (0, 0), (-1, 0), HEADER_BG),
+            ("SPAN", (0, 0), (-1, 0)),
+            ("TOPPADDING", (0, 0), (-1, 0), 4),
+            ("BOTTOMPADDING", (0, 0), (-1, 0), 4),
+            ("LEFTPADDING", (0, 0), (-1, 0), 6),
+        ]))
+        elements.append(ch_header)
 
+        ch_data = [["Children", "Lives with", "CSG Table"]]
+        today = date.today()
+        for c in children_list:
+            name = c.get("name", "")
+            dob_str = str(c.get("date_of_birth", c.get("dob", "")))[:10]
+            try:
+                dob = date.fromisoformat(dob_str)
+                age = today.year - dob.year - ((today.month, today.day) < (dob.month, dob.day))
+                label = f"{name} / {age} yrs" if name else f"Child {age} yrs"
+            except Exception:
+                label = name or "Child"
+            custody = c.get("custody_arrangement", c.get("custodyArrangement", ""))
+            csg = c.get("csg_table", "Yes")
+            ch_data.append([label, custody, csg])
+
+        ch_table = Table(ch_data, colWidths=[3*inch, 2*inch, 2*inch])
+        ts = _base_table_style()
+        ts += [
+            ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
+            ("BACKGROUND", (0, 0), (-1, 0), LIGHT_GREY),
+            ("ALIGN", (1, 0), (-1, -1), "RIGHT"),
+        ]
+        ch_table.setStyle(TableStyle(ts))
+        elements.append(ch_table)
+        elements.append(Spacer(1, 6))
+
+    # ── Result ──
     result_header = Table(
         [[Paragraph("Result", styles["section"])]],
-        colWidths=[result_w],
+        colWidths=[7*inch],
     )
     result_header.setStyle(TableStyle([
         ("BACKGROUND", (0, 0), (-1, 0), RESULT_BG),
@@ -493,66 +470,36 @@ def generate_spousal_support_report(data: dict) -> str:
     elements.append(result_header)
 
     result_data = []
-    r_lbl_w = 2.8 * inch
-    r_val_w = result_w - r_lbl_w
 
     # Child support line (if with-children)
     if has_children and cs_paid:
         result_data.append(["Child Support (monthly)", _fmt(cs_paid)])
 
-    # Spousal support header row (label spans both columns)
+    # Spousal support
     result_data.append(["Spousal Support (monthly)", ""])
-    # Indented Low / Mid / High
-    result_data.append(["   Low",  _fmt(data.get("monthly_low", 0))])
-    result_data.append(["   Mid",  _fmt(data.get("monthly_med", data.get("monthly_mid", 0)))])
-    result_data.append(["   High", _fmt(data.get("monthly_high", 0))])
+    result_data.append(["  Low",  _fmt(data.get("monthly_low", 0))])
+    result_data.append(["  Mid",  _fmt(data.get("monthly_med", data.get("monthly_mid", 0)))])
+    result_data.append(["  High", _fmt(data.get("monthly_high", 0))])
     result_data.append(["Duration", data.get("duration_label", "")])
 
     if data.get("note"):
         result_data.append(["Note", data["note"]])
 
-    result_table = Table(result_data, colWidths=[r_lbl_w, r_val_w])
+    result_table = Table(result_data, colWidths=[4.5*inch, 2.5*inch])
     ts = _base_table_style()
-
-    # Figure out row indices for styling
-    cs_row_offset = 1 if (has_children and cs_paid) else 0
-    ss_header_row = cs_row_offset      # "Spousal Support (monthly)" row
-    low_row = ss_header_row + 1
-    duration_row = len(result_data) - 1
-    if data.get("note"):
-        duration_row -= 1
-
     ts += [
+        ("FONTNAME", (0, 0), (0, -1), "Helvetica-Bold"),
+        ("FONTSIZE", (1, 0), (1, -1), 11),
         ("ALIGN", (1, 0), (1, -1), "RIGHT"),
     ]
-    # Bold the child support row
-    if has_children and cs_paid:
-        ts += [
-            ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
-            ("FONTSIZE", (1, 0), (1, 0), 11),
-        ]
-    # Bold "Spousal Support (monthly)" header
-    ts += [("FONTNAME", (0, ss_header_row), (0, ss_header_row), "Helvetica-Bold")]
-    # Span the header across both columns
-    ts += [("SPAN", (0, ss_header_row), (1, ss_header_row))]
-    # Large bold values for Low/Mid/High
-    ts += [
-        ("FONTSIZE", (1, low_row), (1, low_row + 2), 11),
-        ("FONTNAME", (1, low_row), (1, low_row + 2), "Helvetica-Bold"),
-    ]
-    # Bold Duration row
-    ts += [
-        ("FONTNAME", (0, duration_row), (-1, duration_row), "Helvetica-Bold"),
-    ]
-
     result_table.setStyle(TableStyle(ts))
     elements.append(result_table)
-    elements.append(Spacer(1, 10))
+    elements.append(Spacer(1, 8))
 
-    # ── Calculation details (full width) ──
+    # ── Calculation Details ──
     detail_header = Table(
         [[Paragraph("Calculation details", styles["section"])]],
-        colWidths=[LEFT_W + RIGHT_W],
+        colWidths=[7*inch],
     )
     detail_header.setStyle(TableStyle([
         ("BACKGROUND", (0, 0), (-1, 0), HEADER_BG),
@@ -562,6 +509,7 @@ def generate_spousal_support_report(data: dict) -> str:
     ]))
     elements.append(detail_header)
 
+    # Determine party order: Party 1 / Party 2 (matching frontend)
     detail_data = [
         ["", "LOW", "", "MID", "", "HIGH", ""],
         ["", "Party 1", "Party 2", "Party 1", "Party 2", "Party 1", "Party 2"],
@@ -588,6 +536,7 @@ def generate_spousal_support_report(data: dict) -> str:
     # Child Support + Notional child support rows (if with-children)
     if has_children and cs_paid:
         annual_cs = round(float(cs_paid) * 12)
+        # Determine who pays: payor pays CS, recipient gets notional
         payor_is_p1 = (p1 == payor)
         cs_p1 = _fmt(-annual_cs) if payor_is_p1 else ""
         cs_p2 = _fmt(-annual_cs) if not payor_is_p1 else ""
