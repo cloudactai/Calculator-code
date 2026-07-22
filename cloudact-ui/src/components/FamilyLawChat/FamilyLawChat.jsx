@@ -164,6 +164,8 @@ export default function FamilyLawChat() {
         body: JSON.stringify({ messages: nextMessages }),
       });
       const data = await res.json();
+      console.log("[FamilyLawChat] raw reply:", data.reply?.slice(-200));
+      console.log("[FamilyLawChat] extractDownloadUrl:", extractDownloadUrl(data.reply || ""));
       setChats((c) => {
         const cur = c[id];
         if (data.error) {
@@ -293,6 +295,10 @@ export default function FamilyLawChat() {
 
               {chat.bubbles.map((b, i) => {
                 const downloadUrl = b.role === "assistant" ? extractDownloadUrl(b.text) : null;
+                if (b.role === "assistant") {
+                  console.log(`[FamilyLawChat] Bubble ${i} downloadUrl:`, downloadUrl);
+                  console.log(`[FamilyLawChat] Bubble ${i} text snippet:`, b.text?.slice(-150));
+                }
                 return (
                   <div key={i} className={`flc-row flc-${b.role}`}>
                     <div
