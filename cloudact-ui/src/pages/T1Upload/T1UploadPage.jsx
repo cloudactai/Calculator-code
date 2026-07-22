@@ -59,11 +59,10 @@ const EMPTY_TAXPAYER = {
 };
 
 const WELCOME_TEXT =
-  "Hi! I can read a client's T1 Income Tax and Benefit Return and pull the " +
-  "intake details out for you — no retyping. Upload the T1 below (a PDF or a " +
-  "clear photo works) and I'll extract the client's identification and " +
-  "income information. You'll get to review and edit everything I find " +
-  "before anything is saved.";
+  "This tool reads a client's T1 Income Tax and Benefit Return and extracts " +
+  "the intake details automatically. Upload the T1 below as a PDF or a clear " +
+  "photo. You can review and edit all extracted identification and income " +
+  "information before anything is saved.";
 
 function fileMediaType(file) {
   if (ACCEPTED_MEDIA_TYPES.includes(file.type)) return file.type;
