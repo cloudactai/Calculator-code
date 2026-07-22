@@ -239,16 +239,12 @@ Do not ask the user for permission — just call it.
 After you get the result, explain it in plain language:
 who pays, how much per month and per year, and why.
 
-CRITICAL: In the SAME response where you present the calculation results,
-you MUST also call the generate_report tool with all the calculation data.
-Include BOTH the text content AND the tool_use block in one response.
-Do NOT present results in one turn and call the tool in a separate turn.
-
-Once the tool returns, append the download link at the end of your message:
+The tool result will include a download_url field. After presenting the
+results, include the download link at the end of your message like this:
 
 [Download PDF Report](DOWNLOAD_URL)
 
-where DOWNLOAD_URL is the download_url from the tool result.
+where DOWNLOAD_URL is the download_url value from the tool result.
 
 Ontario child support only. Politely decline spousal support questions.
 """
@@ -433,10 +429,12 @@ def run_calc_tool(tool_input):
     else:
         net_payer, net_monthly = None, 0
 
-    return {
+    calc_result = {
         "scenario":          type_of_splitting,
         "party1_name":       p1_name,
         "party2_name":       p2_name,
+        "party1_income":     tool_input["party1_income"],
+        "party2_income":     tool_input["party2_income"],
         "party1_monthly":    result["party1"],
         "party1_annual":     result["party1"] * 12,
         "party2_monthly":    result["party2"],
@@ -450,7 +448,17 @@ def run_calc_tool(tool_input):
         "net_payer":         net_payer,
         "net_monthly":       net_monthly,
         "net_annual":        net_monthly * 12,
+        "children":          tool_input.get("children", []),
     }
+
+    # Auto-generate PDF report
+    try:
+        filename = generate_child_support_report(calc_result)
+        calc_result["download_url"] = f"/download-report/{filename}"
+    except Exception as e:
+        print(f"[child-support] PDF generation error: {e}", flush=True)
+
+    return calc_result
 
 
 @app.route("/chat", methods=["POST"])
@@ -468,7 +476,7 @@ def chat():
                 model=os.getenv("CLAUDE_MODEL", "claude-sonnet-4-6"),
                 max_tokens=4096,
                 system=CHAT_SYSTEM,
-                tools=[CALC_TOOL, CS_REPORT_TOOL],
+                tools=[CALC_TOOL],
                 messages=messages,
             )
 
@@ -490,14 +498,11 @@ def chat():
                 )
                 return jsonify({"reply": reply, "messages": messages})
 
-            # Claude called a tool — run it and feed the result back
+            # Claude called the tool — run the calculator and feed the result back
             tool_results = []
             for block in assistant_content:
                 if block.get("type") == "tool_use":
-                    if block["name"] == "generate_report":
-                        result = run_cs_report_tool(block["input"])
-                    else:
-                        result = run_calc_tool(block["input"])
+                    result = run_calc_tool(block["input"])
                     tool_results.append({
                         "type":        "tool_result",
                         "tool_use_id": block["id"],
@@ -1621,30 +1626,14 @@ Recipient INDI (mid): $X,XXX / year
 Ontario SSAG only. Politely decline questions about other provinces.
 
 ───────────────────────────────────────────────
-PDF REPORT — MANDATORY
+PDF REPORT
 ───────────────────────────────────────────────
-CRITICAL: In the SAME response where you present the calculation results,
-you MUST also call the generate_spousal_report tool. Include BOTH the
-text content AND the tool_use block in one response. Do NOT present
-results in one turn and call the tool in a separate turn.
-
-Pass these fields to generate_spousal_report:
-- party1_name, party2_name
-- party1_income, party2_income
-- years_married, years_cohabited
-- payor, recipient
-- formula ("no_children" or "with_children")
-- child_support_paid (monthly amount, 0 if no children)
-- children (array of child objects, or empty array)
-- spousal_low_monthly, spousal_mid_monthly, spousal_high_monthly
-- spousal_low_annual, spousal_mid_annual, spousal_high_annual
-- duration_low_months, duration_high_months
-
-Once the tool returns, append the download link at the end of your message:
+The tool result will include a download_url field. After presenting the
+results, include the download link at the end of your message like this:
 
 [Download PDF Report](DOWNLOAD_URL)
 
-where DOWNLOAD_URL is the download_url from the tool result.
+where DOWNLOAD_URL is the download_url value from the tool result.
 """
 
 SPOUSAL_CALC_TOOL = {
@@ -1836,13 +1825,24 @@ def run_spousal_calc_tool(tool_input: dict) -> dict:
             years=years,
             recipient_age=recipient_age,
         )
-        return {
+        calc_result = {
             "formula":        "no_children",
+            "party1_name":    p1_name,
+            "party2_name":    p2_name,
+            "party1_income":  float(tool_input["party1_gross_income"]),
+            "party2_income":  float(tool_input["party2_gross_income"]),
             "payor":          result.payor,
             "recipient":      result.recipient,
+            "years_married":  years,
             "pct_low":        result.pct_low,
             "pct_med":        result.pct_med,
             "pct_high":       result.pct_high,
+            "spousal_low_monthly":  result.monthly_low,
+            "spousal_mid_monthly":  result.monthly_med,
+            "spousal_high_monthly": result.monthly_high,
+            "spousal_low_annual":   result.annual_low,
+            "spousal_mid_annual":   result.annual_med,
+            "spousal_high_annual":  result.annual_high,
             "monthly_low":    result.monthly_low,
             "monthly_med":    result.monthly_med,
             "monthly_high":   result.monthly_high,
@@ -1850,7 +1850,15 @@ def run_spousal_calc_tool(tool_input: dict) -> dict:
             "annual_med":     result.annual_med,
             "annual_high":    result.annual_high,
             "duration_label": result.duration_label,
+            "children":       [],
+            "child_support_paid": 0,
         }
+        try:
+            filename = generate_spousal_support_report(calc_result)
+            calc_result["download_url"] = f"/download-report/{filename}"
+        except Exception as e:
+            print(f"[spousal] PDF generation error: {e}", flush=True)
+        return calc_result
 
     # ── PATH B: with children (iterative) ────────────────────────────────────
     today = date.today()
@@ -1910,14 +1918,25 @@ def run_spousal_calc_tool(tool_input: dict) -> dict:
             years=years,
             recipient_age=float(r_age),
         )
-        return {
+        calc_result = {
             "formula":        "no_children",
             "note":           "All children are 18 or older and are considered adults. Spousal support calculated using the without-children formula.",
+            "party1_name":    p1_name,
+            "party2_name":    p2_name,
+            "party1_income":  p1_gross,
+            "party2_income":  p2_gross,
             "payor":          result.payor,
             "recipient":      result.recipient,
+            "years_married":  years,
             "pct_low":        result.pct_low,
             "pct_med":        result.pct_med,
             "pct_high":       result.pct_high,
+            "spousal_low_monthly":  result.monthly_low,
+            "spousal_mid_monthly":  result.monthly_med,
+            "spousal_high_monthly": result.monthly_high,
+            "spousal_low_annual":   result.annual_low,
+            "spousal_mid_annual":   result.annual_med,
+            "spousal_high_annual":  result.annual_high,
             "monthly_low":    result.monthly_low,
             "monthly_med":    result.monthly_med,
             "monthly_high":   result.monthly_high,
@@ -1925,7 +1944,15 @@ def run_spousal_calc_tool(tool_input: dict) -> dict:
             "annual_med":     result.annual_med,
             "annual_high":    result.annual_high,
             "duration_label": result.duration_label,
+            "children":       [],
+            "child_support_paid": 0,
         }
+        try:
+            filename = generate_spousal_support_report(calc_result)
+            calc_result["download_url"] = f"/download-report/{filename}"
+        except Exception as e:
+            print(f"[spousal] PDF generation error: {e}", flush=True)
+        return calc_result
 
     # Determine payor/recipient by gross income to label the result
     p1_gross = float(tool_input["party1_gross_income"])
@@ -1993,11 +2020,23 @@ def run_spousal_calc_tool(tool_input: dict) -> dict:
         tool_input.get("party2_child_care_expenses", 0),
     ])
 
-    return {
+    calc_result = {
         "formula":              "iterative_with_children",
+        "party1_name":          p1_name,
+        "party2_name":          p2_name,
+        "party1_income":        p1_gross,
+        "party2_income":        p2_gross,
         "payor":                payor_name,
         "recipient":            recip_name,
+        "years_married":        years,
+        "child_support_paid":   result.monthly_cs_paid,
         "monthly_cs_paid":      result.monthly_cs_paid,
+        "spousal_low_monthly":  result.monthly_low,
+        "spousal_mid_monthly":  result.monthly_mid,
+        "spousal_high_monthly": result.monthly_high,
+        "spousal_low_annual":   result.annual_low,
+        "spousal_mid_annual":   result.annual_mid,
+        "spousal_high_annual":  result.annual_high,
         "monthly_low":          result.monthly_low,
         "monthly_mid":          result.monthly_mid,
         "monthly_high":         result.monthly_high,
@@ -2008,7 +2047,16 @@ def run_spousal_calc_tool(tool_input: dict) -> dict:
         "recipient_indi_mid":   result.recipient_indi_mid,
         "duration_label":       f"{result.duration_low} – {result.duration_high} years",
         "approximate":          has_approx,
+        "children":             [{"name": c.get("name", ""), "dob": c["date_of_birth"], "custody_arrangement": c["custody_arrangement"]} for c in children_raw],
     }
+
+    try:
+        filename = generate_spousal_support_report(calc_result)
+        calc_result["download_url"] = f"/download-report/{filename}"
+    except Exception as e:
+        print(f"[spousal] PDF generation error: {e}", flush=True)
+
+    return calc_result
 
 @app.route("/spousal-chat", methods=["POST"])
 def spousal_chat():
@@ -2023,7 +2071,7 @@ def spousal_chat():
                 model=os.getenv("CLAUDE_MODEL", "claude-sonnet-4-6"),
                 max_tokens=4096,
                 system=SPOUSAL_CHAT_SYSTEM.format(current_year=CURRENT_YEAR),
-                tools=[SPOUSAL_CALC_TOOL, SPOUSAL_REPORT_TOOL],
+                tools=[SPOUSAL_CALC_TOOL],
                 messages=messages,
             )
 
@@ -2050,10 +2098,7 @@ def spousal_chat():
             for block in assistant_content:
                 if block.get("type") == "tool_use":
                     print(f"[spousal-chat] Tool called: {block['name']}", flush=True)
-                    if block["name"] == "generate_spousal_report":
-                        result = run_spousal_report_tool(block["input"])
-                    else:
-                        result = run_spousal_calc_tool(block["input"])
+                    result = run_spousal_calc_tool(block["input"])
                     print(f"[spousal-chat] Tool result keys: {list(result.keys()) if isinstance(result, dict) else 'not dict'}", flush=True)
                     tool_results.append({
                         "type":        "tool_result",
