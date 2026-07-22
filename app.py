@@ -894,30 +894,39 @@ def t1_extract():
         block_type = "document" if media_type == "application/pdf" else "image"
 
         client = anthropic.Anthropic()  # reads ANTHROPIC_API_KEY from env
-        response = client.messages.create(
-            model=os.getenv("CLAUDE_MODEL", "claude-sonnet-4-6"),
-            max_tokens=4096,
-            system=T1_EXTRACT_SYSTEM,
-            tools=[T1_RECORD_TOOL],
-            tool_choice={"type": "tool", "name": "record_t1_data"},
-            messages=[{
-                "role": "user",
-                "content": [
-                    {
-                        "type": block_type,
-                        "source": {
-                            "type": "base64",
-                            "media_type": media_type,
-                            "data": file_data,
+        try:
+            response = client.messages.create(
+                model=os.getenv("CLAUDE_MODEL", "claude-sonnet-4-6"),
+                max_tokens=4096,
+                system=T1_EXTRACT_SYSTEM,
+                tools=[T1_RECORD_TOOL],
+                tool_choice={"type": "tool", "name": "record_t1_data"},
+                messages=[{
+                    "role": "user",
+                    "content": [
+                        {
+                            "type": block_type,
+                            "source": {
+                                "type": "base64",
+                                "media_type": media_type,
+                                "data": file_data,
+                            },
                         },
-                    },
-                    {
-                        "type": "text",
-                        "text": "Extract the intake-relevant data from this T1 income tax return.",
-                    },
-                ],
-            }],
-        )
+                        {
+                            "type": "text",
+                            "text": "Extract the intake-relevant data from this T1 income tax return.",
+                        },
+                    ],
+                }],
+            )
+        except anthropic.BadRequestError:
+            # The document/image couldn't be decoded or rendered (corrupt file,
+            # unreadable scan, empty page, etc.). Surface a user-friendly message
+            # instead of leaking the raw API error.
+            return jsonify({
+                "error": "That file couldn't be read. Please upload a clearer copy "
+                         "of the T1 — a good-quality PDF or a sharp, well-lit photo."
+            }), 422
 
         extracted = None
         for block in response.content:

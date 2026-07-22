@@ -19,11 +19,12 @@
 .t1-upload-box {
   width: 190px;
   height: 170px;
-  display: flex;
+  display: inline-flex; /* inline so the user row's right-align pushes it to the right */
   flex-direction: column;
   align-items: center;
   justify-content: center;
   gap: 8px;
+  text-align: center;
   border: 2px dashed #aab3d0;
   border-radius: 14px;
   background: #f6f8ff;
