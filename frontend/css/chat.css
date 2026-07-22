@@ -15,7 +15,7 @@ header {
   background: #1a1a2e;
   color: #fff;
   padding: 14px 24px;
-  font-size: 1rem;
+  font-size: 1.25rem;
   font-weight: 600;
   letter-spacing: .3px;
   display: flex;
@@ -30,7 +30,7 @@ header span { color: #6c8fdb; }
   color: rgba(255,255,255,.7);
   border-radius: 6px;
   padding: 5px 12px;
-  font-size: .78rem;
+  font-size: 1rem;
   cursor: pointer;
   transition: all .15s;
 }
@@ -60,7 +60,7 @@ header span { color: #6c8fdb; }
   max-width: 72%;
   padding: 12px 16px;
   border-radius: 14px;
-  font-size: .93rem;
+  font-size: 1.18rem;
   line-height: 1.55;
   white-space: pre-wrap;
   word-break: break-word;
@@ -127,7 +127,7 @@ header span { color: #6c8fdb; }
   border: 1.5px solid #d8dde6;
   border-radius: 10px;
   padding: 10px 14px;
-  font-size: .93rem;
+  font-size: 1.18rem;
   font-family: inherit;
   outline: none;
   resize: none;
@@ -144,7 +144,7 @@ header span { color: #6c8fdb; }
   border: none;
   border-radius: 10px;
   padding: 10px 18px;
-  font-size: .9rem;
+  font-size: 1.12rem;
   font-weight: 600;
   cursor: pointer;
   transition: background .15s;
@@ -166,12 +166,12 @@ header span { color: #6c8fdb; }
   color: #555;
 }
 #welcome h1 {
-  font-size: 1.4rem;
+  font-size: 1.65rem;
   color: #1a1a2e;
   margin: 0 0 10px;
 }
 #welcome p {
-  font-size: .93rem;
+  font-size: 1.18rem;
   line-height: 1.6;
   margin: 0 0 24px;
 }
@@ -186,7 +186,7 @@ header span { color: #6c8fdb; }
   border: 1.5px solid #d8dde6;
   border-radius: 20px;
   padding: 7px 14px;
-  font-size: .83rem;
+  font-size: 1.05rem;
   cursor: pointer;
   transition: all .15s;
   color: #1a1a2e;
@@ -204,7 +204,7 @@ header span { color: #6c8fdb; }
   color: #fff;
   padding: 10px 18px;
   border-radius: 8px;
-  font-size: .85rem;
+  font-size: 1.05rem;
   z-index: 99;
 }
 
@@ -213,7 +213,7 @@ header span { color: #6c8fdb; }
   background: #fff3cd;
   border-bottom: 1px solid #ffc107;
   color: #7a5800;
-  font-size: .82rem;
+  font-size: 1.05rem;
   padding: 8px 24px;
   text-align: center;
   display: none;
@@ -222,7 +222,7 @@ header span { color: #6c8fdb; }
   border: 1px solid #ccc;
   border-radius: 5px;
   padding: 3px 8px;
-  font-size: .82rem;
+  font-size: 1.05rem;
   width: 260px;
   margin: 0 6px;
 }
@@ -232,7 +232,7 @@ header span { color: #6c8fdb; }
   border: none;
   border-radius: 5px;
   padding: 4px 10px;
-  font-size: .82rem;
+  font-size: 1.05rem;
   cursor: pointer;
 }
 
@@ -240,7 +240,7 @@ header span { color: #6c8fdb; }
 @media (max-width: 600px) {
   .bubble { max-width: 88%; }
   .msg-row { padding: 0 12px; }
-  header { padding: 11px 16px; font-size: .9rem; }
+  header { padding: 11px 16px; font-size: 1.12rem; }
   #input-bar { padding: 10px 12px; padding-bottom: max(10px, env(safe-area-inset-bottom)); }
   #chat-window { padding: 14px 0; gap: 12px; }
   #send-btn { padding: 10px 14px; }
