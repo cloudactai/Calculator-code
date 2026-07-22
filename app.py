@@ -239,14 +239,16 @@ Do not ask the user for permission — just call it.
 After you get the result, explain it in plain language:
 who pays, how much per month and per year, and why.
 
-After presenting the results, IMMEDIATELY call the generate_report tool
-with all the calculation data — do not ask the user first. Once the tool
-returns, append the download link at the end of your message like this:
+CRITICAL: In the SAME response where you present the calculation results,
+you MUST also call the generate_report tool with all the calculation data.
+Include BOTH the text content AND the tool_use block in one response.
+Do NOT present results in one turn and call the tool in a separate turn.
+
+Once the tool returns, append the download link at the end of your message:
 
 [Download PDF Report](DOWNLOAD_URL)
 
 where DOWNLOAD_URL is the download_url from the tool result.
-This way the user always sees the download option right after the results.
 
 Ontario child support only. Politely decline spousal support questions.
 """
@@ -464,7 +466,7 @@ def chat():
 
             response = client.messages.create(
                 model=os.getenv("CLAUDE_MODEL", "claude-sonnet-4-6"),
-                max_tokens=1024,
+                max_tokens=4096,
                 system=CHAT_SYSTEM,
                 tools=[CALC_TOOL, CS_REPORT_TOOL],
                 messages=messages,
@@ -1463,7 +1465,7 @@ def tax_chat():
         for _ in range(10):
             response = client.messages.create(
                 model=os.getenv("CLAUDE_MODEL", "claude-sonnet-4-6"),
-                max_tokens=1024,
+                max_tokens=4096,
                 system=TAX_CHAT_SYSTEM,
                 tools=[TAX_CALC_TOOL],
                 messages=messages,
@@ -1619,11 +1621,14 @@ Recipient INDI (mid): $X,XXX / year
 Ontario SSAG only. Politely decline questions about other provinces.
 
 ───────────────────────────────────────────────
-PDF REPORT
+PDF REPORT — MANDATORY
 ───────────────────────────────────────────────
-After presenting the results, IMMEDIATELY call the generate_spousal_report
-tool with all the calculation data — do not ask the user first. Pass the
-following fields:
+CRITICAL: In the SAME response where you present the calculation results,
+you MUST also call the generate_spousal_report tool. Include BOTH the
+text content AND the tool_use block in one response. Do NOT present
+results in one turn and call the tool in a separate turn.
+
+Pass these fields to generate_spousal_report:
 - party1_name, party2_name
 - party1_income, party2_income
 - years_married, years_cohabited
@@ -1640,7 +1645,6 @@ Once the tool returns, append the download link at the end of your message:
 [Download PDF Report](DOWNLOAD_URL)
 
 where DOWNLOAD_URL is the download_url from the tool result.
-This way the user always sees the download option right after the results.
 """
 
 SPOUSAL_CALC_TOOL = {
@@ -2017,7 +2021,7 @@ def spousal_chat():
         for _ in range(10):
             response = client.messages.create(
                 model=os.getenv("CLAUDE_MODEL", "claude-sonnet-4-6"),
-                max_tokens=1024,
+                max_tokens=4096,
                 system=SPOUSAL_CHAT_SYSTEM.format(current_year=CURRENT_YEAR),
                 tools=[SPOUSAL_CALC_TOOL, SPOUSAL_REPORT_TOOL],
                 messages=messages,

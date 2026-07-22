@@ -111,8 +111,6 @@ const MatterDashboard = () => {
 
   const currentItems = filteredMatters.slice(indexOfFirstItem, indexOfLastItem);
   const totalPages = Math.max(1, Math.ceil(filteredMatters.length / itemsPerPage));
-  console.log("[CLOUDACT-MATTER] userMatters.body count:", matterRows.length, "filteredMatters count:", filteredMatters.length, "currentItems count:", currentItems.length);
-  console.log("[CLOUDACT-MATTER] currentItems matterNumbers:", currentItems.map(i => i.matterNumber));
 
   const selectMatterLoading = useSelector(selectMattersLoading);
   const selectMatterError = useSelector(selectMattersError);
@@ -171,9 +169,7 @@ const MatterDashboard = () => {
   };
 
   const handleOpenMatter = (matter) => {
-    console.log("[CLOUDACT-MATTER] handleOpenMatter called with:", JSON.stringify({ id: matter?.id, matterNumber: matter?.matterNumber, client_id: matter?.client_id }));
     if (!matter) return;
-    console.log("[CLOUDACT-MATTER] navigating to:", `/single-matter/${matter.matterNumber}`);
     // Carry the client name so the single-matter header can show it even if the
     // get_single_matter response omits client_id.
     history.push(`/single-matter/${matter.matterNumber}`, {
@@ -339,7 +335,6 @@ const MatterDashboard = () => {
                         </td>
                       </tr>
                     ) : currentItems.map((item, key) => {
-                      console.log("[CLOUDACT-MATTER] rendering row", key, "matterNumber:", item.matterNumber, "client_id:", item.client_id, "full item keys:", Object.keys(item));
                       return (
                       <tr key={key}>
                         <td>{item.matterNumber}</td>
