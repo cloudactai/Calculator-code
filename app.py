@@ -1739,6 +1739,38 @@ SPOUSAL_CALC_TOOL = {
                 "description": "Party 2 annual child care expenses (CAD). Use 0 if none. Result is approximate if non-zero.",
                 "default": 0
             },
+
+            # ── Optional metadata for PDF report ─────────────────────────
+            "party1_province": {
+                "type": "string",
+                "description": "Province of Party 1 (e.g. 'Ontario'). Optional, for report display."
+            },
+            "party2_province": {
+                "type": "string",
+                "description": "Province of Party 2 (e.g. 'Ontario'). Optional, for report display."
+            },
+            "date_of_marriage": {
+                "type": "string",
+                "description": "Date of marriage/cohabitation in YYYY-MM-DD format. Optional, for report display."
+            },
+            "date_of_separation": {
+                "type": "string",
+                "description": "Date of separation in YYYY-MM-DD format. Optional, for report display."
+            },
+            "tax_year": {
+                "type": "integer",
+                "description": "Tax year used for calculation (e.g. 2025). Optional, for report display."
+            },
+            "party1_claims_dependent": {
+                "type": "string",
+                "enum": ["Yes", "No"],
+                "description": "Does Party 1 claim the eligible dependent credit? Optional, for report display."
+            },
+            "party2_claims_dependent": {
+                "type": "string",
+                "enum": ["Yes", "No"],
+                "description": "Does Party 2 claim the eligible dependent credit? Optional, for report display."
+            },
         }
     }
 }
@@ -1785,6 +1817,16 @@ SPOUSAL_REPORT_TOOL = {
                 "type": "object",
                 "description": "Detailed breakdown for LOW/MID/HIGH scenarios (optional)",
             },
+            "party1_age":             {"type": "integer", "description": "Age of Party 1"},
+            "party2_age":             {"type": "integer", "description": "Age of Party 2"},
+            "party1_province":        {"type": "string", "description": "Province of Party 1"},
+            "party2_province":        {"type": "string", "description": "Province of Party 2"},
+            "recipient_age":          {"type": "number", "description": "Recipient age at separation"},
+            "date_of_marriage":       {"type": "string", "description": "Date of marriage/cohabitation (YYYY-MM-DD)"},
+            "date_of_separation":     {"type": "string", "description": "Date of separation (YYYY-MM-DD)"},
+            "tax_year":               {"type": "integer", "description": "Tax year"},
+            "party1_claims_dependent": {"type": "string", "description": "Does Party 1 claim dependent credit (Yes/No)"},
+            "party2_claims_dependent": {"type": "string", "description": "Does Party 2 claim dependent credit (Yes/No)"},
         }
     }
 }
@@ -1831,9 +1873,17 @@ def run_spousal_calc_tool(tool_input: dict) -> dict:
             "party2_name":    p2_name,
             "party1_income":  float(tool_input["party1_gross_income"]),
             "party2_income":  float(tool_input["party2_gross_income"]),
+            "party1_age":     int(tool_input.get("party1_age", 0)),
+            "party2_age":     int(tool_input.get("party2_age", 0)),
+            "party1_province": tool_input.get("party1_province", ""),
+            "party2_province": tool_input.get("party2_province", ""),
             "payor":          result.payor,
             "recipient":      result.recipient,
             "years_married":  years,
+            "recipient_age":  recipient_age,
+            "date_of_marriage":   tool_input.get("date_of_marriage", ""),
+            "date_of_separation": tool_input.get("date_of_separation", ""),
+            "tax_year":       tool_input.get("tax_year", ""),
             "pct_low":        result.pct_low,
             "pct_med":        result.pct_med,
             "pct_high":       result.pct_high,
@@ -1925,9 +1975,17 @@ def run_spousal_calc_tool(tool_input: dict) -> dict:
             "party2_name":    p2_name,
             "party1_income":  p1_gross,
             "party2_income":  p2_gross,
+            "party1_age":     p1_age,
+            "party2_age":     p2_age,
+            "party1_province": tool_input.get("party1_province", ""),
+            "party2_province": tool_input.get("party2_province", ""),
             "payor":          result.payor,
             "recipient":      result.recipient,
             "years_married":  years,
+            "recipient_age":  r_age,
+            "date_of_marriage":   tool_input.get("date_of_marriage", ""),
+            "date_of_separation": tool_input.get("date_of_separation", ""),
+            "tax_year":       tool_input.get("tax_year", ""),
             "pct_low":        result.pct_low,
             "pct_med":        result.pct_med,
             "pct_high":       result.pct_high,
@@ -2026,9 +2084,19 @@ def run_spousal_calc_tool(tool_input: dict) -> dict:
         "party2_name":          p2_name,
         "party1_income":        p1_gross,
         "party2_income":        p2_gross,
+        "party1_age":           int(tool_input.get("party1_age", 0)),
+        "party2_age":           int(tool_input.get("party2_age", 0)),
+        "party1_province":      tool_input.get("party1_province", ""),
+        "party2_province":      tool_input.get("party2_province", ""),
+        "party1_claims_dependent": tool_input.get("party1_claims_dependent", ""),
+        "party2_claims_dependent": tool_input.get("party2_claims_dependent", ""),
         "payor":                payor_name,
         "recipient":            recip_name,
         "years_married":        years,
+        "recipient_age":        recip_age,
+        "date_of_marriage":     tool_input.get("date_of_marriage", ""),
+        "date_of_separation":   tool_input.get("date_of_separation", ""),
+        "tax_year":             tool_input.get("tax_year", ""),
         "child_support_paid":   result.monthly_cs_paid,
         "monthly_cs_paid":      result.monthly_cs_paid,
         "spousal_low_monthly":  result.monthly_low,
@@ -2043,8 +2111,46 @@ def run_spousal_calc_tool(tool_input: dict) -> dict:
         "annual_low":           result.annual_low,
         "annual_mid":           result.annual_mid,
         "annual_high":          result.annual_high,
+        # INDI breakdown for all scenarios
+        "payor_indi_low":       result.payor_indi_low,
         "payor_indi_mid":       result.payor_indi_mid,
+        "payor_indi_high":      result.payor_indi_high,
+        "recipient_indi_low":   result.recipient_indi_low,
         "recipient_indi_mid":   result.recipient_indi_mid,
+        "recipient_indi_high":  result.recipient_indi_high,
+        # Taxes for all scenarios
+        "payor_taxes_low":      result.payor_taxes_low,
+        "payor_taxes_mid":      result.payor_taxes_mid,
+        "payor_taxes_high":     result.payor_taxes_high,
+        "recipient_taxes_low":  result.recipient_taxes_low,
+        "recipient_taxes_mid":  result.recipient_taxes_mid,
+        "recipient_taxes_high": result.recipient_taxes_high,
+        # Benefits for all scenarios
+        "payor_benefits_low":   result.payor_benefits_low,
+        "payor_benefits_mid":   result.payor_benefits_mid,
+        "payor_benefits_high":  result.payor_benefits_high,
+        "recipient_benefits_low":  result.recipient_benefits_low,
+        "recipient_benefits_mid":  result.recipient_benefits_mid,
+        "recipient_benefits_high": result.recipient_benefits_high,
+        # Party 1/Party 2 oriented keys (for PDF columns matching frontend)
+        "party1_taxes_low":     result.payor_taxes_low if payor_is_party1 else result.recipient_taxes_low,
+        "party1_taxes_mid":     result.payor_taxes_mid if payor_is_party1 else result.recipient_taxes_mid,
+        "party1_taxes_high":    result.payor_taxes_high if payor_is_party1 else result.recipient_taxes_high,
+        "party2_taxes_low":     result.recipient_taxes_low if payor_is_party1 else result.payor_taxes_low,
+        "party2_taxes_mid":     result.recipient_taxes_mid if payor_is_party1 else result.payor_taxes_mid,
+        "party2_taxes_high":    result.recipient_taxes_high if payor_is_party1 else result.payor_taxes_high,
+        "party1_benefits_low":  result.payor_benefits_low if payor_is_party1 else result.recipient_benefits_low,
+        "party1_benefits_mid":  result.payor_benefits_mid if payor_is_party1 else result.recipient_benefits_mid,
+        "party1_benefits_high": result.payor_benefits_high if payor_is_party1 else result.recipient_benefits_high,
+        "party2_benefits_low":  result.recipient_benefits_low if payor_is_party1 else result.payor_benefits_low,
+        "party2_benefits_mid":  result.recipient_benefits_mid if payor_is_party1 else result.payor_benefits_mid,
+        "party2_benefits_high": result.recipient_benefits_high if payor_is_party1 else result.payor_benefits_high,
+        "party1_indi_low":      result.payor_indi_low if payor_is_party1 else result.recipient_indi_low,
+        "party1_indi_mid":      result.payor_indi_mid if payor_is_party1 else result.recipient_indi_mid,
+        "party1_indi_high":     result.payor_indi_high if payor_is_party1 else result.recipient_indi_high,
+        "party2_indi_low":      result.recipient_indi_low if payor_is_party1 else result.payor_indi_low,
+        "party2_indi_mid":      result.recipient_indi_mid if payor_is_party1 else result.payor_indi_mid,
+        "party2_indi_high":     result.recipient_indi_high if payor_is_party1 else result.payor_indi_high,
         "duration_label":       f"{result.duration_low} – {result.duration_high} years",
         "approximate":          has_approx,
         "children":             [{"name": c.get("name", ""), "dob": c["date_of_birth"], "custody_arrangement": c["custody_arrangement"]} for c in children_raw],
