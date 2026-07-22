@@ -75,6 +75,10 @@ function renderText(text) {
     .replace(/>/g, "&gt;");
   return escaped
     .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
+    .replace(
+      /\[(.+?)\]\((\/download-report\/[^)]+)\)/g,
+      `<a class="mw-download-btn" href="${CALCULATOR_API}$2" target="_blank" download>$1</a>`
+    )
     .replace(/\n/g, "<br/>");
 }
 
