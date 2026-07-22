@@ -236,6 +236,21 @@ header span { color: #6c8fdb; }
   cursor: pointer;
 }
 
+/* ── Download button ── */
+.download-btn {
+  display: inline-block;
+  margin-top: 10px;
+  padding: 10px 20px;
+  background: #1a1a2e;
+  color: #fff !important;
+  border-radius: 8px;
+  text-decoration: none;
+  font-size: 1rem;
+  font-weight: 600;
+  transition: background .15s;
+}
+.download-btn:hover { background: #2c2c4e; }
+
 /* ── Mobile ── */
 @media (max-width: 600px) {
   .bubble { max-width: 88%; }
