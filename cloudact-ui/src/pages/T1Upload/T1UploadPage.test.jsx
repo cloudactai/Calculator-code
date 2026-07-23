@@ -137,6 +137,7 @@ test("saving sends Background and IncomeAndBenefits patches to the chosen matter
   expect(income.financialYear).toBe("2025");
   expect(income.client.income[0]).toEqual({
     type: "Employment income",
+    line: "10100",
     yearlyAmount: "85000.00",
     monthlyAmount: "7083.33",
   });

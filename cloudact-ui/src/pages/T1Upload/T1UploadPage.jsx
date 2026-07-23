@@ -137,6 +137,9 @@ function buildPatches(data) {
     .filter((l) => String(l.label || "").trim() && String(l.amount || "").trim())
     .map((l) => ({
       type: String(l.label).trim(),
+      // Keep the CRA line number (e.g. "10100") — it's the key the calculator
+      // and Form 13's line fields use to categorise income.
+      line: String(l.line || "").trim(),
       yearlyAmount: String(l.amount).trim(),
       monthlyAmount: monthlyFromYearly(l.amount),
     }));
