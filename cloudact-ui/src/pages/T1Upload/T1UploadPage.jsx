@@ -438,8 +438,8 @@ export default function T1UploadPage() {
                   <div className="mw-chat-row__label">AI Assistant</div>
                   <div className="mw-chat-bubble t1-review">
                     <p className="t1-review__intro">
-                      Please find all extracted data listed below. You can
-                      review and make changes before saving.
+                      Based on documents provided, we have imputed the following
+                      income to Party 1. Please review and edit:
                     </p>
 
                     <div className="t1-review__card">
