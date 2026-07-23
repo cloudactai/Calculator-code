@@ -58,7 +58,10 @@ const EXTRACTION = {
     email: "",
     spouseName: "Jamie Smith",
   },
-  incomeLines: [{ line: "10100", label: "Employment income", amount: "85000.00" }],
+  incomeLines: [
+    { line: "10100", label: "Employment income", amount: "85000.00" },
+    { line: "12600", label: "Rental income", amount: "12000.00" },
+  ],
   totalIncome: "86000.00",
   netIncome: "82000.00",
   taxableIncome: "80000.00",
@@ -136,11 +139,20 @@ test("saving sends Background and IncomeAndBenefits patches to the chosen matter
 
   const income = action.payload.patches[1].data;
   expect(income.financialYear).toBe("2025");
+  // Income lines are saved with the app's canonical type (matching the intake
+  // dropdown + Form 13 adapter) and the CRA line number.
   expect(income.client.income[0]).toEqual({
-    type: "Employment income",
+    type: "Employment income (before deductions)",
     line: "10100",
     yearlyAmount: "85000.00",
     monthlyAmount: "7083.33",
+  });
+  // A line with no dedicated category (rental) maps to the recognised catch-all.
+  expect(income.client.income[1]).toEqual({
+    type: "Other sources of income",
+    line: "12600",
+    yearlyAmount: "12000.00",
+    monthlyAmount: "1000.00",
   });
 });
 

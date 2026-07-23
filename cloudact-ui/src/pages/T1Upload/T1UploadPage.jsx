@@ -98,6 +98,44 @@ function normalizeExtraction(extracted) {
   };
 }
 
+// Map a CRA T1 line number to the app's canonical income-type label — the exact
+// strings the intake dropdown and the Form 13 prefill adapter recognise. This is
+// what lets T1 income flow into Form 13's income lines (and, via the saved line
+// number, the calculator's categories). Lines without a dedicated category fall
+// back to "Other sources of income" so they still count.
+const LINE_TO_INCOME_TYPE = {
+  "10100": "Employment income (before deductions)",
+  "10400": "Employment income (before deductions)",
+  "10120": "Commissions, tips and bonuses",
+  "11300": "Pension income (including CPP and OAS)",
+  "11400": "Pension income (including CPP and OAS)",
+  "11500": "Pension income (including CPP and OAS)",
+  "11600": "Pension income (including CPP and OAS)",
+  "11900": "Employment insurance benefits",
+  "12000": "Interest and investment income",
+  "12010": "Interest and investment income",
+  "12100": "Interest and investment income",
+  "12200": "Self-employment income",
+  "12700": "Interest and investment income",
+  "12800": "Spousal support received from a former spouse/partner",
+  "13500": "Self-employment income",
+  "13700": "Self-employment income",
+  "13900": "Self-employment income",
+  "14100": "Self-employment income",
+  "14300": "Self-employment income",
+  "14400": "Workers compensation benefits",
+  "14500": "Social assistance income (including ODSP payments)",
+};
+
+function canonicalIncomeType(line, label) {
+  const key = String(line || "").trim();
+  // A T1-extracted row always carries a line number; map it to a recognised
+  // category (catch-all for lines with no dedicated one). A user-added row with
+  // no line keeps whatever type they typed.
+  if (!key) return String(label || "").trim() || "Other sources of income";
+  return LINE_TO_INCOME_TYPE[key] || "Other sources of income";
+}
+
 /**
  * Convert the (user-reviewed) extraction into patch_matter_intake patches —
  * the same section shapes the AI intake agent saves, so the T1 data lands in
@@ -136,9 +174,10 @@ function buildPatches(data) {
   const income = (data.incomeLines || [])
     .filter((l) => String(l.label || "").trim() && String(l.amount || "").trim())
     .map((l) => ({
-      type: String(l.label).trim(),
-      // Keep the CRA line number (e.g. "10100") — it's the key the calculator
-      // and Form 13's line fields use to categorise income.
+      // Save the app's canonical income type (so it matches the intake dropdown
+      // and fills Form 13's income lines), keeping the CRA line number for the
+      // calculator's line-based categories.
+      type: canonicalIncomeType(l.line, l.label),
       line: String(l.line || "").trim(),
       yearlyAmount: String(l.amount).trim(),
       monthlyAmount: monthlyFromYearly(l.amount),
