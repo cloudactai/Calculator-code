@@ -95,9 +95,6 @@ function normalizeExtraction(extracted) {
     taxYear: ex.taxYear || "",
     taxpayer,
     incomeLines,
-    totalIncome: ex.totalIncome || "",
-    netIncome: ex.netIncome || "",
-    taxableIncome: ex.taxableIncome || "",
   };
 }
 
@@ -542,28 +539,6 @@ export default function T1UploadPage() {
                           </button>
                         )}
                       </div>
-
-                      <div className="t1-review__section">
-                        <h4>
-                          Totals <span className="t1-review__note">reference only</span>
-                        </h4>
-                        <div className="t1-review__grid">
-                          {[
-                            ["totalIncome", "Total income (15000)"],
-                            ["netIncome", "Net income (23600)"],
-                            ["taxableIncome", "Taxable income (26000)"],
-                          ].map(([key, label]) => (
-                            <label key={key}>
-                              {label}
-                              <input
-                                value={data[key]}
-                                disabled={reviewLocked}
-                                onChange={(e) => setTopField(key, e.target.value)}
-                              />
-                            </label>
-                          ))}
-                        </div>
-                      </div>
                     </div>
 
                     {(stage === "review" || stage === "saving") && (
@@ -610,9 +585,8 @@ export default function T1UploadPage() {
                         </div>
                         <span className="t1-savebar__hint">
                           The client's identification, marital status and income lines are
-                          saved into the matter's intake. The totals (total, net and
-                          taxable income) are shown for reference only. The uploaded file
-                          itself is never stored.
+                          saved into the matter's intake. The uploaded file itself is
+                          never stored.
                         </span>
                         {saveError && <span className="t1-error">{saveError}</span>}
                       </div>
