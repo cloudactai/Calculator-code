@@ -36,6 +36,7 @@ jest.mock("../../utils/Apis/matters/saveMatterInformation/saveMattersActions", (
 let mockLocationState = null;
 jest.mock("react-router-dom", () => ({
   useLocation: () => ({ state: mockLocationState }),
+  useHistory: () => ({ push: jest.fn(), goBack: jest.fn() }),
 }));
 
 import T1UploadPage from "./T1UploadPage";

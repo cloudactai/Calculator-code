@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { useLocation } from "react-router-dom";
+import { useHistory, useLocation } from "react-router-dom";
 import Layout from "../../components/LayoutComponents/Layout";
 import { CALCULATOR_API } from "../../config";
 import { getAllMatters } from "../../utils/Apis/matters/getMatters/getMattersActions";
@@ -157,6 +157,7 @@ function buildPatches(data) {
 export default function T1UploadPage() {
   const dispatch = useDispatch();
   const location = useLocation();
+  const history = useHistory();
   const { response } = useSelector((state) => state.userProfileInfo);
   const userMatters = useSelector(selectMattersData);
   const matters = Array.isArray(userMatters?.body) ? userMatters.body : [];
@@ -202,6 +203,11 @@ export default function T1UploadPage() {
 
   function pickFile() {
     if (fileInputRef.current) fileInputRef.current.click();
+  }
+
+  function handleBack() {
+    if (lockedMatter) history.push(`/single-matter/${lockedMatter}`);
+    else history.goBack();
   }
 
   async function handleFileChosen(e) {
@@ -336,7 +342,24 @@ export default function T1UploadPage() {
     <Layout title={`Welcome ${response?.username ? response.username : ""} `}>
       <div className="single-matter panel trans has-chat t1-page">
         <div className="pHead">
-          <div className="sm-chat-head">
+          <div className="sm-chat-head t1-page__head">
+            <button type="button" className="t1-back-btn" onClick={handleBack}>
+              <svg
+                width="18"
+                height="18"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                aria-hidden="true"
+              >
+                <path d="M19 12H5" />
+                <path d="M12 19l-7-7 7-7" />
+              </svg>
+              Back to Tasks
+            </button>
             <h3 className="sm-chat-head__title">T1 Upload</h3>
           </div>
           <span className="t1-page__tagline">

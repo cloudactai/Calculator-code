@@ -14,6 +14,32 @@
   color: #7a7f95;
 }
 
+/* Header: Back to Tasks on the left, then the title. */
+.t1-page__head {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+}
+
+.t1-back-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: transparent;
+  border: none;
+  color: inherit;
+  font: inherit;
+  font-size: 14px;
+  cursor: pointer;
+  padding: 4px 0;
+  opacity: 0.85;
+  transition: opacity 0.2s ease;
+}
+
+.t1-back-btn:hover {
+  opacity: 1;
+}
+
 /* ── User-side upload box ─────────────────────────────────────────────────── */
 
 .t1-upload-box {
