@@ -129,6 +129,7 @@ test("saving sends Background and IncomeAndBenefits patches to the chosen matter
   expect(background.name).toBe("Alex Smith");
   expect(background.address).toBe("12 Main St, Toronto");
   expect(background.poBox).toBe("PO 45");
+  expect(background.maritalStatus).toBe("Separated");
   // Spouse from the T1 becomes the opposing party.
   expect(action.payload.patches[0].data.opposingParty.name).toBe("Jamie Smith");
 

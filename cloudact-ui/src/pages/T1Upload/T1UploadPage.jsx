@@ -122,6 +122,7 @@ function buildPatches(data) {
   if (t.postalCode) client.postalCode = t.postalCode;
   if (t.phone) client.phone = t.phone;
   if (t.email) client.email = t.email;
+  if (String(t.maritalStatus || "").trim()) client.maritalStatus = String(t.maritalStatus).trim();
 
   // The taxpayer's spouse (per the T1) is the opposing party on the matter.
   const opposingParty = {};
@@ -437,9 +438,8 @@ export default function T1UploadPage() {
                   <div className="mw-chat-row__label">AI Assistant</div>
                   <div className="mw-chat-bubble t1-review">
                     <p className="t1-review__intro">
-                      Done! Here's everything I found on the T1. It's all
-                      editable — correct anything I misread or remove lines you
-                      don't need, then choose the matter to save it to.
+                      Please find all extracted data listed below. You can
+                      review and make changes before saving.
                     </p>
 
                     <div className="t1-review__card">
@@ -609,9 +609,10 @@ export default function T1UploadPage() {
                           </button>
                         </div>
                         <span className="t1-savebar__hint">
-                          The client's identification and income lines are saved into the
-                          matter's intake. Marital status and totals are shown for
-                          reference only. The uploaded file itself is never stored.
+                          The client's identification, marital status and income lines are
+                          saved into the matter's intake. The totals (total, net and
+                          taxable income) are shown for reference only. The uploaded file
+                          itself is never stored.
                         </span>
                         {saveError && <span className="t1-error">{saveError}</span>}
                       </div>
