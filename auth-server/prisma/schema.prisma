@@ -48,6 +48,7 @@ model User {
 
   matters                    Matter[]
   savedCalculations          SavedCalculation[]
+  calculationReports         MatterCalculationReport[]
 }
 
 // A family-law matter. Mirrors the legacy f_ca_matters row shape the UI
@@ -78,6 +79,7 @@ model Matter {
   formDocuments        MatterFormDocument[]
   taskStates           MatterTaskState[]
   calculations         SavedCalculation[] @relation("MatterCalculations")
+  calculationReports   MatterCalculationReport[]
 
   @@unique([userId, matterNumber])
   @@index([userId])
@@ -243,4 +245,27 @@ model MatterTaskState {
   matter    Matter   @relation(fields: [matterId], references: [id], onDelete: Cascade)
 
   @@unique([matterId, taskKey])
+}
+
+// A saved calculation report with the generated PDF. Stores both the
+// input/output data (so the report can be regenerated) and the PDF bytes
+// (for instant download without re-running the calculation).
+model MatterCalculationReport {
+  id               Int      @id @default(autoincrement())
+  userId           String
+  matterId         Int
+  calculationType  String   // "child_support", "spousal_support"
+  taxYear          String?
+  label            String?  // user-friendly name, e.g. "Smith v Jones - Jan 2026"
+  inputData        Json     // calculation inputs (incomes, children, provinces, etc.)
+  resultData       Json     // calculation outputs (amounts, scenario, net payer, etc.)
+  pdfBytes         Bytes?   // the generated PDF report
+  pdfFilename      String?  // original filename for download headers
+  createdAt        DateTime @default(now())
+
+  user             User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  matter           Matter   @relation(fields: [matterId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([matterId])
 }

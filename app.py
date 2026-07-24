@@ -7,6 +7,7 @@ Then open:  http://localhost:5050
 """
 from dotenv import load_dotenv
 load_dotenv()
+import base64
 import json
 import math
 import os
@@ -455,6 +456,12 @@ def run_calc_tool(tool_input):
     try:
         filename = generate_child_support_report(calc_result)
         calc_result["download_url"] = f"/download-report/{filename}"
+        # Include base64-encoded PDF bytes for persistence to the auth-server
+        pdf_path = os.path.join(REPORTS_DIR, filename)
+        if os.path.isfile(pdf_path):
+            with open(pdf_path, "rb") as f:
+                calc_result["pdf_base64"] = base64.b64encode(f.read()).decode("ascii")
+            calc_result["pdf_filename"] = filename
     except Exception as e:
         print(f"[child-support] PDF generation error: {e}", flush=True)
 
@@ -470,6 +477,8 @@ def chat():
         client = anthropic.Anthropic()  # reads ANTHROPIC_API_KEY from env
 
         # Loop — normally exits after 2 iterations (1 tool call + 1 reply)
+        last_calc_result = None  # track the most recent calculation result
+
         for _ in range(10):
 
             response = client.messages.create(
@@ -496,17 +505,24 @@ def chat():
                 reply = "".join(
                     b["text"] for b in assistant_content if b.get("type") == "text"
                 )
-                return jsonify({"reply": reply, "messages": messages})
+                resp = {"reply": reply, "messages": messages}
+                # Include the calculation result so the frontend can persist it
+                if last_calc_result:
+                    resp["calculationResult"] = last_calc_result
+                return jsonify(resp)
 
             # Claude called the tool — run the calculator and feed the result back
             tool_results = []
             for block in assistant_content:
                 if block.get("type") == "tool_use":
                     result = run_calc_tool(block["input"])
+                    last_calc_result = result
+                    # Strip pdf_base64 from tool result sent to Claude (it can't use it)
+                    tool_content = {k: v for k, v in result.items() if k != "pdf_base64"}
                     tool_results.append({
                         "type":        "tool_result",
                         "tool_use_id": block["id"],
-                        "content":     json.dumps(result),
+                        "content":     json.dumps(tool_content),
                     })
 
             messages.append({"role": "user", "content": tool_results})
@@ -1906,6 +1922,11 @@ def run_spousal_calc_tool(tool_input: dict) -> dict:
         try:
             filename = generate_spousal_support_report(calc_result)
             calc_result["download_url"] = f"/download-report/{filename}"
+            pdf_path = os.path.join(REPORTS_DIR, filename)
+            if os.path.isfile(pdf_path):
+                with open(pdf_path, "rb") as f:
+                    calc_result["pdf_base64"] = base64.b64encode(f.read()).decode("ascii")
+                calc_result["pdf_filename"] = filename
         except Exception as e:
             print(f"[spousal] PDF generation error: {e}", flush=True)
         return calc_result
@@ -2008,6 +2029,11 @@ def run_spousal_calc_tool(tool_input: dict) -> dict:
         try:
             filename = generate_spousal_support_report(calc_result)
             calc_result["download_url"] = f"/download-report/{filename}"
+            pdf_path = os.path.join(REPORTS_DIR, filename)
+            if os.path.isfile(pdf_path):
+                with open(pdf_path, "rb") as f:
+                    calc_result["pdf_base64"] = base64.b64encode(f.read()).decode("ascii")
+                calc_result["pdf_filename"] = filename
         except Exception as e:
             print(f"[spousal] PDF generation error: {e}", flush=True)
         return calc_result
@@ -2159,6 +2185,11 @@ def run_spousal_calc_tool(tool_input: dict) -> dict:
     try:
         filename = generate_spousal_support_report(calc_result)
         calc_result["download_url"] = f"/download-report/{filename}"
+        pdf_path = os.path.join(REPORTS_DIR, filename)
+        if os.path.isfile(pdf_path):
+            with open(pdf_path, "rb") as f:
+                calc_result["pdf_base64"] = base64.b64encode(f.read()).decode("ascii")
+            calc_result["pdf_filename"] = filename
     except Exception as e:
         print(f"[spousal] PDF generation error: {e}", flush=True)
 
@@ -2171,6 +2202,7 @@ def spousal_chat():
         messages = body.get("messages", [])
 
         client = anthropic.Anthropic()
+        last_calc_result = None
 
         for _ in range(10):
             response = client.messages.create(
@@ -2198,18 +2230,23 @@ def spousal_chat():
                 print(f"[spousal-chat] Final reply has download link: {has_download}", flush=True)
                 if not has_download:
                     print(f"[spousal-chat] Reply (last 200 chars): ...{reply[-200:]}", flush=True)
-                return jsonify({"reply": reply, "messages": messages})
+                resp = {"reply": reply, "messages": messages}
+                if last_calc_result:
+                    resp["calculationResult"] = last_calc_result
+                return jsonify(resp)
 
             tool_results = []
             for block in assistant_content:
                 if block.get("type") == "tool_use":
                     print(f"[spousal-chat] Tool called: {block['name']}", flush=True)
                     result = run_spousal_calc_tool(block["input"])
+                    last_calc_result = result
                     print(f"[spousal-chat] Tool result keys: {list(result.keys()) if isinstance(result, dict) else 'not dict'}", flush=True)
+                    tool_content = {k: v for k, v in result.items() if k != "pdf_base64"} if isinstance(result, dict) else result
                     tool_results.append({
                         "type":        "tool_result",
                         "tool_use_id": block["id"],
-                        "content":     json.dumps(result),
+                        "content":     json.dumps(tool_content),
                     })
 
             messages.append({"role": "user", "content": tool_results})
