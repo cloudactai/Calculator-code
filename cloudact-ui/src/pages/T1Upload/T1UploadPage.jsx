@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
+import { useHistory, useLocation } from "react-router-dom";
 import Layout from "../../components/LayoutComponents/Layout";
 import { CALCULATOR_API } from "../../config";
 import { getAllMatters } from "../../utils/Apis/matters/getMatters/getMattersActions";
@@ -48,19 +49,20 @@ const EMPTY_TAXPAYER = {
   dateOfBirth: "",
   maritalStatus: "",
   address: "",
+  poBox: "",
   city: "",
   province: "",
   postalCode: "",
   phone: "",
   email: "",
+  spouseName: "",
 };
 
 const WELCOME_TEXT =
-  "Hi! I can read a client's T1 Income Tax and Benefit Return and pull the " +
-  "intake details out for you — no retyping. Upload the T1 below (a PDF or a " +
-  "clear photo works) and I'll extract the client's identification and " +
-  "income information. You'll get to review and edit everything I find " +
-  "before anything is saved.";
+  "This tool reads a client's T1 Income Tax and Benefit Return and extracts " +
+  "the intake details automatically. Upload the T1 below as a PDF or a clear " +
+  "photo. You can review and edit all extracted identification and income " +
+  "information before anything is saved.";
 
 function fileMediaType(file) {
   if (ACCEPTED_MEDIA_TYPES.includes(file.type)) return file.type;
@@ -93,10 +95,45 @@ function normalizeExtraction(extracted) {
     taxYear: ex.taxYear || "",
     taxpayer,
     incomeLines,
-    totalIncome: ex.totalIncome || "",
-    netIncome: ex.netIncome || "",
-    taxableIncome: ex.taxableIncome || "",
   };
+}
+
+// Map a CRA T1 line number to the app's canonical income-type label — the exact
+// strings the intake dropdown and the Form 13 prefill adapter recognise. This is
+// what lets T1 income flow into Form 13's income lines (and, via the saved line
+// number, the calculator's categories). Lines without a dedicated category fall
+// back to "Other sources of income" so they still count.
+const LINE_TO_INCOME_TYPE = {
+  "10100": "Employment income (before deductions)",
+  "10400": "Employment income (before deductions)",
+  "10120": "Commissions, tips and bonuses",
+  "11300": "Pension income (including CPP and OAS)",
+  "11400": "Pension income (including CPP and OAS)",
+  "11500": "Pension income (including CPP and OAS)",
+  "11600": "Pension income (including CPP and OAS)",
+  "11900": "Employment insurance benefits",
+  "12000": "Interest and investment income",
+  "12010": "Interest and investment income",
+  "12100": "Interest and investment income",
+  "12200": "Self-employment income",
+  "12700": "Interest and investment income",
+  "12800": "Spousal support received from a former spouse/partner",
+  "13500": "Self-employment income",
+  "13700": "Self-employment income",
+  "13900": "Self-employment income",
+  "14100": "Self-employment income",
+  "14300": "Self-employment income",
+  "14400": "Workers compensation benefits",
+  "14500": "Social assistance income (including ODSP payments)",
+};
+
+function canonicalIncomeType(line, label) {
+  const key = String(line || "").trim();
+  // A T1-extracted row always carries a line number; map it to a recognised
+  // category (catch-all for lines with no dedicated one). A user-added row with
+  // no line keeps whatever type they typed.
+  if (!key) return String(label || "").trim() || "Other sources of income";
+  return LINE_TO_INCOME_TYPE[key] || "Other sources of income";
 }
 
 /**
@@ -115,21 +152,33 @@ function buildPatches(data) {
   if (t.dateOfBirth) client.dateOfBirth = t.dateOfBirth;
   const address = [t.address, t.city].map((s) => String(s || "").trim()).filter(Boolean).join(", ");
   if (address) client.address = address;
+  if (String(t.poBox || "").trim()) client.poBox = String(t.poBox).trim();
   if (t.province) client.province = t.province;
   if (t.postalCode) client.postalCode = t.postalCode;
   if (t.phone) client.phone = t.phone;
   if (t.email) client.email = t.email;
-  if (Object.keys(client).length > 0) {
-    patches.push({
-      section: "Background",
-      data: { client: { role: "Client", ...client } },
-    });
+  if (String(t.maritalStatus || "").trim()) client.maritalStatus = String(t.maritalStatus).trim();
+
+  // The taxpayer's spouse (per the T1) is the opposing party on the matter.
+  const opposingParty = {};
+  const spouseName = String(t.spouseName || "").trim();
+  if (spouseName) opposingParty.name = spouseName;
+
+  const background = {};
+  if (Object.keys(client).length > 0) background.client = { role: "Client", ...client };
+  if (Object.keys(opposingParty).length > 0) background.opposingParty = { role: "Opposing Party", ...opposingParty };
+  if (Object.keys(background).length > 0) {
+    patches.push({ section: "Background", data: background });
   }
 
   const income = (data.incomeLines || [])
     .filter((l) => String(l.label || "").trim() && String(l.amount || "").trim())
     .map((l) => ({
-      type: String(l.label).trim(),
+      // Save the app's canonical income type (so it matches the intake dropdown
+      // and fills Form 13's income lines), keeping the CRA line number for the
+      // calculator's line-based categories.
+      type: canonicalIncomeType(l.line, l.label),
+      line: String(l.line || "").trim(),
       yearlyAmount: String(l.amount).trim(),
       monthlyAmount: monthlyFromYearly(l.amount),
     }));
@@ -146,9 +195,17 @@ function buildPatches(data) {
 
 export default function T1UploadPage() {
   const dispatch = useDispatch();
+  const location = useLocation();
+  const history = useHistory();
   const { response } = useSelector((state) => state.userProfileInfo);
   const userMatters = useSelector(selectMattersData);
   const matters = Array.isArray(userMatters?.body) ? userMatters.body : [];
+
+  // When launched from a matter's task list, the matter is fixed — the T1 data
+  // saves straight into it and the matter picker is hidden.
+  const lockedMatter = location.state?.matterNumber
+    ? String(location.state.matterNumber)
+    : "";
 
   // upload → scanning → review → saving → saved | declined ("error" pairs with uploadError)
   const [stage, setStage] = useState("upload");
@@ -156,7 +213,7 @@ export default function T1UploadPage() {
   const [data, setData] = useState(null); // editable extraction
   const [uploadError, setUploadError] = useState(null);
   const [saveError, setSaveError] = useState(null);
-  const [selectedMatter, setSelectedMatter] = useState("");
+  const [selectedMatter, setSelectedMatter] = useState(lockedMatter);
   const [savedMatter, setSavedMatter] = useState("");
 
   const fileInputRef = useRef(null);
@@ -178,13 +235,18 @@ export default function T1UploadPage() {
     setData(null);
     setUploadError(null);
     setSaveError(null);
-    setSelectedMatter("");
+    setSelectedMatter(lockedMatter);
     setSavedMatter("");
     if (fileInputRef.current) fileInputRef.current.value = "";
   }
 
   function pickFile() {
     if (fileInputRef.current) fileInputRef.current.click();
+  }
+
+  function handleBack() {
+    if (lockedMatter) history.push(`/single-matter/${lockedMatter}`);
+    else history.goBack();
   }
 
   async function handleFileChosen(e) {
@@ -319,7 +381,24 @@ export default function T1UploadPage() {
     <Layout title={`Welcome ${response?.username ? response.username : ""} `}>
       <div className="single-matter panel trans has-chat t1-page">
         <div className="pHead">
-          <div className="sm-chat-head">
+          <div className="sm-chat-head t1-page__head">
+            <button type="button" className="t1-back-btn" onClick={handleBack}>
+              <svg
+                width="18"
+                height="18"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                aria-hidden="true"
+              >
+                <path d="M19 12H5" />
+                <path d="M12 19l-7-7 7-7" />
+              </svg>
+              Back to Tasks
+            </button>
             <h3 className="sm-chat-head__title">T1 Upload</h3>
           </div>
           <span className="t1-page__tagline">
@@ -421,9 +500,8 @@ export default function T1UploadPage() {
                   <div className="mw-chat-row__label">AI Assistant</div>
                   <div className="mw-chat-bubble t1-review">
                     <p className="t1-review__intro">
-                      Done! Here's everything I found on the T1. It's all
-                      editable — correct anything I misread or remove lines you
-                      don't need, then choose the matter to save it to.
+                      Based on documents provided, we have imputed the following
+                      income to Party 1. Please review and edit:
                     </p>
 
                     <div className="t1-review__card">
@@ -457,11 +535,13 @@ export default function T1UploadPage() {
                             ["lastName", "Last name"],
                             ["dateOfBirth", "Date of birth"],
                             ["address", "Street address"],
+                            ["poBox", "PO Box"],
                             ["city", "City"],
                             ["province", "Province"],
                             ["postalCode", "Postal code"],
                             ["phone", "Phone"],
                             ["email", "Email"],
+                            ["spouseName", "Spouse name"],
                           ].map(([key, label]) => (
                             <label key={key}>
                               {label}
@@ -524,28 +604,6 @@ export default function T1UploadPage() {
                           </button>
                         )}
                       </div>
-
-                      <div className="t1-review__section">
-                        <h4>
-                          Totals <span className="t1-review__note">reference only</span>
-                        </h4>
-                        <div className="t1-review__grid">
-                          {[
-                            ["totalIncome", "Total income (15000)"],
-                            ["netIncome", "Net income (23600)"],
-                            ["taxableIncome", "Taxable income (26000)"],
-                          ].map(([key, label]) => (
-                            <label key={key}>
-                              {label}
-                              <input
-                                value={data[key]}
-                                disabled={reviewLocked}
-                                onChange={(e) => setTopField(key, e.target.value)}
-                              />
-                            </label>
-                          ))}
-                        </div>
-                      </div>
                     </div>
 
                     {(stage === "review" || stage === "saving") && (
@@ -554,19 +612,25 @@ export default function T1UploadPage() {
                           Should I save this to a matter?
                         </span>
                         <div className="t1-savebar__controls">
-                          <select
-                            value={selectedMatter}
-                            disabled={stage === "saving"}
-                            onChange={(e) => setSelectedMatter(e.target.value)}
-                          >
-                            <option value="">Select a matter…</option>
-                            {matters.map((m) => (
-                              <option key={m.matterNumber} value={m.matterNumber}>
-                                {m.matterNumber}
-                                {m.client_id ? ` — ${m.client_id}` : ""}
-                              </option>
-                            ))}
-                          </select>
+                          {lockedMatter ? (
+                            <span className="t1-savebar__matter">
+                              Matter {lockedMatter}
+                            </span>
+                          ) : (
+                            <select
+                              value={selectedMatter}
+                              disabled={stage === "saving"}
+                              onChange={(e) => setSelectedMatter(e.target.value)}
+                            >
+                              <option value="">Select a matter…</option>
+                              {matters.map((m) => (
+                                <option key={m.matterNumber} value={m.matterNumber}>
+                                  {m.matterNumber}
+                                  {m.client_id ? ` — ${m.client_id}` : ""}
+                                </option>
+                              ))}
+                            </select>
+                          )}
                           <button
                             type="button"
                             className="btn btnPrimary rounded-pill t1-savebar__save"
@@ -585,9 +649,9 @@ export default function T1UploadPage() {
                           </button>
                         </div>
                         <span className="t1-savebar__hint">
-                          The client's identification and income lines are saved into the
-                          matter's intake. Marital status and totals are shown for
-                          reference only. The uploaded file itself is never stored.
+                          The client's identification, marital status and income lines are
+                          saved into the matter's intake. The uploaded file itself is
+                          never stored.
                         </span>
                         {saveError && <span className="t1-error">{saveError}</span>}
                       </div>
@@ -602,10 +666,11 @@ export default function T1UploadPage() {
                   <div className="mw-chat-row__label">AI Assistant</div>
                   <div className="mw-chat-bubble">
                     <span className="t1-success">
-                      ✓ Saved to matter {savedMatter}.
+                      ✓ Fields populated.
                     </span>{" "}
-                    The client's details and income now appear in that matter's
-                    intake, ready for calculations and court forms.
+                    Saved to matter {savedMatter}. The client's identification and
+                    income are now in the matter's intake and will populate the
+                    forms and calculator.
                     <div className="mw-chat-panel__starters">
                       <button className="mw-chip" onClick={resetFlow}>
                         Upload another T1
