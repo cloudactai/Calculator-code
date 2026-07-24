@@ -1,10 +1,112 @@
 {
   "included": [
     {
+      "docId": "Form00",
+      "pdf": "Form00.pdf",
+      "mapping": "Form00.json",
+      "fields": 49
+    },
+    {
+      "docId": "Form4",
+      "pdf": "Form4.pdf",
+      "mapping": "Form4.json",
+      "fields": 19
+    },
+    {
+      "docId": "Form6A",
+      "pdf": "Form6A.pdf",
+      "mapping": "Form6A.json",
+      "fields": 9
+    },
+    {
+      "docId": "Form12",
+      "pdf": "Form12.pdf",
+      "mapping": "Form12.json",
+      "fields": 24
+    },
+    {
+      "docId": "Form14D",
+      "pdf": "Form14D.pdf",
+      "mapping": "Form14D.json",
+      "fields": 20
+    },
+    {
+      "docId": "Form17",
+      "pdf": "Form17.pdf",
+      "mapping": "Form17.json",
+      "fields": 27
+    },
+    {
+      "docId": "Form20B",
+      "pdf": "Form20B.pdf",
+      "mapping": "Form20B.json",
+      "fields": 20
+    },
+    {
+      "docId": "Form22",
+      "pdf": "Form22.pdf",
+      "mapping": "Form22.json",
+      "fields": 17
+    },
+    {
+      "docId": "Form23A",
+      "pdf": "Form23A.pdf",
+      "mapping": "Form23A.json",
+      "fields": 36
+    },
+    {
+      "docId": "Form25F",
+      "pdf": "Form25F.pdf",
+      "mapping": "Form25F.json",
+      "fields": 32
+    },
+    {
+      "docId": "Form25G",
+      "pdf": "Form25G.pdf",
+      "mapping": "Form25G.json",
+      "fields": 36
+    },
+    {
+      "docId": "Form25H",
+      "pdf": "Form25H.pdf",
+      "mapping": "Form25H.json",
+      "fields": 22
+    },
+    {
+      "docId": "Form31",
+      "pdf": "Form31.pdf",
+      "mapping": "Form31.json",
+      "fields": 23
+    },
+    {
+      "docId": "Form32",
+      "pdf": "Form32.pdf",
+      "mapping": "Form32.json",
+      "fields": 34
+    },
+    {
+      "docId": "Form32_1",
+      "pdf": "Form32_1.pdf",
+      "mapping": "Form32_1.json",
+      "fields": 68
+    },
+    {
+      "docId": "Form37",
+      "pdf": "Form37.pdf",
+      "mapping": "Form37.json",
+      "fields": 26
+    },
+    {
       "docId": "Form8A",
       "pdf": "Form8A.pdf",
       "mapping": "Form8A.json",
-      "fields": 1
+      "fields": 120
+    },
+    {
+      "docId": "Form8B",
+      "pdf": "Form8B.pdf",
+      "mapping": "Form8B.json",
+      "fields": 123
     },
     {
       "docId": "Form13",
@@ -16,7 +118,7 @@
       "docId": "Form13_1",
       "pdf": "Form13_1.pdf",
       "mapping": "Form13_1.json",
-      "fields": 405
+      "fields": 435
     },
     {
       "docId": "Form13A",
@@ -28,7 +130,7 @@
       "docId": "Form13B",
       "pdf": "Form13B.pdf",
       "mapping": "Form13B.json",
-      "fields": 191
+      "fields": 192
     },
     {
       "docId": "Form6",
@@ -51,7 +153,7 @@
     {
       "docId": "Form10",
       "pdf": "Form10.pdf",
-      "mapping": "form10.json",
+      "mapping": "Form10.json",
       "fields": 83
     },
     {
@@ -64,7 +166,7 @@
       "docId": "Form14",
       "pdf": "Form14.pdf",
       "mapping": "Form14.json",
-      "fields": 15
+      "fields": 16
     },
     {
       "docId": "Form14A",
@@ -149,36 +251,29 @@
       "pdf": "Form36.pdf",
       "mapping": "Form36.json",
       "fields": 75
+    },
+    {
+      "docId": "Form36A",
+      "pdf": "Form36A.pdf",
+      "mapping": "Form36A.json",
+      "fields": 108
+    },
+    {
+      "docId": "Form36B",
+      "pdf": "Form36B.pdf",
+      "mapping": "Form36B.json",
+      "fields": 18
+    },
+    {
+      "docId": "Form27A",
+      "pdf": "Form27A.pdf",
+      "mapping": "Form27A.json",
+      "fields": 11
     }
   ],
-  "missingPdf": [
-    "Form00",
-    "Form4",
-    "Form6A",
-    "Form12",
-    "Form14D",
-    "Form17",
-    "Form20B",
-    "Form22",
-    "Form23A",
-    "Form25F",
-    "Form25G",
-    "Form25H",
-    "Form31",
-    "Form32",
-    "Form32.1",
-    "Form37",
-    "Form8B"
-  ],
-  "missingMapping": [],
-  "invalidMapping": [],
-  "unlistedPdf": [
-    "Form6_.pdf",
-    "Form8A_old.pdf",
-    "Old_Form8A.pdf",
-    "new_Form8A.pdf"
-  ],
-  "unlistedMapping": [
-    "Form8A_old.json"
-  ]
+  "excluded": [],
+  "counts": {
+    "included": 45,
+    "excluded": 0
+  }
 }
