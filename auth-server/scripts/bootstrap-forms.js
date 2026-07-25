@@ -27,36 +27,40 @@ function run(command, args) {
 }
 
 async function main() {
-  const [count, incompleteVersions, templates] = await Promise.all([
-    prisma.formTemplate.count(),
-    prisma.formTemplateVersion.count({
-      where: {
-        active: true,
-        OR: [
-          { pdfPath: null },
-          { pdfChecksum: null },
-          { mappingChecksum: null },
-        ],
+  const templates = await prisma.formTemplate.findMany({
+    select: {
+      docId: true,
+      versions: {
+        where: { active: true },
+        select: { mappingChecksum: true, pdfChecksum: true, pdfPath: true },
+        orderBy: { version: "desc" },
+        take: 1,
       },
-    }),
-    prisma.formTemplate.findMany({
-      select: { docId: true, versions: { where: { active: true }, select: { mappingChecksum: true }, orderBy: { version: "desc" }, take: 1 } },
-    }),
-  ]);
+    },
+  });
   await prisma.$disconnect();
-  // A stored mapping whose checksum no longer matches its exported file means an
-  // edited field map has not been imported yet.
-  const dbSums = new Map(templates.map((t) => [t.docId, t.versions[0]?.mappingChecksum || null]));
-  const drifted = catalog
-    .filter((item) => dbSums.has(item.docId) && dbSums.get(item.docId) !== fileMappingChecksum(item.docId))
+
+  // Determine exactly which templates need (re)importing so a deploy only does
+  // the work that changed, instead of re-importing the whole catalog every time.
+  const byDoc = new Map(templates.map((t) => [t.docId, t.versions[0] || null]));
+  const needImport = catalog
+    .filter((item) => {
+      const v = byDoc.get(item.docId);
+      if (!v) return true; // missing template/version
+      if (!v.pdfPath || !v.pdfChecksum || !v.mappingChecksum) return true; // incomplete
+      // A stored mapping whose checksum no longer matches its exported file means
+      // an edited field map has not been imported yet.
+      return v.mappingChecksum !== fileMappingChecksum(item.docId);
+    })
     .map((item) => item.docId);
-  if (count < catalog.length || incompleteVersions > 0 || drifted.length > 0) {
-    const reason = drifted.length ? `mapping changed for ${drifted.join(", ")}` : `${count}/${catalog.length} templates, ${incompleteVersions} incomplete versions`;
-    console.log(`Forms catalog requires refresh (${reason}).`);
-    run(process.execPath, [path.join(__dirname, "import-form-templates-render-safe.js")]);
-  } else {
-    console.log(`Forms catalog already complete (${count}/${catalog.length}).`);
+
+  if (needImport.length === 0) {
+    console.log(`Forms catalog already complete (${catalog.length}/${catalog.length}).`);
+    return;
   }
+  console.log(`Forms catalog requires refresh (${needImport.length} template(s): ${needImport.join(", ")}).`);
+  const docArgs = needImport.flatMap((docId) => ["--doc-id", docId]);
+  run(process.execPath, [path.join(__dirname, "import-form-templates-render-safe.js"), ...docArgs]);
 }
 
 main().catch(async (error) => { console.error(error); await prisma.$disconnect(); process.exitCode = 1; });

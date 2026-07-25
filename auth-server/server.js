@@ -11,6 +11,7 @@
 const express = require("express");
 const cors = require("cors");
 const path = require("path");
+const { spawn } = require("child_process");
 const dotenv = require("dotenv");
 dotenv.config({ path: path.join(__dirname, ".env") });
 
@@ -96,4 +97,18 @@ app.use((err, req, res, next) => {
 const PORT = process.env.PORT || 8080;
 app.listen(PORT, () => {
   console.log(`API listening on ${PORT}`);
+  // Refresh the forms catalog in the background AFTER the port is bound, so a
+  // large or slow template import can never keep the deploy from becoming
+  // healthy (Render fails a deploy that doesn't bind a port in time). The
+  // bootstrap only imports the templates that are missing or changed.
+  if (process.env.SKIP_FORMS_BOOTSTRAP === "true") return;
+  const bootstrap = spawn(process.execPath, [path.join(__dirname, "scripts", "bootstrap-forms.js")], {
+    cwd: __dirname,
+    stdio: "inherit",
+    env: process.env,
+  });
+  bootstrap.on("error", (error) => console.error("Forms bootstrap failed to start:", error.message));
+  bootstrap.on("exit", (code) => {
+    if (code) console.error(`Forms bootstrap exited with code ${code}.`);
+  });
 });
