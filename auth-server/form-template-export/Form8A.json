@@ -58,310 +58,6 @@
       "bind": "court_info.courtOfficeAddress"
     },
     {
-      "id": 1727907300028,
-      "type": "TextField",
-      "x": 34,
-      "y": 176,
-      "width": 387,
-      "height": 18,
-      "value": "",
-      "fontSize": 9,
-      "color": [
-        0,
-        0,
-        0
-      ],
-      "background": "none",
-      "border": "none",
-      "page": 1,
-      "bind": "applicant.fullLegalName"
-    },
-    {
-      "id": 1727907300035,
-      "type": "TextField",
-      "x": 34,
-      "y": 189,
-      "width": 387,
-      "height": 18,
-      "value": "",
-      "fontSize": 9,
-      "color": [
-        0,
-        0,
-        0
-      ],
-      "background": "none",
-      "border": "none",
-      "page": 1,
-      "bind": "applicant.address"
-    },
-    {
-      "id": 1727907300042,
-      "type": "TextField",
-      "x": 34,
-      "y": 202,
-      "width": 387,
-      "height": 18,
-      "value": "",
-      "fontSize": 9,
-      "color": [
-        0,
-        0,
-        0
-      ],
-      "background": "none",
-      "border": "none",
-      "page": 1,
-      "bind": "applicant.phoneAndFax"
-    },
-    {
-      "id": 1727907300049,
-      "type": "TextField",
-      "x": 34,
-      "y": 215,
-      "width": 387,
-      "height": 18,
-      "value": "",
-      "fontSize": 9,
-      "color": [
-        0,
-        0,
-        0
-      ],
-      "background": "none",
-      "border": "none",
-      "page": 1,
-      "bind": "applicant.email"
-    },
-    {
-      "id": 1727907300056,
-      "type": "TextField",
-      "x": 318,
-      "y": 176,
-      "width": 411,
-      "height": 18,
-      "value": "",
-      "fontSize": 9,
-      "color": [
-        0,
-        0,
-        0
-      ],
-      "background": "none",
-      "border": "none",
-      "page": 1,
-      "bind": "applicantsLawyer.fullLegalName"
-    },
-    {
-      "id": 1727907300063,
-      "type": "TextField",
-      "x": 318,
-      "y": 189,
-      "width": 411,
-      "height": 18,
-      "value": "",
-      "fontSize": 9,
-      "color": [
-        0,
-        0,
-        0
-      ],
-      "background": "none",
-      "border": "none",
-      "page": 1,
-      "bind": "applicantsLawyer.address"
-    },
-    {
-      "id": 1727907300070,
-      "type": "TextField",
-      "x": 318,
-      "y": 202,
-      "width": 411,
-      "height": 18,
-      "value": "",
-      "fontSize": 9,
-      "color": [
-        0,
-        0,
-        0
-      ],
-      "background": "none",
-      "border": "none",
-      "page": 1,
-      "bind": "applicantsLawyer.phoneAndFax"
-    },
-    {
-      "id": 1727907300077,
-      "type": "TextField",
-      "x": 318,
-      "y": 215,
-      "width": 411,
-      "height": 18,
-      "value": "",
-      "fontSize": 9,
-      "color": [
-        0,
-        0,
-        0
-      ],
-      "background": "none",
-      "border": "none",
-      "page": 1,
-      "bind": "applicantsLawyer.email"
-    },
-    {
-      "id": 1727907300084,
-      "type": "TextField",
-      "x": 34,
-      "y": 273,
-      "width": 387,
-      "height": 18,
-      "value": "",
-      "fontSize": 9,
-      "color": [
-        0,
-        0,
-        0
-      ],
-      "background": "none",
-      "border": "none",
-      "page": 1,
-      "bind": "respondent.fullLegalName"
-    },
-    {
-      "id": 1727907300091,
-      "type": "TextField",
-      "x": 34,
-      "y": 286,
-      "width": 387,
-      "height": 18,
-      "value": "",
-      "fontSize": 9,
-      "color": [
-        0,
-        0,
-        0
-      ],
-      "background": "none",
-      "border": "none",
-      "page": 1,
-      "bind": "respondent.address"
-    },
-    {
-      "id": 1727907300098,
-      "type": "TextField",
-      "x": 34,
-      "y": 299,
-      "width": 387,
-      "height": 18,
-      "value": "",
-      "fontSize": 9,
-      "color": [
-        0,
-        0,
-        0
-      ],
-      "background": "none",
-      "border": "none",
-      "page": 1,
-      "bind": "respondent.phoneAndFax"
-    },
-    {
-      "id": 1727907300105,
-      "type": "TextField",
-      "x": 34,
-      "y": 312,
-      "width": 387,
-      "height": 18,
-      "value": "",
-      "fontSize": 9,
-      "color": [
-        0,
-        0,
-        0
-      ],
-      "background": "none",
-      "border": "none",
-      "page": 1,
-      "bind": "respondent.email"
-    },
-    {
-      "id": 1727907300112,
-      "type": "TextField",
-      "x": 318,
-      "y": 273,
-      "width": 411,
-      "height": 18,
-      "value": "",
-      "fontSize": 9,
-      "color": [
-        0,
-        0,
-        0
-      ],
-      "background": "none",
-      "border": "none",
-      "page": 1,
-      "bind": "respondentsLawyer.fullLegalName"
-    },
-    {
-      "id": 1727907300119,
-      "type": "TextField",
-      "x": 318,
-      "y": 286,
-      "width": 411,
-      "height": 18,
-      "value": "",
-      "fontSize": 9,
-      "color": [
-        0,
-        0,
-        0
-      ],
-      "background": "none",
-      "border": "none",
-      "page": 1,
-      "bind": "respondentsLawyer.address"
-    },
-    {
-      "id": 1727907300126,
-      "type": "TextField",
-      "x": 318,
-      "y": 299,
-      "width": 411,
-      "height": 18,
-      "value": "",
-      "fontSize": 9,
-      "color": [
-        0,
-        0,
-        0
-      ],
-      "background": "none",
-      "border": "none",
-      "page": 1,
-      "bind": "respondentsLawyer.phoneAndFax"
-    },
-    {
-      "id": 1727907300133,
-      "type": "TextField",
-      "x": 318,
-      "y": 312,
-      "width": 411,
-      "height": 18,
-      "value": "",
-      "fontSize": 9,
-      "color": [
-        0,
-        0,
-        0
-      ],
-      "background": "none",
-      "border": "none",
-      "page": 1,
-      "bind": "respondentsLawyer.email"
-    },
-    {
       "id": 1727907300140,
       "type": "TextField",
       "x": 258,
@@ -2212,6 +1908,101 @@
       "background": "none",
       "border": "none",
       "page": 5
+    },
+    {
+      "id": 1730000001000,
+      "type": "TextArea",
+      "x": 34,
+      "y": 173,
+      "width": 387.0,
+      "height": 85.5,
+      "value": "",
+      "fontSize": 10,
+      "color": [
+        0,
+        0,
+        0
+      ],
+      "background": "none",
+      "border": "none",
+      "page": 1,
+      "bind": "applicant.fullLegalName,applicant.address,applicant.municipality,applicant.phoneAndFax,applicant.email"
+    },
+    {
+      "id": 1730000002000,
+      "type": "TextArea",
+      "x": 318,
+      "y": 173,
+      "width": 411.0,
+      "height": 85.5,
+      "value": "",
+      "fontSize": 10,
+      "color": [
+        0,
+        0,
+        0
+      ],
+      "background": "none",
+      "border": "none",
+      "page": 1,
+      "bind": "applicantsLawyer.fullLegalName,applicantsLawyer.address,applicantsLawyer.municipality,applicantsLawyer.phoneAndFax,applicantsLawyer.email"
+    },
+    {
+      "id": 1730000003000,
+      "type": "TextArea",
+      "x": 34,
+      "y": 270,
+      "width": 387.0,
+      "height": 85.5,
+      "value": "",
+      "fontSize": 10,
+      "color": [
+        0,
+        0,
+        0
+      ],
+      "background": "none",
+      "border": "none",
+      "page": 1,
+      "bind": "respondent.fullLegalName,respondent.address,respondent.municipality,respondent.phoneAndFax,respondent.email"
+    },
+    {
+      "id": 1730000004000,
+      "type": "TextArea",
+      "x": 318,
+      "y": 270,
+      "width": 411.0,
+      "height": 85.5,
+      "value": "",
+      "fontSize": 10,
+      "color": [
+        0,
+        0,
+        0
+      ],
+      "background": "none",
+      "border": "none",
+      "page": 1,
+      "bind": "respondentsLawyer.fullLegalName,respondentsLawyer.address,respondentsLawyer.municipality,respondentsLawyer.phoneAndFax,respondentsLawyer.email"
+    },
+    {
+      "id": 1730000005000,
+      "type": "TextField",
+      "x": 434,
+      "y": 32,
+      "width": 211.5,
+      "height": 24.0,
+      "value": "",
+      "fontSize": 10,
+      "color": [
+        0,
+        0,
+        0
+      ],
+      "background": "none",
+      "border": "none",
+      "page": 2,
+      "bind": "court_info.courtFileNumber"
     }
   ]
 }
