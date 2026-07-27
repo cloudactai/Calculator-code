@@ -1054,6 +1054,14 @@ const Screen4 = ({
           children: screen1.aboutTheChildren,
           relationship: screen1.aboutTheRelationship,
           typeOfCalculator: typeOfCalculatorSelected,
+          // Full state for "View Calculation" restore
+          _fullState: {
+            background: screen1.background,
+            aboutTheChildren: screen1.aboutTheChildren,
+            aboutTheRelationship: screen1.aboutTheRelationship,
+            screen2: screen2,
+            calculator_type: typeOfCalculatorSelected,
+          },
         },
         resultData: {
           childSupport: screen2.childSupport,

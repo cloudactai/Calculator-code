@@ -224,6 +224,9 @@ export default function ChildSupportChatPanel({
   const [loading, setLoading] = useState(false);
   const [warming, setWarming] = useState(false);
   const [contextSent, setContextSent] = useState(false);
+  const [lastCalcResult, setLastCalcResult] = useState(null);
+  const [savedToMatter, setSavedToMatter] = useState(false);
+  const [savingToMatter, setSavingToMatter] = useState(false);
 
   const windowRef = useRef(null);
   const inputRef = useRef(null);
@@ -285,42 +288,11 @@ export default function ChildSupportChatPanel({
         ]);
         setMessages(data.messages || nextMessages);
 
-        // If a calculation was completed, save the report to the auth-server
-        if (data.calculationResult && !matterId) {
-          console.warn("[ChildChatMARC] calculationResult received but no matterId — report not saved. matterId is required.");
-        }
-        if (data.calculationResult && matterId) {
-          console.log("[ChildChatMARC] Saving report for matterId:", matterId);
-          const cr = data.calculationResult;
-          dataAxios
-            .post(`matters/${matterId}/reports`, {
-              calculationType: "child_support",
-              label: `${cr.party1_name || "Party 1"} v ${cr.party2_name || "Party 2"} - Child Support`,
-              inputData: {
-                party1_name: cr.party1_name,
-                party2_name: cr.party2_name,
-                party1_income: cr.party1_income,
-                party2_income: cr.party2_income,
-                children: cr.children,
-              },
-              resultData: {
-                scenario: cr.scenario,
-                party1_monthly: cr.party1_monthly,
-                party2_monthly: cr.party2_monthly,
-                party1_annual: cr.party1_annual,
-                party2_annual: cr.party2_annual,
-                child_support_ref: cr.child_support_ref,
-                net_payer: cr.net_payer,
-                net_monthly: cr.net_monthly,
-                net_annual: cr.net_annual,
-              },
-              pdfBase64: cr.pdf_base64 || null,
-              pdfFilename: cr.pdf_filename || null,
-            })
-            .then(() => console.log("[ChildChatMARC] Report saved to DB"))
-            .catch((err) =>
-              console.warn("[ChildChatMARC] Failed to save report:", err)
-            );
+        // Store the calculation result for manual save via button
+        if (data.calculationResult) {
+          console.log("[ChildChat] calculationResult received, keys:", Object.keys(data.calculationResult));
+          setLastCalcResult(data.calculationResult);
+          setSavedToMatter(false);
         }
       }
     } catch {
@@ -338,6 +310,45 @@ export default function ChildSupportChatPanel({
     }
   }
 
+  async function saveToMatter() {
+    if (!lastCalcResult || !matterId) return;
+    setSavingToMatter(true);
+    const cr = lastCalcResult;
+    try {
+      await dataAxios.post(`matters/${matterId}/reports`, {
+        calculationType: "child_support",
+        label: `${cr.party1_name || "Party 1"} v ${cr.party2_name || "Party 2"} - Child Support`,
+        inputData: {
+          party1_name: cr.party1_name,
+          party2_name: cr.party2_name,
+          party1_income: cr.party1_income,
+          party2_income: cr.party2_income,
+          children: cr.children,
+        },
+        resultData: {
+          scenario: cr.scenario,
+          party1_monthly: cr.party1_monthly,
+          party2_monthly: cr.party2_monthly,
+          party1_annual: cr.party1_annual,
+          party2_annual: cr.party2_annual,
+          child_support_ref: cr.child_support_ref,
+          net_payer: cr.net_payer,
+          net_monthly: cr.net_monthly,
+          net_annual: cr.net_annual,
+        },
+        pdfBase64: cr.pdf_base64 || null,
+        pdfFilename: cr.pdf_filename || null,
+      });
+      console.log("[ChildChat] Report saved to DB");
+      setSavedToMatter(true);
+    } catch (err) {
+      console.warn("[ChildChat] Failed to save report:", err);
+      alert("Failed to save to matter. Please try again.");
+    } finally {
+      setSavingToMatter(false);
+    }
+  }
+
   function handleKeyDown(e) {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
@@ -350,6 +361,8 @@ export default function ChildSupportChatPanel({
     setMessages([]);
     setInput("");
     setContextSent(false);
+    setLastCalcResult(null);
+    setSavedToMatter(false);
   }
 
   return (
@@ -391,10 +404,10 @@ export default function ChildSupportChatPanel({
 
         {bubbles.map((b, i) => {
           const downloadUrl = b.role === "assistant" ? extractDownloadUrl(b.text) : null;
-          if (b.role === "assistant") {
-            console.log(`[ChildChat] Bubble ${i} downloadUrl:`, downloadUrl);
-            console.log(`[ChildChat] Bubble ${i} text snippet:`, b.text?.slice(-150));
-          }
+          // Show action buttons on the last bubble that has a download URL
+          const isLastDownloadBubble = downloadUrl && !bubbles.slice(i + 1).some(
+            (fb) => fb.role === "assistant" && extractDownloadUrl(fb.text)
+          );
           return (
             <div key={i} className={`mw-chat-row mw-chat-row--${b.role}`}>
               <div className="mw-chat-row__label">
@@ -404,16 +417,31 @@ export default function ChildSupportChatPanel({
                 className="mw-chat-bubble"
                 dangerouslySetInnerHTML={{ __html: renderText(b.text) }}
               />
-              {downloadUrl && (
-                <a
-                  className="mw-download-btn"
-                  href={downloadUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  download
-                >
-                  Download PDF Report
-                </a>
+              {isLastDownloadBubble && (
+                <div className="mw-action-buttons">
+                  <a
+                    className="mw-download-btn"
+                    href={downloadUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    download
+                  >
+                    Download PDF Report
+                  </a>
+                  {matterId && lastCalcResult && (
+                    <button
+                      className="mw-save-btn"
+                      onClick={saveToMatter}
+                      disabled={savingToMatter || savedToMatter}
+                    >
+                      {savedToMatter
+                        ? "✓ Saved to Matter"
+                        : savingToMatter
+                        ? "Saving…"
+                        : "Save to Matter"}
+                    </button>
+                  )}
+                </div>
               )}
             </div>
           );
