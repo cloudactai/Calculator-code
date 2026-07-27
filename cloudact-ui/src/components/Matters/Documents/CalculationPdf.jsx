@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { useHistory } from "react-router-dom";
 import dataAxios, { DATA_API_BASE } from "../../../utils/dataAxios";
 import { getAuthToken } from "../../../utils/authToken";
 
@@ -10,6 +11,7 @@ import { getAuthToken } from "../../../utils/authToken";
  *   matterId  – the matter number string (e.g. "CA-2026-00002")
  */
 export default function CalculationPDf({ matterId }) {
+  const history = useHistory();
   const [reports, setReports] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -64,6 +66,24 @@ export default function CalculationPDf({ matterId }) {
     }
   };
 
+  const handleView = (report) => {
+    // Store the report data so Calculator.tsx can restore it on mount
+    localStorage.setItem(
+      "viewCalculationData",
+      JSON.stringify({
+        inputData: report.inputData,
+        resultData: report.resultData,
+        calculationType: report.calculationType,
+      })
+    );
+    // Keep the matter context
+    localStorage.setItem(
+      "selectedCalculatorMatterNumber",
+      JSON.stringify(matterId)
+    );
+    history.push("/SupportCalculator");
+  };
+
   const formatType = (type) => {
     if (type === "child_support") return "Child Support";
     if (type === "spousal_support") return "Spousal Support";
@@ -93,6 +113,12 @@ export default function CalculationPDf({ matterId }) {
               <td>{formatType(report.calculationType)}</td>
               <td>{new Date(report.createdAt).toLocaleDateString()}</td>
               <td className="d-flex gap-2">
+                <button
+                  className="btn btnPrimary rounded-pill"
+                  onClick={() => handleView(report)}
+                >
+                  View
+                </button>
                 {report.pdfFilename && (
                   <button
                     className="btn btnPrimary rounded-pill"

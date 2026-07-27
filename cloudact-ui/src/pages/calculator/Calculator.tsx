@@ -896,6 +896,67 @@ const Calculator = () => {
     };
   }, []);
 
+  // ── Restore state from a saved MatterCalculationReport ("View Calculation") ──
+  useEffect(() => {
+    const raw = localStorage.getItem("viewCalculationData");
+    if (!raw) return;
+    localStorage.removeItem("viewCalculationData");
+
+    try {
+      const saved = JSON.parse(raw);
+      const input = saved.inputData || {};
+      const full = input._fullState; // present for manual-calculator saves
+
+      if (full) {
+        // Full restore from manual calculator save
+        if (full.background) setBackground((prev) => ({ ...prev, ...full.background }));
+        if (full.aboutTheChildren) setAboutTheChildren(full.aboutTheChildren);
+        if (full.aboutTheRelationship) setAboutTheRelationship(full.aboutTheRelationship);
+        if (full.calculator_type) setTypeOfCalculatorSelected(full.calculator_type);
+        if (full.screen2) {
+          setScreen2((prev) => ({ ...prev, ...full.screen2 }));
+        }
+      } else {
+        // Partial restore from AI chat saves (limited fields)
+        if (input.party1_name || input.party2_name) {
+          setBackground((prev) => ({
+            ...prev,
+            party1FirstName: input.party1_name || prev.party1FirstName,
+            party2FirstName: input.party2_name || prev.party2FirstName,
+          }));
+        }
+        const p1Income = input.party1_income || input.party1_gross_income;
+        const p2Income = input.party2_income || input.party2_gross_income;
+        if (p1Income || p2Income) {
+          setScreen2((prev) => ({
+            ...prev,
+            income: {
+              party1: [{ label: "Employment Income", amount: String(p1Income || 0), value: String(p1Income || 0) }],
+              party2: [{ label: "Employment Income", amount: String(p2Income || 0), value: String(p2Income || 0) }],
+            },
+          }));
+        }
+        if (input.children && typeof input.children === "number" && input.children > 0) {
+          setAboutTheChildren((prev) => ({
+            ...prev,
+            numberOfChildren: input.children,
+            numberOfChildrenWithAdultChild: input.children,
+          }));
+        }
+        // Set calculator type from calculationType field
+        if (saved.calculationType === "spousal_support") {
+          setTypeOfCalculatorSelected(SPOUSAL_SUPPORT_CAL);
+        }
+      }
+
+      // Jump to step 2 (income screen) so user sees populated data
+      setCalculatorState((prev) => ({ ...prev, currentFormNumber: 2 }));
+      console.log("[Calculator] Restored state from viewCalculationData");
+    } catch (err) {
+      console.warn("[Calculator] Failed to restore viewCalculationData:", err);
+    }
+  }, []);
+
   // commenting out the children rendering. replaced it with other useEffect that fetches children info using matter number
   // useEffect(() => {
   //   const details = aboutTheChildren.childrenInfo;

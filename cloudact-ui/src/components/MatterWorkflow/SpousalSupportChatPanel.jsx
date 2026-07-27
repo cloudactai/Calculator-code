@@ -224,6 +224,9 @@ export default function SpousalSupportChatPanel({
   const [loading, setLoading] = useState(false);
   const [warming, setWarming] = useState(false);
   const [contextSent, setContextSent] = useState(false);
+  const [lastCalcResult, setLastCalcResult] = useState(null);
+  const [savedToMatter, setSavedToMatter] = useState(false);
+  const [savingToMatter, setSavingToMatter] = useState(false);
 
   const windowRef = useRef(null);
   const inputRef = useRef(null);
@@ -289,42 +292,11 @@ export default function SpousalSupportChatPanel({
         ]);
         setMessages(data.messages || nextMessages);
 
-        // If a calculation was completed, save the report to the auth-server
-        if (data.calculationResult && !matterId) {
-          console.warn("[SpousalChat] calculationResult received but no matterId — report not saved. matterId is required.");
-        }
-        if (data.calculationResult && matterId) {
-          console.log("[SpousalChat] Saving report for matterId:", matterId);
-          const cr = data.calculationResult;
-          dataAxios
-            .post(`matters/${matterId}/reports`, {
-              calculationType: "spousal_support",
-              label: `${cr.payor_name || cr.party1_name || "Party 1"} v ${cr.recipient_name || cr.party2_name || "Party 2"} - Spousal Support`,
-              inputData: {
-                party1_name: cr.party1_name,
-                party2_name: cr.party2_name,
-                party1_gross_income: cr.party1_gross_income,
-                party2_gross_income: cr.party2_gross_income,
-                children: cr.children,
-              },
-              resultData: {
-                payor_name: cr.payor_name,
-                recipient_name: cr.recipient_name,
-                monthly_low: cr.monthly_low,
-                monthly_mid: cr.monthly_mid,
-                monthly_high: cr.monthly_high,
-                annual_low: cr.annual_low,
-                annual_mid: cr.annual_mid,
-                annual_high: cr.annual_high,
-                duration_label: cr.duration_label,
-              },
-              pdfBase64: cr.pdf_base64 || null,
-              pdfFilename: cr.pdf_filename || null,
-            })
-            .then(() => console.log("[SpousalChat] Report saved to DB"))
-            .catch((err) =>
-              console.warn("[SpousalChat] Failed to save report:", err)
-            );
+        // Store the calculation result for manual save via button
+        if (data.calculationResult) {
+          console.log("[SpousalChat] calculationResult received, keys:", Object.keys(data.calculationResult));
+          setLastCalcResult(data.calculationResult);
+          setSavedToMatter(false);
         }
       }
     } catch {
@@ -349,11 +321,52 @@ export default function SpousalSupportChatPanel({
     }
   }
 
+  async function saveToMatter() {
+    if (!lastCalcResult || !matterId) return;
+    setSavingToMatter(true);
+    const cr = lastCalcResult;
+    try {
+      await dataAxios.post(`matters/${matterId}/reports`, {
+        calculationType: "spousal_support",
+        label: `${cr.payor_name || cr.party1_name || "Party 1"} v ${cr.recipient_name || cr.party2_name || "Party 2"} - Spousal Support`,
+        inputData: {
+          party1_name: cr.party1_name,
+          party2_name: cr.party2_name,
+          party1_gross_income: cr.party1_gross_income,
+          party2_gross_income: cr.party2_gross_income,
+          children: cr.children,
+        },
+        resultData: {
+          payor_name: cr.payor_name,
+          recipient_name: cr.recipient_name,
+          monthly_low: cr.monthly_low,
+          monthly_mid: cr.monthly_mid,
+          monthly_high: cr.monthly_high,
+          annual_low: cr.annual_low,
+          annual_mid: cr.annual_mid,
+          annual_high: cr.annual_high,
+          duration_label: cr.duration_label,
+        },
+        pdfBase64: cr.pdf_base64 || null,
+        pdfFilename: cr.pdf_filename || null,
+      });
+      console.log("[SpousalChat] Report saved to DB");
+      setSavedToMatter(true);
+    } catch (err) {
+      console.warn("[SpousalChat] Failed to save report:", err);
+      alert("Failed to save to matter. Please try again.");
+    } finally {
+      setSavingToMatter(false);
+    }
+  }
+
   function resetChat() {
     setBubbles([]);
     setMessages([]);
     setInput("");
     setContextSent(false);
+    setLastCalcResult(null);
+    setSavedToMatter(false);
   }
 
   return (
@@ -395,10 +408,9 @@ export default function SpousalSupportChatPanel({
 
         {bubbles.map((b, i) => {
           const downloadUrl = b.role === "assistant" ? extractDownloadUrl(b.text) : null;
-          if (b.role === "assistant") {
-            console.log(`[SpousalChat] Bubble ${i} downloadUrl:`, downloadUrl);
-            console.log(`[SpousalChat] Bubble ${i} text snippet:`, b.text?.slice(-150));
-          }
+          const isLastDownloadBubble = downloadUrl && !bubbles.slice(i + 1).some(
+            (fb) => fb.role === "assistant" && extractDownloadUrl(fb.text)
+          );
           return (
             <div key={i} className={`mw-chat-row mw-chat-row--${b.role}`}>
               <div className="mw-chat-row__label">
@@ -408,16 +420,31 @@ export default function SpousalSupportChatPanel({
                 className="mw-chat-bubble"
                 dangerouslySetInnerHTML={{ __html: renderText(b.text) }}
               />
-              {downloadUrl && (
-                <a
-                  className="mw-download-btn"
-                  href={downloadUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  download
-                >
-                  Download PDF Report
-                </a>
+              {isLastDownloadBubble && (
+                <div className="mw-action-buttons">
+                  <a
+                    className="mw-download-btn"
+                    href={downloadUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    download
+                  >
+                    Download PDF Report
+                  </a>
+                  {matterId && lastCalcResult && (
+                    <button
+                      className="mw-save-btn"
+                      onClick={saveToMatter}
+                      disabled={savingToMatter || savedToMatter}
+                    >
+                      {savedToMatter
+                        ? "✓ Saved to Matter"
+                        : savingToMatter
+                        ? "Saving…"
+                        : "Save to Matter"}
+                    </button>
+                  )}
+                </div>
               )}
             </div>
           );
