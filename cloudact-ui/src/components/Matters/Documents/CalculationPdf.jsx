@@ -113,12 +113,6 @@ export default function CalculationPDf({ matterId }) {
               <td>{formatType(report.calculationType)}</td>
               <td>{new Date(report.createdAt).toLocaleDateString()}</td>
               <td className="d-flex gap-2">
-                <button
-                  className="btn btnPrimary rounded-pill"
-                  onClick={() => handleView(report)}
-                >
-                  View
-                </button>
                 {report.pdfFilename && (
                   <button
                     className="btn btnPrimary rounded-pill"
