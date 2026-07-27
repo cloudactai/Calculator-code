@@ -46,7 +46,10 @@ async function findMatter(userId, matterParam) {
 // }
 router.post("/matters/:matter_id/reports", async (req, res) => {
   try {
+    console.log("[DEBUG calculationReports] userId from JWT:", req.user.id);
+    console.log("[DEBUG calculationReports] matter_id from URL:", req.params.matter_id);
     const matter = await findMatter(req.user.id, req.params.matter_id);
+    console.log("[DEBUG calculationReports] findMatter result:", matter ? { id: matter.id, matterNumber: matter.matterNumber, userId: matter.userId } : null);
     if (!matter) return res.status(404).json(errorBody("Matter not found."));
 
     const body = req.body || {};

@@ -508,7 +508,11 @@ def chat():
                 resp = {"reply": reply, "messages": messages}
                 # Include the calculation result so the frontend can persist it
                 if last_calc_result:
+                    has_pdf = "pdf_base64" in last_calc_result
+                    print(f"[child-chat] Returning calculationResult to frontend (has_pdf={has_pdf}, keys={list(last_calc_result.keys())})", flush=True)
                     resp["calculationResult"] = last_calc_result
+                else:
+                    print("[child-chat] No calculation result in this response", flush=True)
                 return jsonify(resp)
 
             # Claude called the tool — run the calculator and feed the result back
@@ -517,6 +521,7 @@ def chat():
                 if block.get("type") == "tool_use":
                     result = run_calc_tool(block["input"])
                     last_calc_result = result
+                    print(f"[child-chat] Calc tool executed, result keys: {list(result.keys())}", flush=True)
                     # Strip pdf_base64 from tool result sent to Claude (it can't use it)
                     tool_content = {k: v for k, v in result.items() if k != "pdf_base64"}
                     tool_results.append({
@@ -2234,7 +2239,11 @@ def spousal_chat():
                     print(f"[spousal-chat] Reply (last 200 chars): ...{reply[-200:]}", flush=True)
                 resp = {"reply": reply, "messages": messages}
                 if last_calc_result:
+                    has_pdf = isinstance(last_calc_result, dict) and "pdf_base64" in last_calc_result
+                    print(f"[spousal-chat] Returning calculationResult to frontend (has_pdf={has_pdf})", flush=True)
                     resp["calculationResult"] = last_calc_result
+                else:
+                    print("[spousal-chat] No calculation result in this response", flush=True)
                 return jsonify(resp)
 
             tool_results = []
@@ -2243,7 +2252,7 @@ def spousal_chat():
                     print(f"[spousal-chat] Tool called: {block['name']}", flush=True)
                     result = run_spousal_calc_tool(block["input"])
                     last_calc_result = result
-                    print(f"[spousal-chat] Tool result keys: {list(result.keys()) if isinstance(result, dict) else 'not dict'}", flush=True)
+                    print(f"[spousal-chat] Calc tool executed, result keys: {list(result.keys()) if isinstance(result, dict) else 'not dict'}", flush=True)
                     tool_content = {k: v for k, v in result.items() if k != "pdf_base64"} if isinstance(result, dict) else result
                     tool_results.append({
                         "type":        "tool_result",
