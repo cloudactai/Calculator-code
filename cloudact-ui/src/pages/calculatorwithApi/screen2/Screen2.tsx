@@ -4171,8 +4171,6 @@ const Screen2 = ({
 
     val = ifSharedDivideBy2(typeOfSplitting, val);
 
-    console.warn("this willrun", val)
-
 
     return val;
   };
