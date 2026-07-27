@@ -1009,11 +1009,12 @@ const Screen4 = ({
         try {
           const pdfBlob = await html2pdf()
             .set({
-              margin: [10, 10, 10, 10],
+              margin: [10, 5, 10, 5],
               filename: pdfFilename,
               image: { type: "jpeg", quality: 0.95 },
-              html2canvas: { scale: 2, useCORS: true },
-              jsPDF: { unit: "mm", format: "a4", orientation: "portrait" },
+              html2canvas: { scale: 2, useCORS: true, width: 1100, windowWidth: 1100 },
+              jsPDF: { unit: "mm", format: "letter", orientation: "landscape" },
+              pagebreak: { mode: ["avoid-all", "css", "legacy"] },
             })
             .from(reportRef.current)
             .outputPdf("blob");
@@ -1724,12 +1725,15 @@ const Screen4 = ({
       {/* Hidden Report Template for PDF Generation */}
       <div
         style={{
-          position: "absolute",
-          left: "-9999px",
+          position: "fixed",
+          left: 0,
           top: 0,
+          width: "1100px",
           opacity: 0,
           visibility: "hidden",
           pointerEvents: "none",
+          zIndex: -1,
+          overflow: "visible",
         }}
       >
         <CalculationReport
