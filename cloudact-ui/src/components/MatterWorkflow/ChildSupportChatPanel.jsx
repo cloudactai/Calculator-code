@@ -287,10 +287,10 @@ export default function ChildSupportChatPanel({
 
         // If a calculation was completed, save the report to the auth-server
         if (data.calculationResult && !matterId) {
-          console.warn("[ChildChat] calculationResult received but no matterId — report not saved. matterId is required.");
+          console.warn("[ChildChatMARC] calculationResult received but no matterId — report not saved. matterId is required.");
         }
         if (data.calculationResult && matterId) {
-          console.log("[ChildChat] Saving report for matterId:", matterId);
+          console.log("[ChildChatMARC] Saving report for matterId:", matterId);
           const cr = data.calculationResult;
           dataAxios
             .post(`matters/${matterId}/reports`, {
@@ -317,9 +317,9 @@ export default function ChildSupportChatPanel({
               pdfBase64: cr.pdf_base64 || null,
               pdfFilename: cr.pdf_filename || null,
             })
-            .then(() => console.log("[ChildChat] Report saved to DB"))
+            .then(() => console.log("[ChildChatMARC] Report saved to DB"))
             .catch((err) =>
-              console.warn("[ChildChat] Failed to save report:", err)
+              console.warn("[ChildChatMARC] Failed to save report:", err)
             );
         }
       }
