@@ -11,6 +11,9 @@ import { childSupportDetails } from "../../../utils/Apis/calcChildSupport";
 import { replaceLastThreeChars } from "../../../utils/helpers";
 import { formulaForChildSupport } from "../../../utils/helpers/calculator/taxCalculationFormula";
 import { formatNumberInThousands } from "../../../utils/helpers/Formatting";
+import dataAxios from "../../../utils/dataAxios";
+//@ts-ignore
+import html2pdf from "html2pdf.js";
 
 import {
   backgroundState,
@@ -964,13 +967,116 @@ const Screen4 = ({
     setShowSaveModal(true);
   };
 
-  const handleSaveConfirm = () => {
+  const [saving, setSaving] = useState(false);
+
+  const handleSaveConfirm = async () => {
     if (!saveFileName.trim()) {
       toast.error("Please enter a file name.");
       return;
     }
     setShowSaveModal(false);
-    // TODO: implement save to matter logic with saveFileName
+
+    const storedMatterId = JSON.parse(localStorage.getItem('selectedCalculatorMatterNumber') || '""');
+    if (!storedMatterId) {
+      toast.error("No matter selected.");
+      return;
+    }
+
+    const calculationType = typeOfCalculatorSelected === "SPOUSAL_SUPPORT_CAL"
+      ? "spousal_support"
+      : "child_support";
+
+    setSaving(true);
+    const loadingToast = toast.loading("Generating PDF and saving…");
+
+    try {
+      // Generate PDF from the hidden report element
+      let pdfBase64: string | null = null;
+      const pdfFilename = `${saveFileName.trim().replace(/\s+/g, "_")}.pdf`;
+
+      if (reportRef.current) {
+        // Temporarily make the report visible for html2pdf to capture
+        const reportContainer = reportRef.current.parentElement;
+        const origStyles = reportContainer
+          ? { opacity: reportContainer.style.opacity, visibility: reportContainer.style.visibility, position: reportContainer.style.position }
+          : null;
+
+        if (reportContainer) {
+          reportContainer.style.opacity = "1";
+          reportContainer.style.visibility = "visible";
+        }
+
+        try {
+          const pdfBlob = await html2pdf()
+            .set({
+              margin: [10, 10, 10, 10],
+              filename: pdfFilename,
+              image: { type: "jpeg", quality: 0.95 },
+              html2canvas: { scale: 2, useCORS: true },
+              jsPDF: { unit: "mm", format: "a4", orientation: "portrait" },
+            })
+            .from(reportRef.current)
+            .outputPdf("blob");
+
+          // Convert blob to base64
+          const reader = new FileReader();
+          const base64Promise = new Promise<string>((resolve) => {
+            reader.onloadend = () => {
+              const dataUrl = reader.result as string;
+              // Strip the data:application/pdf;base64, prefix
+              resolve(dataUrl.split(",")[1]);
+            };
+          });
+          reader.readAsDataURL(pdfBlob);
+          pdfBase64 = await base64Promise;
+          console.log("[ManualCalc] PDF generated, size:", Math.round((pdfBase64?.length || 0) * 0.75 / 1024), "KB");
+        } finally {
+          // Restore hidden styles
+          if (reportContainer && origStyles) {
+            reportContainer.style.opacity = origStyles.opacity;
+            reportContainer.style.visibility = origStyles.visibility;
+          }
+        }
+      } else {
+        console.warn("[ManualCalc] reportRef not available — saving without PDF");
+      }
+
+      console.log("[ManualCalc] Saving report for matterId:", storedMatterId, "type:", calculationType);
+      await dataAxios.post(`matters/${storedMatterId}/reports`, {
+        calculationType,
+        label: saveFileName.trim(),
+        inputData: {
+          party1_name: screen1.background.party1FirstName,
+          party2_name: screen1.background.party2FirstName,
+          party1_income: screen2.totalIncomeParty1,
+          party2_income: screen2.totalIncomeParty2,
+          children: screen1.aboutTheChildren,
+          relationship: screen1.aboutTheRelationship,
+          typeOfCalculator: typeOfCalculatorSelected,
+        },
+        resultData: {
+          childSupport: screen2.childSupport,
+          spousalSupport: screen2.spousalSupport,
+          childSupportGreater: childSupportGreater(),
+          spousalSupportLow: spousalSupportLowGreater(),
+          spousalSupportMid: spousalSupportMedGreater(),
+          spousalSupportHigh: spousalSupportHighGreater(),
+          supportGivenTo: determineSupportGivenTo(),
+          lumpsumReport: screen2.lumpsumReport || null,
+          insurenceReport: screen2.insurenceReport || null,
+        },
+        pdfBase64,
+        pdfFilename,
+      });
+      console.log("[ManualCalc] Report saved to DB (with PDF:", !!pdfBase64, ")");
+      toast.success("Calculation saved to matter.");
+    } catch (err) {
+      console.warn("[ManualCalc] Failed to save report:", err);
+      toast.error("Failed to save calculation. Please try again.");
+    } finally {
+      toast.dismiss(loadingToast);
+      setSaving(false);
+    }
   };
 
   const handleChildData=(value)=>{
@@ -1531,9 +1637,10 @@ const Screen4 = ({
           <button
             className="btn btnPrimary rounded-pill me-3"
             onClick={saveCalculation}
+            disabled={saving}
           >
             <i className="fa-solid fa-save" style={{ marginRight: "6px" }}></i>
-            Save To Matter
+            {saving ? "Saving…" : "Save To Matter"}
           </button>
           <ReactToPrint
             trigger={() => (
