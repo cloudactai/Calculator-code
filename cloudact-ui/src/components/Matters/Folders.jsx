@@ -80,10 +80,28 @@ function FolderStructure({ matter_id, matterData }) {
     useEffect(() => {
         if (!matter_id) return;
         formsService.listFolders(matter_id)
-            .then((result) => setFolders(result.map((folder) => ({
-                title: folder.title, folder_id: folder.id, matter_id,
-                created: folder.createdAt || folder.created, type: folder.type,
-            }))))
+            .then(async (result) => {
+                const mapped = result.map((folder) => ({
+                    title: folder.title, folder_id: folder.id, matter_id,
+                    created: folder.createdAt || folder.created, type: folder.type,
+                }));
+                // Auto-create a "Calculations" folder if one doesn't exist
+                const hasCalcFolder = mapped.some(
+                    (f) => f.title === "Calculations" || f.title === "Saved Calculations"
+                );
+                if (!hasCalcFolder) {
+                    try {
+                        const folder = await formsService.createFolder(matter_id, "Calculations", "calculations");
+                        mapped.unshift({
+                            title: folder.title, folder_id: folder.id, matter_id,
+                            created: folder.createdAt || folder.created, type: folder.type || "calculations",
+                        });
+                    } catch (err) {
+                        console.warn("Could not auto-create Calculations folder:", err);
+                    }
+                }
+                setFolders(mapped);
+            })
             .catch(() => setFolders([]));
     }, [matter_id]);
 
@@ -186,7 +204,17 @@ function FolderStructure({ matter_id, matterData }) {
 
         {currentFolder && (
           <>
-            {currentFolder.title != "Saved Calculations" ? (
+            {currentFolder.title === "Calculations" || currentFolder.title === "Saved Calculations" ? (
+              <>
+                <div className="info">
+                  <div className="breadcrumbs"> {currentFolder.title} </div>{" "}
+                  <div className="description">
+                    Review your saved calculation reports here.
+                  </div>{" "}
+                </div>
+                <CalculationPDf matterId={matter_id} />
+              </>
+            ) : (
               <>
                 <div className="info">
                   <div className="breadcrumbs"> {currentFolder.title} </div>{" "}
@@ -197,21 +225,6 @@ function FolderStructure({ matter_id, matterData }) {
                 <MatterFormsList
                   matterNumber={matter_id}
                   folderId={currentFolder.id || currentFolder.folder_id}
-                />
-              </>
-            ) : (
-              <>
-                <div className="info">
-                  <div className="breadcrumbs"> {currentFolder.title} </div>{" "}
-                  <div className="description">
-                    Review your Saved Calculations here{" "}
-                  </div>{" "}
-                </div>
-                <CalculationPDf
-                  files={currentFolder.contents || []}
-                  matterId={matter_id}
-                  province={matterData?.province}
-                  folder_id={currentFolder.id || currentFolder.folder_id}
                 />
               </>
             )}
