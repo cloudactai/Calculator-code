@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 import { CALCULATOR_API } from "../../config";
+import dataAxios from "../../utils/dataAxios";
 import {
   getAllUserInfo,
   getCurrentUserFromCookies,
@@ -287,6 +288,44 @@ export default function SpousalSupportChatPanel({
           { role: "assistant", text: data.reply },
         ]);
         setMessages(data.messages || nextMessages);
+
+        // If a calculation was completed, save the report to the auth-server
+        if (data.calculationResult && !matterId) {
+          console.warn("[SpousalChat] calculationResult received but no matterId — report not saved. matterId is required.");
+        }
+        if (data.calculationResult && matterId) {
+          console.log("[SpousalChat] Saving report for matterId:", matterId);
+          const cr = data.calculationResult;
+          dataAxios
+            .post(`matters/${matterId}/reports`, {
+              calculationType: "spousal_support",
+              label: `${cr.payor_name || cr.party1_name || "Party 1"} v ${cr.recipient_name || cr.party2_name || "Party 2"} - Spousal Support`,
+              inputData: {
+                party1_name: cr.party1_name,
+                party2_name: cr.party2_name,
+                party1_gross_income: cr.party1_gross_income,
+                party2_gross_income: cr.party2_gross_income,
+                children: cr.children,
+              },
+              resultData: {
+                payor_name: cr.payor_name,
+                recipient_name: cr.recipient_name,
+                monthly_low: cr.monthly_low,
+                monthly_mid: cr.monthly_mid,
+                monthly_high: cr.monthly_high,
+                annual_low: cr.annual_low,
+                annual_mid: cr.annual_mid,
+                annual_high: cr.annual_high,
+                duration_label: cr.duration_label,
+              },
+              pdfBase64: cr.pdf_base64 || null,
+              pdfFilename: cr.pdf_filename || null,
+            })
+            .then(() => console.log("[SpousalChat] Report saved to DB"))
+            .catch((err) =>
+              console.warn("[SpousalChat] Failed to save report:", err)
+            );
+        }
       }
     } catch {
       setBubbles((b) => [

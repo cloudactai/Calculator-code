@@ -19,6 +19,7 @@ const authRoutes = require("./src/routes/authRoutes");
 const mattersRoutes = require("./src/routes/mattersRoutes");
 const calculatorDataRoutes = require("./src/routes/calculatorDataRoutes");
 const formsRoutes = require("./src/routes/formsRoutes");
+const calculationReportsRoutes = require("./src/routes/calculationReportsRoutes");
 
 const app = express();
 const REQUEST_SIZE_LIMIT = "30mb"; // supports a base64-encoded completed PDF up to the 20 MB Forms limit
@@ -76,6 +77,7 @@ app.use("/api", authRoutes);
 app.use("/v1", calculatorDataRoutes);
 app.use("/v1", formsRoutes);
 app.use("/v1", mattersRoutes);
+app.use("/v1", calculationReportsRoutes);
 app.get("/api/health", (req, res) => res.json({ status: "ok" }));
 
 // ── Error handler ────────────────────────────────────────────────────────────

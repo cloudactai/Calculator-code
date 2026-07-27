@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 import { CALCULATOR_API } from "../../config";
+import dataAxios from "../../utils/dataAxios";
 import {
   getAllUserInfo,
   getCurrentUserFromCookies,
@@ -283,6 +284,44 @@ export default function ChildSupportChatPanel({
           { role: "assistant", text: data.reply },
         ]);
         setMessages(data.messages || nextMessages);
+
+        // If a calculation was completed, save the report to the auth-server
+        if (data.calculationResult && !matterId) {
+          console.warn("[ChildChat] calculationResult received but no matterId — report not saved. matterId is required.");
+        }
+        if (data.calculationResult && matterId) {
+          console.log("[ChildChat] Saving report for matterId:", matterId);
+          const cr = data.calculationResult;
+          dataAxios
+            .post(`matters/${matterId}/reports`, {
+              calculationType: "child_support",
+              label: `${cr.party1_name || "Party 1"} v ${cr.party2_name || "Party 2"} - Child Support`,
+              inputData: {
+                party1_name: cr.party1_name,
+                party2_name: cr.party2_name,
+                party1_income: cr.party1_income,
+                party2_income: cr.party2_income,
+                children: cr.children,
+              },
+              resultData: {
+                scenario: cr.scenario,
+                party1_monthly: cr.party1_monthly,
+                party2_monthly: cr.party2_monthly,
+                party1_annual: cr.party1_annual,
+                party2_annual: cr.party2_annual,
+                child_support_ref: cr.child_support_ref,
+                net_payer: cr.net_payer,
+                net_monthly: cr.net_monthly,
+                net_annual: cr.net_annual,
+              },
+              pdfBase64: cr.pdf_base64 || null,
+              pdfFilename: cr.pdf_filename || null,
+            })
+            .then(() => console.log("[ChildChat] Report saved to DB"))
+            .catch((err) =>
+              console.warn("[ChildChat] Failed to save report:", err)
+            );
+        }
       }
     } catch {
       setBubbles((b) => [
