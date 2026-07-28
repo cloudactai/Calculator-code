@@ -363,7 +363,7 @@ const CalculationReport = forwardRef<HTMLDivElement, CalculationReportProps>(
         </div>
 
         {/* CALCULATION DETAILS - full width below result */}
-        <table className="details-table" style={{ marginTop: "14px" }}>
+        <table className="details-table" style={{ marginTop: "14px", pageBreakBefore: "always" }}>
           <thead>
             <tr>
               <th colSpan={7} className="section-header" style={{ textAlign: "left", margin: 0 }}>Calculation details</th>
