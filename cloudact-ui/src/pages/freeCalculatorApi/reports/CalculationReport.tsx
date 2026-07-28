@@ -363,10 +363,11 @@ const CalculationReport = forwardRef<HTMLDivElement, CalculationReportProps>(
         </div>
 
         {/* CALCULATION DETAILS - full width below result */}
-        <div className="page-break-avoid">
-        <div className="section-header" style={{ marginTop: "14px" }}>Calculation details</div>
-        <table className="details-table">
+        <table className="details-table" style={{ marginTop: "14px" }}>
           <thead>
+            <tr>
+              <th colSpan={7} className="section-header" style={{ textAlign: "left", margin: 0 }}>Calculation details</th>
+            </tr>
             <tr>
               <th className="lbl"></th>
               <th colSpan={2} className="scenario-hdr">LOW</th>
@@ -467,7 +468,6 @@ const CalculationReport = forwardRef<HTMLDivElement, CalculationReportProps>(
             )}
           </tbody>
         </table>
-        </div>
       </div>
     );
   }
