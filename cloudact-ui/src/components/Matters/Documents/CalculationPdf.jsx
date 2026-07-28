@@ -1,11 +1,14 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { useHistory } from "react-router-dom";
-import dataAxios, { DATA_API_BASE } from "../../../utils/dataAxios";
-import { getAuthToken } from "../../../utils/authToken";
+import dataAxios from "../../../utils/dataAxios";
+import html2pdf from "html2pdf.js";
+import CalculationReport from "../../../pages/freeCalculatorApi/reports/CalculationReport.tsx";
 
 /**
  * Lists saved calculation reports for a matter (from MatterCalculationReport).
- * Shown inside the "Calculations" folder in FolderStructure.
+ * Downloads regenerate the PDF on-the-fly using the same CalculationReport
+ * component and html2pdf.js settings as the manual calculator, so the output
+ * is always identical.
  *
  * Props:
  *   matterId  – the matter number string (e.g. "CA-2026-00002")
@@ -15,6 +18,11 @@ export default function CalculationPDf({ matterId }) {
   const [reports, setReports] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [generatingId, setGeneratingId] = useState(null);
+
+  // Holds the report data to render in the hidden CalculationReport
+  const [renderReport, setRenderReport] = useState(null);
+  const reportRef = useRef(null);
 
   useEffect(() => {
     if (!matterId) return;
@@ -35,25 +43,94 @@ export default function CalculationPDf({ matterId }) {
     return () => { active = false; };
   }, [matterId]);
 
-  const handleDownloadPdf = async (report) => {
-    try {
-      const token = getAuthToken();
-      const response = await fetch(`${DATA_API_BASE}/reports/${report.id}/pdf`, {
-        headers: token ? { Authorization: `Bearer ${token}` } : {},
-      });
-      if (!response.ok) throw new Error("PDF not available");
-      const blob = await response.blob();
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = report.pdfFilename || `${report.label || "calculation_report"}.pdf`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-    } catch {
-      alert("Could not download PDF. The report may not have a PDF attached.");
+  // Once the hidden CalculationReport renders, generate PDF from it
+  useEffect(() => {
+    if (!renderReport || !reportRef.current) return;
+
+    const generatePdf = async () => {
+      try {
+        await html2pdf()
+          .set({
+            margin: [10, 5, 10, 5],
+            filename: renderReport.filename,
+            image: { type: "jpeg", quality: 0.95 },
+            html2canvas: { scale: 2, useCORS: true, width: 1100, windowWidth: 1100 },
+            jsPDF: { unit: "mm", format: "letter", orientation: "landscape" },
+            pagebreak: { mode: ["css", "legacy"] },
+          })
+          .from(reportRef.current)
+          .save();
+      } catch (err) {
+        console.error("[CalculationPdf] PDF generation failed:", err);
+        alert("Could not generate PDF.");
+      } finally {
+        setRenderReport(null);
+        setGeneratingId(null);
+      }
+    };
+
+    // Small delay to ensure React has finished rendering the report DOM
+    const timer = setTimeout(generatePdf, 300);
+    return () => clearTimeout(timer);
+  }, [renderReport]);
+
+  const handleDownloadPdf = (report) => {
+    const fullState = report.inputData?._fullState;
+    if (!fullState) {
+      alert("This report was saved without the data needed to regenerate a PDF. Please re-run the calculation and save again.");
+      return;
     }
+
+    setGeneratingId(report.id);
+
+    // Build supportQuantum from saved data
+    let sq = fullState.supportQuantum;
+    if (!sq) {
+      // Fallback: reconstruct from resultData if supportQuantum wasn't saved
+      const rd = report.resultData || {};
+      sq = {
+        support1: {
+          spousalSupport: rd.spousalSupportLow || 0,
+          childSupport: (rd.childSupportGreater || 0) / 12,
+          childSpecialExpense: 0,
+          spousalSupportGivenTo: rd.spousalSupport?.givenTo || "",
+          childSupportGivenTo: rd.supportGivenTo || "",
+          childSupportSpecialExpenses: 0,
+          totalSupport: 0,
+        },
+        support2: {
+          spousalSupport: rd.spousalSupportMid || 0,
+          childSupport: (rd.childSupportGreater || 0) / 12,
+          childSpecialExpense: 0,
+          spousalSupportGivenTo: rd.spousalSupport?.givenTo || "",
+          childSupportGivenTo: rd.supportGivenTo || "",
+          childSupportSpecialExpenses: 0,
+          totalSupport: 0,
+        },
+        support3: {
+          spousalSupport: rd.spousalSupportHigh || 0,
+          childSupport: (rd.childSupportGreater || 0) / 12,
+          childSpecialExpense: 0,
+          spousalSupportGivenTo: rd.spousalSupport?.givenTo || "",
+          childSupportGivenTo: rd.supportGivenTo || "",
+          childSupportSpecialExpenses: 0,
+          totalSupport: 0,
+        },
+        spousalSupportDurationRange: "",
+        loading: false,
+        supportGivenTo: rd.supportGivenTo || "",
+      };
+    }
+
+    setRenderReport({
+      background: fullState.background,
+      aboutTheChildren: fullState.aboutTheChildren,
+      aboutTheRelationship: fullState.aboutTheRelationship,
+      screen2: fullState.screen2,
+      typeOfCalculatorSelected: fullState.calculator_type,
+      supportQuantum: sq,
+      filename: report.pdfFilename || `${report.label || "calculation_report"}.pdf`,
+    });
   };
 
   const handleDelete = async (report) => {
@@ -67,7 +144,6 @@ export default function CalculationPDf({ matterId }) {
   };
 
   const handleView = (report) => {
-    // Store the report data so Calculator.tsx can restore it on mount
     localStorage.setItem(
       "viewCalculationData",
       JSON.stringify({
@@ -76,7 +152,6 @@ export default function CalculationPDf({ matterId }) {
         calculationType: report.calculationType,
       })
     );
-    // Keep the matter context
     localStorage.setItem(
       "selectedCalculatorMatterNumber",
       JSON.stringify(matterId)
@@ -113,14 +188,13 @@ export default function CalculationPDf({ matterId }) {
               <td>{formatType(report.calculationType)}</td>
               <td>{new Date(report.createdAt).toLocaleDateString()}</td>
               <td className="d-flex gap-2">
-                {report.pdfFilename && (
-                  <button
-                    className="btn btnPrimary rounded-pill"
-                    onClick={() => handleDownloadPdf(report)}
-                  >
-                    Download PDF
-                  </button>
-                )}
+                <button
+                  className="btn btnPrimary rounded-pill"
+                  disabled={generatingId === report.id}
+                  onClick={() => handleDownloadPdf(report)}
+                >
+                  {generatingId === report.id ? "Generating…" : "Download PDF"}
+                </button>
                 <button
                   className="btn btnSecondary rounded-pill"
                   onClick={() => handleDelete(report)}
@@ -132,6 +206,33 @@ export default function CalculationPDf({ matterId }) {
           ))}
         </tbody>
       </table>
+
+      {/* Hidden CalculationReport for on-the-fly PDF generation */}
+      {renderReport && (
+        <div
+          style={{
+            position: "fixed",
+            left: 0,
+            top: 0,
+            width: "1100px",
+            opacity: 0,
+            visibility: "hidden",
+            pointerEvents: "none",
+            zIndex: -1,
+            overflow: "visible",
+          }}
+        >
+          <CalculationReport
+            ref={reportRef}
+            background={renderReport.background}
+            aboutTheChildren={renderReport.aboutTheChildren}
+            aboutTheRelationship={renderReport.aboutTheRelationship}
+            screen2={renderReport.screen2}
+            typeOfCalculatorSelected={renderReport.typeOfCalculatorSelected}
+            supportQuantum={renderReport.supportQuantum}
+          />
+        </div>
+      )}
     </div>
   );
 }
