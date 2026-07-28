@@ -986,62 +986,11 @@ const Screen4 = ({
       : "child_support";
 
     setSaving(true);
-    const loadingToast = toast.loading("Generating PDF and saving…");
+    const loadingToast = toast.loading("Saving calculation…");
 
     try {
-      // Generate PDF from the hidden report element
-      let pdfBase64: string | null = null;
       const pdfFilename = `${saveFileName.trim().replace(/\s+/g, "_")}.pdf`;
 
-      if (reportRef.current) {
-        // Temporarily make the report visible for html2pdf to capture
-        const reportContainer = reportRef.current.parentElement;
-        const origStyles = reportContainer
-          ? { opacity: reportContainer.style.opacity, visibility: reportContainer.style.visibility, position: reportContainer.style.position }
-          : null;
-
-        if (reportContainer) {
-          reportContainer.style.opacity = "1";
-          reportContainer.style.visibility = "visible";
-        }
-
-        try {
-          const pdfBlob = await html2pdf()
-            .set({
-              margin: [10, 5, 10, 5],
-              filename: pdfFilename,
-              image: { type: "jpeg", quality: 0.95 },
-              html2canvas: { scale: 2, useCORS: true, width: 1100, windowWidth: 1100 },
-              jsPDF: { unit: "mm", format: "letter", orientation: "landscape" },
-              pagebreak: { mode: ["css", "legacy"] },
-            })
-            .from(reportRef.current)
-            .outputPdf("blob");
-
-          // Convert blob to base64
-          const reader = new FileReader();
-          const base64Promise = new Promise<string>((resolve) => {
-            reader.onloadend = () => {
-              const dataUrl = reader.result as string;
-              // Strip the data:application/pdf;base64, prefix
-              resolve(dataUrl.split(",")[1]);
-            };
-          });
-          reader.readAsDataURL(pdfBlob);
-          pdfBase64 = await base64Promise;
-          console.log("[ManualCalc] PDF generated, size:", Math.round((pdfBase64?.length || 0) * 0.75 / 1024), "KB");
-        } finally {
-          // Restore hidden styles
-          if (reportContainer && origStyles) {
-            reportContainer.style.opacity = origStyles.opacity;
-            reportContainer.style.visibility = origStyles.visibility;
-          }
-        }
-      } else {
-        console.warn("[ManualCalc] reportRef not available — saving without PDF");
-      }
-
-      console.log("[ManualCalc] Saving report for matterId:", storedMatterId, "type:", calculationType);
       await dataAxios.post(`matters/${storedMatterId}/reports`, {
         calculationType,
         label: saveFileName.trim(),
@@ -1053,13 +1002,13 @@ const Screen4 = ({
           children: screen1.aboutTheChildren,
           relationship: screen1.aboutTheRelationship,
           typeOfCalculator: typeOfCalculatorSelected,
-          // Full state for "View Calculation" restore
           _fullState: {
             background: screen1.background,
             aboutTheChildren: screen1.aboutTheChildren,
             aboutTheRelationship: screen1.aboutTheRelationship,
             screen2: screen2,
             calculator_type: typeOfCalculatorSelected,
+            supportQuantum: supportQuantum,
           },
         },
         resultData: {
@@ -1073,10 +1022,8 @@ const Screen4 = ({
           lumpsumReport: screen2.lumpsumReport || null,
           insurenceReport: screen2.insurenceReport || null,
         },
-        pdfBase64,
         pdfFilename,
       });
-      console.log("[ManualCalc] Report saved to DB (with PDF:", !!pdfBase64, ")");
       toast.success("Calculation saved to matter.");
     } catch (err) {
       console.warn("[ManualCalc] Failed to save report:", err);
