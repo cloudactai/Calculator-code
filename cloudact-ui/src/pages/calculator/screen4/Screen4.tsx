@@ -1,5 +1,4 @@
 import React, { useEffect, useRef, useState } from "react";
-import ReactToPrint from "react-to-print";
 import { useHistory , Link} from "react-router-dom";
 import moment from "moment";
 import toast from "react-hot-toast";
@@ -1651,43 +1650,54 @@ const Screen4 = ({
             <i className="fa-solid fa-save" style={{ marginRight: "6px" }}></i>
             {saving ? "Saving…" : "Save To Matter"}
           </button>
-          <ReactToPrint
-            trigger={() => (
-              <button
-                className="btn"
-                style={{
-                  backgroundColor: "#2d5aa0",
-                  color: "#fff",
-                  padding: "10px 30px",
-                  borderRadius: "50px",
-                  fontSize: "14px",
-                  fontWeight: "bold",
-                  cursor: "pointer",
-                  border: "none",
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "8px",
-                }}
-              >
-                <i className="fa-solid fa-file-pdf" style={{ fontSize: "16px" }}></i>
-                Download Report
-              </button>
-            )}
-            content={() => reportRef.current}
-            documentTitle={`CloudAct_Calculation_Report_${screen1.background.party1FirstName}_${screen1.background.party2FirstName}`}
-            pageStyle={`
-              @page {
-                size: landscape;
-                margin: 10mm;
+          <button
+            className="btn"
+            style={{
+              backgroundColor: "#2d5aa0",
+              color: "#fff",
+              padding: "10px 30px",
+              borderRadius: "50px",
+              fontSize: "14px",
+              fontWeight: "bold",
+              cursor: "pointer",
+              border: "none",
+              display: "flex",
+              alignItems: "center",
+              gap: "8px",
+            }}
+            onClick={async () => {
+              if (!reportRef.current) return;
+              const reportContainer = reportRef.current.parentElement;
+              const origStyles = reportContainer
+                ? { opacity: reportContainer.style.opacity, visibility: reportContainer.style.visibility }
+                : null;
+              if (reportContainer) {
+                reportContainer.style.opacity = "1";
+                reportContainer.style.visibility = "visible";
               }
-              @media print {
-                body {
-                  -webkit-print-color-adjust: exact !important;
-                  print-color-adjust: exact !important;
+              try {
+                await html2pdf()
+                  .set({
+                    margin: [10, 5, 10, 5],
+                    filename: `CloudAct_Calculation_Report_${screen1.background.party1FirstName}_${screen1.background.party2FirstName}.pdf`,
+                    image: { type: "jpeg", quality: 0.95 },
+                    html2canvas: { scale: 2, useCORS: true, width: 1100, windowWidth: 1100 },
+                    jsPDF: { unit: "mm", format: "letter", orientation: "landscape" },
+                    pagebreak: { mode: ["css", "legacy"] },
+                  })
+                  .from(reportRef.current)
+                  .save();
+              } finally {
+                if (reportContainer && origStyles) {
+                  reportContainer.style.opacity = origStyles.opacity;
+                  reportContainer.style.visibility = origStyles.visibility;
                 }
               }
-            `}
-          />
+            }}
+          >
+            <i className="fa-solid fa-file-pdf" style={{ fontSize: "16px" }}></i>
+            Download Report
+          </button>
         </div>
       </div>
 

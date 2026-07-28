@@ -39,6 +39,16 @@ function extractDownloadUrl(text) {
   return match ? `${CALCULATOR_API}${match[1]}` : null;
 }
 
+/** Format a value that may be a Unix-ms timestamp into YYYY-MM-DD. */
+function fmtDate(value) {
+  if (value == null) return value;
+  const n = typeof value === "string" ? Number(value) : value;
+  if (typeof n === "number" && !isNaN(n) && n > 9999999999 && n < 9999999999999) {
+    return new Date(n).toISOString().slice(0, 10);
+  }
+  return value;
+}
+
 function buildContextMessage(matterData) {
   if (!matterData) return null;
 
@@ -80,13 +90,13 @@ function buildContextMessage(matterData) {
   if (bg) {
     if (bg.client?.name) parts.push(`Party 1 (Client): ${bg.client.name}`);
     if (bg.client?.dateOfBirth)
-      parts.push(`  DOB: ${bg.client.dateOfBirth}`);
+      parts.push(`  DOB: ${fmtDate(bg.client.dateOfBirth)}`);
     if (bg.client?.address)
       parts.push(`  Address: ${bg.client.address}`);
     if (bg.opposing_party?.name)
       parts.push(`Party 2 (Opposing Party): ${bg.opposing_party.name}`);
     if (bg.opposing_party?.dateOfBirth)
-      parts.push(`  DOB: ${bg.opposing_party.dateOfBirth}`);
+      parts.push(`  DOB: ${fmtDate(bg.opposing_party.dateOfBirth)}`);
     if (bg.opposing_party?.address)
       parts.push(`  Address: ${bg.opposing_party.address}`);
   }
@@ -95,11 +105,11 @@ function buildContextMessage(matterData) {
   const rel = matterData.relationship_information;
   if (rel) {
     if (rel.dateOfMarriage)
-      parts.push(`Date of marriage: ${rel.dateOfMarriage}`);
+      parts.push(`Date of marriage: ${fmtDate(rel.dateOfMarriage)}`);
     if (rel.dateOfSeparation)
-      parts.push(`Date of separation: ${rel.dateOfSeparation}`);
+      parts.push(`Date of separation: ${fmtDate(rel.dateOfSeparation)}`);
     if (rel.dateOfDivorce)
-      parts.push(`Date of divorce: ${rel.dateOfDivorce}`);
+      parts.push(`Date of divorce: ${fmtDate(rel.dateOfDivorce)}`);
     if (rel.typeOfRelationship)
       parts.push(`Relationship type: ${rel.typeOfRelationship}`);
   }
@@ -111,7 +121,7 @@ function buildContextMessage(matterData) {
     children.forEach((c, idx) => {
       const info = [];
       if (c.childName) info.push(c.childName);
-      if (c.dateOfBirth) info.push(`DOB: ${c.dateOfBirth}`);
+      if (c.dateOfBirth) info.push(`DOB: ${fmtDate(c.dateOfBirth)}`);
       if (c.nowLivesWith) info.push(`lives with: ${c.nowLivesWith}`);
       if (c.isDependent) info.push(`dependent: ${c.isDependent}`);
       if (info.length)
