@@ -151,7 +151,17 @@ const SingleMatter = () => {
         background_information: backgroundData?.body?.[0] || null,
         children_information: childrenData?.body || null,
         relationship_information: relationshipData?.body?.[0] || null,
-        income_and_benefits: incomeBenefitsData?.body?.[0] || null,
+        income_and_benefits: (() => {
+          const rows = incomeBenefitsData?.body;
+          if (!rows || !rows.length) return null;
+          const grouped = { client: { income: [], benefits: [] }, opposing_party: { income: [], benefits: [] } };
+          rows.forEach((r) => {
+            const key = r.role === "Opposing Party" ? "opposing_party" : "client";
+            const bucket = r.incomeBenefit === "benefit" ? "benefits" : "income";
+            grouped[key][bucket].push({ source: r.type, type: r.type, yearlyAmount: r.yearlyAmount, monthlyAmount: r.monthlyAmount });
+          });
+          return grouped;
+        })(),
         employment_information: employmentData?.body?.[0] || null,
         assets_information: assetsData?.body || null,
         expense_information: expenseData?.body?.[0] || null,
