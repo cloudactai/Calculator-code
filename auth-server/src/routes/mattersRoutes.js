@@ -497,6 +497,7 @@ const ROW_TYPES = {
   marketValue: "assets_market_value",
   lands: "assets",
   folders: "folders",
+  calculatorState: "calculator_state",
 };
 
 // Matter routes

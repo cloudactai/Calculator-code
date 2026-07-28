@@ -25,6 +25,7 @@ import { calcChildSupportFlask } from "../../../utils/Apis/calculator/calcChildS
 import useQuery from "../../../hooks/useQuery";
 import { AUTH_ROUTES } from "../../../routes/Routes.types";
 import { apiCalculatorById } from "../../../utils/Apis/calculator/Calculator_values_id";
+import { fetchRequest } from "../../../fetchRequest";
 import { fetchSpecificTaxandDeductionforAmount } from "../../../utils/Apis/calculator/fetchSpecificTaxandDeductionforAmount";
 import { getDistinctYearsInTaxRef } from "../../../utils/Apis/getDistinctYearsInTaxRef";
 import {
@@ -6118,6 +6119,50 @@ const Screen2 = ({
   };
 
   const promptSaveOrContinue = () => {
+    // Save all calculator form data to the matter's DB record
+    if (storedMatterNumber) {
+      const calcState = {
+        background: screen1.background,
+        aboutTheChildren: screen1.aboutTheChildren,
+        aboutTheRelationship: screen1.aboutTheRelationship,
+        calculator_type: typeOfCalculatorSelected,
+        income: screen2.income,
+        undueHardshipIncome: screen2.undueHardshipIncome,
+        benefits: screen2.benefits,
+        deductions: screen2.deductions,
+        tax_year: screen2.tax_year,
+        guidelineIncome: screen2.guidelineIncome,
+        specialExpensesArr: screen2.specialExpensesArr,
+        otherhouseholdmember: screen2.otherhouseholdmember,
+        nonTaxableincome,
+        undueHardship,
+        canadaChildBenefitFixed: screen2.canadaChildBenefitFixed,
+        ChildDisabilityBenefitFixed: screen2.ChildDisabilityBenefitFixed,
+        ClimateActionBenefitFixed: screen2.ClimateActionBenefitFixed,
+        provChildBenefitFixed: screen2.provChildBenefitFixed,
+        GSTHSTBenefitFixed: screen2.GSTHSTBenefitFixed,
+        salesTaxBenefitFixed: screen2.salesTaxBenefitFixed,
+        basicPersonalAmountFederalFixed: screen2.basicPersonalAmountFederalFixed,
+        basicPartyDisabilityFixed: screen2.basicPartyDisabilityFixed,
+        basicPartyDisabilityProvFixed: screen2.basicPartyDisabilityProvFixed,
+        amountForEligibleDependentFixed: screen2.amountForEligibleDependentFixed,
+        baseCPPContributionFixed: screen2.baseCPPContributionFixed,
+        eiPremiumFixed: screen2.eiPremiumFixed,
+        canadaEmploymentAmountFixed: screen2.canadaEmploymentAmountFixed,
+        basicPersonalAmountProvincialFixed: screen2.basicPersonalAmountProvincialFixed,
+        amountForEligibleDependentProvincialFixed: screen2.amountForEligibleDependentProvincialFixed,
+      };
+      fetchRequest(
+        "post",
+        `update_matter/${getUserSID()}/${storedMatterNumber}/calculatorState`,
+        [calcState]
+      ).then(() => {
+        console.log("[Calculator] Saved calculator state to matter DB");
+      }).catch((err) => {
+        console.warn("[Calculator] Failed to save calculator state:", err);
+      });
+    }
+
     passStateToParentAndNextPage(
       Number(getCalculatorIdFromQuery(calculatorId)),
       false
