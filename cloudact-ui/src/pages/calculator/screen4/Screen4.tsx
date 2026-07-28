@@ -1014,7 +1014,7 @@ const Screen4 = ({
               image: { type: "jpeg", quality: 0.95 },
               html2canvas: { scale: 2, useCORS: true, width: 1100, windowWidth: 1100 },
               jsPDF: { unit: "mm", format: "letter", orientation: "landscape" },
-              pagebreak: { mode: ["avoid-all", "css", "legacy"] },
+              pagebreak: { mode: ["css", "legacy"] },
             })
             .from(reportRef.current)
             .outputPdf("blob");
