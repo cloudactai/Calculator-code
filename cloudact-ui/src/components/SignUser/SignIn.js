@@ -36,11 +36,11 @@ const SignIn = ({
       : ""
   );
   const [sideImage, setSideImage] = useState(SignInSVG);
-  const [password, setPassword] = useState(
-    localStorage.getItem("password")
-      ? JSON.parse(localStorage.getItem("password"))
-      : ""
-  );
+  // "Remember me" intentionally remembers only the email. The password is never
+  // persisted — storing it (even encrypted) in localStorage is readable by any
+  // script on the page, so we rely on the browser's own password manager and the
+  // session cookie instead.
+  const [password, setPassword] = useState("");
   const [emailError, setEmailError] = useState("");
   const [passwordError, setPasswordError] = useState("");
   const [showAlert, setShowAlert] = useState("");
@@ -64,6 +64,12 @@ const SignIn = ({
   const userAuth = useSelector((state) => state.userLoginAuth);
 
   const userOPTMatch = useSelector((state) => state.userOPTMatch);
+
+  // One-time cleanup: remove any password persisted by an earlier build, even if
+  // the user never touches "Remember me" this session.
+  useEffect(() => {
+    localStorage.removeItem("password");
+  }, []);
 
   useEffect(() => {
     if (error) {
@@ -116,13 +122,13 @@ const SignIn = ({
     const checked = e.target.checked;
     if (checked) {
       localStorage.setItem("email", JSON.stringify(email));
-      localStorage.setItem("password", JSON.stringify(password));
       localStorage.setItem("rememberMe", JSON.stringify(checked));
     } else {
       localStorage.removeItem("email");
-      localStorage.removeItem("password");
       localStorage.removeItem("rememberMe");
     }
+    // Purge any password persisted by an earlier build, whichever way it's toggled.
+    localStorage.removeItem("password");
   };
 
   // Signs in against the personal auth-server (/api/login) and seeds the

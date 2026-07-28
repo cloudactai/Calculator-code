@@ -42,10 +42,11 @@ import CookiesParser from "../utils/cookieParser/Cookies";
 import toast from "react-hot-toast"
 import {
   buildPersonalProfileInfo,
+  clearClientSessionCookies,
   isPersonalAuthUser,
   updatePersonalSessionProfile,
 } from "../utils/personalAuthSession";
-import { updateProfile } from "../utils/Apis/auth/authApi";
+import { logout as logoutApi, updateProfile } from "../utils/Apis/auth/authApi";
 
 export const userLoginAction = (email, password) => async (dispatch) => {
   try {
@@ -249,45 +250,28 @@ export const userProfileInfoChangeAction = (obj) => async (dispatch) => {
 // document.location.href = "/signIn";
 // };
 export const userLogoutAction = () => async (dispatch) => {
-  const cookiesName = [
-    "token",
-    "allUserInfo",
-    "allUserInfo1",
-    "allUserInfo2",
-    "allUserInfo3",
-    "isUserLogged",
-    "authClio",
-    "authIntuit",
-    "currentUserRole",
-    "checklistId",
-    "access_pages",
-    "companyInfo",
-    "userProfile",
-    "calculatorLabel",
-    "AccessToken",
-    "DiagnoseConnection",
-    "RefreshToken",
-    "province"
-  ];
-
-  cookiesName.forEach((cookie) => {
-    Cookies.remove(cookie, { path: "/" });
-  });
-
+  // The real session is the auth-server's httpOnly cookie, which only the
+  // server can clear. Hit /api/logout for that. It must not block sign-out: even
+  // if the request fails (offline, server down), we still wipe the client state
+  // below and redirect, so a user can always get out.
   try {
-    const response = await axios.post("/logout");
-
-    if (response.data && response.data.status === 'success') {
-      dispatch({ type: USER_LOGOUT });
-      dispatch({ type: USER_LOGIN_AUTH_EMPTY });
-
-      window.location.href = "/signIn";
-    } else {
-      console.error("Logout failed: ", response.data);
-    }
+    await logoutApi();
   } catch (error) {
     console.error("Logout API call failed", error);
   }
+
+  // Clear every readable client cookie the UI reads (allUserInfo, currentUserRole,
+  // access_pages, AccessToken, …) plus the extra legacy calculator cookies, and
+  // the localStorage avatar/signature media.
+  clearClientSessionCookies();
+  ["checklistId", "calculatorLabel", "DiagnoseConnection"].forEach((cookie) => {
+    Cookies.remove(cookie, { path: "/" });
+  });
+
+  dispatch({ type: USER_LOGOUT });
+  dispatch({ type: USER_LOGIN_AUTH_EMPTY });
+
+  window.location.href = "/signIn";
 };
 
 
