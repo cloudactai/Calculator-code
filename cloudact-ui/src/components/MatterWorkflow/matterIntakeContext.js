@@ -10,6 +10,24 @@ const isBlank = (value) =>
   value === null ||
   (typeof value === "string" && value.trim() === "");
 
+/** Format a value that may be a Unix-ms timestamp into YYYY-MM-DD. */
+const fmtDate = (value) => {
+  if (value == null) return value;
+  const n = typeof value === "string" ? Number(value) : value;
+  if (typeof n === "number" && !isNaN(n) && n > 9999999999 && n < 9999999999999) {
+    return new Date(n).toISOString().slice(0, 10);
+  }
+  return value;
+};
+
+const DATE_KEYS = new Set([
+  "dateOfMarriage",
+  "dateOfSeparation",
+  "dateOfDivorce",
+  "dateOfBirth",
+  "valuation_date",
+]);
+
 const compactStoredValue = (value, key = "", depth = 0) => {
   if (
     DATABASE_METADATA_FIELDS.has(key) ||
@@ -36,6 +54,7 @@ const compactStoredValue = (value, key = "", depth = 0) => {
     return entries.length > 0 ? Object.fromEntries(entries) : undefined;
   }
 
+  if (DATE_KEYS.has(key)) return fmtDate(value);
   return value;
 };
 

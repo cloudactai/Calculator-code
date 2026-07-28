@@ -9,9 +9,6 @@ import {
 } from "../../utils/helpers";
 import "./MatterWorkflow.css";
 import refreshIcon from "../../assets/images/refresh-icon.png";
-//@ts-ignore
-import html2pdf from "html2pdf.js";
-import CalculationReport from "../../pages/freeCalculatorApi/reports/CalculationReport";
 
 /**
  * Full-page inline spousal support AI chat panel.
@@ -40,6 +37,16 @@ function renderText(text) {
 function extractDownloadUrl(text) {
   const match = String(text).match(/\[.+?\]\((\/download-report\/[^)]+)\)/);
   return match ? `${CALCULATOR_API}${match[1]}` : null;
+}
+
+/** Format a value that may be a Unix-ms timestamp into YYYY-MM-DD. */
+function fmtDate(value) {
+  if (value == null) return value;
+  const n = typeof value === "string" ? Number(value) : value;
+  if (typeof n === "number" && !isNaN(n) && n > 9999999999 && n < 9999999999999) {
+    return new Date(n).toISOString().slice(0, 10);
+  }
+  return value;
 }
 
 function buildContextMessage(matterData) {
@@ -83,13 +90,13 @@ function buildContextMessage(matterData) {
   if (bg) {
     if (bg.client?.name) parts.push(`Party 1 (Client): ${bg.client.name}`);
     if (bg.client?.dateOfBirth)
-      parts.push(`  DOB: ${bg.client.dateOfBirth}`);
+      parts.push(`  DOB: ${fmtDate(bg.client.dateOfBirth)}`);
     if (bg.client?.address)
       parts.push(`  Address: ${bg.client.address}`);
     if (bg.opposing_party?.name)
       parts.push(`Party 2 (Opposing Party): ${bg.opposing_party.name}`);
     if (bg.opposing_party?.dateOfBirth)
-      parts.push(`  DOB: ${bg.opposing_party.dateOfBirth}`);
+      parts.push(`  DOB: ${fmtDate(bg.opposing_party.dateOfBirth)}`);
     if (bg.opposing_party?.address)
       parts.push(`  Address: ${bg.opposing_party.address}`);
   }
@@ -98,11 +105,11 @@ function buildContextMessage(matterData) {
   const rel = matterData.relationship_information;
   if (rel) {
     if (rel.dateOfMarriage)
-      parts.push(`Date of marriage: ${rel.dateOfMarriage}`);
+      parts.push(`Date of marriage: ${fmtDate(rel.dateOfMarriage)}`);
     if (rel.dateOfSeparation)
-      parts.push(`Date of separation: ${rel.dateOfSeparation}`);
+      parts.push(`Date of separation: ${fmtDate(rel.dateOfSeparation)}`);
     if (rel.dateOfDivorce)
-      parts.push(`Date of divorce: ${rel.dateOfDivorce}`);
+      parts.push(`Date of divorce: ${fmtDate(rel.dateOfDivorce)}`);
     if (rel.typeOfRelationship)
       parts.push(`Relationship type: ${rel.typeOfRelationship}`);
   }
@@ -114,7 +121,7 @@ function buildContextMessage(matterData) {
     children.forEach((c, idx) => {
       const info = [];
       if (c.childName) info.push(c.childName);
-      if (c.dateOfBirth) info.push(`DOB: ${c.dateOfBirth}`);
+      if (c.dateOfBirth) info.push(`DOB: ${fmtDate(c.dateOfBirth)}`);
       if (c.nowLivesWith) info.push(`lives with: ${c.nowLivesWith}`);
       if (c.isDependent) info.push(`dependent: ${c.isDependent}`);
       if (info.length)
@@ -216,106 +223,6 @@ function buildContextMessage(matterData) {
   );
 }
 
-/**
- * Map AI calculationResult → CalculationReport component props.
- */
-function mapCalcResultToReportProps(cr) {
-  if (!cr) return null;
-
-  const p1IsPayor = (cr.payor === cr.party1_name);
-
-  const background = {
-    party1FirstName: cr.party1_name || "Party 1",
-    party1LastName: "",
-    party2FirstName: cr.party2_name || "Party 2",
-    party2LastName: "",
-    party1DateOfBirth: null,
-    party2DateOfBirth: null,
-    party1province: cr.party1_province || "",
-    party2province: cr.party2_province || "",
-  };
-
-  // Build children info from calc result
-  const childrenRaw = Array.isArray(cr.children) ? cr.children : [];
-  const aboutTheChildren = {
-    childrenInfo: childrenRaw.map((c) => ({
-      name: c.name || "",
-      dateOfBirth: c.dob || c.date_of_birth || "",
-      custodyArrangement: c.custody_arrangement || "",
-      CSGTable: "Yes",
-    })),
-    count: {
-      party1: childrenRaw.filter((c) => c.custody_arrangement === "Party 1").length,
-      party2: childrenRaw.filter((c) => c.custody_arrangement === "Party 2").length,
-    },
-  };
-
-  const aboutTheRelationship = {
-    dateOfMarriage: cr.date_of_marriage || "",
-    dateOfSeparation: cr.date_of_separation || "",
-  };
-
-  const screen2 = {
-    totalIncomeParty1: cr.party1_income || 0,
-    totalIncomeParty2: cr.party2_income || 0,
-    tax_year: cr.tax_year || new Date().getFullYear(),
-    taxesFromApi: {
-      party1Low:  cr.party1_taxes_low  || (p1IsPayor ? cr.payor_taxes_low  : cr.recipient_taxes_low)  || 0,
-      party2Low:  cr.party2_taxes_low  || (p1IsPayor ? cr.recipient_taxes_low  : cr.payor_taxes_low)  || 0,
-      party1Mid:  cr.party1_taxes_mid  || (p1IsPayor ? cr.payor_taxes_mid  : cr.recipient_taxes_mid)  || 0,
-      party2Mid:  cr.party2_taxes_mid  || (p1IsPayor ? cr.recipient_taxes_mid  : cr.payor_taxes_mid)  || 0,
-      party1High: cr.party1_taxes_high || (p1IsPayor ? cr.payor_taxes_high : cr.recipient_taxes_high) || 0,
-      party2High: cr.party2_taxes_high || (p1IsPayor ? cr.recipient_taxes_high : cr.payor_taxes_high) || 0,
-    },
-    benefitsFromApi: {
-      party1Low:  cr.party1_benefits_low  || (p1IsPayor ? cr.payor_benefits_low  : cr.recipient_benefits_low)  || 0,
-      party2Low:  cr.party2_benefits_low  || (p1IsPayor ? cr.recipient_benefits_low  : cr.payor_benefits_low)  || 0,
-      party1Mid:  cr.party1_benefits_mid  || (p1IsPayor ? cr.payor_benefits_mid  : cr.recipient_benefits_mid)  || 0,
-      party2Mid:  cr.party2_benefits_mid  || (p1IsPayor ? cr.recipient_benefits_mid  : cr.payor_benefits_mid)  || 0,
-      party1High: cr.party1_benefits_high || (p1IsPayor ? cr.payor_benefits_high : cr.recipient_benefits_high) || 0,
-      party2High: cr.party2_benefits_high || (p1IsPayor ? cr.recipient_benefits_high : cr.payor_benefits_high) || 0,
-    },
-    childSupport: {
-      childSupport1: cr.monthly_cs_paid || cr.child_support_paid || 0,
-      childSupport2: 0,
-      givenTo: cr.recipient || cr.party2_name || "",
-    },
-    specialExpenses: {
-      specialExpensesLow1: cr.special_expenses_party1 || 0,
-      specialExpensesLow2: cr.special_expenses_party2 || 0,
-    },
-    disposableIncome: {
-      party1Low:  cr.party1_indi_low  || (p1IsPayor ? cr.payor_indi_low  : cr.recipient_indi_low)  || 0,
-      party2Low:  cr.party2_indi_low  || (p1IsPayor ? cr.recipient_indi_low  : cr.payor_indi_low)  || 0,
-      party1Mid:  cr.party1_indi_mid  || (p1IsPayor ? cr.payor_indi_mid  : cr.recipient_indi_mid)  || 0,
-      party2Mid:  cr.party2_indi_mid  || (p1IsPayor ? cr.recipient_indi_mid  : cr.payor_indi_mid)  || 0,
-      party1High: cr.party1_indi_high || (p1IsPayor ? cr.payor_indi_high : cr.recipient_indi_high) || 0,
-      party2High: cr.party2_indi_high || (p1IsPayor ? cr.recipient_indi_high : cr.payor_indi_high) || 0,
-    },
-  };
-
-  const supportQuantum = {
-    support1: {
-      spousalSupport: cr.monthly_low || 0,
-      childSupport: cr.monthly_cs_paid || cr.child_support_paid || 0,
-      childSupportGivenTo: cr.recipient || cr.party2_name || "",
-    },
-    support2: {
-      spousalSupport: cr.monthly_med || cr.monthly_mid || 0,
-    },
-    support3: {
-      spousalSupport: cr.monthly_high || 0,
-    },
-    spousalSupportDurationRange: cr.duration_label || "",
-  };
-
-  const typeOfCalculatorSelected = childrenRaw.length > 0
-    ? "Spousal Support with Child Support"
-    : "Spousal Support Only";
-
-  return { background, aboutTheChildren, aboutTheRelationship, screen2, typeOfCalculatorSelected, supportQuantum };
-}
-
 export default function SpousalSupportChatPanel({
   matterData,
   matterId,
@@ -330,11 +237,9 @@ export default function SpousalSupportChatPanel({
   const [lastCalcResult, setLastCalcResult] = useState(null);
   const [savedToMatter, setSavedToMatter] = useState(false);
   const [savingToMatter, setSavingToMatter] = useState(false);
-  const [pdfBlobUrl, setPdfBlobUrl] = useState(null);
 
   const windowRef = useRef(null);
   const inputRef = useRef(null);
-  const reportRef = useRef(null);
 
   // Auto-scroll on new messages
   useEffect(() => {
@@ -359,48 +264,6 @@ export default function SpousalSupportChatPanel({
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [matterData, contextSent]);
-
-  // Generate PDF from hidden CalculationReport when calc result arrives
-  const pdfGeneratedFor = useRef(null);
-  useEffect(() => {
-    if (!lastCalcResult || !reportRef.current) return;
-    // Avoid re-generating when we only updated pdf_base64
-    const resultId = lastCalcResult.download_url || lastCalcResult.monthly_low;
-    if (pdfGeneratedFor.current === resultId) return;
-    pdfGeneratedFor.current = resultId;
-
-    // Small delay to let React render the hidden report
-    const timer = setTimeout(async () => {
-      try {
-        const blob = await html2pdf()
-          .set({
-            margin: [10, 5, 10, 5],
-            filename: "CloudAct_Spousal_Support_Report.pdf",
-            image: { type: "jpeg", quality: 0.95 },
-            html2canvas: { scale: 2, useCORS: true, width: 1100, windowWidth: 1100 },
-            jsPDF: { unit: "mm", format: "letter", orientation: "landscape" },
-            pagebreak: { mode: ["css", "legacy"] },
-          })
-          .from(reportRef.current)
-          .outputPdf("blob");
-
-        const url = URL.createObjectURL(blob);
-        setPdfBlobUrl(url);
-
-        // Also update lastCalcResult with the new pdf_base64 for Save to Matter
-        const reader = new FileReader();
-        reader.onloadend = () => {
-          const dataUrl = reader.result;
-          const base64 = dataUrl.split(",")[1];
-          setLastCalcResult((prev) => ({ ...prev, pdf_base64: base64 }));
-        };
-        reader.readAsDataURL(blob);
-      } catch (err) {
-        console.warn("[SpousalChat] PDF generation error:", err);
-      }
-    }, 300);
-    return () => clearTimeout(timer);
-  }, [lastCalcResult]);
 
   async function send(text) {
     const userText = (text != null ? text : input).trim();
@@ -514,11 +377,7 @@ export default function SpousalSupportChatPanel({
     setContextSent(false);
     setLastCalcResult(null);
     setSavedToMatter(false);
-    if (pdfBlobUrl) URL.revokeObjectURL(pdfBlobUrl);
-    setPdfBlobUrl(null);
   }
-
-  const reportProps = mapCalcResultToReportProps(lastCalcResult);
 
   return (
     <div className="mw-chat-panel">
@@ -575,10 +434,10 @@ export default function SpousalSupportChatPanel({
                 <div className="mw-action-buttons">
                   <a
                     className="mw-download-btn"
-                    href={pdfBlobUrl || downloadUrl}
+                    href={downloadUrl}
                     target="_blank"
                     rel="noopener noreferrer"
-                    download="CloudAct_Spousal_Support_Report.pdf"
+                    download
                   >
                     Download PDF Report
                   </a>
@@ -661,21 +520,6 @@ export default function SpousalSupportChatPanel({
           />
         </button>
       </div>
-
-      {/* Hidden CalculationReport for PDF generation — same component as manual calculator */}
-      {reportProps && (
-        <div style={{ position: "absolute", left: "-9999px", top: 0, opacity: 0, pointerEvents: "none", overflow: "visible" }}>
-          <CalculationReport
-            ref={reportRef}
-            background={reportProps.background}
-            aboutTheChildren={reportProps.aboutTheChildren}
-            aboutTheRelationship={reportProps.aboutTheRelationship}
-            screen2={reportProps.screen2}
-            typeOfCalculatorSelected={reportProps.typeOfCalculatorSelected}
-            supportQuantum={reportProps.supportQuantum}
-          />
-        </div>
-      )}
     </div>
   );
 }
