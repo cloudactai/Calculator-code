@@ -766,7 +766,6 @@ const formulaEnhancedCPPdeduction = ({
     } else {
       CPP2Amt = (employedIncome - data.CPP2PenEarning) * data.CPP2Rate;
     }
-    console.log("CPP2Amt", CPP2Amt)
 
     return Math.max(
       Math.min(
@@ -784,7 +783,6 @@ const formulaEnhancedCPPdeduction = ({
     } else {
       CPP2Amt = (selfEmployedIncome - data.CPP2PenEarning) * data.CPP2Rate * 2;
     }
-    console.log("CPP2Amt Self", CPP2Amt)
     return (
       calculateSelfEmployedDeductions(selfEmployedIncome, data) -
       Math.max(

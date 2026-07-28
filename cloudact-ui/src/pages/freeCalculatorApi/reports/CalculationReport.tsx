@@ -202,6 +202,10 @@ const CalculationReport = forwardRef<HTMLDivElement, CalculationReportProps>(
             font-size: 10px;
             background: #f5f5f5;
           }
+          .calc-report .page-break-avoid {
+            page-break-inside: avoid;
+            break-inside: avoid;
+          }
           @media print {
             .calc-report {
               padding: 15px 20px;
@@ -319,7 +323,7 @@ const CalculationReport = forwardRef<HTMLDivElement, CalculationReportProps>(
         </div>
 
         {/* RESULT SECTION - same width as top-left */}
-        <div style={{ width: "calc(50% - 10px)" }}>
+        <div className="page-break-avoid" style={{ width: "calc(50% - 10px)" }}>
         <div className="section-header result-header">Result</div>
         <table>
           <tbody>
@@ -359,6 +363,7 @@ const CalculationReport = forwardRef<HTMLDivElement, CalculationReportProps>(
         </div>
 
         {/* CALCULATION DETAILS - full width below result */}
+        <div className="page-break-avoid">
         <div className="section-header" style={{ marginTop: "14px" }}>Calculation details</div>
         <table className="details-table">
           <thead>
@@ -462,6 +467,7 @@ const CalculationReport = forwardRef<HTMLDivElement, CalculationReportProps>(
             )}
           </tbody>
         </table>
+        </div>
       </div>
     );
   }
