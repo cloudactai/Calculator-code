@@ -6152,14 +6152,93 @@ const Screen2 = ({
         basicPersonalAmountProvincialFixed: screen2.basicPersonalAmountProvincialFixed,
         amountForEligibleDependentProvincialFixed: screen2.amountForEligibleDependentProvincialFixed,
       };
+      const sid = getUserSID();
+
+      // 1) Save full calculator state
       fetchRequest(
         "post",
-        `update_matter/${getUserSID()}/${storedMatterNumber}/calculatorState`,
+        `update_matter/${sid}/${storedMatterNumber}/calculatorState`,
         [calcState]
       ).then(() => {
         console.log("[Calculator] Saved calculator state to matter DB");
       }).catch((err) => {
         console.warn("[Calculator] Failed to save calculator state:", err);
+      });
+
+      // 2) Save client/opposing party background details
+      const bg = screen1.background;
+      fetchRequest(
+        "post",
+        `update_matter/${sid}/${storedMatterNumber}/background`,
+        [
+          {
+            id: 1,
+            role: "Client",
+            name: `${bg.party1FirstName || ""} ${bg.party1LastName || ""}`.trim() || "",
+            dateOfBirth: bg.party1DateOfBirth || "",
+            province: bg.party1province || "",
+            liveInOntario: bg.party1LiveInOntario || "",
+            liveInRural: bg.party1LiveInRural || "",
+            eligibleForDisability: bg.party1eligibleForDisability || "",
+            exemptFromCanadaPension: bg.party1ExemptFromCanadaPension || "",
+            exemptFromEmploymentPremium: bg.party1ExemptFromEmploymentPremium || "",
+          },
+          {
+            id: 2,
+            role: "Opposing Party",
+            name: `${bg.party2FirstName || ""} ${bg.party2LastName || ""}`.trim() || "",
+            dateOfBirth: bg.party2DateOfBirth || "",
+            province: bg.party2province || "",
+            liveInOntario: bg.party2LiveInOntario || "",
+            liveInRural: bg.party2LiveInRural || "",
+            eligibleForDisability: bg.party2eligibleForDisability || "",
+            exemptFromCanadaPension: bg.party2ExemptFromCanadaPension || "",
+            exemptFromEmploymentPremium: bg.party2ExemptFromEmploymentPremium || "",
+          },
+        ]
+      ).then(() => {
+        console.log("[Calculator] Saved background details to matter DB");
+      }).catch((err) => {
+        console.warn("[Calculator] Failed to save background details:", err);
+      });
+
+      // 3) Save children details
+      const childrenRows = (screen1.aboutTheChildren?.childrenInfo || []).map((child, i) => ({
+        id: i + 1,
+        childName: child.name || "",
+        dateOfBirth: child.dateOfBirth || "",
+        livesWith: child.custodyArrangement || "",
+        childHasDisability: child.childHasDisability || "No",
+        childOfRelationship: child.childOfRelationship || "Yes",
+        adultChildStillALegalDependant: child.adultChildStillALegalDependant || "Yes",
+        childIncome: child.childIncome || 0,
+      }));
+      if (childrenRows.length > 0) {
+        fetchRequest(
+          "post",
+          `update_matter/${sid}/${storedMatterNumber}/children`,
+          childrenRows
+        ).then(() => {
+          console.log("[Calculator] Saved children details to matter DB");
+        }).catch((err) => {
+          console.warn("[Calculator] Failed to save children details:", err);
+        });
+      }
+
+      // 4) Save relationship details
+      const rel = screen1.aboutTheRelationship;
+      fetchRequest(
+        "post",
+        `update_matter/${sid}/${storedMatterNumber}/relationship`,
+        [{
+          id: 1,
+          dateOfMarriage: rel.dateOfMarriage || "",
+          dateOfSeparation: rel.dateOfSeparation || "",
+        }]
+      ).then(() => {
+        console.log("[Calculator] Saved relationship details to matter DB");
+      }).catch((err) => {
+        console.warn("[Calculator] Failed to save relationship details:", err);
       });
     }
 
