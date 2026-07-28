@@ -9,7 +9,7 @@ import useAPI from "../../hooks/useAPI";
 // @ts-ignore
 import useQuery from "../../hooks/useQuery";
 import { Store } from "../../store/store";
-import { getAllUserInfo } from "../../utils/helpers";
+import { getAllUserInfo, getUserSID } from "../../utils/helpers";
 import Restruction from "./screen4/Restruction";
 import {
   backgroundState,
@@ -34,6 +34,7 @@ import Screen2 from "./screen2/Screen2.tsx";
 // @ts-ignore
 import Screen4 from "./screen4/Screen4.tsx";
 import { FormInformation } from "../../utils/Apis/matters/CustomHook/PDFData.jsx";
+import { fetchRequest } from "../../utils/fetchRequest";
 import CONSTANTS from "./TollTipConstants.js";
 
 const Calculator = () => {
@@ -625,48 +626,31 @@ const Calculator = () => {
         }));
       }
 
-      //code to prefill screen 2 data
-      // setScreen2(prevState => {
-      //   const getNonEmptyArrayOrInitial = (newArray, initialArray) => 
-      //     newArray.length > 0 ? newArray : initialArray;
-      
-      //   const processIncome = (partyData, initialPartyData) => {
-      //     const newIncome = Object.entries(partyData)
-      //       .map(([label, amount]) => ({
-      //         label,
-      //         amount: amount.toString(),
-      //         value: amount.toString(),
-      //         tooltip: CONSTANTS[label] || "",
-      //       }))
-      //       .filter(item => item.value !== "" || item.value !== '');
-      
-      //     return getNonEmptyArrayOrInitial(newIncome, initialPartyData);
-      //   };
-      
-      //   const processSpecialExpenses = (partyData, initialPartyData) => {
-      //     const newExpenses = partyData.map(expense => ({
-      //       label: expense.expenses,
-      //       amount: expense.amount.toString(),
-      //       value: expense.amount.toString(),
-      //       child: expense.name || "",
-      //       tooltip: CONSTANTS[expense.category] || "",
-      //     })).filter(item => item.value !== "" || item.value !== '');
-      
-      //     return getNonEmptyArrayOrInitial(newExpenses, initialPartyData);
-      //   };
-      
-      //   return {
-      //     ...prevState,
-      //     income: {
-      //       party1: processIncome(matterData.income.client, prevState.income.party1),
-      //       party2: processIncome(matterData.income.opposingParty, prevState.income.party2),
-      //     },
-      //     specialExpensesArr: {
-      //       party1: processSpecialExpenses(matterData.specialExpenses.client, prevState.specialExpensesArr.party1),
-      //       party2: processSpecialExpenses(matterData.specialExpenses.opposingParty, prevState.specialExpensesArr.party2),
-      //     },
-      //   };
-      // });
+      // Prefill screen 2 income data from matter records
+      if (matterData.income) {
+        setScreen2(prevState => {
+          const processIncome = (partyData, initialPartyData) => {
+            if (!partyData) return initialPartyData;
+            const newIncome = Object.entries(partyData)
+              .filter(([, amount]) => amount !== "" && amount !== "0" && amount != null)
+              .map(([label, amount]) => ({
+                label,
+                amount: String(amount),
+                value: String(amount),
+                tooltip: CONSTANTS[label] || "",
+              }));
+            return newIncome.length > 0 ? newIncome : initialPartyData;
+          };
+
+          return {
+            ...prevState,
+            income: {
+              party1: processIncome(matterData.income.client, prevState.income.party1),
+              party2: processIncome(matterData.income.opposingParty, prevState.income.party2),
+            },
+          };
+        });
+      }
     }
   }, [matterData]);
 
@@ -895,6 +879,60 @@ const Calculator = () => {
       Cookies.remove("calculatorLabel");
     };
   }, []);
+
+  // ── Load previously saved calculator state from the matter's DB record ──
+  useEffect(() => {
+    if (!matter_id || getCurrentIdFromQuery() !== null) return; // skip if loading a legacy saved calc
+    fetchRequest("get", `get_single_matter_data/${getUserSID()}/${matter_id}/calculatorState`)
+      .then(({ data }) => {
+        const rows = data?.data?.body ?? data?.data ?? [];
+        const saved = Array.isArray(rows) && rows.length > 0 ? rows[0] : null;
+        if (!saved) return;
+        console.log("[Calculator] Restoring calculator state from DB");
+
+        if (saved.background) setBackground((prev) => ({ ...prev, ...saved.background }));
+        if (saved.aboutTheChildren) setAboutTheChildren(saved.aboutTheChildren);
+        if (saved.aboutTheRelationship) setAboutTheRelationship(saved.aboutTheRelationship);
+        if (saved.calculator_type) setTypeOfCalculatorSelected(saved.calculator_type);
+
+        setScreen2((prev) => ({
+          ...prev,
+          ...(saved.income && { income: saved.income }),
+          ...(saved.undueHardshipIncome && { undueHardshipIncome: saved.undueHardshipIncome }),
+          ...(saved.benefits && { benefits: saved.benefits }),
+          ...(saved.deductions && { deductions: saved.deductions }),
+          ...(saved.tax_year != null && { tax_year: saved.tax_year }),
+          ...(saved.guidelineIncome && { guidelineIncome: saved.guidelineIncome }),
+          ...(saved.specialExpensesArr && { specialExpensesArr: saved.specialExpensesArr }),
+          ...(saved.otherhouseholdmember && { otherhouseholdmember: saved.otherhouseholdmember }),
+          ...(saved.canadaChildBenefitFixed && { canadaChildBenefitFixed: saved.canadaChildBenefitFixed }),
+          ...(saved.ChildDisabilityBenefitFixed && { ChildDisabilityBenefitFixed: saved.ChildDisabilityBenefitFixed }),
+          ...(saved.ClimateActionBenefitFixed && { ClimateActionBenefitFixed: saved.ClimateActionBenefitFixed }),
+          ...(saved.provChildBenefitFixed && { provChildBenefitFixed: saved.provChildBenefitFixed }),
+          ...(saved.GSTHSTBenefitFixed && { GSTHSTBenefitFixed: saved.GSTHSTBenefitFixed }),
+          ...(saved.salesTaxBenefitFixed && { salesTaxBenefitFixed: saved.salesTaxBenefitFixed }),
+          ...(saved.basicPersonalAmountFederalFixed && { basicPersonalAmountFederalFixed: saved.basicPersonalAmountFederalFixed }),
+          ...(saved.basicPartyDisabilityFixed && { basicPartyDisabilityFixed: saved.basicPartyDisabilityFixed }),
+          ...(saved.basicPartyDisabilityProvFixed && { basicPartyDisabilityProvFixed: saved.basicPartyDisabilityProvFixed }),
+          ...(saved.amountForEligibleDependentFixed && { amountForEligibleDependentFixed: saved.amountForEligibleDependentFixed }),
+          ...(saved.baseCPPContributionFixed && { baseCPPContributionFixed: saved.baseCPPContributionFixed }),
+          ...(saved.eiPremiumFixed && { eiPremiumFixed: saved.eiPremiumFixed }),
+          ...(saved.canadaEmploymentAmountFixed && { canadaEmploymentAmountFixed: saved.canadaEmploymentAmountFixed }),
+          ...(saved.basicPersonalAmountProvincialFixed && { basicPersonalAmountProvincialFixed: saved.basicPersonalAmountProvincialFixed }),
+          ...(saved.amountForEligibleDependentProvincialFixed && { amountForEligibleDependentProvincialFixed: saved.amountForEligibleDependentProvincialFixed }),
+        }));
+
+        if (saved.nonTaxableincome) {
+          setNonTaxableincome(saved.nonTaxableincome);
+        }
+        if (saved.undueHardship) {
+          setundueHardship(saved.undueHardship);
+        }
+      })
+      .catch((err) => {
+        console.warn("[Calculator] Failed to load calculator state:", err);
+      });
+  }, [matter_id]);
 
   // ── Restore state from a saved MatterCalculationReport ("View Calculation") ──
   useEffect(() => {
