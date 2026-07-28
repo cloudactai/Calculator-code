@@ -25,7 +25,7 @@ import { calcChildSupportFlask } from "../../../utils/Apis/calculator/calcChildS
 import useQuery from "../../../hooks/useQuery";
 import { AUTH_ROUTES } from "../../../routes/Routes.types";
 import { apiCalculatorById } from "../../../utils/Apis/calculator/Calculator_values_id";
-import { fetchRequest } from "../../../fetchRequest";
+import { fetchRequest } from "../../../utils/fetchRequest";
 import { fetchSpecificTaxandDeductionforAmount } from "../../../utils/Apis/calculator/fetchSpecificTaxandDeductionforAmount";
 import { getDistinctYearsInTaxRef } from "../../../utils/Apis/getDistinctYearsInTaxRef";
 import {
