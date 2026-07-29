@@ -1346,6 +1346,14 @@
   font-weight: 800;
 }
 
+/* The *Simple forms behind "View Information and Documents" label their fields
+   with .form-label, not .form-label-custom, so the titles rendered as plain
+   text here while the very same forms are bold on the five-steps page. */
+.matterModal .accordion-body .form-label {
+  font-size: 16px;
+  font-weight: 800;
+}
+
 .matterModal .accordion-body .sub-heading {
   font-size: 20px;
   font-weight: 700;

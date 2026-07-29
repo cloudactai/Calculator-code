@@ -441,6 +441,28 @@ body .wrapper.mini .mainSide .sideMenu a span.icon {
   font-size: 16px;
 }
 
+/* The rule above gives every input a fixed 45px box with no vertical padding,
+   which text inputs centre their value in automatically. Safari lays
+   input[type="date"] out with its own intrinsic box instead: it renders taller
+   than the inputs beside it and top-aligns the value rather than centring it
+   (Date of Birth, children's dates of birth, relationship dates). Dropping the
+   native appearance makes it honour the 45px, and the pseudo-elements centre
+   the value in both engines - they are inert in Chrome, which already behaves. */
+.form-group > input[type="date"] {
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+.form-group > input[type="date"]::-webkit-datetime-edit,
+.form-group > input[type="date"]::-webkit-date-and-time-value {
+  display: flex;
+  align-items: center;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  text-align: left;
+}
+
 .form-group > input[readonly],
 .form-group > input[disabled],
 .form-group .form-select[readonly],

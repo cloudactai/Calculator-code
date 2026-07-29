@@ -126,6 +126,7 @@ export default function ProfileSummaryPanel({ matterId, matterData, onBack }) {
             onUpdateFormData={onUpdateFormData}
             bgInfoActiveTab={bgInfoActiveTab}
             setBgInfoActiveTab={setBgInfoActiveTab}
+            insideModal
           />
         );
       case "CourtInformationSimple":

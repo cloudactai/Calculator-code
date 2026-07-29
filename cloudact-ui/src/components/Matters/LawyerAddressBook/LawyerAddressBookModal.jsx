@@ -22,7 +22,16 @@ const MEMBER_OF_FIRM_LIST = [
 
 const isMemberOfFirm = (value) => value === true || value === "Yes";
 
-const LawyerAddressBookModal = ({ show, onHide, onInsert, addressBook }) => {
+// `nested` = opened from a form that is itself inside a modal ("View
+// Information and Documents"), where the page is already dimmed. See the
+// stacking note in lawyerAddressBook.css.
+const LawyerAddressBookModal = ({
+  show,
+  onHide,
+  onInsert,
+  addressBook,
+  nested = false,
+}) => {
   const { lawyers, loading, error: loadError, reload, save, remove } = addressBook;
   const [selectedId, setSelectedId] = useState(null);
   // null when the form is closed; otherwise the entry being added or edited.
@@ -100,7 +109,8 @@ const LawyerAddressBookModal = ({ show, onHide, onInsert, addressBook }) => {
       centered
       size="xl"
       dialogClassName="customModal lawyer-addressbook-modal"
-      backdropClassName="lawyer-addressbook-backdrop"
+      backdropClassName={`lawyer-addressbook-backdrop${nested ? " nested" : ""}`}
+      className={nested ? "lawyer-addressbook-nested" : undefined}
       aria-labelledby="lawyer-addressbook-title"
     >
       <Modal.Header closeButton>

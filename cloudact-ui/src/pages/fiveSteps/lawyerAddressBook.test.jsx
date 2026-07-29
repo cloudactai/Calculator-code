@@ -251,6 +251,7 @@ test("the address book still opens when the form itself is inside a modal", asyn
               matterData={{}}
               bgInfoActiveTab="Client"
               setBgInfoActiveTab={() => {}}
+              insideModal
             />
           </Modal.Body>
         </Modal>
@@ -268,4 +269,12 @@ test("the address book still opens when the form itself is inside a modal", asyn
   const addressBook = dialogs[dialogs.length - 1];
   expect(within(addressBook).getByText("Lawyer details")).toBeInTheDocument();
   expect(within(addressBook).getByText("Sam Smith")).toBeInTheDocument();
+
+  // Bootstrap gives every backdrop the same z-index, so without the `nested`
+  // variant this one renders behind the parent dialog and dims nothing. The
+  // CSS keys off these classes — losing them silently breaks the overlay.
+  expect(addressBook).toHaveClass("lawyer-addressbook-nested");
+  expect(
+    document.querySelector(".lawyer-addressbook-backdrop.nested")
+  ).toBeInTheDocument();
 });

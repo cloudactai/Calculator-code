@@ -49,6 +49,20 @@
   --bs-backdrop-opacity: 0.55;
 }
 
+/* Opened from "View Information and Documents" the dialog stacks on top of the
+   Background Information modal, which already dims the page. Bootstrap gives
+   EVERY backdrop z-index 1050 and every modal 1055, so without a bump this
+   backdrop would sit behind the parent dialog and dim nothing at all. Lift both
+   above the parent, and go lighter so the two overlays don't compound to black. */
+.lawyer-addressbook-backdrop.nested {
+  --bs-backdrop-zindex: 1060;
+  --bs-backdrop-opacity: 0.3;
+}
+
+.lawyer-addressbook-nested {
+  z-index: 1065;
+}
+
 .lawyer-ab-table {
   width: 100%;
   border-collapse: collapse;

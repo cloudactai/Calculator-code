@@ -14,7 +14,10 @@ import useLawyerAddressBook from "../../utils/Apis/lawyers/useLawyerAddressBook"
 import { lawyerToPartyFields } from "../../utils/Apis/lawyers/lawyerAddressBookApi";
 import { PROVINCE_LIST } from "../../utils/canadianProvinces";
 
-const BackgroundInformationSimple = ({ matterId, onUpdateFormData, bgInfoActiveTab, setBgInfoActiveTab }) => {
+// `insideModal` is set by ProfileSummaryPanel, which renders this form inside
+// the "Background Information" modal — the address book then has to stack on
+// top of that dialog and dim more gently. See lawyerAddressBook.css.
+const BackgroundInformationSimple = ({ matterId, onUpdateFormData, bgInfoActiveTab, setBgInfoActiveTab, insideModal = false }) => {
   const [loading, setLoading] = useState(true);
 
   const { selectBackground, selectBackgroundLoading } =
@@ -704,6 +707,7 @@ const BackgroundInformationSimple = ({ matterId, onUpdateFormData, bgInfoActiveT
             onHide={() => setAddressBookFor(null)}
             onInsert={(picked) => applyLawyer(addressBookFor, picked)}
             addressBook={addressBook}
+            nested={insideModal}
           />
         </div>
       )}
