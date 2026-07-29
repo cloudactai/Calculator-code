@@ -253,9 +253,9 @@ export default function ChildSupportChatPanel({
     if (inputRef.current) inputRef.current.focus();
   }, []);
 
-  // Auto-send context on mount if matter data exists
+  // Auto-send context on mount once matter data (including income) is loaded
   useEffect(() => {
-    if (!contextSent && matterData) {
+    if (!contextSent && matterData && matterData.income_and_benefits) {
       const ctx = buildContextMessage(matterData);
       if (ctx) {
         setContextSent(true);
