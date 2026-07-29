@@ -90,14 +90,17 @@ const LawyerAddressBookModal = ({ show, onHide, onInsert, addressBook }) => {
     onHide();
   };
 
+  // size="xl", not "lg": at the form's 16px type, six columns plus a real email
+  // address overflow an lg dialog and clip the "Member of our firm" header.
   return (
     <Modal
       show={show}
       onHide={onHide}
       keyboard
       centered
-      size="lg"
+      size="xl"
       dialogClassName="customModal lawyer-addressbook-modal"
+      backdropClassName="lawyer-addressbook-backdrop"
       aria-labelledby="lawyer-addressbook-title"
     >
       <Modal.Header closeButton>
@@ -312,18 +315,20 @@ const LawyerAddressBookModal = ({ show, onHide, onInsert, addressBook }) => {
             </div>
           </div>
         )}
-      </Modal.Body>
 
-      <Modal.Footer>
-        <button
-          type="button"
-          className="btn lawyer-ab-insert"
-          onClick={handleInsert}
-          disabled={!selected}
-        >
-          Insert Lawyer details
-        </button>
-      </Modal.Footer>
+        {/* In the body rather than a Modal.Footer: the footer's own padding
+            left a large gap under +Add. */}
+        <div className="lawyer-ab-insert-row">
+          <button
+            type="button"
+            className="btn lawyer-ab-insert"
+            onClick={handleInsert}
+            disabled={!selected}
+          >
+            Insert Lawyer details
+          </button>
+        </div>
+      </Modal.Body>
     </Modal>
   );
 };

@@ -26,32 +26,52 @@
 
 /* ── Modal ───────────────────────────────────────────────────────────────── */
 
+/* The modal renders in a portal on document.body, so it sits OUTSIDE
+   .five-steps-page and inherits none of its typography. Everything below
+   restates the form's own scale (matters.css: 16px / weight 800 labels) so the
+   address book reads as part of the same form.
+   Header tint lives in one variable — change it here and the whole row moves. */
+.lawyer-addressbook-modal {
+  --lawyer-ab-header-bg: #e3effb;
+  --lawyer-ab-ink: #171d34;
+}
+
 .lawyer-addressbook-modal .modal-body {
   padding-top: 18px;
+  padding-bottom: 8px;
+  color: var(--lawyer-ab-ink);
+  font-size: 16px;
+}
+
+/* Dim the page behind the dialog the way the rest of the app's modals do. */
+.lawyer-addressbook-backdrop {
+  --bs-backdrop-bg: #171d34;
+  --bs-backdrop-opacity: 0.55;
 }
 
 .lawyer-ab-table {
   width: 100%;
   border-collapse: collapse;
-  font-size: 14px;
-  color: #171d34;
+  font-size: 16px;
+  color: var(--lawyer-ab-ink);
+}
+
+/* One uniform blue across the whole header row — no grey/blue split. */
+.lawyer-ab-table thead tr {
+  background-color: var(--lawyer-ab-header-bg);
 }
 
 .lawyer-ab-table th {
-  background-color: #f6f9fc;
-  border-bottom: 1px solid #dfe7ef;
-  font-weight: 600;
-  padding: 10px 12px;
+  background-color: var(--lawyer-ab-header-bg);
+  font-weight: 800;
+  padding: 12px;
   text-align: left;
   white-space: nowrap;
 }
 
-.lawyer-ab-table th:last-child {
-  background-color: #e3f3ff;
-}
-
 .lawyer-ab-table td {
   border-bottom: 1px solid #eef2f6;
+  font-weight: 400;
   padding: 12px;
   vertical-align: middle;
 }
@@ -71,23 +91,32 @@
 .lawyer-ab-empty,
 .lawyer-ab-status {
   color: #6b7280;
-  font-size: 14px;
+  font-size: 16px;
   padding: 16px 12px;
 }
 
 .lawyer-ab-error {
   color: #fb554a;
-  font-size: 14px;
-  padding: 8px 0 0;
+  font-size: 16px;
+  padding: 8px 12px 0;
 }
 
 .lawyer-ab-actions {
   align-items: center;
   display: flex;
   gap: 18px;
-  padding: 12px 12px 0;
+  padding: 10px 12px 0;
 }
 
+/* Sits in the body, not a Modal.Footer: the footer's own padding pushed the
+   button a long way below +Add. */
+.lawyer-ab-insert-row {
+  display: flex;
+  justify-content: flex-end;
+  padding: 10px 12px 4px;
+}
+
+/* The one piece deliberately left at link scale rather than form-label scale. */
 .lawyer-ab-link {
   background: none;
   border: none;
@@ -111,13 +140,13 @@
 
 .lawyer-ab-form {
   border-top: 1px solid #eef2f6;
-  margin-top: 14px;
+  margin: 14px 12px 0;
   padding-top: 16px;
 }
 
 .lawyer-ab-form-title {
-  font-size: 15px;
-  font-weight: 700;
+  font-size: 16px;
+  font-weight: 800;
   margin-bottom: 12px;
 }
 
@@ -133,10 +162,13 @@
   }
 }
 
+/* Matches `.five-steps-page .form-label` (matters.css), which the portal can't
+   reach — see the note at the top of this file. */
 .lawyer-ab-form-grid .form-label {
   display: block;
-  font-size: 13px;
-  font-weight: 600;
+  color: var(--lawyer-ab-ink);
+  font-size: 16px;
+  font-weight: 800;
   margin-bottom: 4px;
 }
 
