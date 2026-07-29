@@ -84,6 +84,37 @@ router.post("/matters/:matter_id/reports", async (req, res) => {
   }
 });
 
+// ── Get the latest report for a matter (for chat pre-fill) ─────────────────
+// MUST be registered before the generic /reports list route
+router.get("/matters/:matter_id/reports/latest", async (req, res) => {
+  try {
+    console.log("[reports/latest] Fetching for matter:", req.params.matter_id, "user:", req.user.id);
+    const matter = await findMatter(req.user.id, req.params.matter_id);
+    console.log("[reports/latest] findMatter result:", matter ? { id: matter.id, matterNumber: matter.matterNumber } : "null");
+    if (!matter) return res.json(ok(null));
+
+    const report = await prisma.matterCalculationReport.findFirst({
+      where: { matterId: matter.id, userId: req.user.id },
+      orderBy: { createdAt: "desc" },
+      select: {
+        id: true,
+        calculationType: true,
+        taxYear: true,
+        label: true,
+        inputData: true,
+        resultData: true,
+        createdAt: true,
+      },
+    });
+
+    console.log("[reports/latest] Found report:", report ? { id: report.id, hasInputData: !!report.inputData, hasFullState: !!report.inputData?._fullState } : "null");
+    return res.json(ok(report || null));
+  } catch (err) {
+    console.log("GET /v1/matters/:id/reports/latest failed:", err?.message || err);
+    return res.status(500).json(errorBody("Could not load latest report.", 500));
+  }
+});
+
 // ── List reports for a matter ───────────────────────────────────────────────
 router.get("/matters/:matter_id/reports", async (req, res) => {
   try {
@@ -110,33 +141,6 @@ router.get("/matters/:matter_id/reports", async (req, res) => {
   } catch (err) {
     console.log("GET /v1/matters/:id/reports failed:", err?.message || err);
     return res.status(500).json(errorBody("Could not list reports.", 500));
-  }
-});
-
-// ── Get the latest report for a matter (for chat pre-fill) ─────────────────
-router.get("/matters/:matter_id/reports/latest", async (req, res) => {
-  try {
-    const matter = await findMatter(req.user.id, req.params.matter_id);
-    if (!matter) return res.json(ok(null));
-
-    const report = await prisma.matterCalculationReport.findFirst({
-      where: { matterId: matter.id, userId: req.user.id },
-      orderBy: { createdAt: "desc" },
-      select: {
-        id: true,
-        calculationType: true,
-        taxYear: true,
-        label: true,
-        inputData: true,
-        resultData: true,
-        createdAt: true,
-      },
-    });
-
-    return res.json(ok(report || null));
-  } catch (err) {
-    console.log("GET /v1/matters/:id/reports/latest failed:", err?.message || err);
-    return res.status(500).json(errorBody("Could not load latest report.", 500));
   }
 });
 
