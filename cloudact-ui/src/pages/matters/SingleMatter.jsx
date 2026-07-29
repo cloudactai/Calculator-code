@@ -29,6 +29,7 @@ import {
 import { getMatterData } from "../../utils/Apis/matters/getMatterData/getMatterDataActions";
 import { AUTH_ROUTES } from "../../routes/Routes.types";
 import { formsService } from "../../services/formsService";
+import dataAxios from "../../utils/dataAxios";
 
 /**
  * SingleMatter — task-list-based workflow for a divorce matter.
@@ -72,6 +73,8 @@ const SingleMatter = () => {
 
   // Aggregated matter data for the chat context
   const [fullMatterData, setFullMatterData] = useState(null);
+  // Latest saved calculation report for this matter (used for chat pre-fill)
+  const [latestCalcReport, setLatestCalcReport] = useState(undefined); // undefined = not fetched yet
   // Fresh database snapshot used only by matter intake. It is deliberately
   // separate from the legacy support-calculator context above.
   const [intakeMatterData, setIntakeMatterData] = useState(null);
@@ -142,26 +145,54 @@ const SingleMatter = () => {
     }
   }, [dispatch, id, matterData]);
 
-  // Build aggregated matter data for the chat panel
+  // Fetch latest saved calculation report for pre-filling the chat
   useEffect(() => {
-    if (matterData) {
+    if (!matterData) return;
+    let active = true;
+    dataAxios
+      .get(`matters/${id}/reports/latest`)
+      .then((res) => {
+        const report = res.data?.data?.body ?? res.data?.data ?? null;
+        if (active) {
+          console.log("[SingleMatter] latestCalcReport:", report ? `id=${report.id}` : "none");
+          setLatestCalcReport(report); // null means no saved calc
+        }
+      })
+      .catch((err) => {
+        console.warn("[SingleMatter] Failed to fetch latest calc report:", err);
+        if (active) setLatestCalcReport(null);
+      });
+    return () => { active = false; };
+  }, [id, matterData]);
+
+  // Build aggregated matter data for the chat panel
+  // Wait until the latest calc report fetch completes (latestCalcReport !== undefined)
+  useEffect(() => {
+    if (matterData && latestCalcReport !== undefined) {
+      // Extract income from the last saved calculation if available
+      const fullState = latestCalcReport?.inputData?._fullState;
+      let incomeInfo = null;
+      if (fullState?.screen2) {
+        const s2 = fullState.screen2;
+        incomeInfo = {
+          party1_income: s2.totalIncomeParty1,
+          party2_income: s2.totalIncomeParty2,
+          party1_province: fullState.background?.party1Province,
+          party2_province: fullState.background?.party2Province,
+        };
+      }
+
+      console.log("[SingleMatter] Building fullMatterData with latestCalcReport:", latestCalcReport ? `id=${latestCalcReport.id}` : "none", "incomeInfo:", incomeInfo);
+
       setFullMatterData({
         client_id: matterData.client_id,
         matter_number: id,
         background_information: backgroundData?.body?.[0] || null,
         children_information: childrenData?.body || null,
         relationship_information: relationshipData?.body?.[0] || null,
-        income_and_benefits: (() => {
-          const rows = incomeBenefitsData?.body;
-          if (!rows || !rows.length) return null;
-          const grouped = { client: { income: [], benefits: [] }, opposing_party: { income: [], benefits: [] } };
-          rows.forEach((r) => {
-            const key = r.role === "Opposing Party" ? "opposing_party" : "client";
-            const bucket = r.incomeBenefit === "benefit" ? "benefits" : "income";
-            grouped[key][bucket].push({ source: r.type, type: r.type, yearlyAmount: r.yearlyAmount, monthlyAmount: r.monthlyAmount });
-          });
-          return grouped;
-        })(),
+        // Income from the last saved calculation (not from MatterRecord)
+        last_calculation: incomeInfo,
+        last_calculation_full: fullState || null,
         employment_information: employmentData?.body?.[0] || null,
         assets_information: assetsData?.body || null,
         expense_information: expenseData?.body?.[0] || null,
@@ -169,7 +200,7 @@ const SingleMatter = () => {
         court_information: courtData?.body?.[0] || null,
       });
     }
-  }, [matterData, id, backgroundData, childrenData, relationshipData, incomeBenefitsData, employmentData, assetsData, expenseData, debtData, courtData]);
+  }, [matterData, id, latestCalcReport, backgroundData, childrenData, relationshipData, employmentData, assetsData, expenseData, debtData, courtData]);
 
   const matterName =
     matterData?.client_id || history.location?.state?.clientName || "Matter";
