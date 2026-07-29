@@ -2,12 +2,17 @@ import { useEffect, useState } from "react";
 
 import Dropdown from "../../components/Matters/Form/Dropdown";
 import InputCustom from "../../components/InputCustom";
+import LawyerAddressBookModal from "../../components/Matters/LawyerAddressBook/LawyerAddressBookModal";
+import LawyerNamePicker from "../../components/Matters/LawyerAddressBook/LawyerNamePicker";
 
 import lawyer from "../../assets/images/lawyer.svg";
 import { useSelector } from "react-redux";
 import Loader from "../../components/Loader";
 import { selectSingleMatterData } from "../../utils/Apis/matters/getSingleMatter/getSingleMattersSelectors";
 import useSingleMatterData from "../../utils/Apis/matters/CustomHook/DocumentViewData";
+import useLawyerAddressBook from "../../utils/Apis/lawyers/useLawyerAddressBook";
+import { lawyerToPartyFields } from "../../utils/Apis/lawyers/lawyerAddressBookApi";
+import { PROVINCE_LIST } from "../../utils/canadianProvinces";
 
 const BackgroundInformationSimple = ({ matterId, onUpdateFormData, bgInfoActiveTab, setBgInfoActiveTab }) => {
   const [loading, setLoading] = useState(true);
@@ -113,6 +118,21 @@ const BackgroundInformationSimple = ({ matterId, onUpdateFormData, bgInfoActiveT
     });
   };
 
+  // Lawyer address book. One shared list for both parties; `addressBookFor`
+  // remembers which party's lawyer block opened the modal so "Insert Lawyer
+  // details" fills the right form.
+  const addressBook = useLawyerAddressBook();
+  const [addressBookFor, setAddressBookFor] = useState(null);
+
+  const applyLawyer = (formType, selectedLawyer) => {
+    const fields = lawyerToPartyFields(selectedLawyer);
+    if (formType === "client") {
+      setClientFormData((prevState) => ({ ...prevState, ...fields }));
+    } else {
+      setOpposingPartyFormData((prevState) => ({ ...prevState, ...fields }));
+    }
+  };
+
   const handleRoleSelection = (e, selectedRole, formType) => {
     const selectedValue = selectedRole ? selectedRole.value : "";
 
@@ -171,60 +191,7 @@ const BackgroundInformationSimple = ({ matterId, onUpdateFormData, bgInfoActiveT
     },
   ]);
 
-  const provinceList = [
-    {
-      name: "Ontario",
-      value: "Ontario",
-    },
-    {
-      name: "Quebec",
-      value: "Quebec",
-    },
-    {
-      name: "British Columbia",
-      value: "British Columbia",
-    },
-    {
-      name: "Alberta",
-      value: "Alberta",
-    },
-    {
-      name: "Manitoba",
-      value: "Manitoba",
-    },
-    {
-      name: "Saskatchewan",
-      value: "Saskatchewan",
-    },
-    {
-      name: "Nova Scotia",
-      value: "Nova Scotia",
-    },
-    {
-      name: "New Brunswick",
-      value: "New Brunswick",
-    },
-    {
-      name: "Newfoundland and Labrador",
-      value: "Newfoundland and Labrador",
-    },
-    {
-      name: "Prince Edward Island",
-      value: "Prince Edward Island",
-    },
-    {
-      name: "Northwest Territories",
-      value: "Northwest Territories",
-    },
-    {
-      name: "Nunavut",
-      value: "Nunavut",
-    },
-    {
-      name: "Yukon",
-      value: "Yukon",
-    },
-  ];
+  const provinceList = PROVINCE_LIST;
 
   const representedByList = [
     {
@@ -390,16 +357,31 @@ const BackgroundInformationSimple = ({ matterId, onUpdateFormData, bgInfoActiveT
                     <span>Lawyer</span>
                   </div>
 
+                  <button
+                    type="button"
+                    className="lawyer-addressbook-btn"
+                    onClick={() => setAddressBookFor("client")}
+                  >
+                    Lawyer Addressbook
+                  </button>
+
                   <div className="inputs-group pb-10px">
                     <div className="inputs-row labeled pb-20px">
                       <div className="inputs inputs-2-3">
-                        <label className="form-label mb-0">Full Name*</label>
-                        <InputCustom
-                          type="text"
-                          placeholder="Enter Name"
-                          name="lawyerName"
+                        <label
+                          className="form-label mb-0"
+                          htmlFor="client-lawyer-name"
+                        >
+                          Full Name*
+                        </label>
+                        <LawyerNamePicker
+                          id="client-lawyer-name"
                           value={clientFormData.lawyerName}
-                          handleChange={handleClientFormDataChange}
+                          onChange={handleClientFormDataChange}
+                          onSelectLawyer={(picked) =>
+                            applyLawyer("client", picked)
+                          }
+                          lawyers={addressBook.lawyers}
                         />
                       </div>
                       <div className="inputs inputs-2-3">
@@ -604,16 +586,31 @@ const BackgroundInformationSimple = ({ matterId, onUpdateFormData, bgInfoActiveT
                     <span>Lawyer</span>
                   </div>
 
+                  <button
+                    type="button"
+                    className="lawyer-addressbook-btn"
+                    onClick={() => setAddressBookFor("opposingParty")}
+                  >
+                    Lawyer Addressbook
+                  </button>
+
                   <div className="inputs-group pb-10px">
                     <div className="inputs-row labeled pb-20px">
                       <div className="inputs inputs-2-3">
-                        <label className="form-label mb-0">Full Name*</label>
-                        <InputCustom
-                          type="text"
-                          placeholder="Enter Name"
-                          name="lawyerName"
+                        <label
+                          className="form-label mb-0"
+                          htmlFor="opposing-lawyer-name"
+                        >
+                          Full Name*
+                        </label>
+                        <LawyerNamePicker
+                          id="opposing-lawyer-name"
                           value={opposingPartyFormData.lawyerName}
-                          handleChange={handleOpposingPartyFormDataChange}
+                          onChange={handleOpposingPartyFormDataChange}
+                          onSelectLawyer={(picked) =>
+                            applyLawyer("opposingParty", picked)
+                          }
+                          lawyers={addressBook.lawyers}
                         />
                       </div>
                       <div className="inputs inputs-2-3">
@@ -701,6 +698,13 @@ const BackgroundInformationSimple = ({ matterId, onUpdateFormData, bgInfoActiveT
               )}
             </div>
           )}
+
+          <LawyerAddressBookModal
+            show={Boolean(addressBookFor)}
+            onHide={() => setAddressBookFor(null)}
+            onInsert={(picked) => applyLawyer(addressBookFor, picked)}
+            addressBook={addressBook}
+          />
         </div>
       )}
     </>

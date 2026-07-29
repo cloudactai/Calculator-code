@@ -19,6 +19,7 @@ const migratedDataEndpoints = [
     /^save_file_data\//,
     /^get_file_data\//,
     /^SAVE_FORM_FIELDS\//,
+    /^lawyers(\/|$)/,
 ];
 
 const clientForEndpoint = (endpoint) => {

@@ -1,0 +1,232 @@
+/* Lawyer address book: the "Lawyer Addressbook" trigger on the party form and
+   the "Lawyer details" modal it opens. */
+
+.lawyer-addressbook-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0 0 14px 0;
+  padding: 6px 16px;
+  background: transparent;
+  border: 1px solid #73c3fd;
+  border-radius: 10px;
+  color: #307ff4;
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1.4;
+  cursor: pointer;
+}
+
+.lawyer-addressbook-btn:hover,
+.lawyer-addressbook-btn:focus {
+  background-color: #e3f3ff;
+  border-color: #307ff4;
+  color: #307ff4;
+}
+
+/* ── Modal ───────────────────────────────────────────────────────────────── */
+
+.lawyer-addressbook-modal .modal-body {
+  padding-top: 18px;
+}
+
+.lawyer-ab-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+  color: #171d34;
+}
+
+.lawyer-ab-table th {
+  background-color: #f6f9fc;
+  border-bottom: 1px solid #dfe7ef;
+  font-weight: 600;
+  padding: 10px 12px;
+  text-align: left;
+  white-space: nowrap;
+}
+
+.lawyer-ab-table th:last-child {
+  background-color: #e3f3ff;
+}
+
+.lawyer-ab-table td {
+  border-bottom: 1px solid #eef2f6;
+  padding: 12px;
+  vertical-align: middle;
+}
+
+.lawyer-ab-table tbody tr {
+  cursor: pointer;
+}
+
+.lawyer-ab-table tbody tr:hover {
+  background-color: #f6f9fc;
+}
+
+.lawyer-ab-table tbody tr.selected {
+  background-color: #e3f3ff;
+}
+
+.lawyer-ab-empty,
+.lawyer-ab-status {
+  color: #6b7280;
+  font-size: 14px;
+  padding: 16px 12px;
+}
+
+.lawyer-ab-error {
+  color: #fb554a;
+  font-size: 14px;
+  padding: 8px 0 0;
+}
+
+.lawyer-ab-actions {
+  align-items: center;
+  display: flex;
+  gap: 18px;
+  padding: 12px 12px 0;
+}
+
+.lawyer-ab-link {
+  background: none;
+  border: none;
+  color: #307ff4;
+  font-size: 14px;
+  font-weight: 600;
+  padding: 0;
+  cursor: pointer;
+}
+
+.lawyer-ab-link:disabled {
+  color: #9ca3af;
+  cursor: not-allowed;
+}
+
+.lawyer-ab-link.danger {
+  color: #fb554a;
+}
+
+/* ── Add / edit form ─────────────────────────────────────────────────────── */
+
+.lawyer-ab-form {
+  border-top: 1px solid #eef2f6;
+  margin-top: 14px;
+  padding-top: 16px;
+}
+
+.lawyer-ab-form-title {
+  font-size: 15px;
+  font-weight: 700;
+  margin-bottom: 12px;
+}
+
+.lawyer-ab-form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px 20px;
+}
+
+@media (max-width: 575px) {
+  .lawyer-ab-form-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.lawyer-ab-form-grid .form-label {
+  display: block;
+  font-size: 13px;
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+
+.lawyer-ab-form-footer {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+  padding-top: 16px;
+}
+
+.lawyer-ab-insert {
+  background-color: #73c3fd;
+  border: none;
+  border-radius: 8px;
+  color: #fff;
+  font-size: 14px;
+  font-weight: 700;
+  padding: 8px 18px;
+}
+
+.lawyer-ab-insert:hover:not(:disabled),
+.lawyer-ab-insert:focus:not(:disabled) {
+  background-color: #4aa9f0;
+  color: #fff;
+}
+
+.lawyer-ab-insert:disabled {
+  background-color: #cde7fb;
+  color: #fff;
+  cursor: not-allowed;
+}
+
+/* ── Lawyer name picker on the party form ────────────────────────────────── */
+
+.lawyer-name-picker {
+  position: relative;
+}
+
+.lawyer-name-picker .form-control {
+  padding-right: 34px;
+}
+
+.lawyer-name-picker-toggle {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: none;
+  color: #171d34;
+  cursor: pointer;
+}
+
+.lawyer-name-picker-list {
+  position: absolute;
+  z-index: 20;
+  top: calc(100% + 2px);
+  left: 0;
+  right: 0;
+  max-height: 220px;
+  overflow-y: auto;
+  background: #fff;
+  border: 1px solid #cde7fb;
+  border-radius: 8px;
+  box-shadow: 0 6px 18px rgba(23, 29, 52, 0.12);
+  padding: 4px 0;
+}
+
+.lawyer-name-picker-list button {
+  display: block;
+  width: 100%;
+  background: none;
+  border: none;
+  color: #171d34;
+  font-size: 14px;
+  padding: 8px 12px;
+  text-align: left;
+}
+
+.lawyer-name-picker-list button:hover,
+.lawyer-name-picker-list button:focus {
+  background-color: #e3f3ff;
+}
+
+.lawyer-name-picker-empty {
+  color: #6b7280;
+  font-size: 13px;
+  padding: 8px 12px;
+}
