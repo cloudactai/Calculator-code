@@ -135,7 +135,6 @@ function buildContextMessage(matterData) {
   // ── Income from last saved calculation ──
   const lastCalc = matterData.last_calculation;
   if (lastCalc) {
-    parts.push(`[Data source: MatterCalculationReport, id=${lastCalc.report_id}]`);
     if (lastCalc.party1_income)
       parts.push(`Party 1 gross annual income: $${lastCalc.party1_income}`);
     if (lastCalc.party2_income)
@@ -144,8 +143,6 @@ function buildContextMessage(matterData) {
       parts.push(`Party 1 province: ${lastCalc.party1_province}`);
     if (lastCalc.party2_province)
       parts.push(`Party 2 province: ${lastCalc.party2_province}`);
-  } else {
-    parts.push(`[No saved calculation found in MatterCalculationReport for this matter]`);
   }
 
   // ── Employment ──
@@ -203,11 +200,14 @@ function buildContextMessage(matterData) {
 
   if (parts.length === 0) return null;
 
-  return (
-    "I'm working on a divorce matter. Here is all the information I have:\n\n" +
-    parts.join("\n") +
-    "\n\nPlease use this information to help with the calculation. Ask me for any missing details."
-  );
+  const intro = "I'm working on a divorce matter. Here is all the information I have:\n\n";
+  const body = parts.join("\n");
+  const closing = "\n\nPlease use this information to help with the calculation. Ask me for any missing details.";
+
+  return {
+    display: intro + body,
+    ai: intro + body + closing,
+  };
 }
 
 export default function ChildSupportChatPanel({
@@ -242,25 +242,24 @@ export default function ChildSupportChatPanel({
 
   // Auto-send context on mount if matter data exists
   useEffect(() => {
-    console.log("[ChildChat] context useEffect — contextSent:", contextSent, "matterData:", matterData ? "present" : "null");
     if (!contextSent && matterData) {
       const ctx = buildContextMessage(matterData);
-      console.log("[ChildChat] context message preview:", ctx ? ctx.slice(0, 300) : "null");
       if (ctx) {
         setContextSent(true);
-        send(ctx);
+        send(ctx.ai, ctx.display);
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [matterData, contextSent]);
 
-  async function send(text) {
+  async function send(text, displayText) {
     const userText = (text != null ? text : input).trim();
     if (!userText || loading) return;
 
+    const bubbleText = displayText || userText;
     const nextMessages = [...messages, { role: "user", content: userText }];
 
-    setBubbles((b) => [...b, { role: "user", text: userText }]);
+    setBubbles((b) => [...b, { role: "user", text: bubbleText }]);
     setMessages(nextMessages);
     setInput("");
     setLoading(true);
