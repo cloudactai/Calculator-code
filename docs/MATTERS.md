@@ -18,20 +18,20 @@ almost every other feature is reached by opening a matter first.
 
 ## Where it lives
 
-| Piece | File |
-| --- | --- |
-| Matter list / dashboard | [cloudact-ui/src/pages/matters/matterDashboard.jsx](cloudact-ui/src/pages/matters/matterDashboard.jsx) |
-| Single-matter workspace | [cloudact-ui/src/pages/matters/SingleMatter.jsx](cloudact-ui/src/pages/matters/SingleMatter.jsx) |
-| Task list component | [cloudact-ui/src/components/MatterWorkflow/MatterTaskList.jsx](cloudact-ui/src/components/MatterWorkflow/MatterTaskList.jsx) |
-| AI-vs-manual chooser | [cloudact-ui/src/components/MatterWorkflow/MatterIntakeChoice.jsx](cloudact-ui/src/components/MatterWorkflow/MatterIntakeChoice.jsx) |
-| Intake chat panel | [cloudact-ui/src/components/MatterWorkflow/MatterIntakeChatPanel.jsx](cloudact-ui/src/components/MatterWorkflow/MatterIntakeChatPanel.jsx) |
-| Child support chat panel | [cloudact-ui/src/components/MatterWorkflow/ChildSupportChatPanel.jsx](cloudact-ui/src/components/MatterWorkflow/ChildSupportChatPanel.jsx) |
-| Spousal support chat panel | [cloudact-ui/src/components/MatterWorkflow/SpousalSupportChatPanel.jsx](cloudact-ui/src/components/MatterWorkflow/SpousalSupportChatPanel.jsx) |
-| Profile summary + documents | [cloudact-ui/src/components/MatterWorkflow/ProfileSummaryPanel.jsx](cloudact-ui/src/components/MatterWorkflow/ProfileSummaryPanel.jsx) |
-| Shared chat/context styling | [cloudact-ui/src/components/MatterWorkflow/MatterWorkflow.css](cloudact-ui/src/components/MatterWorkflow/MatterWorkflow.css) |
-| Stored-intake context builder | [cloudact-ui/src/components/MatterWorkflow/matterIntakeContext.js](cloudact-ui/src/components/MatterWorkflow/matterIntakeContext.js) |
-| API service (forms/folders/tasks) | [cloudact-ui/src/services/formsService.js](cloudact-ui/src/services/formsService.js) |
-| Routes | [cloudact-ui/src/routes/Routes.jsx](cloudact-ui/src/routes/Routes.jsx), [cloudact-ui/src/routes/Routes.types.ts](cloudact-ui/src/routes/Routes.types.ts) |
+| Piece                             | File                                                                                                                                                   |
+| --------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Matter list / dashboard           | [cloudact-ui/src/pages/matters/matterDashboard.jsx](cloudact-ui/src/pages/matters/matterDashboard.jsx)                                                  |
+| Single-matter workspace           | [cloudact-ui/src/pages/matters/SingleMatter.jsx](cloudact-ui/src/pages/matters/SingleMatter.jsx)                                                        |
+| Task list component               | [cloudact-ui/src/components/MatterWorkflow/MatterTaskList.jsx](cloudact-ui/src/components/MatterWorkflow/MatterTaskList.jsx)                            |
+| AI-vs-manual chooser              | [cloudact-ui/src/components/MatterWorkflow/MatterIntakeChoice.jsx](cloudact-ui/src/components/MatterWorkflow/MatterIntakeChoice.jsx)                    |
+| Intake chat panel                 | [cloudact-ui/src/components/MatterWorkflow/MatterIntakeChatPanel.jsx](cloudact-ui/src/components/MatterWorkflow/MatterIntakeChatPanel.jsx)              |
+| Child support chat panel          | [cloudact-ui/src/components/MatterWorkflow/ChildSupportChatPanel.jsx](cloudact-ui/src/components/MatterWorkflow/ChildSupportChatPanel.jsx)              |
+| Spousal support chat panel        | [cloudact-ui/src/components/MatterWorkflow/SpousalSupportChatPanel.jsx](cloudact-ui/src/components/MatterWorkflow/SpousalSupportChatPanel.jsx)          |
+| Profile summary + documents       | [cloudact-ui/src/components/MatterWorkflow/ProfileSummaryPanel.jsx](cloudact-ui/src/components/MatterWorkflow/ProfileSummaryPanel.jsx)                  |
+| Shared chat/context styling       | [cloudact-ui/src/components/MatterWorkflow/MatterWorkflow.css](cloudact-ui/src/components/MatterWorkflow/MatterWorkflow.css)                            |
+| Stored-intake context builder     | [cloudact-ui/src/components/MatterWorkflow/matterIntakeContext.js](cloudact-ui/src/components/MatterWorkflow/matterIntakeContext.js)                    |
+| API service (forms/folders/tasks) | [cloudact-ui/src/services/formsService.js](cloudact-ui/src/services/formsService.js)                                                                    |
+| Routes                            | [cloudact-ui/src/routes/Routes.jsx](cloudact-ui/src/routes/Routes.jsx), [cloudact-ui/src/routes/Routes.types.ts](cloudact-ui/src/routes/Routes.types.ts) |
 
 Routes involved:
 
@@ -88,15 +88,15 @@ routing. This keeps the whole matter workflow on one screen with a persistent he
 
 ### Views
 
-| `view` value | What shows |
-| --- | --- |
-| `tasks` (default) | The master task list |
-| `intake_choice` | AI Agent vs Manual intake chooser |
-| `intake_chat` | AI matter-intake chat |
-| `support_choice` | AI vs Manual support calculation |
-| `support_type_choice` | Child vs Spousal support |
-| `child_support` / `spousal_support` | The respective AI chat panels |
-| `profile_summary` | "View Information and Documents" screen |
+| `view` value                          | What shows                              |
+| --------------------------------------- | --------------------------------------- |
+| `tasks` (default)                     | The master task list                    |
+| `intake_choice`                       | AI Agent vs Manual intake chooser       |
+| `intake_chat`                         | AI matter-intake chat                   |
+| `support_choice`                      | AI vs Manual support calculation        |
+| `support_type_choice`                 | Child vs Spousal support                |
+| `child_support` / `spousal_support` | The respective AI chat panels           |
+| `profile_summary`                     | "View Information and Documents" screen |
 
 The header (client name + matter number) is rendered in every view. In a chat view
 the header row instead carries a **Back to Tasks** button and the chat title, so the
@@ -258,5 +258,3 @@ the Redux action/selector modules under
   deliberate step in `handleIntakeChoice`, not an accident.
 - **Header fields (financial year, valuation date) live on the matter row**, so reload
   the header after an intake save.
-</content>
-</invoke>
