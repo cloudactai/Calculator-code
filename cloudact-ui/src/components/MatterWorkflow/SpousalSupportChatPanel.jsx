@@ -129,36 +129,17 @@ function buildContextMessage(matterData) {
     });
   }
 
-  // ── Income & benefits ──
-  const income = matterData.income_and_benefits;
-  if (income) {
-    ["client", "opposing_party"].forEach((party, pi) => {
-      const label = pi === 0 ? "Party 1" : "Party 2";
-      const data = income[party];
-      if (!data) return;
-
-      if (data.income?.length) {
-        const total = data.income.reduce(
-          (sum, i) => sum + (parseFloat(i.yearlyAmount) || 0),
-          0
-        );
-        if (total > 0) parts.push(`${label} gross annual income: $${total}`);
-        data.income.forEach((inc) => {
-          if (inc.source)
-            parts.push(
-              `  Source: ${inc.source} — $${inc.yearlyAmount || 0}/yr`
-            );
-        });
-      }
-      if (data.benefits?.length) {
-        data.benefits.forEach((b) => {
-          if (b.type)
-            parts.push(
-              `  Benefit: ${b.type} — $${b.yearlyAmount || b.amount || 0}`
-            );
-        });
-      }
-    });
+  // ── Income from last saved calculation ──
+  const lastCalc = matterData.last_calculation;
+  if (lastCalc) {
+    if (lastCalc.party1_income)
+      parts.push(`Party 1 gross annual income: $${lastCalc.party1_income}`);
+    if (lastCalc.party2_income)
+      parts.push(`Party 2 gross annual income: $${lastCalc.party2_income}`);
+    if (lastCalc.party1_province)
+      parts.push(`Party 1 province: ${lastCalc.party1_province}`);
+    if (lastCalc.party2_province)
+      parts.push(`Party 2 province: ${lastCalc.party2_province}`);
   }
 
   // ── Employment ──
@@ -253,9 +234,9 @@ export default function SpousalSupportChatPanel({
     if (inputRef.current) inputRef.current.focus();
   }, []);
 
-  // Auto-send context on mount once matter data (including income) is loaded
+  // Auto-send context on mount if matter data exists
   useEffect(() => {
-    if (!contextSent && matterData && matterData.income_and_benefits) {
+    if (!contextSent && matterData) {
       const ctx = buildContextMessage(matterData);
       if (ctx) {
         setContextSent(true);

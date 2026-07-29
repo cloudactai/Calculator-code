@@ -113,6 +113,33 @@ router.get("/matters/:matter_id/reports", async (req, res) => {
   }
 });
 
+// ── Get the latest report for a matter (for chat pre-fill) ─────────────────
+router.get("/matters/:matter_id/reports/latest", async (req, res) => {
+  try {
+    const matter = await findMatter(req.user.id, req.params.matter_id);
+    if (!matter) return res.json(ok(null));
+
+    const report = await prisma.matterCalculationReport.findFirst({
+      where: { matterId: matter.id, userId: req.user.id },
+      orderBy: { createdAt: "desc" },
+      select: {
+        id: true,
+        calculationType: true,
+        taxYear: true,
+        label: true,
+        inputData: true,
+        resultData: true,
+        createdAt: true,
+      },
+    });
+
+    return res.json(ok(report || null));
+  } catch (err) {
+    console.log("GET /v1/matters/:id/reports/latest failed:", err?.message || err);
+    return res.status(500).json(errorBody("Could not load latest report.", 500));
+  }
+});
+
 // ── Download a report PDF ───────────────────────────────────────────────────
 router.get("/reports/:id/pdf", async (req, res) => {
   try {
