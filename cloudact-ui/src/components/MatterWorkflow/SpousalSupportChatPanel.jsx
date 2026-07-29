@@ -51,6 +51,9 @@ function fmtDate(value) {
 
 function buildContextMessage(matterData) {
   if (!matterData) return null;
+  console.log("[SpousalChat] buildContextMessage called with keys:", Object.keys(matterData));
+  console.log("[SpousalChat] last_calculation:", JSON.stringify(matterData.last_calculation));
+  console.log("[SpousalChat] last_calculation_full keys:", matterData.last_calculation_full ? Object.keys(matterData.last_calculation_full) : "null");
 
   const parts = [];
 
@@ -236,8 +239,10 @@ export default function SpousalSupportChatPanel({
 
   // Auto-send context on mount if matter data exists
   useEffect(() => {
+    console.log("[SpousalChat] context useEffect — contextSent:", contextSent, "matterData:", matterData ? "present" : "null");
     if (!contextSent && matterData) {
       const ctx = buildContextMessage(matterData);
+      console.log("[SpousalChat] context message preview:", ctx ? ctx.slice(0, 300) : "null");
       if (ctx) {
         setContextSent(true);
         send(ctx);

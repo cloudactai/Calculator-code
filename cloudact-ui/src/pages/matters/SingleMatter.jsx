@@ -149,13 +149,19 @@ const SingleMatter = () => {
   useEffect(() => {
     if (!matterData) return;
     let active = true;
+    console.log("[SingleMatter] Fetching latest calc report for matter:", id);
     dataAxios
       .get(`matters/${id}/reports/latest`)
       .then((res) => {
+        console.log("[SingleMatter] /reports/latest raw response:", JSON.stringify(res.data).slice(0, 500));
         const report = res.data?.data?.body ?? res.data?.data ?? null;
         if (active) {
-          console.log("[SingleMatter] latestCalcReport:", report ? `id=${report.id}` : "none");
-          setLatestCalcReport(report); // null means no saved calc
+          console.log("[SingleMatter] latestCalcReport parsed:", report ? JSON.stringify({ id: report.id, hasInputData: !!report.inputData, hasFullState: !!report.inputData?._fullState, hasScreen2: !!report.inputData?._fullState?.screen2 }) : "null (no saved calculation)");
+          if (report?.inputData?._fullState?.screen2) {
+            const s2 = report.inputData._fullState.screen2;
+            console.log("[SingleMatter] screen2 incomes found — party1:", s2.totalIncomeParty1, "party2:", s2.totalIncomeParty2);
+          }
+          setLatestCalcReport(report);
         }
       })
       .catch((err) => {
