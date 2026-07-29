@@ -135,6 +135,7 @@ function buildContextMessage(matterData) {
   // ── Income from last saved calculation ──
   const lastCalc = matterData.last_calculation;
   if (lastCalc) {
+    parts.push(`[Data source: MatterCalculationReport, id=${lastCalc.report_id}]`);
     if (lastCalc.party1_income)
       parts.push(`Party 1 gross annual income: $${lastCalc.party1_income}`);
     if (lastCalc.party2_income)
@@ -143,6 +144,8 @@ function buildContextMessage(matterData) {
       parts.push(`Party 1 province: ${lastCalc.party1_province}`);
     if (lastCalc.party2_province)
       parts.push(`Party 2 province: ${lastCalc.party2_province}`);
+  } else {
+    parts.push(`[No saved calculation found in MatterCalculationReport for this matter]`);
   }
 
   // ── Employment ──

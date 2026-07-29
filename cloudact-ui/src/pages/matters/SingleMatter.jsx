@@ -181,6 +181,7 @@ const SingleMatter = () => {
       if (fullState?.screen2) {
         const s2 = fullState.screen2;
         incomeInfo = {
+          report_id: latestCalcReport.id,
           party1_income: s2.totalIncomeParty1,
           party2_income: s2.totalIncomeParty2,
           party1_province: fullState.background?.party1Province,
