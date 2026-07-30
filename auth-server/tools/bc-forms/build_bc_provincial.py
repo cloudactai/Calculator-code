@@ -57,6 +57,7 @@ def main():
         pages = bp.flatten_background(source, background)
         fields, audit = bp.extract(source, did)
         bp.clamp_to_page(fields, audit["pageSizes"])
+        nudged = bp.nudge_off_hint(background, fields)
         geometry = bp.check_geometry(fields, audit["pageSizes"])
         overlaps = bp.check_overlap(background, fields)
         bp.qa_render(background, fields, os.path.join(QA, "%s_qa.pdf" % did))

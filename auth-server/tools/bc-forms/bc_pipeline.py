@@ -121,6 +121,41 @@ def extract(source_path, doc_id):
     return fields, audit
 
 
+def nudge_off_hint(pdf_path, fields, min_remaining=14.0):
+    """Move a box's top below any printed hint line it starts on.
+
+    Acrobat hides a field's placeholder once you type; a flattened background keeps
+    it printed, so a box whose first line sits on "List the details of the order you
+    are asking for" would have the lawyer's first line land on top of that hint.
+    Only boxes with room to spare are nudged.
+    """
+    doc = fitz.open(pdf_path)
+    nudged = 0
+    for page_number in sorted({f["page"] for f in fields}):
+        words = doc[page_number - 1].get_text("words")
+        for f in [x for x in fields if x["page"] == page_number]:
+            height = f["height"] / SCALE
+            if height < min_remaining * 2:
+                continue
+            box = fitz.Rect(f["x"], f["y"], f["x"] + f["width"] / SCALE, f["y"] + height)
+            top_band = fitz.Rect(box.x0, box.y0, box.x1, box.y0 + min_remaining)
+            bottoms = [
+                y1 for x0, y0, x1, y1, word, *_ in words
+                if word.strip() and not set(word.strip()) <= BOX_GLYPHS
+                and not (top_band & fitz.Rect(x0, y0, x1, y1)).is_empty
+            ]
+            if not bottoms:
+                continue
+            new_top = max(bottoms) + 1.0
+            if new_top <= f["y"] or box.y1 - new_top < min_remaining:
+                continue
+            f["height"] = round((box.y1 - new_top) * SCALE, 2)
+            f["y"] = round(new_top, 2)
+            nudged += 1
+    doc.close()
+    return nudged
+
+
 def flatten_background(source_path, dest_path):
     """Write the source as a printed background: no /AcroForm, no widget annots.
 

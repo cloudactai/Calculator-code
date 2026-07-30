@@ -77,10 +77,18 @@ async function main() {
     const scale = 1.3333333;
     return [...pageEl.querySelectorAll("input, textarea, select")].map((el) => {
       const box = el.getBoundingClientRect();
+      // A field carrying a default ("Claimant", "1st affidavit", a paragraph
+      // number) has that text baked into the printed background by the flatten,
+      // so the builder must not lay an editable box over it.
+      const tag = el.tagName.toLowerCase();
+      const printed = tag === "select"
+        ? ((el.options[el.selectedIndex] || {}).text || "")
+        : (el.value || "");
       return {
         page: index + 1,
-        tag: el.tagName.toLowerCase(),
+        tag,
         inputType: (el.getAttribute("type") || "").toLowerCase(),
+        printedValue: String(printed).trim(),
         name: el.getAttribute("xfaname") || el.name || el.id || "",
         multiline: el.tagName.toLowerCase() === "textarea",
         x: (box.left - origin.left) / scale,

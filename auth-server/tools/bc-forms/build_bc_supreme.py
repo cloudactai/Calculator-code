@@ -76,13 +76,20 @@ def overlay_fields(doc_id, raw, page_sizes, pdf_path):
     captions = {n: bp.signature_captions(doc[n - 1]) for n in range(1, doc.page_count + 1)}
     doc.close()
 
-    fields, skipped = [], []
+    fields, skipped, baked = [], [], []
     index = 0
     for item in raw:
         if item["inputType"] in ("checkbox", "radio"):
             kind = "CheckBox"
         else:
             kind = TYPE_BY_TAG.get(item["tag"], "TextField")
+        # The flatten printed this field's default into the background ("Claimant",
+        # "1st affidavit", a paragraph number). An editable box over it would let a
+        # lawyer type text that collides with the printed default, so the default
+        # stands as printed and no box goes on top.
+        if kind != "CheckBox" and item.get("printedValue"):
+            baked.append({"page": item["page"], "value": item["printedValue"][:40]})
+            continue
         rect = fitz.Rect(item["x"], item["y"], item["x"] + item["width"], item["y"] + item["height"])
         if kind != "CheckBox" and bp.is_signature_box(rect, item.get("name"), captions.get(item["page"], [])):
             skipped.append({"page": item["page"], "name": item.get("name", ""), "why": "signature"})
@@ -102,7 +109,7 @@ def overlay_fields(doc_id, raw, page_sizes, pdf_path):
             "border": "none",
             "page": item["page"],
         })
-    return fields, skipped
+    return fields, skipped, baked
 
 
 def footer_text(pdf_path):
@@ -137,8 +144,9 @@ def main():
             failures.append((doc_id, "flatten left %d widgets" % widgets))
 
         raw = json.load(open(os.path.join(SC, "%s.fields.json" % doc_id)))
-        fields, skipped = overlay_fields(doc_id, raw, page_sizes, background)
+        fields, skipped, baked = overlay_fields(doc_id, raw, page_sizes, background)
         bp.clamp_to_page(fields, page_sizes)
+        nudged = bp.nudge_off_hint(background, fields)
         geometry = bp.check_geometry(fields, page_sizes)
         overlaps = bp.check_overlap(background, fields)
         bp.qa_render(background, fields, os.path.join(QA, "%s_qa.pdf" % doc_id))
@@ -147,6 +155,7 @@ def main():
         audits.append({"docId": doc_id, "pages": pages, "fields": len(fields),
                        "checkboxes": sum(1 for f in fields if f["type"] == "CheckBox"),
                        "signaturesSkipped": len(skipped), "signatureDetail": skipped,
+                       "printedDefaults": len(baked), "printedDefaultDetail": baked,
                        "geometryProblems": geometry, "overlapFlags": len(overlaps),
                        "overlapDetail": overlaps[:20], "nativeWidgets": widgets})
         if geometry:
@@ -167,7 +176,7 @@ def main():
         })
         print("%-12s pages=%-3d fields=%-4d cb=%-4d sig-skipped=%-3d geom=%-2d overlap=%d"
               % (doc_id, pages, len(fields), audits[-1]["checkboxes"], len(skipped),
-                 len(geometry), len(overlaps)))
+                 len(geometry), len(overlaps)) + "  baked=%d" % len(baked))
 
     rows.sort(key=lambda r: r["_sortKey"])
     for row in rows:
