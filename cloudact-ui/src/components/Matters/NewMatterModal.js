@@ -194,10 +194,10 @@ const NewMatterModal = ({
    */
   const clientRoleList = [
     {
-      name: "Client",
+      name: "Applicant",
     },
     {
-      name: "Opposing Party",
+      name: "Respondent",
     },
     {
       name: "Other",
