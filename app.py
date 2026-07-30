@@ -618,6 +618,14 @@ INTAKE_SECTION_SHAPES = """
 SECTIONS AND THEIR EXACT DATA SHAPES
 (use these field names verbatim — they must match the intake form):
 
+LINKED FIELDS: some fields are derived from each other and are kept in step when
+saved, exactly as the intake form does it. "monthlyAmount" and "yearlyAmount" (in
+IncomeAndBenefits and Expenses) are one figure expressed two ways — send whichever
+the user gave you and the other is recomputed, with the yearly figure taking
+precedence if you send both. A child's "age" is derived from their "dateOfBirth".
+Never send a monthly and a yearly amount that disagree, and when you change one
+side of a linked pair say that its partner changed too.
+
 1. section="Background"
    data: {
      "client":        { "role", "province", "name", "postalCode", "dateOfBirth",

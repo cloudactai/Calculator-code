@@ -21,6 +21,7 @@ const {
   isBlankValue,
   mergeRecordRows,
 } = require("../utils/matterPatchMerge");
+const { applyDerivedFields } = require("../utils/derivedFields");
 
 const router = express.Router();
 router.use(authMiddleware);
@@ -179,7 +180,11 @@ async function saveRecordRows(
   incomingRows,
   { merge = false, db = prisma, ...mergeOptions } = {}
 ) {
-  let rows = toArray(incomingRows);
+  // Derive linked fields (monthly<->yearly, child age) on the INCOMING rows,
+  // before the merge. Deriving after merging would read the partner field from
+  // stored data and undo the change: a patch naming only monthlyAmount would be
+  // overwritten from the stale yearlyAmount it was meant to replace.
+  let rows = applyDerivedFields(dataType, toArray(incomingRows));
   if (merge) {
     const existingRows = toArray(await getRecordRows(matterId, dataType, db));
     rows = mergeRecordRows(existingRows, rows, mergeOptions);
