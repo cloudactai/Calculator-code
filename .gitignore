@@ -18,3 +18,6 @@ generated_reports/
 # differs from the committed templates in form-template-export/ by stray blank
 # fields. Keep it local; the promoted templates are what the repo ships.
 auth-server/form-template-export/_incoming/
+# Same staging pattern for the BC batch: government source PDFs, manifests and
+# QA renders. Only the promoted BC*_.pdf/.json templates belong in the repo.
+auth-server/form-template-export/_incoming_bc/
