@@ -133,19 +133,46 @@ test("starting the task records it as in progress", async () => {
   );
 });
 
-test("an applied change marks the task completed", async () => {
+test("the task never completes — changing information is recurring work", async () => {
   await startUpdateInformation();
   await screen.findByText("UPDATE INFORMATION CHAT");
   await waitFor(() => expect(mockUpdatePanelProps).toHaveBeenCalled());
 
-  const { onChangeApplied } = mockUpdatePanelProps.mock.calls.at(-1)[0];
-  await act(async () => onChangeApplied());
+  // Saving a change refreshes the snapshot but must not close the task out.
+  const { onSaved } = mockUpdatePanelProps.mock.calls.at(-1)[0];
+  await act(async () => onSaved(databaseSnapshot));
+
+  expect(formsService.setTaskState).not.toHaveBeenCalledWith(
+    "TEST-1",
+    "update_information",
+    "completed"
+  );
+});
+
+test("a matter an earlier build marked completed reverts to in progress", async () => {
+  formsService.listTaskStates.mockResolvedValue([
+    { taskKey: "update_information", status: "completed" },
+  ]);
+  await startUpdateInformation();
 
   await waitFor(() =>
     expect(formsService.setTaskState).toHaveBeenCalledWith(
       "TEST-1",
       "update_information",
-      "completed"
+      "in_progress"
     )
   );
+});
+
+test("an already-started task reopens on Resume rather than View", async () => {
+  formsService.listTaskStates.mockResolvedValue([
+    { taskKey: "update_information", status: "in_progress" },
+  ]);
+  renderPage();
+
+  const row = (await screen.findByText("UPDATE INFORMATION")).closest(
+    ".mw-task-list__row"
+  );
+  expect(row.querySelector("button")).toHaveTextContent("Resume");
+  expect(row).toHaveTextContent("In Progress");
 });

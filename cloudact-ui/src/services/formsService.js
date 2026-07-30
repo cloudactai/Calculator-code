@@ -20,6 +20,8 @@ export const formsService = {
   listFolders: async (matterNumber) => body(await axios.get(`/matters/${encodeURIComponent(matterNumber)}/folders`)),
   listTaskStates: async (matterNumber) => body(await axios.get(`/matters/${encodeURIComponent(matterNumber)}/task-states`)),
   setTaskState: async (matterNumber, taskKey, status) => body(await axios.put(`/matters/${encodeURIComponent(matterNumber)}/task-states/${encodeURIComponent(taskKey)}`, { status })),
+  listChangeLog: async (matterNumber) => body(await axios.get(`/matters/${encodeURIComponent(matterNumber)}/change-log`)),
+  appendChangeLog: async (matterNumber, changes, source = "ai-update") => body(await axios.post(`/matters/${encodeURIComponent(matterNumber)}/change-log`, { changes, source })),
   renameDocument: async (matterNumber, documentId, displayName) => body(await axios.patch(`/matters/${encodeURIComponent(matterNumber)}/forms/${documentId}/name`, { displayName })),
   deleteDocument: async (matterNumber, documentId) => axios.delete(`/matters/${encodeURIComponent(matterNumber)}/forms/${documentId}`),
 };

@@ -90,16 +90,16 @@ routing. This keeps the whole matter workflow on one screen with a persistent he
 
 ### Views
 
-| `view` value                          | What shows                              |
-| --------------------------------------- | --------------------------------------- |
-| `tasks` (default)                     | The master task list                    |
-| `intake_choice`                       | AI Agent vs Manual intake chooser       |
-| `intake_chat`                         | AI matter-intake chat                   |
-| `support_choice`                      | AI vs Manual support calculation        |
-| `support_type_choice`                 | Child vs Spousal support                |
-| `child_support` / `spousal_support` | The respective AI chat panels           |
+| `view` value                          | What shows                                |
+| --------------------------------------- | ----------------------------------------- |
+| `tasks` (default)                     | The master task list                      |
+| `intake_choice`                       | AI Agent vs Manual intake chooser         |
+| `intake_chat`                         | AI matter-intake chat                     |
+| `support_choice`                      | AI vs Manual support calculation          |
+| `support_type_choice`                 | Child vs Spousal support                  |
+| `child_support` / `spousal_support` | The respective AI chat panels             |
 | `update_information`                  | AI chat that edits values already on file |
-| `profile_summary`                     | "View Information and Documents" screen |
+| `profile_summary`                     | "View Information and Documents" screen   |
 
 The header (client name + matter number) is rendered in every view. In a chat view
 the header row instead carries a **Back to Tasks** button and the chat title, so the
@@ -231,6 +231,23 @@ Where they differ:
   *back* — both normalised through `normalizeStoredIntakeData`, so row ids and blank
   placeholders never surface as changes. A write that altered nothing says so, and a
   rejected write posts a "not saved" bubble that contradicts the reply above it.
+
+  **The conversation is deliberately not persisted; the change log is.** Replaying an
+  old transcript would feed the agent a stale snapshot primer, resend the client's
+  whole financial record to the model on every turn, and keep a second copy of that
+  record on disk. So each visit starts a fresh chat against current data, while the
+  verified receipts are appended to a per-matter change log
+  ([changeLog.js](../auth-server/src/utils/changeLog.js)) and shown collapsed at the
+  top of the panel — a dated record of what was amended, which is the part with
+  lasting value on a file. It lives in `MatterRecord` under the `matter_change_log`
+  dataType (so it needed no migration), is appended inside a Serializable
+  transaction so two saves in flight cannot drop each other, and is bounded at 200
+  entries. A failed append never calls the change itself into question — the write
+  already succeeded, so it only costs the history line.
+
+  **UPDATE INFORMATION never reaches "Completed"** — changing information is
+  recurring work, so the task stays on Resume for the life of the matter, and any
+  other stored status is corrected when the task is opened.
 
 The Flask base URL comes from `CALCULATOR_API` in
 [cloudact-ui/src/config.ts](cloudact-ui/src/config.ts).

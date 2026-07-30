@@ -6,6 +6,13 @@ const prisma = require("../../prismaClient");
 const { authMiddleware } = require("../middleware/authMiddleware");
 const { parseStoredJson, prefillFields, supportType } = require("../utils/formPrefillResolver");
 const { buildLegacyPrefill } = require("../utils/formPrefillCompat");
+const {
+  CHANGE_LOG_TYPE,
+  sanitizeChanges,
+  buildEntry,
+  appendEntry,
+  newestFirst,
+} = require("../utils/changeLog");
 
 const router = express.Router();
 router.use(authMiddleware);
@@ -280,6 +287,54 @@ router.get("/matters/:matterNumber/task-states", async (req, res) => {
     select: { taskKey: true, status: true, updatedAt: true },
   });
   return res.json({ data: states });
+});
+
+// Change log: an append-only record of values amended on this matter. Stored as
+// one JSON collection in MatterRecord, so it needs no table of its own.
+router.get("/matters/:matterNumber/change-log", async (req, res) => {
+  const matter = await matterForUser(req.user.id, req.params.matterNumber);
+  if (!matter) return res.status(404).json({ message: "Matter not found." });
+
+  const record = await prisma.matterRecord.findUnique({
+    where: { matterId_dataType: { matterId: matter.id, dataType: CHANGE_LOG_TYPE } },
+  });
+  return res.json({ data: newestFirst(record?.data) });
+});
+
+router.post("/matters/:matterNumber/change-log", async (req, res) => {
+  const matter = await matterForUser(req.user.id, req.params.matterNumber);
+  if (!matter) return res.status(404).json({ message: "Matter not found." });
+
+  const changes = sanitizeChanges(req.body?.changes);
+  if (!changes) {
+    return res.status(400).json({ message: "At least one labelled change is required." });
+  }
+  const entry = buildEntry({ changes, source: req.body?.source });
+
+  // Read-modify-write on a single JSON column: serialize it so two saves in
+  // flight at once cannot drop one another's entry. Postgres reports a
+  // retryable conflict as P2034.
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    try {
+      const saved = await prisma.$transaction(async (tx) => {
+        const record = await tx.matterRecord.findUnique({
+          where: { matterId_dataType: { matterId: matter.id, dataType: CHANGE_LOG_TYPE } },
+        });
+        const data = appendEntry(record?.data, entry);
+        await tx.matterRecord.upsert({
+          where: { matterId_dataType: { matterId: matter.id, dataType: CHANGE_LOG_TYPE } },
+          create: { matterId: matter.id, dataType: CHANGE_LOG_TYPE, data },
+          update: { data },
+        });
+        return data;
+      }, { isolationLevel: "Serializable" });
+      return res.json({ data: newestFirst(saved) });
+    } catch (err) {
+      if (err?.code === "P2034" && attempt < 2) continue;
+      console.log("POST /matters/:matterNumber/change-log failed:", err?.message || err);
+      return res.status(500).json({ message: "Could not record the change." });
+    }
+  }
 });
 
 router.put("/matters/:matterNumber/task-states/:taskKey", async (req, res) => {

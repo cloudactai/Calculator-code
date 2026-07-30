@@ -11,7 +11,14 @@ jest.mock("../../config", () => ({ CALCULATOR_API: "https://update.test" }));
 jest.mock("../../utils/Apis/matters/saveMatterInformation/saveMattersActions", () => ({
   patchMatterIntake: (payload) => ({ type: "PATCH_MATTER_INTAKE", payload }),
 }));
+jest.mock("../../services/formsService", () => ({
+  formsService: {
+    listChangeLog: jest.fn(() => Promise.resolve([])),
+    appendChangeLog: jest.fn(() => Promise.resolve([])),
+  },
+}));
 
+import { formsService } from "../../services/formsService";
 import UpdateInformationChatPanel from "./UpdateInformationChatPanel";
 
 const land = (today) => ({
@@ -34,6 +41,8 @@ const snapshotWith = (today) => ({
 beforeEach(() => {
   mockDispatch.mockReset();
   mockDispatch.mockResolvedValue({ saved: true, matter: snapshotWith("500000") });
+  formsService.listChangeLog.mockReset().mockResolvedValue([]);
+  formsService.appendChangeLog.mockReset().mockResolvedValue([]);
   global.fetch = jest.fn();
 });
 
@@ -93,8 +102,7 @@ test("opens by asking what the user wants to change, without showing the primer"
 
 test("saves the change and reports the real before/after values from the database", async () => {
   const onSaved = jest.fn();
-  const onChangeApplied = jest.fn();
-  await renderOpened({ onSaved, onChangeApplied });
+  await renderOpened({ onSaved });
 
   mockReply({
     reply: "Updated **the house valuation** from **500000** to **650000**.",
@@ -150,10 +158,90 @@ test("saves the change and reports the real before/after values from the databas
   expect(
     screen.getByText("650000", { selector: ".mw-change-receipt__to" })
   ).toBeInTheDocument();
-  expect(screen.getByText(/Saved to the database: 1 value changed/i)).toBeInTheDocument();
-
   expect(onSaved).toHaveBeenCalledWith(snapshotWith("650000"));
-  expect(onChangeApplied).toHaveBeenCalledTimes(1);
+
+  // The same verified change is recorded in the matter's durable history.
+  await waitFor(() => expect(formsService.appendChangeLog).toHaveBeenCalledTimes(1));
+  expect(formsService.appendChangeLog).toHaveBeenCalledWith("TEST-1", [
+    {
+      label: "Assets › Lands › 12 King St › Market value › Client › Today",
+      from: "500000",
+      to: "650000",
+    },
+  ]);
+});
+
+test("the history from earlier visits is shown, and the chat still starts fresh", async () => {
+  formsService.listChangeLog.mockResolvedValue([
+    {
+      id: 2,
+      at: "2026-07-29T18:14:00.000Z",
+      source: "ai-update",
+      changes: [{ label: "Background › Client › Phone", from: "2265592324", to: "4165550101" }],
+    },
+    {
+      id: 1,
+      at: "2026-07-28T10:02:00.000Z",
+      source: "ai-update",
+      changes: [
+        { label: "Assets › Lands › 12 King St › Market value › Client › Today", from: "480000", to: "500000" },
+      ],
+    },
+  ]);
+
+  await renderOpened();
+
+  // Two entries, one change each.
+  expect(
+    await screen.findByRole("button", { name: /2 values changed on this matter/i })
+  ).toBeInTheDocument();
+
+  // Collapsed by default — history does not crowd out the conversation.
+  expect(screen.queryByText("Background › Client › Phone")).not.toBeInTheDocument();
+
+  fireEvent.click(screen.getByRole("button", { name: /Show history/i }));
+  expect(screen.getByText("Background › Client › Phone")).toBeInTheDocument();
+  expect(screen.getByText("4165550101")).toBeInTheDocument();
+
+  // The transcript is not replayed: the only assistant message is the fresh
+  // opening question against current data.
+  expect(screen.getByText("What would you like to change?")).toBeInTheDocument();
+});
+
+test("a change is still confirmed when the history write fails", async () => {
+  await renderOpened();
+  formsService.appendChangeLog.mockRejectedValueOnce(new Error("log unavailable"));
+
+  mockReply({
+    reply: "Updated **the house valuation**.",
+    saved_sections: [{ section: "Assets", data: { lands: [{ address_of_property: "12 King St" }] } }],
+  });
+  mockDispatch.mockResolvedValueOnce({ saved: true, matter: snapshotWith("650000") });
+
+  sendMessage("Change the valuation to 650000");
+
+  // The write succeeded, so the receipt stands even though the log did not take.
+  expect(
+    await screen.findByText("Assets › Lands › 12 King St › Market value › Client › Today")
+  ).toBeInTheDocument();
+  expect(
+    screen.queryByText(/That change was not saved/i)
+  ).not.toBeInTheDocument();
+});
+
+test("a reply that changed nothing is not written to the history", async () => {
+  await renderOpened();
+
+  mockReply({
+    reply: "Updated **the house valuation** to **500000**.",
+    saved_sections: [{ section: "Assets", data: { lands: [{ address_of_property: "12 King St" }] } }],
+  });
+  mockDispatch.mockResolvedValueOnce({ saved: true, matter: snapshotWith("500000") });
+
+  sendMessage("Set the valuation to 500000");
+
+  await screen.findByText(/No stored value changed/i);
+  expect(formsService.appendChangeLog).not.toHaveBeenCalled();
 });
 
 test("a reply with no change never writes to the database", async () => {
@@ -164,7 +252,7 @@ test("a reply with no change never writes to the database", async () => {
 
   await screen.findByText("The client's phone number on file is 226-559-2324.");
   expect(mockDispatch).not.toHaveBeenCalled();
-  expect(screen.queryByText(/Saved to the database/i)).not.toBeInTheDocument();
+  expect(formsService.appendChangeLog).not.toHaveBeenCalled();
 });
 
 test("says nothing changed when the record already held the value", async () => {
@@ -182,7 +270,7 @@ test("says nothing changed when the record already held the value", async () => 
   expect(
     await screen.findByText(/No stored value changed — the record already held that value/i)
   ).toBeInTheDocument();
-  expect(screen.queryByText(/Saved to the database:/i)).not.toBeInTheDocument();
+  expect(formsService.appendChangeLog).not.toHaveBeenCalled();
 });
 
 test("a rejected write is reported as not saved", async () => {
@@ -199,7 +287,7 @@ test("a rejected write is reported as not saved", async () => {
   expect(
     await screen.findByText(/That change was not saved — the database rejected the update/i)
   ).toBeInTheDocument();
-  expect(screen.queryByText(/Saved to the database:/i)).not.toBeInTheDocument();
+  expect(formsService.appendChangeLog).not.toHaveBeenCalled();
 });
 
 test("an empty matter explains that there is nothing to update yet", async () => {

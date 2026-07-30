@@ -286,7 +286,11 @@ const SingleMatter = () => {
       }
       setView("profile_summary");
     } else if (taskId === "update_information") {
-      if (taskStatuses.update_information === "not_started") {
+      // Deliberately never marked completed: changing information is recurring
+      // work, so this task stays on Resume for the life of the matter. Any
+      // status other than in_progress is corrected on open, which also reverts
+      // matters an earlier build had already flipped to completed.
+      if (taskStatuses.update_information !== "in_progress") {
         persistTaskStatus("update_information", "in_progress");
       }
       // The agent may only change values that are already on file, so it needs
@@ -566,11 +570,6 @@ const SingleMatter = () => {
                     // The change may have moved a matter-header field
                     // (valuation date, financial year), so re-read the header.
                     dispatch(getSingleMatter(id));
-                  }}
-                  onChangeApplied={() => {
-                    if (taskStatuses.update_information !== "completed") {
-                      persistTaskStatus("update_information", "completed");
-                    }
                   }}
                 />
               ) : (

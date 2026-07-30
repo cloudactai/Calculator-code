@@ -7,7 +7,8 @@ import {
   buildUpdateContextMessage,
   normalizeStoredIntakeData,
 } from "./matterIntakeContext";
-import { diffMatterSnapshots } from "./matterUpdateDiff";
+import { diffMatterSnapshots, NOT_SET } from "./matterUpdateDiff";
+import { formsService } from "../../services/formsService";
 import "./MatterWorkflow.css";
 
 /**
@@ -23,13 +24,31 @@ import "./MatterWorkflow.css";
  * before/after pair, so it reflects what the database actually holds rather
  * than what the assistant said it did.
  *
+ * Those receipts are also appended to the matter's change log, which is what
+ * persists between visits. The conversation itself is not kept: its opening
+ * primer is a snapshot that goes stale as soon as anything changes, so every
+ * visit starts a fresh chat against current data while the record of what was
+ * amended survives.
+ *
  * Props:
  *   matterData      – fresh database snapshot (get_single_matter_data_all shape)
  *   matterId        – string
  *   onSaved         – (savedMatter) => void   after every successful write
- *   onChangeApplied – () => void              after a write that changed a value
  *   onBack          – () => void
  */
+
+/** Stored change-log timestamps are ISO; show them in the reader's timezone. */
+function formatWhen(at) {
+  const when = new Date(at);
+  if (Number.isNaN(when.getTime())) return "";
+  return when.toLocaleString(undefined, {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  });
+}
 
 function renderText(text) {
   const escaped = String(text)
@@ -45,7 +64,6 @@ export default function UpdateInformationChatPanel({
   matterData,
   matterId,
   onSaved,
-  onChangeApplied,
   onBack,
 }) {
   const dispatch = useDispatch();
@@ -56,7 +74,8 @@ export default function UpdateInformationChatPanel({
   const [loading, setLoading] = useState(false);
   const [warming, setWarming] = useState(false);
   const [contextSent, setContextSent] = useState(false);
-  const [changeCount, setChangeCount] = useState(0);
+  const [changeLog, setChangeLog] = useState([]); // newest first
+  const [historyOpen, setHistoryOpen] = useState(false);
 
   const windowRef = useRef(null);
   const inputRef = useRef(null);
@@ -83,6 +102,23 @@ export default function UpdateInformationChatPanel({
   useEffect(() => {
     if (inputRef.current) inputRef.current.focus();
   }, []);
+
+  // The durable history of what has been amended on this matter.
+  useEffect(() => {
+    let active = true;
+    formsService
+      .listChangeLog(matterId)
+      .then((entries) => {
+        if (active) setChangeLog(Array.isArray(entries) ? entries : []);
+      })
+      .catch((error) => {
+        // The chat stays fully usable without its history.
+        console.error("Unable to load the matter change log.", error);
+      });
+    return () => {
+      active = false;
+    };
+  }, [matterId]);
 
   // Open the conversation on its own: the agent's first message asks what the
   // lawyer wants to change. Skipped while the matter has nothing stored yet —
@@ -131,9 +167,18 @@ export default function UpdateInformationChatPanel({
       snapshotRef.current = after;
       const changes = diffMatterSnapshots(before, after);
       setBubbles((b) => [...b, { role: "receipt", changes }]);
-      setChangeCount((n) => n + changes.length);
       if (onSaved) onSaved(after);
-      if (changes.length > 0 && onChangeApplied) onChangeApplied();
+
+      // Record what was amended. A failure here must not call the change into
+      // question — the write already succeeded — so it only costs the history.
+      if (changes.length > 0) {
+        try {
+          const entries = await formsService.appendChangeLog(matterId, changes);
+          setChangeLog(Array.isArray(entries) ? entries : []);
+        } catch (error) {
+          console.error("Change saved, but it could not be added to the change log.", error);
+        }
+      }
     } catch {
       setBubbles((b) => [
         ...b,
@@ -204,18 +249,55 @@ export default function UpdateInformationChatPanel({
     setBubbles([]);
     setMessages([]);
     setInput("");
-    setChangeCount(0);
     // Re-opens the conversation from the latest snapshot, including any change
-    // already made in this session.
+    // already made in this session. The change log is history and is kept.
     setContextSent(false);
   }
 
+  const changeTotal = changeLog.reduce(
+    (total, entry) => total + (entry.changes?.length || 0),
+    0
+  );
+
   return (
     <div className="mw-chat-panel">
-      {changeCount > 0 && (
+      {changeTotal > 0 && (
         <div className="mw-chat-panel__saved">
-          Saved to the database: {changeCount}{" "}
-          {changeCount === 1 ? "value" : "values"} changed in this session.
+          <button
+            type="button"
+            className="mw-history-toggle"
+            onClick={() => setHistoryOpen((open) => !open)}
+            aria-expanded={historyOpen}
+          >
+            {changeTotal} {changeTotal === 1 ? "value" : "values"} changed on this
+            matter · {historyOpen ? "Hide history" : "Show history"}
+          </button>
+
+          {historyOpen && (
+            <ol className="mw-history">
+              {changeLog.map((entry) => (
+                <li key={entry.id} className="mw-history__entry">
+                  <div className="mw-history__when">{formatWhen(entry.at)}</div>
+                  <ul className="mw-history__changes">
+                    {(entry.changes || []).map((change, i) => (
+                      <li key={i}>
+                        <span className="mw-history__field">{change.label}</span>
+                        <span className="mw-change-receipt__values">
+                          <span className="mw-change-receipt__from">
+                            {change.from || NOT_SET}
+                          </span>
+                          <span className="mw-change-receipt__arrow">→</span>
+                          <span className="mw-change-receipt__to">
+                            {change.to || NOT_SET}
+                          </span>
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                </li>
+              ))}
+            </ol>
+          )}
         </div>
       )}
 
