@@ -1,0 +1,105 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="pdf_viewer.css">
+<style>
+  html, body { margin: 0; padding: 0; background: #fff; }
+  /* XFA lays out in 72dpi points-as-px; CSS print inches are 96dpi. Scaling the
+     72dpi page up by 4/3 makes one XFA page exactly one US Letter sheet. */
+  .sheet { position: relative; width: 8.5in; height: 11in; overflow: hidden;
+           page-break-after: always; break-after: page; }
+  .sheet:last-child { page-break-after: auto; break-after: auto; }
+  .page { position: relative; width: 612px; height: 792px;
+          transform: scale(1.3333333); transform-origin: 0 0; }
+  .xfaLayer { position: absolute; top: 0; left: 0; transform-origin: 0 0; }
+  /* Print the form's own rules and boxes, not browser chrome. */
+  .xfaLayer input, .xfaLayer textarea, .xfaLayer select { background: transparent; }
+  /* XFA action buttons ("Prepare Paper Copy", "Add Additional Parties") are
+     viewer controls, not part of the printed form. */
+  .xfaLayer button, .xfaLayer .xfaButton { display: none !important; }
+  @page { size: 8.5in 11in; margin: 0; }
+</style>
+</head>
+<body>
+<div id="pages"></div>
+<script type="module">
+import { getDocument, XfaLayer, GlobalWorkerOptions } from "./pdf.mjs";
+GlobalWorkerOptions.workerSrc = "./pdf.worker.mjs";
+
+const params = new URLSearchParams(location.search);
+const file = params.get("file");
+
+async function main() {
+  console.log("start", file);
+  const doc = await getDocument({
+    url: file,
+    enableXfa: true,
+    standardFontDataUrl: "./standard_fonts/",
+    cMapUrl: "./cmaps/",
+    cMapPacked: true,
+  }).promise;
+  console.log("loaded", doc.numPages);
+  const xfa = await doc.allXfaHtml;
+  console.log("xfa", !!xfa);
+  const storage = doc.annotationStorage;
+  const host = document.getElementById("pages");
+  const linkService = { addLinkAttributes() {}, getDestinationHash: () => "", getAnchorUrl: () => "" };
+
+  for (let i = 1; i <= doc.numPages; i += 1) {
+    const page = await doc.getPage(i);
+    const viewport = page.getViewport({ scale: 1 });
+    const sheet = document.createElement("div");
+    sheet.className = "sheet";
+    const wrapper = document.createElement("div");
+    wrapper.className = "page";
+    wrapper.style.width = viewport.width + "px";
+    wrapper.style.height = viewport.height + "px";
+    const layer = document.createElement("div");
+    wrapper.append(layer);
+    sheet.append(wrapper);
+    host.append(sheet);
+    XfaLayer.render({
+      viewport: viewport.clone({ dontFlip: true }),
+      div: layer,
+      xfaHtml: xfa.children[i - 1],
+      annotationStorage: storage,
+      linkService,
+      intent: "print",
+    });
+  }
+  // The XFA DOM carries the government's own field boxes, so overlay geometry is
+  // read straight off them instead of guessing from printed lines. Coordinates
+  // come back in PDF points (the unscaled 72dpi page space).
+  const sheets = [...document.querySelectorAll(".sheet .page")];
+  window.__fields = sheets.flatMap((pageEl, index) => {
+    const origin = pageEl.getBoundingClientRect();
+    const scale = 1.3333333;
+    return [...pageEl.querySelectorAll("input, textarea, select")].map((el) => {
+      const box = el.getBoundingClientRect();
+      return {
+        page: index + 1,
+        tag: el.tagName.toLowerCase(),
+        inputType: (el.getAttribute("type") || "").toLowerCase(),
+        name: el.getAttribute("xfaname") || el.name || el.id || "",
+        multiline: el.tagName.toLowerCase() === "textarea",
+        x: (box.left - origin.left) / scale,
+        y: (box.top - origin.top) / scale,
+        width: box.width / scale,
+        height: box.height / scale,
+      };
+    });
+  }).filter((f) => f.width > 1 && f.height > 1);
+
+  document.title = "ready:" + doc.numPages;
+  window.__renderDone = doc.numPages;
+}
+
+main().catch((error) => {
+  console.log("FAIL " + error.message);
+  document.title = "error:" + error.message;
+  window.__renderDone = -1;
+});
+</script>
+</body>
+</html>
