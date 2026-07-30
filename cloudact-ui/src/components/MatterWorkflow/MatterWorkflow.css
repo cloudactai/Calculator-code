@@ -439,6 +439,79 @@
   border-bottom-left-radius: 4px;
 }
 
+/* Change receipt (update information) — verified before/after values read back
+   from the database, shown under the assistant reply that made the change. */
+.mw-change-receipt {
+  display: inline-block;
+  max-width: 80%;
+  padding: 12px 16px;
+  border-radius: 12px;
+  border-bottom-left-radius: 4px;
+  background: #ecfdf5;
+  border: 1px solid #a7f3d0;
+  font-size: 14px;
+  line-height: 1.55;
+  color: #065f46;
+  word-break: break-word;
+}
+
+.mw-change-receipt--empty {
+  background: #f8fafc;
+  border-color: #e2e8f0;
+  color: #64748b;
+}
+
+.mw-change-receipt__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.mw-change-receipt__item + .mw-change-receipt__item {
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid #d1fae5;
+}
+
+/* Not uppercased: the path carries real values (an address, a child's name)
+   that have to stay readable exactly as they are stored. */
+.mw-change-receipt__field {
+  display: block;
+  font-size: 13px;
+  font-weight: 600;
+  color: #047857;
+  margin-bottom: 3px;
+}
+
+.mw-change-receipt__values {
+  display: inline-flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.mw-change-receipt__from {
+  color: #6b7280;
+  text-decoration: line-through;
+}
+
+.mw-change-receipt__arrow {
+  color: #10b981;
+  font-weight: 700;
+}
+
+.mw-change-receipt__to {
+  font-weight: 600;
+  color: #065f46;
+}
+
+.mw-chat-bubble--error {
+  background: #fef2f2;
+  color: #991b1b;
+  border: 1px solid #fecaca;
+  border-bottom-left-radius: 4px;
+}
+
 /* Typing indicator */
 .mw-chat-bubble--typing {
   display: inline-flex;

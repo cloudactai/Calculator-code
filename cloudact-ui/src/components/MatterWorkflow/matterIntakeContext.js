@@ -1,3 +1,17 @@
+/** Human labels for the PascalCase section keys the intake agents use. */
+export const SECTION_LABELS = {
+  Background: "Background",
+  Relationship: "Relationship",
+  Children: "Children",
+  IncomeAndBenefits: "Income & benefits",
+  EmploymentDetails: "Employment",
+  Expenses: "Expenses",
+  Assets: "Assets",
+  DebtsAndLiabilities: "Debts",
+  Court: "Court",
+  OtherPersonsInHousehold: "Other persons",
+};
+
 const DATABASE_METADATA_FIELDS = new Set([
   "id",
   "asset_type",
@@ -178,14 +192,17 @@ export function normalizeStoredIntakeData(matterData = {}) {
   return sections;
 }
 
+const matterIdentityOf = (matterData) =>
+  compactStoredValue({
+    matterNumber: matterData.matter_number,
+    clientName: matterData.client_id,
+  });
+
 export function buildStoredMatterContextMessage(matterData) {
   if (!matterData) return null;
 
   const savedSections = normalizeStoredIntakeData(matterData);
-  const matterIdentity = compactStoredValue({
-    matterNumber: matterData.matter_number,
-    clientName: matterData.client_id,
-  });
+  const matterIdentity = matterIdentityOf(matterData);
 
   if (!matterIdentity && Object.keys(savedSections).length === 0) return null;
 
@@ -199,6 +216,31 @@ export function buildStoredMatterContextMessage(matterData) {
       {
         matter: matterIdentity,
         savedSections,
+      },
+      null,
+      2
+    ),
+  ].join("\n");
+}
+
+/**
+ * Primer for the update-information agent. Unlike the intake primer this is
+ * always produced, because an empty file is still something the agent has to be
+ * told about before it asks its first question.
+ */
+export function buildUpdateContextMessage(matterData) {
+  if (!matterData) return null;
+
+  return [
+    "I want to change information already saved on this matter.",
+    "The authoritative database snapshot follows. Values that are not listed are not stored.",
+    "Ask me what I want to change. Do not run an intake, do not work through the sections in order, and do not ask me for anything I have not asked to change.",
+    "When I name a change, save only that change and tell me the old value and the new value.",
+    "",
+    JSON.stringify(
+      {
+        matter: matterIdentityOf(matterData),
+        savedSections: normalizeStoredIntakeData(matterData),
       },
       null,
       2

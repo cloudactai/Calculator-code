@@ -11,6 +11,7 @@ import MatterIntakeChoice from "../../components/MatterWorkflow/MatterIntakeChoi
 import ChildSupportChatPanel from "../../components/MatterWorkflow/ChildSupportChatPanel";
 import SpousalSupportChatPanel from "../../components/MatterWorkflow/SpousalSupportChatPanel";
 import MatterIntakeChatPanel from "../../components/MatterWorkflow/MatterIntakeChatPanel";
+import UpdateInformationChatPanel from "../../components/MatterWorkflow/UpdateInformationChatPanel";
 import ProfileSummaryPanel from "../../components/MatterWorkflow/ProfileSummaryPanel";
 
 import {
@@ -39,6 +40,7 @@ import dataAxios from "../../utils/dataAxios";
  *   "intake_choice"  – AI Agent vs Manual entry selector
  *   "intake_chat"    – AI Agent chat for matter intake
  *   "child_support"  – AI Agent chat for child support calculation
+ *   "update_information" – AI Agent chat that edits values already on file
  */
 
 // Task definitions matching the Excel workflow document
@@ -78,6 +80,9 @@ const SingleMatter = () => {
   // Fresh database snapshot used only by matter intake. It is deliberately
   // separate from the legacy support-calculator context above.
   const [intakeMatterData, setIntakeMatterData] = useState(null);
+  // Same snapshot shape, loaded separately for Update Information so the two
+  // chats can never show each other's stale view of the record.
+  const [updateMatterData, setUpdateMatterData] = useState(null);
 
   useEffect(() => {
     let active = true;
@@ -223,6 +228,7 @@ const SingleMatter = () => {
       t.id === "child_spousal_support" ||
       t.id === "draft_divorce_docs" ||
       t.id === "review_forms" ||
+      t.id === "update_information" ||
       t.id === "general_query";
 
     return {
@@ -250,7 +256,7 @@ const SingleMatter = () => {
     });
   }
 
-  function handleTaskStart(taskId) {
+  async function handleTaskStart(taskId) {
     if (taskId === "matter_intake") {
       if (taskStatuses.matter_intake === "not_started") {
         persistTaskStatus("matter_intake", "in_progress");
@@ -279,6 +285,21 @@ const SingleMatter = () => {
         persistTaskStatus("review_forms", "in_progress");
       }
       setView("profile_summary");
+    } else if (taskId === "update_information") {
+      if (taskStatuses.update_information === "not_started") {
+        persistTaskStatus("update_information", "in_progress");
+      }
+      // The agent may only change values that are already on file, so it needs
+      // the current database record before it asks its first question.
+      setUpdateMatterData(null);
+      setView("update_information");
+      const storedMatter = await dispatch(getMatterData(id));
+      setUpdateMatterData(
+        storedMatter || {
+          matter_number: id,
+          client_id: matterData?.client_id || "",
+        }
+      );
     } else if (taskId === "general_query") {
       // Future: open general query chat
     }
@@ -362,9 +383,12 @@ const SingleMatter = () => {
   const matterLoading = singleMatterLoading && !matterData;
 
   // Chat views lock the page to the viewport so only the chat window scrolls.
-  const isChatView = ["intake_chat", "child_support", "spousal_support"].includes(
-    view
-  );
+  const isChatView = [
+    "intake_chat",
+    "child_support",
+    "spousal_support",
+    "update_information",
+  ].includes(view);
 
   // Chat panel titles are shown in the page header (the panels no longer render
   // their own header row).
@@ -372,6 +396,7 @@ const SingleMatter = () => {
     intake_chat: "Matter Intake — AI Assistant",
     child_support: "Child Support Calculator — AI Assistant",
     spousal_support: "Spousal Support Calculator — AI Assistant",
+    update_information: "Update Information — AI Assistant",
   };
 
   // Client / matter identity — shown in the header in every view.
@@ -522,6 +547,30 @@ const SingleMatter = () => {
                   onSaved={(savedMatter) => {
                     setIntakeMatterData(savedMatter);
                     dispatch(getSingleMatter(id));
+                  }}
+                />
+              ) : (
+                <Loader isLoading />
+              )
+            )}
+
+            {/* Update Information via AI chat */}
+            {view === "update_information" && (
+              updateMatterData ? (
+                <UpdateInformationChatPanel
+                  matterData={updateMatterData}
+                  matterId={id}
+                  onBack={handleBackToTasks}
+                  onSaved={(savedMatter) => {
+                    setUpdateMatterData(savedMatter);
+                    // The change may have moved a matter-header field
+                    // (valuation date, financial year), so re-read the header.
+                    dispatch(getSingleMatter(id));
+                  }}
+                  onChangeApplied={() => {
+                    if (taskStatuses.update_information !== "completed") {
+                      persistTaskStatus("update_information", "completed");
+                    }
                   }}
                 />
               ) : (

@@ -25,6 +25,8 @@ almost every other feature is reached by opening a matter first.
 | Task list component               | [cloudact-ui/src/components/MatterWorkflow/MatterTaskList.jsx](cloudact-ui/src/components/MatterWorkflow/MatterTaskList.jsx)                            |
 | AI-vs-manual chooser              | [cloudact-ui/src/components/MatterWorkflow/MatterIntakeChoice.jsx](cloudact-ui/src/components/MatterWorkflow/MatterIntakeChoice.jsx)                    |
 | Intake chat panel                 | [cloudact-ui/src/components/MatterWorkflow/MatterIntakeChatPanel.jsx](cloudact-ui/src/components/MatterWorkflow/MatterIntakeChatPanel.jsx)              |
+| Update-information chat panel     | [cloudact-ui/src/components/MatterWorkflow/UpdateInformationChatPanel.jsx](cloudact-ui/src/components/MatterWorkflow/UpdateInformationChatPanel.jsx)    |
+| Before/after change diff          | [cloudact-ui/src/components/MatterWorkflow/matterUpdateDiff.js](cloudact-ui/src/components/MatterWorkflow/matterUpdateDiff.js)                          |
 | Child support chat panel          | [cloudact-ui/src/components/MatterWorkflow/ChildSupportChatPanel.jsx](cloudact-ui/src/components/MatterWorkflow/ChildSupportChatPanel.jsx)              |
 | Spousal support chat panel        | [cloudact-ui/src/components/MatterWorkflow/SpousalSupportChatPanel.jsx](cloudact-ui/src/components/MatterWorkflow/SpousalSupportChatPanel.jsx)          |
 | Profile summary + documents       | [cloudact-ui/src/components/MatterWorkflow/ProfileSummaryPanel.jsx](cloudact-ui/src/components/MatterWorkflow/ProfileSummaryPanel.jsx)                  |
@@ -96,6 +98,7 @@ routing. This keeps the whole matter workflow on one screen with a persistent he
 | `support_choice`                      | AI vs Manual support calculation        |
 | `support_type_choice`                 | Child vs Spousal support                |
 | `child_support` / `spousal_support` | The respective AI chat panels           |
+| `update_information`                  | AI chat that edits values already on file |
 | `profile_summary`                     | "View Information and Documents" screen |
 
 The header (client name + matter number) is rendered in every view. In a chat view
@@ -127,6 +130,10 @@ localStorage fallback** — a failed request must never silently diverge from th
   the form-creation page pre-selects it (this is the bridge into the Forms area — see
   [FORMS.md](FORMS.md)).
 - **review_forms** → shows `profile_summary`.
+- **update_information** → marks in-progress, re-reads the full matter record
+  (`getMatterData`) and shows `update_information` — the AI chat that changes values
+  already on file. Flips to completed on the first change that actually altered a
+  stored value.
 
 ### Loading matter data
 
@@ -178,8 +185,9 @@ the profile summary would keep showing pre-intake blanks.
 
 ## The chat panels (and why they match report-generation)
 
-The three panels — `MatterIntakeChatPanel`, `ChildSupportChatPanel`,
-`SpousalSupportChatPanel` — all share the same chat shell (the `mw-chat-*` classes in
+The four panels — `MatterIntakeChatPanel`, `UpdateInformationChatPanel`,
+`ChildSupportChatPanel`, `SpousalSupportChatPanel` — all share the same chat shell
+(the `mw-chat-*` classes in
 [MatterWorkflow.css](cloudact-ui/src/components/MatterWorkflow/MatterWorkflow.css)):
 a scrolling window of alternating "You" / "AI Assistant" bubbles, a typing indicator
 (with a "warming up the server" message after ~6s because the first Flask reply can be
@@ -208,6 +216,21 @@ Where they differ:
   from the visible transcript, using `buildStoredMatterContextMessage` /
   `normalizeStoredIntakeData` from
   [matterIntakeContext.js](cloudact-ui/src/components/MatterWorkflow/matterIntakeContext.js).
+- **Update-information panel** (`/update-chat`) only *edits* values already on file.
+  It sends the same hidden snapshot primer (`buildUpdateContextMessage`) and the agent
+  opens the conversation by asking what the lawyer wants to change. It writes through
+  the same `patchMatterIntake` endpoint and the same `save_matter_section` section
+  shapes as intake — the Flask side shares one `INTAKE_SECTION_SHAPES` constant
+  between `INTAKE_SYSTEM` and `UPDATE_SYSTEM` so the two agents can never drift apart.
+
+  **The "changed from X to Y" line the lawyer sees is not the model's claim.** The
+  agent states the change in prose, but the green receipt underneath is computed by
+  `diffMatterSnapshots`
+  ([matterUpdateDiff.js](cloudact-ui/src/components/MatterWorkflow/matterUpdateDiff.js))
+  from the snapshot held *before* the patch against the record the write endpoint read
+  *back* — both normalised through `normalizeStoredIntakeData`, so row ids and blank
+  placeholders never surface as changes. A write that altered nothing says so, and a
+  rejected write posts a "not saved" bubble that contradicts the reply above it.
 
 The Flask base URL comes from `CALCULATOR_API` in
 [cloudact-ui/src/config.ts](cloudact-ui/src/config.ts).
@@ -240,7 +263,7 @@ ports the old platform's matter-profile page:
 All matter/forms/folders/task calls go through the shared axios instance
 ([cloudact-ui/src/utils/axios.js](cloudact-ui/src/utils/axios.js)) and are handled by
 the auth-server (see [../auth-server/](../auth-server/)); the conversational endpoints
-(`/chat`, `/intake-chat`, `/download-report`) are served by the Flask app
+(`/chat`, `/intake-chat`, `/update-chat`, `/download-report`) are served by the Flask app
 ([../app.py](../app.py)). Matter data (`getSingleMatter`, `getSingleMatterData`,
 `getMatterData`, `createMatter`, `updateMatterData`, `patchMatterIntake`) flows through
 the Redux action/selector modules under
