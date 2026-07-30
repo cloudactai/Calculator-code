@@ -8,9 +8,10 @@
  * a human label. This module rebuilds the legacy-shaped objects from those live
  * records so the existing binds resolve without touching the field maps.
  *
- * Income is reported yearly and expenses monthly, matching the Financial
- * Statement layout. Missing values collapse to "" so the field stays blank
- * (and editable) rather than showing 0.
+ * Income and expenses are reported monthly in the Financial Statement source
+ * rows. The forms calculate annual income from the monthly total themselves.
+ * Missing values collapse to "" so the field stays blank (and editable)
+ * rather than showing 0.
  */
 
 const num = (value) => {
@@ -18,7 +19,6 @@ const num = (value) => {
   const n = Number(String(value).replace(/[^0-9.-]/g, ""));
   return Number.isFinite(n) ? n : null;
 };
-const yearly = (row) => num(row?.yearlyAmount) ?? (num(row?.monthlyAmount) != null ? num(row.monthlyAmount) * 12 : null);
 const monthly = (row) => num(row?.monthlyAmount) ?? (num(row?.yearlyAmount) != null ? num(row.yearlyAmount) / 12 : null);
 const asText = (n) => (n === null || n === 0 ? "" : String(Math.round(n)));
 
@@ -111,7 +111,7 @@ function buildIncome(rows) {
     if (!key) continue;
     const party = partyKey(row.role);
     const prev = num(out[party][key]) || 0;
-    out[party][key] = asText(prev + (yearly(row) || 0));
+    out[party][key] = asText(prev + (monthly(row) || 0));
   }
   return out;
 }
