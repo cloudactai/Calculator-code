@@ -157,7 +157,19 @@ const FiveStepsPage = () => {
   const SECTIONS = [
     { key: "Background", label: "Background", type: "background", title: "Background information", icon: background_information, Comp: BackgroundInformationSimple, extra: { bgInfoActiveTab, setBgInfoActiveTab } },
     { key: "Court", label: "Court", type: "courtInfo", title: "Court information", icon: court_information, Comp: CourtInformationSimple, extra: {} },
-    { key: "Children", label: "Children", type: "children", title: "Children information", icon: children_information, Comp: ChildrenInformationSimple, extra: { activeTab: childActiveTab, setActiveTab: setChildActiveTab } },
+    {
+      key: "Children",
+      label: "Children",
+      type: "children",
+      title: "Children information",
+      icon: children_information,
+      Comp: ChildrenInformationSimple,
+      extra: {
+        activeTab: childActiveTab,
+        setActiveTab: setChildActiveTab,
+        backgroundParties: sectionData.background?.background,
+      },
+    },
     { key: "Relationship", label: "Relationship", type: "relationship", title: "Relationship information", icon: relationship_information, Comp: RelationshipInformationSimple, extra: {} },
     { key: "EmploymentDetails", label: "Employment details", type: "employment", title: "Employment details", icon: employment_details, Comp: EmploymentDetailsSimple, extra: { activeTab: empActiveTab, setActiveTab: setEmpActiveTab } },
     { key: "IncomeAndBenefits", label: "Income and benefits", type: "incomeBenefits", title: "Income and benefits", icon: income_and_benefits, Comp: IncomeAndBenefitsSimple, extra: { activeTab: incomeActiveTab, setActiveTab: setIncomeActiveTab } },

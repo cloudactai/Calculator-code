@@ -9,7 +9,13 @@ import { ChildrenData } from '../../utils/Apis/matters/CustomHook/DocumentViewDa
 import { BackgroundData } from '../../utils/Apis/matters/CustomHook/BackgroundData';
 import Loader from '../../components/Loader';
 import { calculateAge } from '../../utils/matterValidations/matterValidation';
-const ChildrenInformationSimple = ({ matterId, onUpdateFormData, activeTab, setActiveTab }) => {
+const ChildrenInformationSimple = ({
+    matterId,
+    onUpdateFormData,
+    activeTab,
+    setActiveTab,
+    backgroundParties,
+}) => {
 
     const [loading, setLoading] = useState(true);
     const [childrenNumber, setChildrenNumber] = useState(0);
@@ -17,8 +23,11 @@ const ChildrenInformationSimple = ({ matterId, onUpdateFormData, activeTab, setA
     const dispatch = useDispatch()
 
     const { selectChildrenData, selectChildrenDataLoading } = ChildrenData(matterId)
-    // Party names entered in Background feed the "Now lives with" options.
-    const { backgroundData } = BackgroundData(matterId)
+    // Standalone usages (such as the Profile Summary modal) read the saved
+    // Background record. The full intake page passes its live Background state
+    // so names update here immediately, before the debounced save completes.
+    const { backgroundData: savedBackgroundData } = BackgroundData(matterId)
+    const backgroundData = backgroundParties || savedBackgroundData
 
     useEffect(() => {
 

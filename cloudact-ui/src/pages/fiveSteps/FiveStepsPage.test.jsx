@@ -94,3 +94,51 @@ test("ignores a stale AI save result when the manual intake opens", async () => 
   expect(screen.queryByText("TASK LIST")).not.toBeInTheDocument();
   expect(toast.success).not.toHaveBeenCalled();
 });
+
+test("Now lives with options update from names entered in Background", async () => {
+  fetchRequest.mockImplementation((method, url) => {
+    if (url.endsWith("/background")) {
+      return Promise.resolve({
+        data: {
+          data: {
+            body: [
+              { id: 1, role: "Client", name: "Jane Doe" },
+              { id: 2, role: "Opposing Party", name: "John Doe" },
+            ],
+          },
+        },
+      });
+    }
+    if (url.endsWith("/children")) {
+      return Promise.resolve({
+        data: {
+          data: {
+            body: [
+              {
+                id: 1,
+                childName: "Michael Doe",
+                nowLivesWith: "",
+                dateOfBirth: "2024-06-30",
+                representedByLawyer: "No",
+              },
+            ],
+          },
+        },
+      });
+    }
+    return Promise.resolve({ data: { data: { body: [] } } });
+  });
+
+  renderPage();
+
+  const clientName = await screen.findByDisplayValue("Jane Doe");
+  fireEvent.change(clientName, { target: { value: "Janet Doe" } });
+
+  const nowLivesWithLabel = await screen.findByText("Now lives with");
+  const dropdownButton = nowLivesWithLabel.parentElement.querySelector("button");
+  fireEvent.click(dropdownButton);
+
+  expect(await screen.findByRole("link", { name: "Janet Doe" })).toBeInTheDocument();
+  expect(screen.getByRole("link", { name: "John Doe" })).toBeInTheDocument();
+  expect(screen.queryByRole("link", { name: "Jane Doe" })).not.toBeInTheDocument();
+});
