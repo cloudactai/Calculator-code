@@ -240,7 +240,8 @@ Where they differ:
   ([changeLog.js](../auth-server/src/utils/changeLog.js)) and shown collapsed at the
   top of the panel — a dated record of what was amended, which is the part with
   lasting value on a file. It lives in `MatterRecord` under the `matter_change_log`
-  dataType (so it needed no migration), is appended inside a Serializable
+  dataType (so it needed no migration — see [DATABASE.html](DATABASE.html)), is
+  appended inside a Serializable
   transaction so two saves in flight cannot drop each other, and is bounded at 200
   entries. A failed append never calls the change itself into question — the write
   already succeeded, so it only costs the history line.

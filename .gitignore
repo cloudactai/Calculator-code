@@ -13,3 +13,8 @@ cloudact-ui/src/utils/devBypass.js
 # Local Claude Code permissions/settings — keep off the repo
 .claude/settings.local.json
 generated_reports/
+# Forms staging area: source PDFs, extracted .fields.json, converted out/ and
+# qa/ page renders. ~33MB of regenerable binaries whose converted output only
+# differs from the committed templates in form-template-export/ by stray blank
+# fields. Keep it local; the promoted templates are what the repo ships.
+auth-server/form-template-export/_incoming/
