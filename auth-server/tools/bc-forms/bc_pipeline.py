@@ -96,6 +96,8 @@ def extract(source_path, doc_id):
             fields.append({
                 "id": new_id(doc_id, index),
                 "type": kind,
+                **({"shape": "circle" if widget.field_type_string == "RadioButton" else "square"}
+                   if kind == "CheckBox" else {}),
                 "x": round(rect.x0, 2),
                 "y": round(rect.y0, 2),
                 "width": round(rect.width * SCALE, 2),
@@ -154,6 +156,97 @@ def nudge_off_hint(pdf_path, fields, min_remaining=14.0):
             nudged += 1
     doc.close()
     return nudged
+
+
+def printed_mark(page, box, pad=3.0):
+    """The tick target actually printed under a checkbox overlay.
+
+    BC prints two kinds: the Supreme forms draw a rounded square (or a circle for
+    a radio group) as vector art, the Provincial forms print a ❑ glyph. Either
+    way the overlay should sit exactly on it rather than on the larger box XFA
+    allocated around it.
+    """
+    search = fitz.Rect(box.x0 - pad, box.y0 - pad, box.x1 + pad, box.y1 + pad)
+    found = None
+    for drawing in page.get_drawings():
+        rect = drawing["rect"]
+        if not (3 <= rect.width <= 26 and 3 <= rect.height <= 26):
+            continue
+        if not rect.intersects(search):
+            continue
+        if (rect & search).get_area() < 0.25 * rect.get_area():
+            continue
+        found = rect if found is None else (found | rect)
+    if found is None:
+        for x0, y0, x1, y1, word, *_ in page.get_text("words", clip=search):
+            if word.strip() and set(word.strip()) <= BOX_GLYPHS:
+                glyph = fitz.Rect(x0, y0, x1, y1)
+                found = glyph if found is None else (found | glyph)
+    if found is None:
+        return None
+    return ink_bounds(page, found) or found
+
+
+def ink_bounds(page, rect, zoom=6.0, pad=1.0, dark=170):
+    """Tighten a candidate to the pixels actually inked.
+
+    A ❑ glyph reports its font box — 9 x 14 for a 9 x 9 square — and a vector
+    stroke reports its path box. Rendering the candidate and measuring the ink
+    gives the mark a lawyer actually sees, which is what the control must match.
+    """
+    area = fitz.Rect(rect.x0 - pad, rect.y0 - pad, rect.x1 + pad, rect.y1 + pad)
+    pix = page.get_pixmap(matrix=fitz.Matrix(zoom, zoom), clip=area, colorspace=fitz.csGRAY)
+    if not pix.width or not pix.height:
+        return None
+    samples = pix.samples
+    min_x, min_y, max_x, max_y = pix.width, pix.height, -1, -1
+    for y in range(pix.height):
+        row = y * pix.width
+        for x in range(pix.width):
+            if samples[row + x] < dark:
+                if x < min_x:
+                    min_x = x
+                if x > max_x:
+                    max_x = x
+                if y < min_y:
+                    min_y = y
+                if y > max_y:
+                    max_y = y
+    if max_x < 0:
+        return None
+    return fitz.Rect(area.x0 + min_x / zoom, area.y0 + min_y / zoom,
+                     area.x0 + (max_x + 1) / zoom, area.y0 + (max_y + 1) / zoom)
+
+
+def snap_checkboxes(pdf_path, fields, max_shift=12.0):
+    """Move each checkbox overlay onto the mark printed beneath it.
+
+    XFA hands back a box sized for a whole text line, so a 10 pt square ends up
+    inside an 18 pt tall field and the control floats above the mark. Snapping is
+    skipped when nothing is found or the correction is implausibly large.
+    """
+    doc = fitz.open(pdf_path)
+    snapped = missed = 0
+    for page_number in sorted({f["page"] for f in fields}):
+        page = doc[page_number - 1]
+        for field in [f for f in fields if f["page"] == page_number and f["type"] == "CheckBox"]:
+            box = fitz.Rect(field["x"], field["y"],
+                            field["x"] + field["width"] / SCALE,
+                            field["y"] + field["height"] / SCALE)
+            mark = printed_mark(page, box)
+            if mark is None or mark.width < 3 or mark.height < 3:
+                missed += 1
+                continue
+            if abs(mark.x0 - box.x0) > max_shift or abs(mark.y0 - box.y0) > max_shift:
+                missed += 1
+                continue
+            field["x"] = round(mark.x0, 2)
+            field["y"] = round(mark.y0, 2)
+            field["width"] = round(mark.width * SCALE, 2)
+            field["height"] = round(mark.height * SCALE, 2)
+            snapped += 1
+    doc.close()
+    return snapped, missed
 
 
 def flatten_background(source_path, dest_path):

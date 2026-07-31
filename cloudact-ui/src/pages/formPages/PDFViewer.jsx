@@ -147,14 +147,25 @@ const renderField = (field, handleEditField, handleSort, handleCellEdit, formatD
           style={getFieldStyle(field)}
         />
       );
-    default:
+    default: {
+      // The control fills its field box, which is snapped to the mark printed on
+      // the form, and takes that mark's shape — BC prints circles for radio
+      // choices and rounded squares for checkboxes. A fixed-size box could never
+      // line up, since these marks run from about 7 to 13 pt.
+      const isCircle = field.shape === 'circle';
+      const isChecked = field.value === 'checked';
       return (
-        <label style={{ display: 'flex', alignItems: 'center' }}>
+        <label
+          style={{
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            width: '100%', height: '100%', margin: 0, cursor: 'pointer'
+          }}
+        >
           <input
             id={field.id}
             aria-label={field.label || field.id}
             type="checkbox"
-            checked={field.value === 'checked'}
+            checked={isChecked}
             onChange={() => {
               setFields((prevFields) =>
                 prevFields.map((f) =>
@@ -163,14 +174,22 @@ const renderField = (field, handleEditField, handleSort, handleCellEdit, formatD
               );
             }}
             style={{
-              width: '20px',
-              height: '20px',
+              appearance: 'none',
+              WebkitAppearance: 'none',
+              width: '100%',
+              height: '100%',
+              margin: 0,
+              padding: 0,
+              boxSizing: 'border-box',
               cursor: 'pointer',
-              marginRight: '5px'
+              border: '1px solid rgba(255, 144, 0, 0.8)',
+              borderRadius: isCircle ? '50%' : '2px',
+              backgroundColor: isChecked ? 'rgba(255, 144, 0, 0.85)' : 'rgba(255, 144, 0, 0.2)'
             }}
           />
         </label>
       );
+    }
   }
 };
 
