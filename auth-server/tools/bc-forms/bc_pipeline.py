@@ -185,7 +185,7 @@ def printed_mark(page, box, pad=3.0):
     if found is None:
         return None
     refined = ink_bounds(page, found)
-    if refined and 0.62 <= refined.width / max(refined.height, 0.01) <= 1.6:
+    if refined and 0.78 <= refined.width / max(refined.height, 0.01) <= 1.28:
         return refined
     # The ink measure picked up a neighbouring line. These marks are square, so
     # fall back to a square centred on the candidate rather than trust it.
@@ -245,7 +245,11 @@ def snap_checkboxes(pdf_path, fields, max_shift=12.0):
             if mark is None or mark.width < 3 or mark.height < 3:
                 missed += 1
                 continue
-            if abs(mark.x0 - box.x0) > max_shift or abs(mark.y0 - box.y0) > max_shift:
+            # Accept any mark sitting inside the field's own box. A distance limit
+            # rejected the mark on a two-line option, where the circle is centred
+            # about 14 pt down, and left the control a tall oval.
+            centre = fitz.Point((mark.x0 + mark.x1) / 2, (mark.y0 + mark.y1) / 2)
+            if not (box + (-max_shift, -max_shift, max_shift, max_shift)).contains(centre):
                 missed += 1
                 continue
             field["x"] = round(mark.x0, 2)
@@ -255,6 +259,57 @@ def snap_checkboxes(pdf_path, fields, max_shift=12.0):
             snapped += 1
     doc.close()
     return snapped, missed
+
+
+def shaded_boxes(page, min_width=20.0, min_height=6.0, max_height=60.0):
+    """The light grey rectangles BC prints to show where writing goes."""
+    out = []
+    for drawing in page.get_drawings():
+        rect = drawing["rect"]
+        fill = drawing.get("fill")
+        if not fill or not (rect.width >= min_width and min_height <= rect.height <= max_height):
+            continue
+        if min(fill) > 0.75 and max(fill) < 0.98:  # grey, not white and not a rule
+            out.append(rect)
+    return out
+
+
+def snap_text_fields(pdf_path, fields, tolerance=6.0):
+    """Fit a text field to the grey box printed under it.
+
+    XFA sizes a field to its text line, which runs a few points taller than the
+    shading the form prints, so the editable area stood proud of the box a lawyer
+    sees. Only fields with a clear single match are moved.
+    """
+    doc = fitz.open(pdf_path)
+    snapped = 0
+    for page_number in sorted({f["page"] for f in fields}):
+        page = doc[page_number - 1]
+        boxes = shaded_boxes(page)
+        if not boxes:
+            continue
+        for field in [f for f in fields if f["page"] == page_number and f["type"] in ("TextField", "TextArea")]:
+            box = fitz.Rect(field["x"], field["y"],
+                            field["x"] + field["width"] / SCALE,
+                            field["y"] + field["height"] / SCALE)
+            hits = [g for g in boxes
+                    if not (g & box).is_empty
+                    and (g & box).get_area() > 0.45 * min(g.get_area(), box.get_area())]
+            if not hits:
+                continue
+            target = hits[0]
+            for extra in hits[1:]:
+                target |= extra
+            # Guard against swallowing a neighbouring column or a whole table.
+            if abs(target.x0 - box.x0) > tolerance * 3 or target.height > box.height + tolerance * 3:
+                continue
+            field["x"] = round(target.x0, 2)
+            field["y"] = round(target.y0, 2)
+            field["width"] = round(target.width * SCALE, 2)
+            field["height"] = round(target.height * SCALE, 2)
+            snapped += 1
+    doc.close()
+    return snapped
 
 
 def flatten_background(source_path, dest_path):

@@ -59,6 +59,7 @@ def main():
         bp.clamp_to_page(fields, audit["pageSizes"])
         nudged = bp.nudge_off_hint(background, fields)
         snapped, missed = bp.snap_checkboxes(background, fields)
+        bp.snap_text_fields(background, fields)
         geometry = bp.check_geometry(fields, audit["pageSizes"])
         overlaps = bp.check_overlap(background, fields)
         bp.qa_render(background, fields, os.path.join(QA, "%s_qa.pdf" % did))
