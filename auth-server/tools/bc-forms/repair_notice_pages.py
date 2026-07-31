@@ -21,7 +21,7 @@ body { font-family: sans-serif; font-size: 7.2pt; line-height: 1.18; margin: 0; 
 p { margin: 0 0 3pt 0; }
 ul, ol { margin: 2pt 0 2pt 0; padding-left: 13pt; }
 li { margin: 0 0 1pt 0; }
-ol.alpha { list-style-type: lower-alpha; }
+p.lettered { margin: 0 0 1pt 26pt; text-indent: -13pt; }
 blockquote { margin: 2pt 0 3pt 14pt; }
 """
 
@@ -34,17 +34,14 @@ FINANCIAL_NOTE = """
 or 6 of the <i>Family Law Act</i>;</li>
 <li>there is a claim against you for the support of a child, OR</li>
 <li>you are claiming child support <b>unless all</b> of the following conditions apply:
-<ol class="alpha">
-<li>you are making no claim for any other kind of support;</li>
-<li>the child support is for children who are not stepchildren;</li>
-<li>none of the children for whom child support is claimed is 19 years of age or older;</li>
-<li>the income of the person being asked to pay child support is under $150 000 per year;</li>
-<li>you are not applying for special expenses under section 7 of the child support guidelines;</li>
-<li>you are not applying for an order under section 8 of the child support guidelines;</li>
-<li>you are not applying for an order under section 9 of the child support guidelines;</li>
-<li>you are not making a claim based on undue hardship under section 10 of the child
-support guidelines.</li>
-</ol></li>
+<p class="lettered">(a) you are making no claim for any other kind of support;</p>
+<p class="lettered">(b) the child support is for children who are not stepchildren;</p>
+<p class="lettered">(c) none of the children for whom child support is claimed is 19 years of age or older;</p>
+<p class="lettered">(d) the income of the person being asked to pay child support is under $150 000 per year;</p>
+<p class="lettered">(e) you are not applying for special expenses under section 7 of the child support guidelines;</p>
+<p class="lettered">(f) you are not applying for an order under section 8 of the child support guidelines;</p>
+<p class="lettered">(g) you are not applying for an order under section 9 of the child support guidelines;</p>
+<p class="lettered">(h) you are not making a claim based on undue hardship under section 10 of the child support guidelines.</p></li>
 </ul>
 <p>If you do not file the financial information that is required, the court may attribute an
 amount of income to you, and make a support award against you, based on that amount.</p>
