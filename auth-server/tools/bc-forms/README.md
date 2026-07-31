@@ -53,6 +53,20 @@ in `build_bc_supreme.py` lists the Adobe wizard forms whose filed output is gene
 script at Preview time; flattening those blank produces a questionnaire, not a court
 form. Source those from BC Laws Appendix A instead — see BC_MIGRATION_PLAN.md STATUS.
 
+## 3b. Repairing the two notice pages
+
+```
+python3 repair_notice_pages.py [--promote]
+```
+
+F4 page 5 and F5 page 3 hold two bordered instruction boxes that pdf.js cannot lay
+out: it renders the form's lettered list as a bare `<ol>`, numbering the items 1..8
+instead of (a)..(h) and placing each marker outside the text flow, so it prints on
+top of its own item and the block overflows into the notice below. No CSS fixes it.
+The band is cleared — text and line art, so the old bullets go too — the borders are
+drawn back, and the same wording is typeset into each box from the enacted text
+(BC Reg 188/2024). Run this after `build_bc_wizard.py`, before the catalog merge.
+
 ## 4. Catalog
 
 ```
