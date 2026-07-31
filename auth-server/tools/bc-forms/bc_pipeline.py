@@ -376,6 +376,50 @@ def clear_printed_labels(pdf_path, fields, gap=1.5, left_zone=0.6):
     return fixed
 
 
+def size_amounts_to_dollar(pdf_path, fields):
+    """Make every amount box exactly as tall as the $ printed beside it.
+
+    Fitting an amount to its shaded row makes the boxes disagree down a column,
+    because BC's rows are not all one line: a two-line row gave a 23 pt box next
+    to 16 pt neighbours. The $ is the same size all down the column, so sizing to
+    it gives one height per page, and it is always shorter than the row so the
+    box still sits inside its shading.
+    """
+    doc = fitz.open(pdf_path)
+    changed = 0
+    for page_number in sorted({f["page"] for f in fields}):
+        page = doc[page_number - 1]
+        dollars = [fitz.Rect(w[:4]) for w in page.get_text("words") if w[4].strip() == "$"]
+        if not dollars:
+            continue
+        cells = shaded_boxes(page, max_height=220.0)
+        for field in [f for f in fields if f["page"] == page_number and f["type"] in ("TextField", "TextArea")]:
+            box = fitz.Rect(field["x"], field["y"],
+                            field["x"] + field["width"] / SCALE,
+                            field["y"] + field["height"] / SCALE)
+            cell = next((c for c in cells
+                         if c.contains(fitz.Point(box.x0 + 1, (box.y0 + box.y1) / 2))), None)
+            # In a tall cell BC prints the $ at the bottom, within a point of the
+            # cell below, so the $ must belong to this field's own cell rather
+            # than merely overlap its line.
+            near = [d for d in dollars
+                    if box.x0 - 30 <= d.x1 <= box.x0 + box.width * 0.5
+                    and (cell.contains(fitz.Point((d.x0 + d.x1) / 2, (d.y0 + d.y1) / 2))
+                         if cell else (d.y0 < box.y1 and d.y1 > box.y0))]
+            if not near:
+                continue
+            sign = min(near, key=lambda d: abs(d.x1 - box.x0))
+            height = min(sign.height, cell.height) if cell else sign.height
+            top = (sign.y0 + sign.y1) / 2 - height / 2
+            if cell:
+                top = min(max(top, cell.y0), cell.y1 - height)
+            field["y"] = round(top, 2)
+            field["height"] = round(height * SCALE, 2)
+            changed += 1
+    doc.close()
+    return changed
+
+
 def flatten_background(source_path, dest_path):
     """Write the source as a printed background: no /AcroForm, no widget annots.
 
