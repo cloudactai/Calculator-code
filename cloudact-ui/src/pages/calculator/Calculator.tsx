@@ -28,7 +28,7 @@ import {
 /* eslint-disable @typescript-eslint/ban-ts-comment */
 // @ts-ignore
 import Screen1 from "./screen1/Screen1.tsx";
-import { getCalculatorLabelFromCookies } from "./screen2/Screen2";
+import { getCalculatorLabelFromCookies, intakeTypeToCalcDropdown } from "./screen2/Screen2";
 // @ts-ignore
 import Screen2 from "./screen2/Screen2.tsx";
 // @ts-ignore
@@ -633,30 +633,38 @@ const Calculator = () => {
         }));
       }
 
-      // Prefill screen 2 income data from matter records
-      if (matterData.income) {
-        setScreen2(prevState => {
-          const processIncome = (partyData, initialPartyData) => {
-            if (!partyData) return initialPartyData;
-            const newIncome = Object.entries(partyData)
-              .filter(([, amount]) => amount !== "" && amount !== "0" && amount != null)
-              .map(([label, amount]) => ({
-                label,
-                amount: String(amount),
-                value: String(amount),
-                tooltip: CONSTANTS[label] || "",
-              }));
-            return newIncome.length > 0 ? newIncome : initialPartyData;
-          };
+      // Prefill screen 2 income data directly from raw income_benefits rows.
+      // Each DB row becomes a separate calculator income item, preserving
+      // multiple sources per party.
+      const rawIncomeRows = rawIntakeData.current?.incomeBenefits || [];
+      if (rawIncomeRows.length > 0) {
+        const mapRowsToCalcItems = (rows: any[], role: string) => {
+          const incomeRows = rows.filter(
+            (r: any) => r.role === role && r.incomeBenefit === "income"
+              && r.type && (r.yearlyAmount || r.monthlyAmount)
+          );
+          return incomeRows.map((row: any) => {
+            const mapped = intakeTypeToCalcDropdown[row.type];
+            const yearlyAmt = row.yearlyAmount || String(parseFloat(row.monthlyAmount || "0") * 12);
+            return {
+              label: mapped?.label || row.type,
+              value: mapped?.value || "",
+              amount: yearlyAmt,
+              tooltip: "",
+            };
+          });
+        };
 
-          return {
-            ...prevState,
-            income: {
-              party1: processIncome(matterData.income.client, prevState.income.party1),
-              party2: processIncome(matterData.income.opposingParty, prevState.income.party2),
-            },
-          };
-        });
+        const party1Items = mapRowsToCalcItems(rawIncomeRows, "Client");
+        const party2Items = mapRowsToCalcItems(rawIncomeRows, "Opposing Party");
+
+        setScreen2(prevState => ({
+          ...prevState,
+          income: {
+            party1: party1Items.length > 0 ? party1Items : prevState.income.party1,
+            party2: party2Items.length > 0 ? party2Items : prevState.income.party2,
+          },
+        }));
       }
     }
   }, [matterData]);

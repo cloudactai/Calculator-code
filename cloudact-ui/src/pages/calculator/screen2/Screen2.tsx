@@ -149,7 +149,8 @@ import {
   specialExpensesDropdown,
   totalNumberOfChildren,
   twoPartyStates,
-  undueHardshipIncomeTypeDropdown
+  undueHardshipIncomeTypeDropdown,
+  calcValueToIntakeType
 } from "./Screen2";
 import CONSTANTS from "../TollTipConstants";
 import CustomCheckbox from "../../../components/LayoutComponents/CustomCheckbox/CustomCheckbox";
@@ -6274,40 +6275,13 @@ const Screen2 = ({
       // 5) Save income to income_benefits so intake forms see calculator changes.
       // Convert calculator's {label, amount, value} items → intake's
       // {type, yearlyAmount, monthlyAmount, role, incomeBenefit} rows.
-      // The calculator stores camelCase keys (from buildIncomeObj), but intake
-      // uses human-readable type names. Map them back so the intake recognises them.
-      const calcLabelToIntakeType: Record<string, string> = {
-        employmentIncome: "Employment income",
-        commissionTipsBonuses: "Commissions, tips and bonuses",
-        selfEmploymentIncome: "Self-employment income",
-        employmentInsuranceBenefits: "Employment insurance benefits",
-        workersCompensationBenefits: "Workers compensation benefits",
-        socialAssistanceIncome: "Social assistance income",
-        interestInvestmentIncome: "Interest and investment income",
-        pensionIncome: "Pension income",
-        spousalSupport: "Spousal support",
-        childTaxBenefits: "Child tax benefits",
-        otherIncome: "Other income",
-        // Also map any human-readable labels back to themselves (in case the
-        // user typed a custom label or the data already has the intake format)
-        "Employment income": "Employment income",
-        "Commissions, tips and bonuses": "Commissions, tips and bonuses",
-        "Self-employment income": "Self-employment income",
-        "Employment insurance benefits": "Employment insurance benefits",
-        "Workers compensation benefits": "Workers compensation benefits",
-        "Social assistance income": "Social assistance income",
-        "Interest and investment income": "Interest and investment income",
-        "Pension income": "Pension income",
-        "Spousal support": "Spousal support",
-        "Child tax benefits": "Child tax benefits",
-        "Other income": "Other income",
-      };
-
+      // The calculator items now use dropdown labels like "10100 - Employment Income"
+      // with value like "10100". Use calcValueToIntakeType to map back to intake names.
       const incomeToIntakeRows = (partyItems: any[], roleLabel: string) =>
         (partyItems || [])
           .filter((item: any) => item.label && item.amount && item.amount !== "0")
           .map((item: any) => ({
-            type: calcLabelToIntakeType[item.label] || item.label,
+            type: calcValueToIntakeType[item.value] || item.label,
             yearlyAmount: String(item.amount || "0"),
             monthlyAmount: String(Math.round(parseFloat(item.amount || "0") / 12)),
             role: roleLabel,
