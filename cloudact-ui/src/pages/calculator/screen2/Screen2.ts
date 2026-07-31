@@ -451,6 +451,64 @@ export const incomeTypeDropdown: incomeDropdown[] = [
   },
 ];
 
+// =================== INTAKE ↔ CALCULATOR INCOME MAPPING ===================
+// Maps intake DB type names → calculator dropdown value + label, and vice versa.
+// Used when loading income from the matter DB and when saving back.
+
+export const intakeTypeToCalcDropdown: Record<
+  string,
+  { value: string; label: string }
+> = {
+  // Intake names → calculator dropdown entries
+  "Employment income": { value: "10100", label: "10100 - Employment Income" },
+  "Employment income (before deductions)": { value: "10100", label: "10100 - Employment Income" },
+  "Commissions, tips and bonuses": { value: "10400", label: "10400 - Other employment income" },
+  "Self-employment income": { value: "Line 25", label: "Line 25 - Self employed Business/Professional/Commission Income " },
+  "Employment insurance benefits": { value: "11900", label: "11900 - Employment insurance and other benefits" },
+  "Workers compensation benefits": { value: "14400", label: "14400 - Workers' compensation benefits" },
+  "Social assistance income": { value: "14500", label: "14500 - Social assistance payments" },
+  "Social assistance income (including ODSP payments)": { value: "14500", label: "14500 - Social assistance payments" },
+  "Interest and investment income": { value: "12100", label: "12100 - Interest and other investment income" },
+  "Pension income": { value: "11500", label: "11500 - Other pensions and superannuation" },
+  "Pension income (including CPP and OAS)": { value: "11500", label: "11500 - Other pensions and superannuation" },
+  "Spousal support": { value: "12800", label: "12800 - Support payments received" },
+  "Spousal support received from a former spouse/partner": { value: "12800", label: "12800 - Support payments received" },
+  "Child tax benefits": { value: "11700", label: "11700 - Universal child care benefit (UCCB) " },
+  "Other income": { value: "13000", label: "13000 - Other income" },
+  "Other sources of income": { value: "13000", label: "13000 - Other income" },
+  "Government assistance income": { value: "14500", label: "14500 - Social assistance payments" },
+  "Trust income": { value: "13000", label: "13000 - Other income" },
+  "Rental income": { value: "12600", label: "12600 - Rental income" },
+};
+
+// Reverse: calculator dropdown value → intake type name (for saving back).
+// Uses the full intake dropdown names so they match when the intake re-loads.
+export const calcValueToIntakeType: Record<string, string> = {
+  "10100": "Employment income (before deductions)",
+  "10400": "Commissions, tips and bonuses",
+  "Line 25": "Self-employment income",
+  "11900": "Employment insurance benefits",
+  "14400": "Workers compensation benefits",
+  "14500": "Social assistance income (including ODSP payments)",
+  "12100": "Interest and investment income",
+  "11300": "Pension income (including CPP and OAS)",
+  "11400": "Pension income (including CPP and OAS)",
+  "11500": "Pension income (including CPP and OAS)",
+  "11600": "Pension income (including CPP and OAS)",
+  "11700": "Other sources of income",
+  "12000": "Interest and investment income",
+  "12200": "Other sources of income",
+  "12500": "Other sources of income",
+  "12600": "Other sources of income",
+  "12700": "Other sources of income",
+  "12800": "Spousal support received from a former spouse/partner",
+  "12900": "Other sources of income",
+  "13000": "Other sources of income",
+  "13010": "Other sources of income",
+  "14600": "Other sources of income",
+  "14700": "Other sources of income",
+};
+
 export const determineTypeOfCredits = (creditId: string): string => {
   if (String(creditId)[0] === "3") {
     return "FED";
