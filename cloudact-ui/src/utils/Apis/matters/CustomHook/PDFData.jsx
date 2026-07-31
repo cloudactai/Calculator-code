@@ -87,6 +87,15 @@ export const FormInformation = (matterId) => {
           },
         };
 
+        // Expose raw DB rows so the calculator can merge on save without
+        // losing intake-only fields (address, phone, email, postalCode, etc.).
+        info._raw = {
+          background: bg,
+          children,
+          relationship: rel,
+          incomeBenefits,
+        };
+
         setDocumentInfo(info);
       })
       .catch((err) => {
