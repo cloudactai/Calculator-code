@@ -312,6 +312,56 @@ def snap_text_fields(pdf_path, fields, tolerance=6.0):
     return snapped
 
 
+def snap_money_fields(pdf_path, fields, gap=1.5, inset=1.0):
+    """Start an amount field just after the printed $, and fill its cell.
+
+    BC prints the dollar sign outside the writing area. XFA sizes some amount
+    fields from the cell edge, so the editable box swallowed the $; others were
+    short boxes floating in a tall cell. Both are read off the page: the box
+    begins where the $ glyph ends and takes the height of the shaded cell it
+    sits in.
+    """
+    doc = fitz.open(pdf_path)
+    fixed = 0
+    for page_number in sorted({f["page"] for f in fields}):
+        page = doc[page_number - 1]
+        dollars = [fitz.Rect(w[:4]) for w in page.get_text("words") if w[4].strip() == "$"]
+        if not dollars:
+            continue
+        cells = shaded_boxes(page, max_height=200.0)
+        for field in [f for f in fields if f["page"] == page_number and f["type"] in ("TextField", "TextArea")]:
+            box = fitz.Rect(field["x"], field["y"],
+                            field["x"] + field["width"] / SCALE,
+                            field["y"] + field["height"] / SCALE)
+            mid = (box.y0 + box.y1) / 2
+            near = [d for d in dollars
+                    if d.y0 - 2 <= mid <= d.y1 + 2
+                    and box.x0 - 26 <= d.x1 <= box.x0 + box.width * 0.5]
+            if not near:
+                continue
+            sign = min(near, key=lambda d: abs(d.x1 - box.x0))
+            cell = None
+            for grey in cells:
+                if grey.contains(fitz.Point(sign.x1 + 2, mid)) and grey.width >= box.width * 0.6:
+                    if cell is None or grey.get_area() < cell.get_area():
+                        cell = grey
+            left = sign.x1 + gap
+            right = (cell.x1 - inset) if cell else box.x1
+            if right - left < 8:
+                continue
+            top = (cell.y0 + inset) if cell else box.y0
+            bottom = (cell.y1 - inset) if cell else box.y1
+            if bottom - top < 8:
+                top, bottom = box.y0, box.y1
+            field["x"] = round(left, 2)
+            field["y"] = round(top, 2)
+            field["width"] = round((right - left) * SCALE, 2)
+            field["height"] = round((bottom - top) * SCALE, 2)
+            fixed += 1
+    doc.close()
+    return fixed
+
+
 def flatten_background(source_path, dest_path):
     """Write the source as a printed background: no /AcroForm, no widget annots.
 
