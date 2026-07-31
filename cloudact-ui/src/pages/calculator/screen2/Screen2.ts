@@ -499,7 +499,7 @@ export const calcValueToIntakeType: Record<string, string> = {
   "12000": "Interest and investment income",
   "12200": "Other sources of income",
   "12500": "Other sources of income",
-  "12600": "Other sources of income",
+  "12600": "Rental income",
   "12700": "Other sources of income",
   "12800": "Spousal support received from a former spouse/partner",
   "12900": "Other sources of income",
