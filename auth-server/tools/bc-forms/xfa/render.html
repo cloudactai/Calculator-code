@@ -18,6 +18,12 @@
   /* XFA action buttons ("Prepare Paper Copy", "Add Additional Parties") are
      viewer controls, not part of the printed form. */
   .xfaLayer button, .xfaLayer .xfaButton { display: none !important; }
+  /* pdf.js emits XFA rich text lists as bare ol/li with no indent, so the marker
+     prints on top of its own item text. Indent them and drop the default margins
+     the browser adds, which also stops the block overflowing its box. */
+  .xfaRich ol, .xfaRich ul { margin: 0; padding-left: 0; }
+  .xfaRich li { list-style-position: inside; margin: 0; }
+  .xfaRich p { margin: 0; }
   @page { size: 8.5in 11in; margin: 0; }
 </style>
 </head>
@@ -68,10 +74,79 @@ async function main() {
       intent: "print",
     });
   }
+  // pdf.js positions a flowed subform without running Adobe's layout engine, so
+  // on a few pages consecutive paragraphs are placed at overlapping heights and
+  // print on top of each other. Push the lower block — and everything below it —
+  // down until the page reads sequentially again.
+  // Root cause of the overlaps: pdf.js substitutes LiberationSans for the
+  // government's embedded font, and the substitute is wider, so a paragraph wraps
+  // to one more line than XFA allocated and spills onto the block below. Shrink
+  // only the blocks that actually overflow, until their text fits the box the
+  // form gave them. Nothing moves, so no cascade.
+  function fitOverflowingText(pageEl) {
+    const blocks = [...pageEl.querySelectorAll(".xfaDraw")].filter((el) => el.textContent.trim());
+    let fixed = 0;
+    for (const el of blocks) {
+      if (el.scrollHeight <= el.clientHeight + 1 || !el.clientHeight) continue;
+      const start = parseFloat(getComputedStyle(el).fontSize) || 10;
+      for (let scale = 0.98; scale >= 0.62; scale -= 0.02) {
+        el.style.fontSize = `${start * scale}px`;
+        if (el.scrollHeight <= el.clientHeight + 1) break;
+      }
+      fixed += 1;
+    }
+    return fixed;
+  }
+
+  function separateOverlaps(pageEl) {
+    // pdf.js emits one .xfaDraw per printed text block. Comparing anything finer
+    // (a paragraph and the spans inside it) makes a block collide with itself.
+    const all = [...pageEl.querySelectorAll(".xfaDraw")].filter((el) => el.textContent.trim());
+    const nodes = all.filter((el) => !all.some((other) => other !== el && other.contains(el)));
+    const box = (el) => {
+      const r = el.getBoundingClientRect();
+      const o = pageEl.getBoundingClientRect();
+      // XFA gives each block a fixed height. When the text wraps to more lines
+      // than fit, it spills out visibly but the border box stays the declared
+      // size, so the real extent is the content height.
+      const height = Math.max(r.height, el.scrollHeight);
+      return { top: r.top - o.top, bottom: r.top - o.top + height,
+               left: r.left - o.left, right: r.right - o.left };
+    };
+    const shifted = new Map();
+    for (let pass = 0; pass < 6; pass += 1) {
+      const items = nodes.map((el) => ({ el, ...box(el) })).sort((a, b) => a.top - b.top);
+      let moved = false;
+      for (let i = 0; i < items.length; i += 1) {
+        for (let j = i + 1; j < items.length; j += 1) {
+          const a = items[i];
+          const b = items[j];
+          const sameColumn = a.right > b.left + 2 && a.left < b.right - 2;
+          const vertical = Math.min(a.bottom, b.bottom) - Math.max(a.top, b.top);
+          if (!sameColumn || vertical <= 1) continue;
+          const delta = a.bottom - b.top + 2;
+          for (const item of items) {
+            if (item.top < b.top - 0.5) continue;
+            const current = shifted.get(item.el) || 0;
+            shifted.set(item.el, current + delta);
+            item.el.style.transform = `translateY(${current + delta}px)`;
+          }
+          moved = true;
+          break;
+        }
+        if (moved) break;
+      }
+      if (!moved) break;
+    }
+    return shifted.size;
+  }
+
   // The XFA DOM carries the government's own field boxes, so overlay geometry is
   // read straight off them instead of guessing from printed lines. Coordinates
   // come back in PDF points (the unscaled 72dpi page space).
   const sheets = [...document.querySelectorAll(".sheet .page")];
+  sheets.forEach(fitOverflowingText);
+  sheets.forEach(separateOverlaps);
   window.__fields = sheets.flatMap((pageEl, index) => {
     const origin = pageEl.getBoundingClientRect();
     const scale = 1.3333333;

@@ -337,6 +337,24 @@
       "fields": 11
     },
     {
+      "docId": "BCSC_F3",
+      "pdf": "BCSC_F3.pdf",
+      "mapping": "BCSC_F3.json",
+      "fields": 211
+    },
+    {
+      "docId": "BCSC_F6",
+      "pdf": "BCSC_F6.pdf",
+      "mapping": "BCSC_F6.json",
+      "fields": 48
+    },
+    {
+      "docId": "BCSC_F31",
+      "pdf": "BCSC_F31.pdf",
+      "mapping": "BCSC_F31.json",
+      "fields": 51
+    },
+    {
       "docId": "BCSC_F32",
       "pdf": "BCSC_F32.pdf",
       "mapping": "BCSC_F32.json",
@@ -361,10 +379,28 @@
       "fields": 16
     },
     {
+      "docId": "BCSC_F51",
+      "pdf": "BCSC_F51.pdf",
+      "mapping": "BCSC_F51.json",
+      "fields": 18
+    },
+    {
+      "docId": "BCSC_F51_1",
+      "pdf": "BCSC_F51_1.pdf",
+      "mapping": "BCSC_F51_1.json",
+      "fields": 29
+    },
+    {
       "docId": "BCSC_F51_2",
       "pdf": "BCSC_F51_2.pdf",
       "mapping": "BCSC_F51_2.json",
       "fields": 24
+    },
+    {
+      "docId": "BCSC_F52",
+      "pdf": "BCSC_F52.pdf",
+      "mapping": "BCSC_F52.json",
+      "fields": 18
     },
     {
       "docId": "BCSC_F30",
@@ -397,10 +433,34 @@
       "fields": 30
     },
     {
+      "docId": "BCSC_F45",
+      "pdf": "BCSC_F45.pdf",
+      "mapping": "BCSC_F45.json",
+      "fields": 108
+    },
+    {
       "docId": "BCSC_F46",
       "pdf": "BCSC_F46.pdf",
       "mapping": "BCSC_F46.json",
       "fields": 14
+    },
+    {
+      "docId": "BCSC_F1_1",
+      "pdf": "BCSC_F1_1.pdf",
+      "mapping": "BCSC_F1_1.json",
+      "fields": 21
+    },
+    {
+      "docId": "BCSC_F1_2",
+      "pdf": "BCSC_F1_2.pdf",
+      "mapping": "BCSC_F1_2.json",
+      "fields": 11
+    },
+    {
+      "docId": "BCSC_F38",
+      "pdf": "BCSC_F38.pdf",
+      "mapping": "BCSC_F38.json",
+      "fields": 150
     },
     {
       "docId": "BCSC_F56",
@@ -459,7 +519,7 @@
   ],
   "excluded": [],
   "counts": {
-    "included": 76,
+    "included": 86,
     "excluded": 0
   }
 }
