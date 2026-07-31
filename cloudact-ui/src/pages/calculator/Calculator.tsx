@@ -28,7 +28,7 @@ import {
 /* eslint-disable @typescript-eslint/ban-ts-comment */
 // @ts-ignore
 import Screen1 from "./screen1/Screen1.tsx";
-import { getCalculatorLabelFromCookies, intakeTypeToCalcDropdown } from "./screen2/Screen2";
+import { getCalculatorLabelFromCookies, incomeTypeDropdown, intakeTypeToCalcDropdown } from "./screen2/Screen2";
 // @ts-ignore
 import Screen2 from "./screen2/Screen2.tsx";
 // @ts-ignore
@@ -645,12 +645,15 @@ const Calculator = () => {
           );
           return incomeRows.map((row: any) => {
             const mapped = intakeTypeToCalcDropdown[row.type];
+            const calcValue = mapped?.value || "";
+            const calcLabel = mapped?.label || row.type;
+            const dropdownEntry = incomeTypeDropdown.find((d: any) => d.value === calcValue);
             const yearlyAmt = row.yearlyAmount || String(parseFloat(row.monthlyAmount || "0") * 12);
             return {
-              label: mapped?.label || row.type,
-              value: mapped?.value || "",
+              label: calcLabel,
+              value: calcValue,
               amount: yearlyAmt,
-              tooltip: "",
+              tooltip: dropdownEntry?.tooltip || "",
             };
           });
         };
