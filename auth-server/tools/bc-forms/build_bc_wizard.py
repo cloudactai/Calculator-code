@@ -135,7 +135,8 @@ def main():
     existing = [r for r in json.load(open(sc_path)) if r["docId"] not in {x["docId"] for x in rows}]
     for row in existing:
         row["_sortKey"] = (CATEGORY_ORDER.index(row["category"]), float(row["shortTitle"].split("F")[-1]))
-    combined = existing + [r for r in rows if r["docId"] not in set(bad) | set(collide)]
+    withheld = set(bad) if "--force" in sys.argv else set(bad) | set(collide)
+    combined = existing + [r for r in rows if r["docId"] not in withheld]
     combined.sort(key=lambda r: r["_sortKey"])
     for row in combined:
         row.pop("_sortKey", None)
@@ -146,6 +147,11 @@ def main():
     # Promote per form, not all-or-nothing: one form with a bad page must not hold
     # back the rest, and a form with a bad page must never ship.
     blocked = set(bad) | set(collide)
+    # --force ships a form whose only defect is overlapping *printed* text, for a
+    # human to judge. Geometry failures are never overridable: those mean a field
+    # box is wrong, which is a filling bug rather than a legibility one.
+    if "--force" in sys.argv:
+        blocked = set(bad)
     if promote:
         shipped = []
         for row in rows:

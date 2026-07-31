@@ -343,6 +343,18 @@
       "fields": 211
     },
     {
+      "docId": "BCSC_F4",
+      "pdf": "BCSC_F4.pdf",
+      "mapping": "BCSC_F4.json",
+      "fields": 62
+    },
+    {
+      "docId": "BCSC_F5",
+      "pdf": "BCSC_F5.pdf",
+      "mapping": "BCSC_F5.json",
+      "fields": 187
+    },
+    {
       "docId": "BCSC_F6",
       "pdf": "BCSC_F6.pdf",
       "mapping": "BCSC_F6.json",
@@ -519,7 +531,7 @@
   ],
   "excluded": [],
   "counts": {
-    "included": 86,
+    "included": 88,
     "excluded": 0
   }
 }
