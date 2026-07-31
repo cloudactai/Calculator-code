@@ -156,6 +156,7 @@ def main():
         snapped, missed = bp.snap_checkboxes(background, fields)
         bp.snap_text_fields(background, fields)
         bp.clear_printed_labels(background, fields)
+        bp.normalise_amount_fields(background, fields)
         geometry = bp.check_geometry(fields, page_sizes)
         overlaps = bp.check_overlap(background, fields)
         bp.qa_render(background, fields, os.path.join(QA, "%s_qa.pdf" % doc_id))
