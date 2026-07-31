@@ -420,6 +420,64 @@ def size_amounts_to_dollar(pdf_path, fields):
     return changed
 
 
+def expand_ruled_blocks(fields, pdf_path, max_gap=4.0, edge=3.0):
+    """Grow a field over the whole ruled block it belongs to.
+
+    BC draws a multi-line writing area as several shaded rows stacked a point or
+    two apart, and only one field is placed on it, so snapping to a single row
+    left a one-line input in a four-line block. Rows are joined only while they
+    share the field's left and right edges and no other field sits on them —
+    which is what keeps stacked-but-separate rows (Address, City, Email) apart.
+    """
+    doc = fitz.open(pdf_path)
+    grown = 0
+    for page_number in sorted({f["page"] for f in fields}):
+        page = doc[page_number - 1]
+        rows = sorted(shaded_boxes(page, max_height=220.0), key=lambda r: r.y0)
+        page_fields = [f for f in fields if f["page"] == page_number]
+        others = [fitz.Rect(f["x"], f["y"], f["x"] + f["width"] / SCALE,
+                            f["y"] + f["height"] / SCALE) for f in page_fields]
+        for index, field in enumerate(page_fields):
+            if field["type"] not in ("TextField", "TextArea"):
+                continue
+            box = fitz.Rect(field["x"], field["y"],
+                            field["x"] + field["width"] / SCALE,
+                            field["y"] + field["height"] / SCALE)
+            column = [r for r in rows
+                      if abs(r.x0 - box.x0) <= edge and abs(r.x1 - box.x1) <= edge]
+            if len(column) < 2:
+                continue
+            here = next((i for i, r in enumerate(column)
+                         if not (r & box).is_empty
+                         and (r & box).get_area() > 0.45 * min(r.get_area(), box.get_area())), None)
+            if here is None:
+                continue
+
+            def free(row):
+                return not any(j != index and not (row & other).is_empty
+                               and (row & other).get_area() > 0.4 * other.get_area()
+                               for j, other in enumerate(others))
+
+            block = fitz.Rect(column[here])
+            for step in (-1, 1):
+                cursor = here + step
+                while 0 <= cursor < len(column):
+                    row = column[cursor]
+                    gap = (block.y0 - row.y1) if step < 0 else (row.y0 - block.y1)
+                    if gap > max_gap or gap < -1 or not free(row):
+                        break
+                    block |= row
+                    cursor += step
+            if block.height <= box.height + 1:
+                continue
+            field["y"] = round(block.y0, 2)
+            field["height"] = round(block.height * SCALE, 2)
+            others[index] = block
+            grown += 1
+    doc.close()
+    return grown
+
+
 def flatten_background(source_path, dest_path):
     """Write the source as a printed background: no /AcroForm, no widget annots.
 
