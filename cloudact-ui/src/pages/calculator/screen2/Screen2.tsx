@@ -191,6 +191,7 @@ type Props = {
   nonTaxableincome: any,
   setNonTaxableincome: any,
   updateCalPercentage:any,
+  rawIntakeData: any,
   // calpercentageRef:any,
 };
 
@@ -222,8 +223,8 @@ const Screen2 = ({
   setNonTaxableincome,
   updateCalPercentage,
   calpercentageRef,
-  allApiDataCal ,setAllApiDataCal
-
+  allApiDataCal ,setAllApiDataCal,
+  rawIntakeData,
 
 }: Props) => {
 
@@ -1944,26 +1945,33 @@ const Screen2 = ({
   // Inside your component
 
   useEffect(() => {
+    const calcId = Number(getCalculatorIdFromQuery(calculatorId));
+    // Skip fetch for manual calculators (no saved ID)
+    if (!calcId || isNaN(calcId)) return;
+
     const fetchData = async () => {
-      const data = await apiCalculatorById.get_value(Number(getCalculatorIdFromQuery(calculatorId)));
+      try {
+        const data = await apiCalculatorById.get_value(calcId);
+        if (!data?.report_data) return;
 
+        const SceneriosData = JSON.parse(data.report_data)?.scenarios;
+        const ExtractedData = JSON.parse(data.report_data)?.restructioring;
 
-      const SceneriosData = JSON.parse(data.report_data)?.scenarios;
-      const ExtractedData = JSON.parse(data.report_data)?.restructioring;
+        setRestructioring(ExtractedData)
 
-      setRestructioring(ExtractedData)
+        setScenarios((prevScenarios) => ({
+          ...prevScenarios,
+          scenario1: SceneriosData?.scenario1 ?? prevScenarios.scenario1,
+          scenario2: SceneriosData?.scenario2 ?? prevScenarios.scenario2,
+          scenario3: SceneriosData?.scenario3 ?? prevScenarios.scenario3,
+        }));
 
-      setScenarios((prevScenarios) => ({
-        ...prevScenarios,
-        scenario1: SceneriosData?.scenario1 ?? prevScenarios.scenario1,
-        scenario2: SceneriosData?.scenario2 ?? prevScenarios.scenario2,
-        scenario3: SceneriosData?.scenario3 ?? prevScenarios.scenario3,
-      }));
-
-      const TaxAmountForLumpSumAndInsurence = JSON.parse(data.report_data)?.valueswithoutSpousalSupport
-      if (TaxAmountForLumpSumAndInsurence) {
-        valueswithoutSpousalSupport.current = TaxAmountForLumpSumAndInsurence;
-        // setRestructioring(true)
+        const TaxAmountForLumpSumAndInsurence = JSON.parse(data.report_data)?.valueswithoutSpousalSupport
+        if (TaxAmountForLumpSumAndInsurence) {
+          valueswithoutSpousalSupport.current = TaxAmountForLumpSumAndInsurence;
+        }
+      } catch (err) {
+        console.warn("[Calculator] Failed to fetch saved calculator data:", err);
       }
     };
 
@@ -5723,6 +5731,7 @@ const Screen2 = ({
     if (checkIfAllMandatoryValuesAreFilled()) {
       setLoading(true);
 
+      try {
       // ── Child-support-only path ────────────────────────────────────────────
       if (typeOfCalculatorSelected === CHILD_SUPPORT_CAL) {
         const childrenList: any[] = screen1.aboutTheChildren.childrenInfo ?? [];
@@ -5947,6 +5956,12 @@ const Screen2 = ({
 
       //else if if any party has more income and also have child custody,
       //then spousal support will be calculated by years of living together (same as highlimit and when there is no child.)
+      } catch (err) {
+        console.error("[Calculator] calculateChildAndSpousalSupportAuto error:", err);
+        setShowFlaskError(true);
+      } finally {
+        setLoading(false);
+      }
     }
   };
 
@@ -6165,13 +6180,21 @@ const Screen2 = ({
         console.warn("[Calculator] Failed to save calculator state:", err);
       });
 
-      // 2) Save client/opposing party background details
+      // ── Merge with raw intake data so intake-only fields aren't lost ──
+      const rawBg = rawIntakeData?.current?.background || [];
+      const rawClientBg = rawBg.find((r: any) => r.role === "Client") || {};
+      const rawOpposingBg = rawBg.find((r: any) => r.role === "Opposing Party") || {};
+      const rawChildren = rawIntakeData?.current?.children || [];
+      const rawRel = rawIntakeData?.current?.relationship || {};
+
+      // 2) Save client/opposing party background details — merged with intake
       const bg = screen1.background;
       fetchRequest(
         "post",
         `update_matter/${sid}/${storedMatterNumber}/background`,
         [
           {
+            ...rawClientBg, // preserve intake-only fields (address, phone, email, postalCode, municipality, etc.)
             id: 1,
             role: "Client",
             name: `${bg.party1FirstName || ""} ${bg.party1LastName || ""}`.trim() || "",
@@ -6184,6 +6207,7 @@ const Screen2 = ({
             exemptFromEmploymentPremium: bg.party1ExemptFromEmploymentPremium || "",
           },
           {
+            ...rawOpposingBg, // preserve intake-only fields
             id: 2,
             role: "Opposing Party",
             name: `${bg.party2FirstName || ""} ${bg.party2LastName || ""}`.trim() || "",
@@ -6202,17 +6226,22 @@ const Screen2 = ({
         console.warn("[Calculator] Failed to save background details:", err);
       });
 
-      // 3) Save children details
-      const childrenRows = (screen1.aboutTheChildren?.childrenInfo || []).map((child, i) => ({
-        id: i + 1,
-        childName: child.name || "",
-        dateOfBirth: child.dateOfBirth || "",
-        livesWith: child.custodyArrangement || "",
-        childHasDisability: child.childHasDisability || "No",
-        childOfRelationship: child.childOfRelationship || "Yes",
-        adultChildStillALegalDependant: child.adultChildStillALegalDependant || "Yes",
-        childIncome: child.childIncome || 0,
-      }));
+      // 3) Save children details — merged with intake-only fields
+      const childrenRows = (screen1.aboutTheChildren?.childrenInfo || []).map((child: any, i: number) => {
+        // Find the matching raw intake child row to preserve extra fields
+        const rawChild = rawChildren[i] || {};
+        return {
+          ...rawChild,
+          id: i + 1,
+          childName: child.name || "",
+          dateOfBirth: child.dateOfBirth || "",
+          livesWith: child.custodyArrangement || "",
+          childHasDisability: child.childHasDisability || "No",
+          childOfRelationship: child.childOfRelationship || "Yes",
+          adultChildStillALegalDependant: child.adultChildStillALegalDependant || "Yes",
+          childIncome: child.childIncome || 0,
+        };
+      });
       if (childrenRows.length > 0) {
         fetchRequest(
           "post",
@@ -6225,12 +6254,13 @@ const Screen2 = ({
         });
       }
 
-      // 4) Save relationship details
+      // 4) Save relationship details — merged with intake-only fields
       const rel = screen1.aboutTheRelationship;
       fetchRequest(
         "post",
         `update_matter/${sid}/${storedMatterNumber}/relationship`,
         [{
+          ...rawRel, // preserve dateOfCohabitation, placeOfMarriage, etc.
           id: 1,
           dateOfMarriage: rel.dateOfMarriage || "",
           dateOfSeparation: rel.dateOfSeparation || "",
@@ -6239,6 +6269,87 @@ const Screen2 = ({
         console.log("[Calculator] Saved relationship details to matter DB");
       }).catch((err) => {
         console.warn("[Calculator] Failed to save relationship details:", err);
+      });
+
+      // 5) Save income to income_benefits so intake forms see calculator changes.
+      // Convert calculator's {label, amount, value} items → intake's
+      // {type, yearlyAmount, monthlyAmount, role, incomeBenefit} rows.
+      // The calculator stores camelCase keys (from buildIncomeObj), but intake
+      // uses human-readable type names. Map them back so the intake recognises them.
+      const calcLabelToIntakeType: Record<string, string> = {
+        employmentIncome: "Employment income",
+        commissionTipsBonuses: "Commissions, tips and bonuses",
+        selfEmploymentIncome: "Self-employment income",
+        employmentInsuranceBenefits: "Employment insurance benefits",
+        workersCompensationBenefits: "Workers compensation benefits",
+        socialAssistanceIncome: "Social assistance income",
+        interestInvestmentIncome: "Interest and investment income",
+        pensionIncome: "Pension income",
+        spousalSupport: "Spousal support",
+        childTaxBenefits: "Child tax benefits",
+        otherIncome: "Other income",
+        // Also map any human-readable labels back to themselves (in case the
+        // user typed a custom label or the data already has the intake format)
+        "Employment income": "Employment income",
+        "Commissions, tips and bonuses": "Commissions, tips and bonuses",
+        "Self-employment income": "Self-employment income",
+        "Employment insurance benefits": "Employment insurance benefits",
+        "Workers compensation benefits": "Workers compensation benefits",
+        "Social assistance income": "Social assistance income",
+        "Interest and investment income": "Interest and investment income",
+        "Pension income": "Pension income",
+        "Spousal support": "Spousal support",
+        "Child tax benefits": "Child tax benefits",
+        "Other income": "Other income",
+      };
+
+      const incomeToIntakeRows = (partyItems: any[], roleLabel: string) =>
+        (partyItems || [])
+          .filter((item: any) => item.label && item.amount && item.amount !== "0")
+          .map((item: any) => ({
+            type: calcLabelToIntakeType[item.label] || item.label,
+            yearlyAmount: String(item.amount || "0"),
+            monthlyAmount: String(Math.round(parseFloat(item.amount || "0") / 12)),
+            role: roleLabel,
+            incomeBenefit: "income",
+          }));
+
+      const incomeRows = [
+        ...incomeToIntakeRows(screen2.income?.party1, "Client"),
+        ...incomeToIntakeRows(screen2.income?.party2, "Opposing Party"),
+      ];
+
+      // Preserve existing benefit rows from intake (calculator doesn't modify benefits)
+      const rawIncomeBenefits = rawIntakeData?.current?.incomeBenefits || [];
+      const clientBenefitRows = rawIncomeBenefits.filter(
+        (r: any) => r.role === "Client" && r.incomeBenefit === "benefit"
+      );
+      const opposingBenefitRows = rawIncomeBenefits.filter(
+        (r: any) => (r.role === "Opposing Party" || r.role === "opposingParty") && r.incomeBenefit === "benefit"
+      );
+
+      // Post in the shape that UPDATE_SECTION_MAP.incomeBenefits expects:
+      // { incomeBenefits: { client: { income: [...] }, opposingParty: { income: [...] } } }
+      const incomeBenefitsBody = {
+        incomeBenefits: {
+          client: {
+            income: incomeRows.filter((r: any) => r.role === "Client"),
+            benefit: clientBenefitRows,
+          },
+          opposingParty: {
+            income: incomeRows.filter((r: any) => r.role === "Opposing Party"),
+            benefit: opposingBenefitRows,
+          },
+        },
+      };
+      fetchRequest(
+        "post",
+        `update_matter/${sid}/${storedMatterNumber}/incomeBenefits`,
+        incomeBenefitsBody
+      ).then(() => {
+        console.log("[Calculator] Saved income to income_benefits for intake sync");
+      }).catch((err) => {
+        console.warn("[Calculator] Failed to save income_benefits:", err);
       });
     }
 
