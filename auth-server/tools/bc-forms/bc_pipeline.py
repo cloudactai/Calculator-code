@@ -297,11 +297,20 @@ def snap_text_fields(pdf_path, fields, tolerance=6.0):
                     and (g & box).get_area() > 0.45 * min(g.get_area(), box.get_area())]
             if not hits:
                 continue
-            target = hits[0]
-            for extra in hits[1:]:
-                target |= extra
-            # Guard against swallowing a neighbouring column or a whole table.
-            if abs(target.x0 - box.x0) > tolerance * 3 or target.height > box.height + tolerance * 3:
+            # Grey rows butt up against each other, so a field that grazes the row
+            # above would union two rows, blow the height guard and end up snapped
+            # to nothing. Take the row it really sits on, then join only the cells
+            # on that same row (a wide field split across several shaded cells).
+            best = max(hits, key=lambda g: (g & box).get_area())
+            target = best
+            for extra in hits:
+                if abs(extra.y0 - best.y0) < 2 and abs(extra.y1 - best.y1) < 2:
+                    target |= extra
+            # The overlap test above already establishes this is the field's own
+            # cell, so a distant left edge is normal — XFA often starts the field
+            # at the printed label. Only reject a match that is wildly taller,
+            # which would mean a whole table was picked up.
+            if target.height > box.height * 3 + tolerance:
                 continue
             field["x"] = round(target.x0, 2)
             field["y"] = round(target.y0, 2)
@@ -312,51 +321,36 @@ def snap_text_fields(pdf_path, fields, tolerance=6.0):
     return snapped
 
 
-def snap_money_fields(pdf_path, fields, gap=1.5, inset=1.0):
-    """Start an amount field just after the printed $, and fill its cell.
+def clear_printed_labels(pdf_path, fields, gap=1.5, left_zone=0.6):
+    """Start a field after anything printed inside its own writing area.
 
-    BC prints the dollar sign outside the writing area. XFA sizes some amount
-    fields from the cell edge, so the editable box swallowed the $; others were
-    short boxes floating in a tall cell. Both are read off the page: the box
-    begins where the $ glyph ends and takes the height of the shaded cell it
-    sits in.
+    BC shades behind its labels, so fitting a field to its grey box can swallow
+    the "$" of an amount cell or a caption like "Address:" — a lawyer would type
+    over the printed word. The left edge therefore moves past whatever the form
+    already prints in the left part of the box. Text further right is a hint
+    sitting beside the writing space and is left alone.
     """
     doc = fitz.open(pdf_path)
     fixed = 0
     for page_number in sorted({f["page"] for f in fields}):
         page = doc[page_number - 1]
-        dollars = [fitz.Rect(w[:4]) for w in page.get_text("words") if w[4].strip() == "$"]
-        if not dollars:
-            continue
-        cells = shaded_boxes(page, max_height=200.0)
+        words = [(fitz.Rect(w[:4]), w[4]) for w in page.get_text("words") if w[4].strip()]
         for field in [f for f in fields if f["page"] == page_number and f["type"] in ("TextField", "TextArea")]:
             box = fitz.Rect(field["x"], field["y"],
                             field["x"] + field["width"] / SCALE,
                             field["y"] + field["height"] / SCALE)
-            mid = (box.y0 + box.y1) / 2
-            near = [d for d in dollars
-                    if d.y0 - 2 <= mid <= d.y1 + 2
-                    and box.x0 - 26 <= d.x1 <= box.x0 + box.width * 0.5]
-            if not near:
+            limit = box.x0 + box.width * left_zone
+            covered = [r for r, text in words
+                       if r.x1 <= limit
+                       and not (r & box).is_empty
+                       and (r & box).get_area() > 0.55 * r.get_area()]
+            if not covered:
                 continue
-            sign = min(near, key=lambda d: abs(d.x1 - box.x0))
-            cell = None
-            for grey in cells:
-                if grey.contains(fitz.Point(sign.x1 + 2, mid)) and grey.width >= box.width * 0.6:
-                    if cell is None or grey.get_area() < cell.get_area():
-                        cell = grey
-            left = sign.x1 + gap
-            right = (cell.x1 - inset) if cell else box.x1
-            if right - left < 8:
+            left = max(r.x1 for r in covered) + gap
+            if left <= box.x0 or box.x1 - left < 8:
                 continue
-            top = (cell.y0 + inset) if cell else box.y0
-            bottom = (cell.y1 - inset) if cell else box.y1
-            if bottom - top < 8:
-                top, bottom = box.y0, box.y1
             field["x"] = round(left, 2)
-            field["y"] = round(top, 2)
-            field["width"] = round((right - left) * SCALE, 2)
-            field["height"] = round((bottom - top) * SCALE, 2)
+            field["width"] = round((box.x1 - left) * SCALE, 2)
             fixed += 1
     doc.close()
     return fixed
