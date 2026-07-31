@@ -650,6 +650,16 @@ SECTIONS AND THEIR EXACT DATA SHAPES
    }
    - Give yearlyAmount and/or monthlyAmount for each line (CAD, as strings).
    - "financialYear" is the tax year the figures are for (e.g. the current year).
+   - "type" for income MUST be EXACTLY one of these intake-form values:
+     "Employment income (before deductions)", "Commissions, tips and bonuses",
+     "Self-employment income", "Employment insurance benefits",
+     "Social assistance income (including ODSP payments)",
+     "Interest and investment income", "Pension income (including CPP and OAS)",
+     "Spousal support received from a former spouse/partner",
+     "Workers compensation benefits", "Government assistance income",
+     "Trust income", "Rental income", "Other sources of income".
+   - "type" for benefit MUST be EXACTLY one of: "Medical Insurance Coverage",
+     "Use of Company Car", "Use of Room", "Other".
 
 5. section="EmploymentDetails"
    data: {
