@@ -288,9 +288,14 @@ def snap_text_fields(pdf_path, fields, tolerance=6.0):
         # Up to a full table cell: a description cell runs about 72 pt, and the
         # field XFA gives back is one line, so the writing area has to be found
         # from the shading rather than from the field.
-        boxes = shaded_boxes(page, max_height=220.0)
-        if not boxes:
+        # A description cell may be a whole table cell tall. An amount is one
+        # line whatever the cell around it looks like, so amounts only ever snap
+        # to shading of about a row's height.
+        cell_boxes = shaded_boxes(page, max_height=220.0)
+        row_boxes = [g for g in cell_boxes if g.height <= 60.0]
+        if not cell_boxes:
             continue
+        dollars = [fitz.Rect(w[:4]) for w in page.get_text("words") if w[4].strip() == "$"]
         dollars = [fitz.Rect(w[:4]) for w in page.get_text("words") if w[4].strip() == "$"]
         for field in [f for f in fields if f["page"] == page_number and f["type"] in ("TextField", "TextArea")]:
             box = fitz.Rect(field["x"], field["y"],
@@ -301,7 +306,13 @@ def snap_text_fields(pdf_path, fields, tolerance=6.0):
             # immediately to its left. An amount is one line of text, so such a
             # field takes the cell's width but keeps its own height — only a
             # description cell is grown to fill a tall cell.
-            hits = [g for g in boxes
+            # An amount cell is read off the page: a $ on the field's own line,
+            # inside the field or just to its left.
+            money = any(d.y0 < box.y1 and d.y1 > box.y0
+                        and box.x0 - 30 <= d.x1 <= box.x0 + box.width * 0.5
+                        for d in dollars)
+            candidates = row_boxes if money else cell_boxes
+            hits = [g for g in candidates
                     if not (g & box).is_empty
                     and (g & box).get_area() > 0.45 * min(g.get_area(), box.get_area())]
             if not hits:
@@ -363,54 +374,6 @@ def clear_printed_labels(pdf_path, fields, gap=1.5, left_zone=0.6):
             fixed += 1
     doc.close()
     return fixed
-
-
-def normalise_amount_fields(pdf_path, fields, factor=1.45):
-    """Give every amount box the same height: the line its $ is printed on.
-
-    A figure needs one line whatever the cell around it looks like, so the height
-    comes from the $ glyph rather than from the shading. Without this the boxes
-    vary with their row — a two-line row gave a 27 pt box next to a 14 pt one.
-    An amount cell is identified from the page: a $ on the field's own line,
-    inside it or immediately to its left.
-    """
-    doc = fitz.open(pdf_path)
-    changed = 0
-    for page_number in sorted({f["page"] for f in fields}):
-        page = doc[page_number - 1]
-        dollars = [fitz.Rect(w[:4]) for w in page.get_text("words") if w[4].strip() == "$"]
-        if not dollars:
-            continue
-        cells = shaded_boxes(page, max_height=220.0)
-        for field in [f for f in fields if f["page"] == page_number and f["type"] in ("TextField", "TextArea")]:
-            box = fitz.Rect(field["x"], field["y"],
-                            field["x"] + field["width"] / SCALE,
-                            field["y"] + field["height"] / SCALE)
-            cell = next((c for c in cells
-                         if c.contains(fitz.Point(box.x0 + 1, (box.y0 + box.y1) / 2))), None)
-            # In a tall cell BC prints the $ at the bottom, close enough to the
-            # next cell to graze the field in it. So the $ has to belong to this
-            # field's own cell, not merely overlap its line.
-            on_line = [d for d in dollars
-                       if box.x0 - 30 <= d.x1 <= box.x0 + box.width * 0.5
-                       and (cell.contains(fitz.Point((d.x0 + d.x1) / 2, (d.y0 + d.y1) / 2))
-                            if cell else (d.y0 < box.y1 and d.y1 > box.y0))]
-            if not on_line:
-                continue
-            sign = min(on_line, key=lambda d: abs(d.x1 - box.x0))
-            height = sign.height * factor
-            # The box must never stand proud of the shading, so a row shorter than
-            # one line of text is fitted exactly instead.
-            if cell:
-                height = min(height, cell.height)
-            top = (sign.y0 + sign.y1) / 2 - height / 2
-            if cell:
-                top = min(max(top, cell.y0), cell.y1 - height)
-            field["y"] = round(top, 2)
-            field["height"] = round(height * SCALE, 2)
-            changed += 1
-    doc.close()
-    return changed
 
 
 def flatten_background(source_path, dest_path):
