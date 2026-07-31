@@ -285,7 +285,10 @@ def snap_text_fields(pdf_path, fields, tolerance=6.0):
     snapped = 0
     for page_number in sorted({f["page"] for f in fields}):
         page = doc[page_number - 1]
-        boxes = shaded_boxes(page)
+        # Up to a full table cell: a description cell runs about 72 pt, and the
+        # field XFA gives back is one line, so the writing area has to be found
+        # from the shading rather than from the field.
+        boxes = shaded_boxes(page, max_height=220.0)
         if not boxes:
             continue
         for field in [f for f in fields if f["page"] == page_number and f["type"] in ("TextField", "TextArea")]:
@@ -306,11 +309,11 @@ def snap_text_fields(pdf_path, fields, tolerance=6.0):
             for extra in hits:
                 if abs(extra.y0 - best.y0) < 2 and abs(extra.y1 - best.y1) < 2:
                     target |= extra
-            # The overlap test above already establishes this is the field's own
-            # cell, so a distant left edge is normal — XFA often starts the field
-            # at the printed label. Only reject a match that is wildly taller,
-            # which would mean a whole table was picked up.
-            if target.height > box.height * 3 + tolerance:
+            # A real cell matches the field in at least one dimension: a wide
+            # shaded row shares its height, a tall description cell shares its
+            # width. Something far bigger in both is a background panel, not this
+            # field's writing area.
+            if target.width > box.width * 1.6 and target.height > box.height * 1.6:
                 continue
             field["x"] = round(target.x0, 2)
             field["y"] = round(target.y0, 2)
