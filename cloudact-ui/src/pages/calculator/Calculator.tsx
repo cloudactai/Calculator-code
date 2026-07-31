@@ -28,7 +28,7 @@ import {
 /* eslint-disable @typescript-eslint/ban-ts-comment */
 // @ts-ignore
 import Screen1 from "./screen1/Screen1.tsx";
-import { getCalculatorLabelFromCookies } from "./screen2/Screen2";
+import { getCalculatorLabelFromCookies, incomeTypeDropdown, intakeTypeToCalcDropdown } from "./screen2/Screen2";
 // @ts-ignore
 import Screen2 from "./screen2/Screen2.tsx";
 // @ts-ignore
@@ -279,10 +279,17 @@ const Calculator = () => {
 
 
   const { documentInfo, loading } =  FormInformation(matter_id);
-  
+
+  // Keep raw intake DB rows so the calculator can merge on save without
+  // losing intake-only fields (address, phone, email, postalCode, etc.).
+  const rawIntakeData = useRef<any>(null);
+
   useEffect(() => {
     if (documentInfo) {
       setMatterData(documentInfo);
+      if (documentInfo._raw) {
+        rawIntakeData.current = documentInfo._raw;
+      }
     }
   }, [loading, documentInfo])
 
@@ -626,30 +633,41 @@ const Calculator = () => {
         }));
       }
 
-      // Prefill screen 2 income data from matter records
-      if (matterData.income) {
-        setScreen2(prevState => {
-          const processIncome = (partyData, initialPartyData) => {
-            if (!partyData) return initialPartyData;
-            const newIncome = Object.entries(partyData)
-              .filter(([, amount]) => amount !== "" && amount !== "0" && amount != null)
-              .map(([label, amount]) => ({
-                label,
-                amount: String(amount),
-                value: String(amount),
-                tooltip: CONSTANTS[label] || "",
-              }));
-            return newIncome.length > 0 ? newIncome : initialPartyData;
-          };
+      // Prefill screen 2 income data directly from raw income_benefits rows.
+      // Each DB row becomes a separate calculator income item, preserving
+      // multiple sources per party.
+      const rawIncomeRows = rawIntakeData.current?.incomeBenefits || [];
+      if (rawIncomeRows.length > 0) {
+        const mapRowsToCalcItems = (rows: any[], role: string) => {
+          const incomeRows = rows.filter(
+            (r: any) => r.role === role && r.incomeBenefit === "income"
+              && r.type && (r.yearlyAmount || r.monthlyAmount)
+          );
+          return incomeRows.map((row: any) => {
+            const mapped = intakeTypeToCalcDropdown[row.type];
+            const calcValue = mapped?.value || "";
+            const calcLabel = mapped?.label || row.type;
+            const dropdownEntry = incomeTypeDropdown.find((d: any) => d.value === calcValue);
+            const yearlyAmt = row.yearlyAmount || String(parseFloat(row.monthlyAmount || "0") * 12);
+            return {
+              label: calcLabel,
+              value: calcValue,
+              amount: yearlyAmt,
+              tooltip: dropdownEntry?.tooltip || "",
+            };
+          });
+        };
 
-          return {
-            ...prevState,
-            income: {
-              party1: processIncome(matterData.income.client, prevState.income.party1),
-              party2: processIncome(matterData.income.opposingParty, prevState.income.party2),
-            },
-          };
-        });
+        const party1Items = mapRowsToCalcItems(rawIncomeRows, "Client");
+        const party2Items = mapRowsToCalcItems(rawIncomeRows, "Opposing Party");
+
+        setScreen2(prevState => ({
+          ...prevState,
+          income: {
+            party1: party1Items.length > 0 ? party1Items : prevState.income.party1,
+            party2: party2Items.length > 0 ? party2Items : prevState.income.party2,
+          },
+        }));
       }
     }
   }, [matterData]);
@@ -881,6 +899,10 @@ const Calculator = () => {
   }, []);
 
   // ── Load previously saved calculator state from the matter's DB record ──
+  // IMPORTANT: Only restore calculator-specific fields here (tax overrides,
+  // fixed amounts, guideline income, etc.). Shared fields (background,
+  // children, relationship, income) are loaded from FormInformation so that
+  // changes made in the intake forms are always reflected.
   useEffect(() => {
     if (!matter_id || getCurrentIdFromQuery() !== null) return; // skip if loading a legacy saved calc
     fetchRequest("get", `get_single_matter_data/${getUserSID()}/${matter_id}/calculatorState`)
@@ -888,16 +910,34 @@ const Calculator = () => {
         const rows = data?.data?.body ?? data?.data ?? [];
         const saved = Array.isArray(rows) && rows.length > 0 ? rows[0] : null;
         if (!saved) return;
-        console.log("[Calculator] Restoring calculator state from DB");
+        console.log("[Calculator] Restoring calculator-specific state from DB");
 
-        if (saved.background) setBackground((prev) => ({ ...prev, ...saved.background }));
-        if (saved.aboutTheChildren) setAboutTheChildren(saved.aboutTheChildren);
-        if (saved.aboutTheRelationship) setAboutTheRelationship(saved.aboutTheRelationship);
+        // Restore ONLY calculator-specific fields from background (disability,
+        // pension, employment exemptions, rural flags). Party names, DOBs, and
+        // provinces come from FormInformation (intake forms).
+        if (saved.background) {
+          setBackground((prev) => ({
+            ...prev,
+            party1LiveInRural: saved.background.party1LiveInRural ?? prev.party1LiveInRural,
+            party2LiveInRural: saved.background.party2LiveInRural ?? prev.party2LiveInRural,
+            party1eligibleForDisability: saved.background.party1eligibleForDisability ?? prev.party1eligibleForDisability,
+            party2eligibleForDisability: saved.background.party2eligibleForDisability ?? prev.party2eligibleForDisability,
+            party1ExemptFromCanadaPension: saved.background.party1ExemptFromCanadaPension ?? prev.party1ExemptFromCanadaPension,
+            party2ExemptFromCanadaPension: saved.background.party2ExemptFromCanadaPension ?? prev.party2ExemptFromCanadaPension,
+            party1ExemptFromEmploymentPremium: saved.background.party1ExemptFromEmploymentPremium ?? prev.party1ExemptFromEmploymentPremium,
+            party2ExemptFromEmploymentPremium: saved.background.party2ExemptFromEmploymentPremium ?? prev.party2ExemptFromEmploymentPremium,
+          }));
+        }
+
+        // Skip: saved.aboutTheChildren — loaded from FormInformation
+        // Skip: saved.aboutTheRelationship — loaded from FormInformation
+        // Skip: saved.income — loaded from FormInformation
+
         if (saved.calculator_type) setTypeOfCalculatorSelected(saved.calculator_type);
 
         setScreen2((prev) => ({
           ...prev,
-          ...(saved.income && { income: saved.income }),
+          // Skip income — shared with intake, loaded from FormInformation
           ...(saved.undueHardshipIncome && { undueHardshipIncome: saved.undueHardshipIncome }),
           ...(saved.benefits && { benefits: saved.benefits }),
           ...(saved.deductions && { deductions: saved.deductions }),
@@ -1218,7 +1258,8 @@ const Calculator = () => {
     undueHardship:undueHardship, setundueHardship:setundueHardship,
     restructionbtnref:restructionbtnref ,
     nonTaxableincome , setNonTaxableincome,
-    allApiDataCal ,setAllApiDataCal
+    allApiDataCal ,setAllApiDataCal,
+    rawIntakeData,
   };
 
   //screen 4
