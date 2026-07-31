@@ -184,7 +184,15 @@ def printed_mark(page, box, pad=3.0):
                 found = glyph if found is None else (found | glyph)
     if found is None:
         return None
-    return ink_bounds(page, found) or found
+    refined = ink_bounds(page, found)
+    if refined and 0.62 <= refined.width / max(refined.height, 0.01) <= 1.6:
+        return refined
+    # The ink measure picked up a neighbouring line. These marks are square, so
+    # fall back to a square centred on the candidate rather than trust it.
+    side = min(found.width, found.height)
+    centre_x, centre_y = (found.x0 + found.x1) / 2, (found.y0 + found.y1) / 2
+    return fitz.Rect(centre_x - side / 2, centre_y - side / 2,
+                     centre_x + side / 2, centre_y + side / 2)
 
 
 def ink_bounds(page, rect, zoom=6.0, pad=1.0, dark=170):
