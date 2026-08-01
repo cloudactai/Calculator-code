@@ -156,16 +156,27 @@ def nudge_off_hint(pdf_path, fields, min_remaining=14.0):
     return nudged
 
 
-def printed_letters(page, clip):
-    """Rects of printed characters in `clip`, excluding the tick glyphs themselves."""
+def printed_chars(page, clip, glyphs):
+    """Rects of printed characters in `clip` — the tick glyphs, or everything else.
+
+    Character level, not word level: BC sets the tick hard against its caption, so
+    the text extractor hands back "❑Yes" and "❑No" as single tokens. Testing a
+    whole token for glyph-ness therefore misses the mark on exactly the forms that
+    print one, and those controls end up with no mark found at all.
+    """
     out = []
     for block in page.get_text("rawdict", clip=clip)["blocks"]:
         for line in block.get("lines", []):
             for span in line["spans"]:
                 for char in span["chars"]:
-                    if char["c"].strip() and char["c"] not in BOX_GLYPHS:
+                    if char["c"].strip() and (char["c"] in BOX_GLYPHS) == glyphs:
                         out.append(fitz.Rect(char["bbox"]))
     return out
+
+
+def printed_letters(page, clip):
+    """Rects of printed characters in `clip`, excluding the tick glyphs themselves."""
+    return printed_chars(page, clip, glyphs=False)
 
 
 def symmetric_ink(found, refined, letters=()):
@@ -212,10 +223,8 @@ def printed_mark(page, box, pad=3.0):
     # The printed ❑ wins outright. BC shades a panel behind it, and that shading
     # is a rectangle of much the same size, so taking vector art first unioned
     # the two and dropped the control below its own tick box.
-    for x0, y0, x1, y1, word, *_ in page.get_text("words", clip=search):
-        if word.strip() and set(word.strip()) <= BOX_GLYPHS:
-            glyph = fitz.Rect(x0, y0, x1, y1)
-            found = glyph if found is None else (found | glyph)
+    for glyph in printed_chars(page, search, glyphs=True):
+        found = glyph if found is None else (found | glyph)
     if found is None:
         for drawing in page.get_drawings():
             rect = drawing["rect"]
