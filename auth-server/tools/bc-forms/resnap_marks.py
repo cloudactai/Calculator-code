@@ -1,0 +1,77 @@
+"""Re-seat every shipped BC checkbox on its printed mark, in place.
+
+The mark detector is the thing being corrected, not the field set, so this reads
+each shipped background and rewrites only the four geometry keys of CheckBox
+fields. Nothing else in the JSON is touched — no field is added, dropped or
+reordered, and no text field moves — which is what makes it safe to run against
+templates that already shipped.
+
+Run: python3 resnap_marks.py [--write]
+"""
+import glob
+import json
+import os
+import sys
+
+import fitz
+
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import bc_pipeline as bp  # noqa: E402
+
+EXPORT = "/Users/lorelaiphinnemore/Documents/CloudAct/Frontend /Calculator-code/auth-server/form-template-export"
+
+
+def resnap(path, write):
+    doc_id = os.path.basename(path)[:-5]
+    mapping = json.load(open(path))
+    fields = mapping["staticFields"]
+    before = json.dumps([{k: v for k, v in f.items()
+                          if k not in ("x", "y", "width", "height")} for f in fields], sort_keys=True)
+
+    doc = fitz.open(os.path.join(EXPORT, "%s.pdf" % doc_id))
+    changed = missed = 0
+    for field in fields:
+        if field["type"] != "CheckBox":
+            continue
+        page = doc[field["page"] - 1]
+        box = fitz.Rect(field["x"], field["y"],
+                        field["x"] + field["width"] / bp.SCALE,
+                        field["y"] + field["height"] / bp.SCALE)
+        mark = bp.printed_mark(page, box)
+        if mark is None or mark.width < 3 or mark.height < 3:
+            missed += 1
+            continue
+        centre = fitz.Point((mark.x0 + mark.x1) / 2, (mark.y0 + mark.y1) / 2)
+        if not (box + (-12.0, -12.0, 12.0, 12.0)).contains(centre):
+            missed += 1
+            continue
+        new = {"x": round(mark.x0, 2), "y": round(mark.y0, 2),
+               "width": round(mark.width * bp.SCALE, 2),
+               "height": round(mark.height * bp.SCALE, 2)}
+        if any(field[k] != v for k, v in new.items()):
+            field.update(new)
+            changed += 1
+    doc.close()
+
+    after = json.dumps([{k: v for k, v in f.items()
+                         if k not in ("x", "y", "width", "height")} for f in fields], sort_keys=True)
+    if before != after:
+        raise SystemExit("%s: a non-geometry key changed" % doc_id)
+    if write and changed:
+        bp.write_mapping(path, fields)
+    return changed, missed
+
+
+def main():
+    write = "--write" in sys.argv
+    total = 0
+    for path in sorted(glob.glob(os.path.join(EXPORT, "BC*.json"))):
+        changed, missed = resnap(path, write)
+        total += changed
+        if changed or missed:
+            print("%-12s reseated=%-4d no-mark-found=%d" % (os.path.basename(path)[:-5], changed, missed))
+    print("\n%d controls reseated%s" % (total, "" if write else " (dry run, pass --write)"))
+
+
+if __name__ == "__main__":
+    main()

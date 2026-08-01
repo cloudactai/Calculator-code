@@ -156,6 +156,26 @@ def nudge_off_hint(pdf_path, fields, min_remaining=14.0):
     return nudged
 
 
+def symmetric_ink(found, refined):
+    """Let the ink measure shrink a candidate freely, but grow it only evenly.
+
+    Ink legitimately runs a little outside the candidate: a stroke sits astride
+    the path rectangle, and a ❑ glyph's outline overflows its advance width. That
+    overshoot is the same on both sides. What is *not* legitimate is one-sided
+    growth — where BC sets a caption hard against the mark (F32 and F46 start the
+    word at the same coordinate the circle ends), the measurement's own padding
+    swallowed the first letter's stem and the control came out over the letter.
+    So each axis may only grow by the smaller of its two overshoots.
+    """
+    box = []
+    for lo, hi, found_lo, found_hi in ((refined.x0, refined.x1, found.x0, found.x1),
+                                       (refined.y0, refined.y1, found.y0, found.y1)):
+        room = max(0.0, min(found_lo - lo, hi - found_hi))
+        box.append((max(lo, found_lo - room), min(hi, found_hi + room)))
+    (x0, x1), (y0, y1) = box
+    return fitz.Rect(x0, y0, x1, y1) if x1 > x0 and y1 > y0 else None
+
+
 def printed_mark(page, box, pad=3.0):
     """The tick target actually printed under a checkbox overlay.
 
@@ -190,7 +210,9 @@ def printed_mark(page, box, pad=3.0):
     if found is None:
         return None
     refined = ink_bounds(page, found)
-    if refined and 0.78 <= refined.width / max(refined.height, 0.01) <= 1.28:
+    if refined:
+        refined = symmetric_ink(found, refined)
+    if refined and 0.82 <= refined.width / max(refined.height, 0.01) <= 1.22:
         return refined
     # The ink measure picked up a neighbouring line. These marks are square, so
     # fall back to a square centred on the candidate rather than trust it.
