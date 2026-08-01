@@ -6,6 +6,10 @@ fields. Nothing else in the JSON is touched — no field is added, dropped or
 reordered, and no text field moves — which is what makes it safe to run against
 templates that already shipped.
 
+Writing also refreshes the form's QA render, the same overlay-on-background PDF
+the full build produces — an in-place edit otherwise leaves the last build's
+render on disk, showing geometry that is no longer what ships.
+
 Run: python3 resnap_marks.py [--write]
 """
 import glob
@@ -19,16 +23,18 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import bc_pipeline as bp  # noqa: E402
 
 EXPORT = "/Users/lorelaiphinnemore/Documents/CloudAct/Frontend /Calculator-code/auth-server/form-template-export"
+QA = os.path.join(EXPORT, "_incoming_bc", "qa")
 
 
 def resnap(path, write):
     doc_id = os.path.basename(path)[:-5]
+    background = os.path.join(EXPORT, "%s.pdf" % doc_id)
     mapping = json.load(open(path))
     fields = mapping["staticFields"]
     before = json.dumps([{k: v for k, v in f.items()
                           if k not in ("x", "y", "width", "height")} for f in fields], sort_keys=True)
 
-    doc = fitz.open(os.path.join(EXPORT, "%s.pdf" % doc_id))
+    doc = fitz.open(background)
     changed = missed = 0
     for field in fields:
         if field["type"] != "CheckBox":
@@ -59,18 +65,23 @@ def resnap(path, write):
         raise SystemExit("%s: a non-geometry key changed" % doc_id)
     if write and changed:
         bp.write_mapping(path, fields)
+        os.makedirs(QA, exist_ok=True)
+        bp.qa_render(background, fields, os.path.join(QA, "%s_qa.pdf" % doc_id))
     return changed, missed
 
 
 def main():
     write = "--write" in sys.argv
-    total = 0
+    total = touched = 0
     for path in sorted(glob.glob(os.path.join(EXPORT, "BC*.json"))):
         changed, missed = resnap(path, write)
         total += changed
+        touched += bool(changed)
         if changed or missed:
             print("%-12s reseated=%-4d no-mark-found=%d" % (os.path.basename(path)[:-5], changed, missed))
     print("\n%d controls reseated%s" % (total, "" if write else " (dry run, pass --write)"))
+    if write:
+        print("%d QA renders refreshed in %s" % (touched, QA))
 
 
 if __name__ == "__main__":
