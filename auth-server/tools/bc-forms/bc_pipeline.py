@@ -96,8 +96,6 @@ def extract(source_path, doc_id):
             fields.append({
                 "id": new_id(doc_id, index),
                 "type": kind,
-                **({"shape": "circle" if widget.field_type_string == "RadioButton" else "square"}
-                   if kind == "CheckBox" else {}),
                 "x": round(rect.x0, 2),
                 "y": round(rect.y0, 2),
                 "width": round(rect.width * SCALE, 2),
@@ -476,6 +474,46 @@ def expand_ruled_blocks(fields, pdf_path, max_gap=4.0, edge=3.0):
             grown += 1
     doc.close()
     return grown
+
+
+def printed_shape(page, rect, drawings=None):
+    """Circle or square, decided by what the form draws — not by the field type.
+
+    The field type is not a reliable guide: BC Provincial uses radio groups for
+    mutually exclusive options but prints them as ❑ squares, so trusting "radio
+    means circle" put a circle between two squares. The drawn outline settles it.
+    A rounded square is four corner curves plus four straight sides; a circle is
+    curves with essentially no straight segments.
+    """
+    curves = straight = 0
+    for drawing in (drawings if drawings is not None else page.get_drawings()):
+        box = drawing["rect"]
+        if box.width > 26 or box.height > 26 or not box.intersects(rect):
+            continue
+        for item in drawing["items"]:
+            if item[0] == "c":
+                curves += 1
+            elif item[0] in ("re", "l"):
+                straight += 1
+    return "circle" if curves and straight <= 2 else "square"
+
+
+def stamp_shapes(pdf_path, fields):
+    """Record circle/square on every checkbox from the printed outline."""
+    doc = fitz.open(pdf_path)
+    counts = {"circle": 0, "square": 0}
+    for page_number in sorted({f["page"] for f in fields}):
+        page = doc[page_number - 1]
+        drawings = page.get_drawings()
+        for field in [f for f in fields if f["page"] == page_number and f["type"] == "CheckBox"]:
+            box = fitz.Rect(field["x"], field["y"],
+                            field["x"] + field["width"] / SCALE,
+                            field["y"] + field["height"] / SCALE)
+            shape = printed_shape(page, box, drawings)
+            field["shape"] = shape
+            counts[shape] += 1
+    doc.close()
+    return counts
 
 
 def flatten_background(source_path, dest_path):

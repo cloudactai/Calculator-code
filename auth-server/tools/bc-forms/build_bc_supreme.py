@@ -79,12 +79,8 @@ def overlay_fields(doc_id, raw, page_sizes, pdf_path):
     fields, skipped, baked = [], [], []
     index = 0
     for item in raw:
-        shape = None
         if item["inputType"] in ("checkbox", "radio"):
             kind = "CheckBox"
-            # A radio group prints a circle, a checkbox prints a rounded square.
-            # The editor draws whichever the form actually shows.
-            shape = "circle" if item["inputType"] == "radio" else "square"
         else:
             kind = TYPE_BY_TAG.get(item["tag"], "TextField")
         # The flatten printed this field's default into the background ("Claimant",
@@ -113,8 +109,6 @@ def overlay_fields(doc_id, raw, page_sizes, pdf_path):
             "border": "none",
             "page": item["page"],
         })
-        if shape:
-            fields[-1]["shape"] = shape
     return fields, skipped, baked
 
 
@@ -154,6 +148,7 @@ def main():
         bp.clamp_to_page(fields, page_sizes)
         nudged = bp.nudge_off_hint(background, fields)
         snapped, missed = bp.snap_checkboxes(background, fields)
+        bp.stamp_shapes(background, fields)
         bp.snap_text_fields(background, fields)
         bp.expand_ruled_blocks(fields, background)
         bp.clear_printed_labels(background, fields)
