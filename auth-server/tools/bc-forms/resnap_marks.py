@@ -33,9 +33,13 @@ def resnap(path, write):
     fields = mapping["staticFields"]
     before = json.dumps([{k: v for k, v in f.items()
                           if k not in ("x", "y", "width", "height")} for f in fields], sort_keys=True)
+    # Start-to-end, not step-by-step: seating pulls a control back onto its mark
+    # and the caption pass pushes it off again, so counting each step would
+    # report churn on a run that settles exactly where it started.
+    was = [(f["x"], f["y"], f["width"], f["height"]) for f in fields]
 
     doc = fitz.open(background)
-    changed = missed = 0
+    missed = 0
     for field in fields:
         if field["type"] != "CheckBox":
             continue
@@ -54,10 +58,13 @@ def resnap(path, write):
         new = {"x": round(mark.x0, 2), "y": round(mark.y0, 2),
                "width": round(mark.width * bp.SCALE, 2),
                "height": round(mark.height * bp.SCALE, 2)}
-        if any(field[k] != v for k, v in new.items()):
-            field.update(new)
-            changed += 1
+        field.update(new)
     doc.close()
+    # Seat on the mark first, then slide off the caption printed against it —
+    # in that order, since the clearance is measured from the seated box.
+    bp.clear_tick_captions(background, fields)
+    changed = sum(1 for old, f in zip(was, fields)
+                  if old != (f["x"], f["y"], f["width"], f["height"]))
 
     after = json.dumps([{k: v for k, v in f.items()
                          if k not in ("x", "y", "width", "height")} for f in fields], sort_keys=True)

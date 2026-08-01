@@ -156,24 +156,87 @@ def nudge_off_hint(pdf_path, fields, min_remaining=14.0):
     return nudged
 
 
-def symmetric_ink(found, refined):
+def printed_letters(page, clip):
+    """Rects of printed characters in `clip`, excluding the tick glyphs themselves."""
+    out = []
+    for block in page.get_text("rawdict", clip=clip)["blocks"]:
+        for line in block.get("lines", []):
+            for span in line["spans"]:
+                for char in span["chars"]:
+                    if char["c"].strip() and char["c"] not in BOX_GLYPHS:
+                        out.append(fitz.Rect(char["bbox"]))
+    return out
+
+
+def symmetric_ink(found, refined, letters=()):
     """Let the ink measure shrink a candidate freely, but grow it only evenly.
 
     Ink legitimately runs a little outside the candidate: a stroke sits astride
     the path rectangle, and a ❑ glyph's outline overflows its advance width. That
     overshoot is the same on both sides. What is *not* legitimate is one-sided
     growth — where BC sets a caption hard against the mark (F32 and F46 start the
-    word at the same coordinate the circle ends), the measurement's own padding
+    word at the very coordinate the circle ends), the measurement's own padding
     swallowed the first letter's stem and the control came out over the letter.
     So each axis may only grow by the smaller of its two overshoots.
+
+    Matching overshoots are not proof the growth is real, though: on F32 the line
+    reads "Signature of(circle)application", with a letter hard against the mark
+    on *both* sides, so the two bleeds cancelled and the control came out 2 pt
+    fatter than the identical one on the line below. Growth is therefore also
+    forbidden from reaching a printed letter the candidate did not already touch.
     """
     box = []
     for lo, hi, found_lo, found_hi in ((refined.x0, refined.x1, found.x0, found.x1),
                                        (refined.y0, refined.y1, found.y0, found.y1)):
         room = max(0.0, min(found_lo - lo, hi - found_hi))
-        box.append((max(lo, found_lo - room), min(hi, found_hi + room)))
+        box.append([max(lo, found_lo - room), min(hi, found_hi + room)])
+    for letter in letters:
+        if letter.x0 >= found.x1:
+            box[0][1] = min(box[0][1], max(found.x1, letter.x0))
+        elif letter.x1 <= found.x0:
+            box[0][0] = max(box[0][0], min(found.x0, letter.x1))
     (x0, x1), (y0, y1) = box
     return fitz.Rect(x0, y0, x1, y1) if x1 > x0 and y1 > y0 else None
+
+
+def clear_tick_captions(pdf_path, fields, gap=1.0, keep=0.5, max_shift=3.0):
+    """Slide a tick control off a caption letter it is actually covering.
+
+    BC sets the option text hard against the mark, and on the Supreme forms the
+    control ends up over the caption's first letter. Only controls genuinely
+    overlapping a letter move — merely *touching* the next word is the normal,
+    correct look, and a proximity rule instead slid every printed ❑ off its own
+    glyph, since a ❑'s caption always starts a hair after it.
+
+    Ink the mark already covers is not treated as a blocker on the left: it is
+    covered either way, and letting it block would pin the control on the
+    caption. `max_shift` keeps a column of options looking like a column.
+    """
+    doc = fitz.open(pdf_path)
+    moved = 0
+    for page_number in sorted({f["page"] for f in fields}):
+        page = doc[page_number - 1]
+        for field in [f for f in fields if f["page"] == page_number and f["type"] == "CheckBox"]:
+            box = fitz.Rect(field["x"], field["y"],
+                            field["x"] + field["width"] / SCALE,
+                            field["y"] + field["height"] / SCALE)
+            band = fitz.Rect(box.x0 - 60, box.y0 + 1, box.x1 + 40, box.y1 - 1)
+            letters = printed_letters(page, band)
+            # A letter is "covered" only if the box eats into it properly; a
+            # rounding-width graze is what every correctly placed tick shows.
+            covered = [r for r in letters if r.x0 >= box.x0
+                       and (box & r).get_area() > 0.12 * r.get_area()]
+            before = [r.x1 for r in letters if r.x1 <= box.x0]
+            if not covered:
+                continue
+            need = box.x1 + gap - min(r.x0 for r in covered)
+            room = box.x0 - (max(before) + keep) if before else need
+            shift = min(need, max_shift, max(0.0, room))
+            if shift > 0.05:
+                field["x"] = round(box.x0 - shift, 2)
+                moved += 1
+    doc.close()
+    return moved
 
 
 def printed_mark(page, box, pad=3.0):
@@ -211,7 +274,7 @@ def printed_mark(page, box, pad=3.0):
         return None
     refined = ink_bounds(page, found)
     if refined:
-        refined = symmetric_ink(found, refined)
+        refined = symmetric_ink(found, refined, printed_letters(page, search))
     if refined and 0.82 <= refined.width / max(refined.height, 0.01) <= 1.22:
         return refined
     # The ink measure picked up a neighbouring line. These marks are square, so
