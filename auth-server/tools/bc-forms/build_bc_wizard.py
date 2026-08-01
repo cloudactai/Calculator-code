@@ -95,6 +95,7 @@ def build(doc_id, form_no, name, category):
     bp.snap_text_fields(background, fields)
     bp.expand_ruled_blocks(fields, background)
     bp.clear_printed_labels(background, fields)
+    bp.merge_sliver_fields(background, fields)
     bp.size_amounts_to_dollar(background, fields)
     problems = bp.check_geometry(fields, page_sizes)
     overlaps = bp.check_overlap(background, fields)

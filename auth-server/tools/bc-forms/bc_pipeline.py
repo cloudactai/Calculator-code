@@ -166,20 +166,27 @@ def printed_mark(page, box, pad=3.0):
     """
     search = fitz.Rect(box.x0 - pad, box.y0 - pad, box.x1 + pad, box.y1 + pad)
     found = None
-    for drawing in page.get_drawings():
-        rect = drawing["rect"]
-        if not (3 <= rect.width <= 26 and 3 <= rect.height <= 26):
-            continue
-        if not rect.intersects(search):
-            continue
-        if (rect & search).get_area() < 0.25 * rect.get_area():
-            continue
-        found = rect if found is None else (found | rect)
+    # The printed ❑ wins outright. BC shades a panel behind it, and that shading
+    # is a rectangle of much the same size, so taking vector art first unioned
+    # the two and dropped the control below its own tick box.
+    for x0, y0, x1, y1, word, *_ in page.get_text("words", clip=search):
+        if word.strip() and set(word.strip()) <= BOX_GLYPHS:
+            glyph = fitz.Rect(x0, y0, x1, y1)
+            found = glyph if found is None else (found | glyph)
     if found is None:
-        for x0, y0, x1, y1, word, *_ in page.get_text("words", clip=search):
-            if word.strip() and set(word.strip()) <= BOX_GLYPHS:
-                glyph = fitz.Rect(x0, y0, x1, y1)
-                found = glyph if found is None else (found | glyph)
+        for drawing in page.get_drawings():
+            rect = drawing["rect"]
+            if not (3 <= rect.width <= 26 and 3 <= rect.height <= 26):
+                continue
+            if not rect.intersects(search):
+                continue
+            if (rect & search).get_area() < 0.25 * rect.get_area():
+                continue
+            # Skip the shading itself: it is a filled grey panel, not the outline.
+            fill = drawing.get("fill")
+            if fill and min(fill) > 0.75 and max(fill) < 0.99 and not drawing.get("color"):
+                continue
+            found = rect if found is None else (found | rect)
     if found is None:
         return None
     refined = ink_bounds(page, found)
@@ -514,6 +521,60 @@ def stamp_shapes(pdf_path, fields):
             counts[shape] += 1
     doc.close()
     return counts
+
+
+def merge_sliver_fields(pdf_path, fields, max_width=22.0, gap=12.0, margin=54.0):
+    """Fold XFA's narrow leading cell into the writing area beside it.
+
+    XFA emits a ~14 pt cell to the left of a free-text block — the paragraph
+    marker — and hands it back as its own field. On screen that reads as a stray
+    little box next to the real one. Where a wide field follows on the same line
+    the two become one; where the sliver stands alone it grows to the writing
+    area it labels.
+    """
+    doc = fitz.open(pdf_path)
+    merged = grown = 0
+    drop = []
+    for page_number in sorted({f["page"] for f in fields}):
+        page = doc[page_number - 1]
+        page_fields = [f for f in fields if f["page"] == page_number and f["type"] != "CheckBox"]
+        right_edge = page.rect.width - margin
+        for field in page_fields:
+            width = field["width"] / SCALE
+            if width >= max_width:
+                continue
+            left, top = field["x"], field["y"]
+            height = field["height"] / SCALE
+            beside = [g for g in page_fields
+                      if g is not field and abs(g["y"] - top) < 4
+                      # Tolerance, not zero: the sliver's right edge and the
+                      # block's left edge are the same coordinate, and the
+                      # subtraction lands a hair below zero.
+                      and -0.5 <= g["x"] - (left + width) < gap]
+            if beside:
+                partner = min(beside, key=lambda g: g["x"])
+                field["width"] = round((partner["x"] + partner["width"] / SCALE - left) * SCALE, 2)
+                field["height"] = round(max(height, partner["height"] / SCALE) * SCALE, 2)
+                field["type"] = "TextArea"
+                drop.append(partner)
+                merged += 1
+                continue
+            # Nothing beside it: grow to the writing area, stopping at whatever
+            # is printed or fielded to the right.
+            blockers = [g["x"] for g in page_fields
+                        if g is not field and abs(g["y"] - top) < 4 and g["x"] > left]
+            for x0, y0, x1, y1, word, *_ in page.get_text("words"):
+                if word.strip() and x0 > left + width and y1 > top + 2 and y0 < top + height - 2:
+                    blockers.append(x0)
+            limit = min([right_edge] + blockers) - 2
+            if limit - left > width + 20:
+                field["width"] = round((limit - left) * SCALE, 2)
+                field["type"] = "TextArea"
+                grown += 1
+    for field in drop:
+        fields.remove(field)
+    doc.close()
+    return merged, grown
 
 
 def flatten_background(source_path, dest_path):
