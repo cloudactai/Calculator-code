@@ -60,9 +60,6 @@ def resnap(path, write):
                "height": round(mark.height * bp.SCALE, 2)}
         field.update(new)
     doc.close()
-    # Seat on the mark first, then slide off the caption printed against it —
-    # in that order, since the clearance is measured from the seated box.
-    bp.clear_tick_captions(background, fields)
     changed = sum(1 for old, f in zip(was, fields)
                   if old != (f["x"], f["y"], f["width"], f["height"]))
 

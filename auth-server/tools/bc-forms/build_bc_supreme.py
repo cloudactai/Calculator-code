@@ -149,7 +149,6 @@ def main():
         nudged = bp.nudge_off_hint(background, fields)
         snapped, missed = bp.snap_checkboxes(background, fields)
         bp.stamp_shapes(background, fields)
-        bp.clear_tick_captions(background, fields)
         bp.snap_text_fields(background, fields)
         bp.expand_ruled_blocks(fields, background)
         bp.clear_printed_labels(background, fields)

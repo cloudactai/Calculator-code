@@ -199,46 +199,6 @@ def symmetric_ink(found, refined, letters=()):
     return fitz.Rect(x0, y0, x1, y1) if x1 > x0 and y1 > y0 else None
 
 
-def clear_tick_captions(pdf_path, fields, gap=1.0, keep=0.5, max_shift=3.0):
-    """Slide a tick control off a caption letter it is actually covering.
-
-    BC sets the option text hard against the mark, and on the Supreme forms the
-    control ends up over the caption's first letter. Only controls genuinely
-    overlapping a letter move — merely *touching* the next word is the normal,
-    correct look, and a proximity rule instead slid every printed ❑ off its own
-    glyph, since a ❑'s caption always starts a hair after it.
-
-    Ink the mark already covers is not treated as a blocker on the left: it is
-    covered either way, and letting it block would pin the control on the
-    caption. `max_shift` keeps a column of options looking like a column.
-    """
-    doc = fitz.open(pdf_path)
-    moved = 0
-    for page_number in sorted({f["page"] for f in fields}):
-        page = doc[page_number - 1]
-        for field in [f for f in fields if f["page"] == page_number and f["type"] == "CheckBox"]:
-            box = fitz.Rect(field["x"], field["y"],
-                            field["x"] + field["width"] / SCALE,
-                            field["y"] + field["height"] / SCALE)
-            band = fitz.Rect(box.x0 - 60, box.y0 + 1, box.x1 + 40, box.y1 - 1)
-            letters = printed_letters(page, band)
-            # A letter is "covered" only if the box eats into it properly; a
-            # rounding-width graze is what every correctly placed tick shows.
-            covered = [r for r in letters if r.x0 >= box.x0
-                       and (box & r).get_area() > 0.12 * r.get_area()]
-            before = [r.x1 for r in letters if r.x1 <= box.x0]
-            if not covered:
-                continue
-            need = box.x1 + gap - min(r.x0 for r in covered)
-            room = box.x0 - (max(before) + keep) if before else need
-            shift = min(need, max_shift, max(0.0, room))
-            if shift > 0.05:
-                field["x"] = round(box.x0 - shift, 2)
-                moved += 1
-    doc.close()
-    return moved
-
-
 def printed_mark(page, box, pad=3.0):
     """The tick target actually printed under a checkbox overlay.
 
