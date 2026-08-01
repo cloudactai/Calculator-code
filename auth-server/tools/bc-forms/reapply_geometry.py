@@ -1,16 +1,19 @@
-"""Re-seat every shipped BC checkbox on its printed mark, in place.
+"""Re-run the geometry passes over the shipped BC templates, in place.
 
-The mark detector is the thing being corrected, not the field set, so this reads
-each shipped background and rewrites only the four geometry keys of CheckBox
-fields. Nothing else in the JSON is touched — no field is added, dropped or
-reordered, and no text field moves — which is what makes it safe to run against
-templates that already shipped.
+The detectors are what get corrected, not the field set, so this reads each
+shipped background and rewrites only the four geometry keys. Nothing else in the
+JSON is touched — no field is added, dropped or reordered — which is what makes
+it safe to run against templates that already shipped, and it is checked rather
+than assumed: a non-geometry difference aborts the write.
+
+This exists because the XFA flatten the Supreme templates were cut from is no
+longer staged, so a full rebuild is not available for them.
 
 Writing also refreshes the form's QA render, the same overlay-on-background PDF
 the full build produces — an in-place edit otherwise leaves the last build's
 render on disk, showing geometry that is no longer what ships.
 
-Run: python3 resnap_marks.py [--write]
+Run: python3 reapply_geometry.py [--write]
 """
 import glob
 import json
@@ -26,7 +29,7 @@ EXPORT = "/Users/lorelaiphinnemore/Documents/CloudAct/Frontend /Calculator-code/
 QA = os.path.join(EXPORT, "_incoming_bc", "qa")
 
 
-def resnap(path, write):
+def reapply(path, write):
     doc_id = os.path.basename(path)[:-5]
     background = os.path.join(EXPORT, "%s.pdf" % doc_id)
     mapping = json.load(open(path))
@@ -60,6 +63,7 @@ def resnap(path, write):
                "height": round(mark.height * bp.SCALE, 2)}
         field.update(new)
     doc.close()
+    bp.expand_ruled_blocks(fields, background)
     changed = sum(1 for old, f in zip(was, fields)
                   if old != (f["x"], f["y"], f["width"], f["height"]))
 
@@ -78,12 +82,12 @@ def main():
     write = "--write" in sys.argv
     total = touched = 0
     for path in sorted(glob.glob(os.path.join(EXPORT, "BC*.json"))):
-        changed, missed = resnap(path, write)
+        changed, missed = reapply(path, write)
         total += changed
         touched += bool(changed)
         if changed or missed:
-            print("%-12s reseated=%-4d no-mark-found=%d" % (os.path.basename(path)[:-5], changed, missed))
-    print("\n%d controls reseated%s" % (total, "" if write else " (dry run, pass --write)"))
+            print("%-12s changed=%-4d no-mark-found=%d" % (os.path.basename(path)[:-5], changed, missed))
+    print("\n%d fields changed%s" % (total, "" if write else " (dry run, pass --write)"))
     if write:
         print("%d QA renders refreshed in %s" % (touched, QA))
 

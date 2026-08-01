@@ -479,6 +479,24 @@ def size_amounts_to_dollar(pdf_path, fields):
     return changed
 
 
+def bands(rects):
+    """Collapse vertically overlapping rects into one row each.
+
+    BC paints a writing row as an outer shaded rectangle with a second, slightly
+    inset one on top of it. Both come back from `shaded_boxes`, and interleaved by
+    y they read as rows that overlap each other by a dozen points — so a walk down
+    the block hit a negative gap between a row and the row nested inside it and
+    stopped at the first line. A row is a band of shading, not each rectangle.
+    """
+    out = []
+    for rect in sorted(rects, key=lambda r: r.y0):
+        if out and rect.y0 < out[-1].y1 - 0.5:
+            out[-1] |= rect
+        else:
+            out.append(fitz.Rect(rect))
+    return out
+
+
 def expand_ruled_blocks(fields, pdf_path, max_gap=4.0, edge=3.0):
     """Grow a field over the whole ruled block it belongs to.
 
@@ -502,8 +520,8 @@ def expand_ruled_blocks(fields, pdf_path, max_gap=4.0, edge=3.0):
             box = fitz.Rect(field["x"], field["y"],
                             field["x"] + field["width"] / SCALE,
                             field["y"] + field["height"] / SCALE)
-            column = [r for r in rows
-                      if abs(r.x0 - box.x0) <= edge and abs(r.x1 - box.x1) <= edge]
+            column = bands([r for r in rows
+                            if abs(r.x0 - box.x0) <= edge and abs(r.x1 - box.x1) <= edge])
             if len(column) < 2:
                 continue
             here = next((i for i, r in enumerate(column)
