@@ -5584,9 +5584,13 @@ const Screen2 = ({
           })),
         };
 
+        console.log("[CS-Only] Payload:", JSON.stringify(csPayload, null, 2));
+
         const csResult = await calcChildSupportFlask(csPayload);
+        console.log("[CS-Only] Result:", csResult);
 
         if (!csResult) {
+          console.error("[CS-Only] Child support call failed — no result returned");
           setLoading(false);
           setShowFlaskError(true);
           return;
@@ -5604,6 +5608,7 @@ const Screen2 = ({
           party2: csResult.party2_annual,
         };
 
+        console.log("[CS-Only] Success:", { party1_annual: csResult.party1_annual, party2_annual: csResult.party2_annual });
         Cookies.set('demo_cal_data', JSON.stringify(objforApi), { path: '/' });
         setLoading(false);
         setShowCalculationCompleted(true);
@@ -5624,6 +5629,9 @@ const Screen2 = ({
 
       // ── Call /calculate first to get Python CS amounts ───────────────────────
 
+      console.log("[Calc] Children state:", { hasChildren, count: childrenList.length, childAges, youngestChildAge });
+      console.log("[Calc] Incomes:", { p1Income, p2Income });
+
       if (hasChildren) {
         const csPayload = {
           party1_income: p1Income,
@@ -5637,9 +5645,12 @@ const Screen2 = ({
             custody_arrangement: c.custodyArrangement || "Party 1",
           })),
         };
+        console.log("[Calc] CS pre-fetch payload:", JSON.stringify(csPayload, null, 2));
         const csResult = await calcChildSupportFlask(csPayload);
+        console.log("[Calc] CS pre-fetch result:", csResult);
 
         if (!csResult) {
+          console.error("[Calc] CS pre-fetch failed — aborting");
           setLoading(false);
           setShowFlaskError(true);
           return;
@@ -5667,6 +5678,9 @@ const Screen2 = ({
       const p2Age = momentFunction.calculateNumberOfYears(screen1.background.party2DateOfBirth);
       const recipientAge = p1Income >= p2Income ? p2Age : p1Age;
 
+      console.log("[Calc] Ages:", { p1Age, p2Age, recipientAge, p1DOB: screen1.background.party1DateOfBirth, p2DOB: screen1.background.party2DateOfBirth });
+      console.log("[Calc] Relationship dates:", { dateOfMarriage: screen1.aboutTheRelationship.dateOfMarriage, dateOfSeparation: screen1.aboutTheRelationship.dateOfSeparation });
+
       const flaskPayload = {
         party1_net_income: p1Income,
         party2_net_income: p2Income,
@@ -5686,13 +5700,16 @@ const Screen2 = ({
         // rather than passing potentially wrong-direction values.
       };
 
+      console.log("[Calc] Spousal support payload:", JSON.stringify(flaskPayload, null, 2));
       const flaskResult = await calcSpousalSupportFlask(flaskPayload);
+      console.log("[Calc] Spousal support result:", flaskResult);
 
       if (flaskResult) {
         // Use the Flask API's payor/recipient determination (based on INDI
         // comparison, matching the old app's disposable-income logic) to
         // assign spousal support to the correct party slot.
         const payorIsParty1 = flaskResult.payor === party1Name();
+        console.log("[Calc] Payor direction:", { flaskPayor: flaskResult.payor, party1Name: party1Name(), payorIsParty1 });
         flaskSpousalPayorIsParty1.current = payorIsParty1;
         if (payorIsParty1) {
           // Party 1 pays → support given to Party 2
