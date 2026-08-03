@@ -4583,7 +4583,7 @@ const Screen2 = ({
           screen1.aboutTheChildren,
           getTaxableIncomeAfterSupportParty1(),
           typeOfSplitting,
-          party1Name(),
+          "Party 1",
           1,
           fetchedDynamicValues
         )
@@ -4604,7 +4604,7 @@ const Screen2 = ({
           screen1.aboutTheChildren,
           getTaxableIncomeAfterSupportParty2(),
           typeOfSplitting,
-          party2Name(),
+          "Party 2",
           2,
           fetchedDynamicValues
         )
@@ -4626,7 +4626,7 @@ const Screen2 = ({
           screen1.aboutTheChildren,
           totalIncomeByIncomeState(income.party1),
           typeOfSplitting,
-          party1Name(),
+          "Party 1",
           1,
           fetchedDynamicValues
         )
@@ -4646,7 +4646,7 @@ const Screen2 = ({
           screen1.aboutTheChildren,
           totalIncomeByIncomeState(income.party2),
           typeOfSplitting,
-          party2Name(),
+          "Party 2",
           2,
           fetchedDynamicValues
         )
@@ -5574,8 +5574,8 @@ const Screen2 = ({
         const csPayload = {
           party1_income: totalIncomeByIncomeState(income.party1) + nonTaxableIncomeParty1(),
           party2_income: totalIncomeByIncomeState(income.party2) + nonTaxableIncomeParty2(),
-          party1_name: party1Name(),
-          party2_name: party2Name(),
+          party1_name: "Party 1",
+          party2_name: "Party 2",
           children: childrenList.map((c: any) => ({
             name: c.name ?? "",
             csg_table: c.CSGTable ?? "No",
@@ -5636,8 +5636,8 @@ const Screen2 = ({
         const csPayload = {
           party1_income: p1Income,
           party2_income: p2Income,
-          party1_name: party1Name(),
-          party2_name: party2Name(),
+          party1_name: "Party 1",
+          party2_name: "Party 2",
           children: childrenList.map((c: any) => ({
             name: c.name ?? "",
             csg_table: c.CSGTable ?? "No",
@@ -5684,8 +5684,8 @@ const Screen2 = ({
       const flaskPayload = {
         party1_net_income: p1Income,
         party2_net_income: p2Income,
-        party1_name: party1Name(),
-        party2_name: party2Name(),
+        party1_name: "Party 1",
+        party2_name: "Party 2",
         party1_age: p1Age,
         recipient_age: recipientAge,
         years: momentFunction.differenceBetweenTwoDates(
@@ -5708,8 +5708,8 @@ const Screen2 = ({
         // Use the Flask API's payor/recipient determination (based on INDI
         // comparison, matching the old app's disposable-income logic) to
         // assign spousal support to the correct party slot.
-        const payorIsParty1 = flaskResult.payor === party1Name();
-        console.log("[Calc] Payor direction:", { flaskPayor: flaskResult.payor, party1Name: party1Name(), payorIsParty1 });
+        const payorIsParty1 = flaskResult.payor === "Party 1";
+        console.log("[Calc] Payor direction:", { flaskPayor: flaskResult.payor, payorIsParty1 });
         flaskSpousalPayorIsParty1.current = payorIsParty1;
         if (payorIsParty1) {
           // Party 1 pays → support given to Party 2
