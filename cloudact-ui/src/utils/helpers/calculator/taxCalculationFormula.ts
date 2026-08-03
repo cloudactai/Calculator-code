@@ -232,7 +232,6 @@ const calculateDisabilityAmount = (
   taxableIncome: any
 ) => {
   let TotalDisibilityAmount = 0;
-  console.log("dynamicValues", dynamicValues);
 
   data.forEach((element, key, array) => {
     if (element.childHasDisability == "Yes") {
@@ -437,7 +436,6 @@ const formulaForCanadaChildBenefit = (
     Math.abs(totalDeductions) +
     (totalBaseAmountHybrid - Math.abs(totalDeductionsHybrid)) / 2;
 
-  console.log("canadachildbenefitpartyNum", partyNum, result)
 
   return result;
 };
@@ -636,7 +634,6 @@ const formulaForGSTHSTBenefits = (
   const { GSTBaseCredit, GSTDependentCredit, GSTBaseAmount, GSTAddCreditThreshold } =
     store.getState().dynamicValues.data;
 
-  console.log("formulaforGSTH", store.getState().dynamicValues.data)
   // =MAX(299+ 157 * (N26 - 1) - MAX((F13-38892),0)*5%,0)
   let val = 0;
   let AdditionalCredit = 0
@@ -672,8 +669,6 @@ const formulaForGSTHSTBenefits = (
     Math.max(taxableIncome - GSTBaseAmount, 0) * 0.05,
     0
   );
-
-  console.log("formaulforGST?SHT", calc)
 
   return calc;
 };
@@ -823,8 +818,6 @@ const spousalSupportFormulaByRate = (
       12
     ).toFixed(4)
   );
-
-  console.log("supportRateByformula", rate, houseHoldIncome1, houseHoldIncome2, val)
 
   return val > 0 ? val : 0;
 };

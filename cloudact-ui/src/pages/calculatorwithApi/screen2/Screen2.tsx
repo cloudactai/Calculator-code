@@ -6676,7 +6676,6 @@ const Screen2 = ({
     };
   };
 
-  console.log("allCreditsParty1.current>r",allCreditsParty1.current)
 
   const clearAllCreditsParty2 = () => {
     allCreditsParty2.current = {
