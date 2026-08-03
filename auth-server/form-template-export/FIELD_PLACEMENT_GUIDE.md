@@ -53,6 +53,25 @@ circle in the middle of a row of squares. Classify by what's drawn:
   artifacts).
 - Printed glyph (`❑ ☐ □ ▢`): square, full stop — no vector analysis needed.
 
+**Find the glyph at character level, not word level.** BC sets the caption hard
+against the tick, so the text extractor hands back `❑Yes` and `❑No` as single
+tokens. Testing a whole token for glyph-ness therefore misses the mark on
+exactly the forms that print one: 125 controls on BCPC_3, BCPC_17 and BCPC_22
+came back with *no mark found at all*, kept their raw 14.4pt XFA box, and read
+as an oversized rectangle sitting over the option text. Read `rawdict` chars.
+
+**One mark is one candidate. Never union the marks in range.**
+
+- One glyph is one candidate. A `❑` is a single character, so a second one in
+  the search area belongs to the *next option*. BCPC_22 p2 stacks its options
+  14pt apart, within reach, and unioning the pair gave a 27pt candidate that
+  failed the squareness test and fell back to a square centred **in the gap
+  between the two boxes**. Same fault on BCPC_3 p9/p21, BCPC_17 p6, F43 p1.
+- Vector art *clusters* per mark. One mark is often drawn as several paths — a
+  white disc with a grey ring over it — and those must merge; but F43's two
+  signature circles are 14pt apart and merging *those* put both controls
+  midway between them. Cluster by intersection, then pick the best cluster.
+
 **Position/size must come from the printed mark, checked in this order:**
 
 1. The printed glyph text (`❑` etc.), if present — **glyph wins over vector
@@ -63,21 +82,48 @@ circle in the middle of a row of squares. Classify by what's drawn:
 2. Vector art (circle/rounded-square outline), skipping filled grey panels
    (a "shading" rect has a `fill` in the light-grey range and no `color`/
    stroke — exclude it explicitly).
-3. Refine either candidate to actual rendered ink (render at high zoom,
+3. Refine the chosen candidate to actual rendered ink (render at high zoom,
    measure the dark pixel bounding box) — a `❑` glyph's *font* box is much
    taller than the visible glyph (e.g. 9×14 for a 9×9 square).
-4. If the ink measurement comes back wildly non-square (grabbed a
-   neighboring line), reject it and fall back to a square centered on the
-   original candidate — these marks are always square or circular, never a
-   4:1 rectangle.
-5. Accept a match at any vertical offset within the field's own allocated
+4. **Ink may shrink a candidate freely but may only grow it evenly, and never
+   onto a printed letter.** A stroke sits astride its path rectangle and a
+   glyph outline overflows its advance width; both overshoot the same on
+   either side. Bleed from a neighbour is one-sided — where BC starts the
+   caption at the very coordinate the mark ends (F32, F46), the ink measure's
+   own padding swallowed the first letter's stem and the control came out
+   ~1.2pt wide of the circle, sitting on the letter. 414 of 838 were affected.
+   Matching overshoots are not proof either: F32 reads
+   `Signature of(circle)application`, with a letter hard against the mark on
+   *both* sides, so the two bleeds cancelled and the box came out 2pt fatter
+   than the identical one a line below. Cap growth at the smaller of the two
+   overshoots **and** refuse to grow onto a letter the candidate didn't touch.
+5. If the ink measurement comes back non-square (grabbed a neighbouring line),
+   reject it and fall back to a square centered on the original candidate —
+   these marks are always square or circular, never a 4:1 rectangle.
+6. Accept a match at any vertical offset within the field's own allocated
    box, however far down — some two-line options have the mark centered
    ~14pt below the top of the box XFA/AcroForm handed you. Don't cap the
    search distance; cap it to "is the match still inside this field's box."
 
+**Two controls can genuinely want the same mark.** XFA sometimes hands back
+identical boxes for both options — BCPC_3 p9 stacks "I am the child's guardian"
+and "I am applying to be appointed" on the same geometry, F43 does it with its
+two signature circles — and a per-field detector cannot see the clash, so one
+option ends up unclickable. Deal the surrounding marks out in reading order,
+skipping any a neighbour already holds. Two dead ends, both tried and reverted:
+
+- Patching up per field *reached wider* and robbed the option above instead of
+  taking the free mark below it.
+- Routing the whole page through the new assignment disturbed 138 already
+  correct Supreme controls, because the refinement saw a different search
+  window than `printed_mark` does. **Touch only controls that actually
+  collide.**
+
 **Check on every build:** re-derive shape and position from the page and diff
 against what you stored. Zero mismatches is the bar — 576/838 and later
-0/838 were both real measurements on this project, not estimates.
+0/838 were both real measurements on this project, not estimates. Add a
+duplicate-position scan: controls sharing an x/y went 6 → 0 once the above
+landed, and any above zero means an option a lawyer cannot tick.
 
 ## 3. Text fields / text areas
 
@@ -99,17 +145,30 @@ even inside a much taller cell).
 - A shaded shape that is bigger than the field in **both** width and height
   is a background panel, not this field's cell — ignore it. (A real cell
   matches the field in at least one dimension.)
+- **Collapse overlapping shaded rects into bands before walking a block.** BC
+  paints a row as an outer shaded rectangle with a second, slightly inset one
+  on top of it. Both come back from `shaded_boxes()`, and interleaved by y
+  they read as rows overlapping each other by a dozen points — so the walk
+  down the block hits a negative gap between a row and the row *nested inside
+  it* and stops at the first line. BCPC_16 p5's three-line block covered one
+  and a half lines because of this.
 
 **XFA's "paragraph marker" sliver.** XFA sometimes emits a narrow (~14pt)
 column to the left of a free-text block as its own separate field — this
-renders as a tiny stray box sitting beside the real writing area. Detect
-fields narrower than ~22pt next to a wider field on the same line:
+renders as a tiny stray box sitting beside the real writing area:
 
 - If there's a wide field immediately to the right (within ~12pt gap): merge
   them into one field spanning both, drop the duplicate.
 - If the sliver stands alone: grow it rightward to the actual writing area —
   stop at the next printed word or the next field, whichever is closer, or
   the page's right margin.
+- **The two branches need different width limits.** A narrow cell butted
+  against a wide block on the same line is a paragraph marker whatever its
+  exact width, so merge up to ~32pt — F51.1's is 27pt and a flat 22 left it
+  stranded beside the order body. A cell *standing alone* might be a real
+  small field, so keep growing at the tighter ~22pt: F31's "minutes" box is
+  24.69pt and must not be stretched across the page. Require the merge
+  partner to be a genuine block (>100pt), not just any neighbour.
 - **Tolerance bug to remember:** matching "the sliver's right edge equals the
   neighbor's left edge" with `>= 0` silently matches nothing, because
   floating-point subtraction of two things that should be equal lands at
@@ -147,6 +206,15 @@ missing a whole box — it's a field whose box is right but which covers text):
   distance — a naive nearest-match can pair a field with the `$` belonging to
   the cell above or below it, especially when BC prints a cell's `$` near
   its *bottom* edge (within a point of the next cell starting).
+- **A printed `$0` is a stale default, not the government's wording.** XFA's
+  default for a computed row is zero, and the flatten prints it, so
+  `overlay_fields` correctly declines to put a box over what looks like a
+  printed default — leaving the most consequential figures on a financial
+  statement permanently zero and untypeable (F8 pages 4, 5, 10). Redact the
+  digit, keep the `$`, and give the row the same box the rest of its column
+  has. Take the box's left edge from **the column**, not from its own `$`:
+  F8 p10 prints the `$` of a computed row a point left of the `$` above it,
+  and keying off the glyph steps the column out of line.
 
 ## 5. Signature lines — never place a box
 
@@ -159,6 +227,12 @@ missing a whole box — it's a field whose box is right but which covers text):
   a legitimate fillable field for the signer's printed name, not the
   signature line itself — name-matching on "signature" is too broad and
   will delete real fields).
+- **Known false positive, don't "fix" it blindly.** The rule drops a short box
+  printed 0–24pt above a caption, and a caption *enclosed by a drawn border*
+  labels the box it sits inside rather than anything above it. F38 p5's date
+  box trips this because "signature of deponent" sits 20pt below it inside the
+  rectangle `[54.5, 471.5, 269.5, 508.5]`. Loosening the rule changes what
+  every form drops at build time, so leave it and record the exception.
 
 ## 6. Blank/generated content that XFA doesn't hand you
 
@@ -172,6 +246,66 @@ a blank page:
 - Report page-by-page field counts as part of the build; a content page
   (has body text, not just a header/footer) with 0 fields is worth a second
   look — it may need a manually-added writing area, not an automatic fix.
+
+**Placing one by hand: anchor every edge to something printed.** The pages that
+needed this were F32 Parts 1 and 4–6, F51/F52's order body and blank
+continuation page, and F3 p3 / F5 p2's "for the following reasons:".
+
+- A `[if more space is required — attach page…]` note is an anchor: the writing
+  area is the gap directly above it, closed at the top by the last line of the
+  instruction.
+- A caption ending in `:` with an empty band under it is an anchor: run the box
+  down to whatever prints next — the next line of type, or the rule that closes
+  the section.
+- Take the **column from a box the form already has** of the same kind (F32's
+  Parts 2 and 3 already carried one, so Parts 1 and 4–6 copy it). Only fall
+  back to margins when there is no sibling.
+- The one thing that cannot be read off the page is where a *blank continuation
+  page* opens. Use the margin its heading is set to, and say so.
+- **Scan for these rather than waiting to be told**: captions ending in `:`
+  followed by a big empty band with no field. Nine candidates across 43 forms,
+  of which five were false positives (the field sits *beside* the caption, not
+  under it) and one was a signature block. Check each before adding.
+- Make the tool **re-runnable**: skip a band already covered by a box. That
+  guard is also what correctly ruled out F51.1, which already had its body.
+
+**Sanity-check by structure, not just by eye.** F38 carries the same jurat
+three times; pages 7 and 8 had five fields each and page 5 had four. That count
+is what proved the missing "on ____" date box, and it beats guessing from the
+look of a page. Where a form repeats a block, diff the copies.
+
+## 6b. Repairing the printed page itself
+
+Sometimes the overlay is faithful and the *background* is wrong, because pdf.js
+laid the XFA out without Adobe's engine. Two shapes of it were fixed here: F38
+p8's place line collapsed to a 6pt slot where p7 has 176pt, and F8 p5 set one
+line of a two-line label a full leading adrift so it printed across its
+neighbour. Both were repaired against the copy that came out right.
+
+- **Redaction takes every character its rectangle touches.** A line overlapping
+  its neighbour touches it by definition, so clearing just the overlap leaves
+  the rest of the neighbour behind, and re-laying it then prints it twice.
+  Clear each affected span *whole* and put them all back.
+- **Pick the font by measurement, not by name.** F8 p5 carries two subsets of
+  Liberation Sans that both report as `LiberationSans`, and a subset only holds
+  the glyphs its own text used. Choosing by name re-set a row in the wrong one
+  and it came out in a visibly different typeface. Choose the embedded face
+  whose `text_length` reproduces the span's own printed width, and refuse to
+  write if none does — that guard caught a bad write here.
+- Some flattened pages use a **Type 3 font** that cannot be typeset with. At
+  small sizes a base font carries a punctuation mark (F38's comma); for a whole
+  sentence it would not, so check.
+- Take the correction from the page's own measurements: F8's leading came from
+  two correctly-set labels on the same page (both 12pt), not from a guess.
+
+## 6c. Rasterised backgrounds
+
+Roughly half the Ontario templates are scanned images — no text layer, no
+vector art — so every detector in §2–§5 finds nothing and silently does
+nothing. **Measure printed ink instead**: render the band and find the rows
+with dark pixels. Form 8 p5's missing writing area was placed that way — ink
+stops at y 127.2 and resumes at 164.5, a clear 37.3pt — with the column copied
+from the two detail boxes the page already puts under a tick.
 
 ## 7. Testing checklist for every new form batch
 
@@ -196,19 +330,38 @@ your measurement didn't think to check:
    other row's height.
 6. **Signature audit**: confirm no box sits on a detected "Signature" line;
    confirm "Date of signature" and printed-name fields still have boxes.
-7. **Non-geometry diff** (only relevant when editing existing maps, e.g.
+   Known exception in §5 — check a flag before acting on it.
+7. **Duplicate and overlap scan**: no two controls may share an x/y (one of
+   them is unclickable), no two field boxes may overlap by more than a
+   quarter, no field may sit outside its page, and no id may be used twice.
+   All four have been real on this project — 6 shared positions across BC,
+   an exact duplicate record on Form 17E, four fields parked at x≈9832 on
+   Form 13A, and the same id used by two records.
+8. **Non-geometry diff** (only relevant when editing existing maps, e.g.
    Ontario): every `bind`, `calculationType`, `linkedToId`, etc. must be
-   byte-identical before/after. Any change here is a bug.
-8. **Actual visual check** — render representative pages (especially ones
+   byte-identical before/after. Any change here is a bug. Assert it in the
+   tool rather than checking by eye — and note that a tool guarding this
+   *cannot* be the one that adds or removes a field, since the field count
+   changing is exactly what it refuses.
+9. **Idempotence**: run the tool twice. The second run must report no change.
+   Two passes that each correct the other oscillate happily and look fine on
+   a single run — count start-to-end, not per step.
+10. **Actual visual check** — render representative pages (especially ones
    flagged by 1-6, plus a random sample of "normal" pages) and look for:
    description/text boxes that are one line tall when the printed cell is
    clearly multi-line; boxes overlapping printed labels/words; checkboxes
    that read as ovals/rectangles instead of matching the printed shape;
    stray extra boxes; missing boxes on pages that have visible blank
    lines/cells.
-9. Only after the user confirms a render looks right: apply the same rule to
-   the rest of the batch, and only then update this guide / commit the rule
-   as "settled."
+11. Only after the user confirms a render looks right: apply the same rule to
+    the rest of the batch, and only then update this guide / commit the rule
+    as "settled."
+
+**A render of the overlay is not a render of the app.** These QA renders draw
+the stored box; the viewer draws its own control inside it. A conclusion that
+depends on how the control *looks* has to be checked in the app, not here — a
+render was used once in this project to argue a control was too fat, and the
+control was the right size all along.
 
 ## 8. Known-fragile spots to double check on every new form
 
@@ -229,3 +382,22 @@ don't assume a general rule already covers them:
 - Any page whose only content is a header/footer with 0 fields — check
   whether that's actually correct (a genuinely blank/instructions-only page)
   or a sign that XFA-generated content didn't survive the flatten.
+- Options stacked close together (~14pt) where a search area reaches the next
+  option's mark — the union of two marks lands the control in the gap between
+  them, which looks like a small offset rather than a wrong mark.
+- A narrow box beside an option is **not** automatically a tick. F38 p7 has two
+  14.4pt boxes that look exactly like tick squares; the government's XFA shows
+  they sit in a static `<draw>` and are `[#]` paragraph-number slots. When in
+  doubt, read the `<template>` stream out of the source PDF and look at whether
+  the thing is a `<field>` or a `<draw>`. That check has overturned a
+  confident-looking reading of the geometry more than once.
+- A form that carries the same block more than once (F38's three jurats, F3 vs
+  F5 as claim and counterclaim) — a fault in one copy is usually in the others,
+  and the good copy is the measurement to repair against. F5 p2 had the same
+  missing writing area as F3 p3 and was only found by looking.
+- Two `type` values for the same kind of table cell. XFA tags some cells
+  `TextField` and their neighbours `TextArea`, and the app draws them
+  differently, so a table row ends up with one cell that does not match the
+  rest (F45 p3, F5 p9). Normalise per table, to whichever the majority already
+  is — not globally, since single-line cells like dates and hour counts are
+  legitimately `TextField`.
