@@ -4278,7 +4278,7 @@ console.log('getProvinceOfParty1()',getProvinceOfParty2());
     screen1Data.childrenInfo.forEach((e) => {
       if (
         momentFunction.differenceBetweenNowAndThen(e.dateOfBirth) >= 18 &&
-        e.custodyArrangement === screen1.background.party1FirstName
+        e.custodyArrangement === "Party 1"
       ) {
         isChildGreaterThan18WithParty1++;
       }
@@ -4287,7 +4287,7 @@ console.log('getProvinceOfParty1()',getProvinceOfParty2());
     screen1Data.childrenInfo.forEach((e) => {
       if (
         momentFunction.differenceBetweenNowAndThen(e.dateOfBirth) >= 18 &&
-        e.custodyArrangement === screen1.background.party2FirstName
+        e.custodyArrangement === "Party 2"
       ) {
         isChildGreaterThan18WithParty2++;
       }
