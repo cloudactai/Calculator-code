@@ -77,63 +77,6 @@
    "bind": "applicant.fullLegalName"
   },
   {
-   "id": 1728050726122,
-   "type": "TextField",
-   "x": 76,
-   "y": 156.79,
-   "width": 346,
-   "height": 20,
-   "value": "",
-   "fontSize": 10,
-   "color": [
-    0,
-    0,
-    0
-   ],
-   "background": "none",
-   "border": "none",
-   "page": 1,
-   "bind": "applicant.address"
-  },
-  {
-   "id": 1728050791559,
-   "type": "TextField",
-   "x": 92,
-   "y": 170.95,
-   "width": 323,
-   "height": 20,
-   "value": "",
-   "fontSize": 10,
-   "color": [
-    0,
-    0,
-    0
-   ],
-   "background": "none",
-   "border": "none",
-   "page": 1,
-   "bind": "applicant.phoneAndFax"
-  },
-  {
-   "id": 1728050844479,
-   "type": "TextField",
-   "x": 66,
-   "y": 186.31,
-   "width": 362,
-   "height": 20,
-   "value": "",
-   "fontSize": 10,
-   "color": [
-    0,
-    0,
-    0
-   ],
-   "background": "none",
-   "border": "none",
-   "page": 1,
-   "bind": "applicant.email"
-  },
-  {
    "id": 1728050895420,
    "type": "TextField",
    "x": 390,
@@ -151,6 +94,25 @@
    "border": "none",
    "page": 1,
    "bind": "applicantsLawyer.fullLegalName"
+  },
+  {
+   "id": 1728050726122,
+   "type": "TextField",
+   "x": 76,
+   "y": 156.79,
+   "width": 346,
+   "height": 20,
+   "value": "",
+   "fontSize": 10,
+   "color": [
+    0,
+    0,
+    0
+   ],
+   "background": "none",
+   "border": "none",
+   "page": 1,
+   "bind": "applicant.address"
   },
   {
    "id": 1728050975712,
@@ -172,6 +134,25 @@
    "bind": "applicantsLawyer.address"
   },
   {
+   "id": 1728050791559,
+   "type": "TextField",
+   "x": 92,
+   "y": 170.95,
+   "width": 323,
+   "height": 20,
+   "value": "",
+   "fontSize": 10,
+   "color": [
+    0,
+    0,
+    0
+   ],
+   "background": "none",
+   "border": "none",
+   "page": 1,
+   "bind": "applicant.phoneAndFax"
+  },
+  {
    "id": 1728051004901,
    "type": "TextField",
    "x": 377,
@@ -189,6 +170,25 @@
    "border": "none",
    "page": 1,
    "bind": "applicantsLawyer.phoneAndFax"
+  },
+  {
+   "id": 1728050844479,
+   "type": "TextField",
+   "x": 66,
+   "y": 186.31,
+   "width": 362,
+   "height": 20,
+   "value": "",
+   "fontSize": 10,
+   "color": [
+    0,
+    0,
+    0
+   ],
+   "background": "none",
+   "border": "none",
+   "page": 1,
+   "bind": "applicant.email"
   },
   {
    "id": 1728051053398,
@@ -229,63 +229,6 @@
    "bind": "respondent.fullLegalName"
   },
   {
-   "id": 1728051111436,
-   "type": "TextField",
-   "x": 76,
-   "y": 231.19,
-   "width": 347,
-   "height": 20,
-   "value": "",
-   "fontSize": 10,
-   "color": [
-    0,
-    0,
-    0
-   ],
-   "background": "none",
-   "border": "none",
-   "page": 1,
-   "bind": "respondent.address"
-  },
-  {
-   "id": 1728051140782,
-   "type": "TextField",
-   "x": 93,
-   "y": 245.59,
-   "width": 322,
-   "height": 20,
-   "value": "",
-   "fontSize": 10,
-   "color": [
-    0,
-    0,
-    0
-   ],
-   "background": "none",
-   "border": "none",
-   "page": 1,
-   "bind": "respondent.phoneAndFax"
-  },
-  {
-   "id": 1728051154452,
-   "type": "TextField",
-   "x": 66,
-   "y": 260.47,
-   "width": 362,
-   "height": 20,
-   "value": "",
-   "fontSize": 10,
-   "color": [
-    0,
-    0,
-    0
-   ],
-   "background": "none",
-   "border": "none",
-   "page": 1,
-   "bind": "respondent.email"
-  },
-  {
    "id": 1728051174086,
    "type": "TextField",
    "x": 390,
@@ -324,6 +267,44 @@
    "bind": "respondentsLawyer.address"
   },
   {
+   "id": 1728051111436,
+   "type": "TextField",
+   "x": 76,
+   "y": 231.19,
+   "width": 347,
+   "height": 20,
+   "value": "",
+   "fontSize": 10,
+   "color": [
+    0,
+    0,
+    0
+   ],
+   "background": "none",
+   "border": "none",
+   "page": 1,
+   "bind": "respondent.address"
+  },
+  {
+   "id": 1728051140782,
+   "type": "TextField",
+   "x": 93,
+   "y": 245.59,
+   "width": 322,
+   "height": 20,
+   "value": "",
+   "fontSize": 10,
+   "color": [
+    0,
+    0,
+    0
+   ],
+   "background": "none",
+   "border": "none",
+   "page": 1,
+   "bind": "respondent.phoneAndFax"
+  },
+  {
    "id": 1728051245156,
    "type": "TextField",
    "x": 378,
@@ -341,6 +322,25 @@
    "border": "none",
    "page": 1,
    "bind": "respondentsLawyer.phoneAndFax"
+  },
+  {
+   "id": 1728051154452,
+   "type": "TextField",
+   "x": 66,
+   "y": 260.47,
+   "width": 362,
+   "height": 20,
+   "value": "",
+   "fontSize": 10,
+   "color": [
+    0,
+    0,
+    0
+   ],
+   "background": "none",
+   "border": "none",
+   "page": 1,
+   "bind": "respondent.email"
   },
   {
    "id": 1728051269345,
@@ -451,6 +451,24 @@
    "shape": "square"
   },
   {
+   "id": 1730453067201,
+   "type": "TextArea",
+   "x": 93.0,
+   "y": 616.0,
+   "width": 739.5,
+   "height": 24.0,
+   "value": "",
+   "fontSize": 10,
+   "color": [
+    0,
+    0,
+    0
+   ],
+   "background": "none",
+   "border": "none",
+   "page": 1
+  },
+  {
    "id": 25,
    "type": "CheckBox",
    "x": 75.38,
@@ -468,6 +486,24 @@
    "shape": "square"
   },
   {
+   "id": 1730453067202,
+   "type": "TextArea",
+   "x": 93.0,
+   "y": 647.0,
+   "width": 739.5,
+   "height": 24.0,
+   "value": "",
+   "fontSize": 10,
+   "color": [
+    0,
+    0,
+    0
+   ],
+   "background": "none",
+   "border": "none",
+   "page": 1
+  },
+  {
    "id": 26,
    "type": "CheckBox",
    "x": 75.38,
@@ -483,6 +519,24 @@
    ],
    "page": 1,
    "shape": "square"
+  },
+  {
+   "id": 1730453067203,
+   "type": "TextArea",
+   "x": 93.0,
+   "y": 677.0,
+   "width": 739.5,
+   "height": 24.0,
+   "value": "",
+   "fontSize": 10,
+   "color": [
+    0,
+    0,
+    0
+   ],
+   "background": "none",
+   "border": "none",
+   "page": 1
   },
   {
    "id": 1728052073238,
@@ -521,6 +575,23 @@
    "shape": "square"
   },
   {
+   "id": 31,
+   "type": "CheckBox",
+   "x": 434.74,
+   "y": 82.82,
+   "width": 14.31,
+   "height": 14.31,
+   "value": "",
+   "fontSize": 10,
+   "color": [
+    0,
+    0,
+    0
+   ],
+   "page": 2,
+   "shape": "square"
+  },
+  {
    "id": 29,
    "type": "CheckBox",
    "x": 191.92,
@@ -543,23 +614,6 @@
    "x": 334.74,
    "y": 82.9,
    "width": 14.04,
-   "height": 14.31,
-   "value": "",
-   "fontSize": 10,
-   "color": [
-    0,
-    0,
-    0
-   ],
-   "page": 2,
-   "shape": "square"
-  },
-  {
-   "id": 31,
-   "type": "CheckBox",
-   "x": 434.74,
-   "y": 82.82,
-   "width": 14.31,
    "height": 14.31,
    "value": "",
    "fontSize": 10,
@@ -623,23 +677,6 @@
    "shape": "square"
   },
   {
-   "id": 35,
-   "type": "CheckBox",
-   "x": 76.02,
-   "y": 177.82,
-   "width": 14.31,
-   "height": 13.77,
-   "value": "",
-   "fontSize": 10,
-   "color": [
-    0,
-    0,
-    0
-   ],
-   "page": 2,
-   "shape": "square"
-  },
-  {
    "id": 1728052459982,
    "type": "Number",
    "x": 303,
@@ -658,6 +695,23 @@
    "page": 2
   },
   {
+   "id": 35,
+   "type": "CheckBox",
+   "x": 76.02,
+   "y": 177.82,
+   "width": 14.31,
+   "height": 13.77,
+   "value": "",
+   "fontSize": 10,
+   "color": [
+    0,
+    0,
+    0
+   ],
+   "page": 2,
+   "shape": "square"
+  },
+  {
    "id": 37,
    "type": "CheckBox",
    "x": 76.02,
@@ -673,6 +727,286 @@
    ],
    "page": 2,
    "shape": "square"
+  },
+  {
+   "id": "client-employmentIncome",
+   "type": "Number",
+   "x": 471,
+   "y": 429.67,
+   "width": 135,
+   "height": 20,
+   "value": "",
+   "fontSize": 10,
+   "color": [
+    0,
+    0,
+    0
+   ],
+   "background": "none",
+   "border": "none",
+   "page": 2,
+   "bind": "income.client.employmentIncome",
+   "source": "income.client"
+  },
+  {
+   "id": "client-commissionTipsBonuses",
+   "type": "Number",
+   "x": 471,
+   "y": 450.31,
+   "width": 135,
+   "height": 20,
+   "value": "",
+   "fontSize": 10,
+   "color": [
+    0,
+    0,
+    0
+   ],
+   "background": "none",
+   "border": "none",
+   "page": 2,
+   "bind": "income.client.commissionTipsBonuses",
+   "source": "income.client"
+  },
+  {
+   "id": "client-selfEmploymentIncome",
+   "type": "Number",
+   "x": 471,
+   "y": 472.39,
+   "width": 135,
+   "height": 20,
+   "value": "",
+   "fontSize": 10,
+   "color": [
+    0,
+    0,
+    0
+   ],
+   "background": "none",
+   "border": "none",
+   "page": 2,
+   "bind": "income.client.selfEmploymentIncome",
+   "source": "income.client"
+  },
+  {
+   "id": "client-employmentInsuranceBenefits",
+   "type": "Number",
+   "x": 471,
+   "y": 494.23,
+   "width": 135,
+   "height": 20,
+   "value": "",
+   "fontSize": 10,
+   "color": [
+    0,
+    0,
+    0
+   ],
+   "background": "none",
+   "border": "none",
+   "page": 2,
+   "bind": "income.client.employmentInsuranceBenefits",
+   "source": "income.client"
+  },
+  {
+   "id": "client-workersCompensationBenefits",
+   "type": "Number",
+   "x": 471,
+   "y": 515.83,
+   "width": 135,
+   "height": 20,
+   "value": "",
+   "fontSize": 10,
+   "color": [
+    0,
+    0,
+    0
+   ],
+   "background": "none",
+   "border": "none",
+   "page": 2,
+   "bind": "income.client.workersCompensationBenefits",
+   "source": "income.client"
+  },
+  {
+   "id": "client-socialAssistanceIncome",
+   "type": "Number",
+   "x": 471,
+   "y": 537.67,
+   "width": 135,
+   "height": 20,
+   "value": "",
+   "fontSize": 10,
+   "color": [
+    0,
+    0,
+    0
+   ],
+   "background": "none",
+   "border": "none",
+   "page": 2,
+   "bind": "income.client.socialAssistanceIncome",
+   "source": "income.client"
+  },
+  {
+   "id": "client-interestInvestmentIncome",
+   "type": "Number",
+   "x": 471,
+   "y": 559.51,
+   "width": 135,
+   "height": 20,
+   "value": "",
+   "fontSize": 10,
+   "color": [
+    0,
+    0,
+    0
+   ],
+   "background": "none",
+   "border": "none",
+   "page": 2,
+   "bind": "income.client.interestInvestmentIncome",
+   "source": "income.client"
+  },
+  {
+   "id": "client-pensionIncome",
+   "type": "Number",
+   "x": 471,
+   "y": 581.59,
+   "width": 135,
+   "height": 20,
+   "value": "",
+   "fontSize": 10,
+   "color": [
+    0,
+    0,
+    0
+   ],
+   "background": "none",
+   "border": "none",
+   "page": 2,
+   "bind": "income.client.pensionIncome",
+   "source": "income.client"
+  },
+  {
+   "id": "client-spousalSupport",
+   "type": "Number",
+   "x": 471,
+   "y": 603.19,
+   "width": 135,
+   "height": 20,
+   "value": "",
+   "fontSize": 10,
+   "color": [
+    0,
+    0,
+    0
+   ],
+   "background": "none",
+   "border": "none",
+   "page": 2,
+   "bind": "income.client.spousalSupport",
+   "source": "income.client"
+  },
+  {
+   "id": "client-childTaxBenefits",
+   "type": "Number",
+   "x": 471,
+   "y": 624.79,
+   "width": 135,
+   "height": 20,
+   "value": "",
+   "fontSize": 10,
+   "color": [
+    0,
+    0,
+    0
+   ],
+   "background": "none",
+   "border": "none",
+   "page": 2,
+   "bind": "income.client.childTaxBenefits",
+   "source": "income.client"
+  },
+  {
+   "id": "client-otherIncome",
+   "type": "Number",
+   "x": 471,
+   "y": 648.31,
+   "width": 135,
+   "height": 20,
+   "value": "",
+   "fontSize": 10,
+   "color": [
+    0,
+    0,
+    0
+   ],
+   "background": "none",
+   "border": "none",
+   "page": 2,
+   "bind": "income.client.otherIncome",
+   "source": "income.client"
+  },
+  {
+   "id": "calc-1730412168772",
+   "type": "Number",
+   "x": 471,
+   "y": 667.27,
+   "width": 135.0,
+   "height": 20,
+   "value": "",
+   "fontSize": 10,
+   "color": [
+    0,
+    0,
+    0
+   ],
+   "background": "none",
+   "border": "none",
+   "page": 2,
+   "isCalculated": true,
+   "calculationType": "sum",
+   "sourceFields": [
+    "client-employmentIncome",
+    "client-commissionTipsBonuses",
+    "client-selfEmploymentIncome",
+    "client-employmentInsuranceBenefits",
+    "client-workersCompensationBenefits",
+    "client-socialAssistanceIncome",
+    "client-interestInvestmentIncome",
+    "client-pensionIncome",
+    "client-spousalSupport",
+    "client-childTaxBenefits",
+    "client-otherIncome"
+   ],
+   "calculationName": "incomeSourceTotalField"
+  },
+  {
+   "id": "calc-1730412424821",
+   "type": "Number",
+   "x": 471,
+   "y": 682.39,
+   "width": 135.0,
+   "height": 20,
+   "value": "",
+   "fontSize": 10,
+   "color": [
+    0,
+    0,
+    0
+   ],
+   "background": "none",
+   "border": "none",
+   "page": 2,
+   "isCalculated": true,
+   "calculationType": "multiply",
+   "sourceFields": [
+    "calc-1730412168772"
+   ],
+   "calculationValue": "12",
+   "calculationName": "incomeSourceAnnual",
+   "isDerived": true
   },
   {
    "id": 1728053726476,
@@ -910,6 +1244,638 @@
    "page": 3
   },
   {
+   "id": "client-automaticDeductions-cppContributions-0",
+   "type": "Number",
+   "x": 225,
+   "y": 301.03,
+   "width": 112,
+   "height": 20,
+   "value": "",
+   "fontSize": 10,
+   "color": [
+    0,
+    0,
+    0
+   ],
+   "background": "none",
+   "border": "none",
+   "page": 3,
+   "bind": "expenses.client.automaticDeductions.cppContributions",
+   "source": "expenses"
+  },
+  {
+   "id": "client-transportation-publicTransit-0",
+   "type": "Number",
+   "x": 508,
+   "y": 301.03,
+   "width": 110,
+   "height": 20,
+   "value": "",
+   "fontSize": 10,
+   "color": [
+    0,
+    0,
+    0
+   ],
+   "background": "none",
+   "border": "none",
+   "page": 3,
+   "bind": "expenses.client.transportation.publicTransit",
+   "source": "expenses.client"
+  },
+  {
+   "id": "client-automaticDeductions-eiPremiums-1",
+   "type": "Number",
+   "x": 225,
+   "y": 325.03,
+   "width": 111,
+   "height": 20,
+   "value": "",
+   "fontSize": 10,
+   "color": [
+    0,
+    0,
+    0
+   ],
+   "background": "none",
+   "border": "none",
+   "page": 3,
+   "bind": "expenses.client.automaticDeductions.eiPremiums",
+   "source": "expenses"
+  },
+  {
+   "id": "client-transportation-carPayments-1",
+   "type": "Number",
+   "x": 508,
+   "y": 325.03,
+   "width": 110,
+   "height": 20,
+   "value": "",
+   "fontSize": 10,
+   "color": [
+    0,
+    0,
+    0
+   ],
+   "background": "none",
+   "border": "none",
+   "page": 3,
+   "bind": "expenses.client.transportation.carPayments",
+   "source": "expenses.client"
+  },
+  {
+   "id": "client-automaticDeductions-incomeTaxes-2",
+   "type": "Number",
+   "x": 225,
+   "y": 348.07,
+   "width": 110,
+   "height": 20,
+   "value": "",
+   "fontSize": 10,
+   "color": [
+    0,
+    0,
+    0
+   ],
+   "background": "none",
+   "border": "none",
+   "page": 3,
+   "bind": "expenses.client.automaticDeductions.incomeTaxes",
+   "source": "expenses"
+  },
+  {
+   "id": "client-transportation-gasAndOil-2",
+   "type": "Number",
+   "x": 508,
+   "y": 348.07,
+   "width": 110,
+   "height": 20,
+   "value": "",
+   "fontSize": 10,
+   "color": [
+    0,
+    0,
+    0
+   ],
+   "background": "none",
+   "border": "none",
+   "page": 3,
+   "bind": "expenses.client.transportation.gasAndOil",
+   "source": "expenses.client"
+  },
+  {
+   "id": "client-automaticDeductions-employeePensionContributions-3",
+   "type": "Number",
+   "x": 224,
+   "y": 372.31,
+   "width": 111,
+   "height": 20,
+   "value": "",
+   "fontSize": 10,
+   "color": [
+    0,
+    0,
+    0
+   ],
+   "background": "none",
+   "border": "none",
+   "page": 3,
+   "bind": "expenses.client.automaticDeductions.employeePensionContributions",
+   "source": "expenses"
+  },
+  {
+   "id": "client-transportation-insurance-3",
+   "type": "Number",
+   "x": 507,
+   "y": 372.31,
+   "width": 110,
+   "height": 20,
+   "value": "",
+   "fontSize": 10,
+   "color": [
+    0,
+    0,
+    0
+   ],
+   "background": "none",
+   "border": "none",
+   "page": 3,
+   "bind": "expenses.client.transportation.insurance",
+   "source": "expenses.client"
+  },
+  {
+   "id": "client-automaticDeductions-unionDues-4",
+   "type": "Number",
+   "x": 225,
+   "y": 396.55,
+   "width": 110,
+   "height": 20,
+   "value": "",
+   "fontSize": 10,
+   "color": [
+    0,
+    0,
+    0
+   ],
+   "background": "none",
+   "border": "none",
+   "page": 3,
+   "bind": "expenses.client.automaticDeductions.unionDues",
+   "source": "expenses"
+  },
+  {
+   "id": "client-transportation-repairsAndMaintenance-4",
+   "type": "Number",
+   "x": 506,
+   "y": 396.55,
+   "width": 110,
+   "height": 20,
+   "value": "",
+   "fontSize": 10,
+   "color": [
+    0,
+    0,
+    0
+   ],
+   "background": "none",
+   "border": "none",
+   "page": 3,
+   "bind": "expenses.client.transportation.repairsAndMaintenance",
+   "source": "expenses.client"
+  },
+  {
+   "id": "client-transportation-parking-5",
+   "type": "Number",
+   "x": 507,
+   "y": 419.83,
+   "width": 110,
+   "height": 20,
+   "value": "",
+   "fontSize": 10,
+   "color": [
+    0,
+    0,
+    0
+   ],
+   "background": "none",
+   "border": "none",
+   "page": 3,
+   "bind": "expenses.client.transportation.parking",
+   "source": "expenses.client"
+  },
+  {
+   "id": "calc-1730415553997",
+   "type": "Number",
+   "x": 225.33333333333334,
+   "y": 420.07,
+   "width": 110.0,
+   "height": 20,
+   "value": "",
+   "fontSize": 10,
+   "color": [
+    0,
+    0,
+    0
+   ],
+   "background": "none",
+   "border": "none",
+   "page": 3,
+   "isCalculated": true,
+   "calculationType": "sum",
+   "sourceFields": [
+    "client-automaticDeductions-cppContributions-0",
+    "client-automaticDeductions-eiPremiums-1",
+    "client-automaticDeductions-incomeTaxes-2",
+    "client-automaticDeductions-employeePensionContributions-3",
+    "client-automaticDeductions-unionDues-4"
+   ],
+   "calculationName": "subTotalAutomaticDeductions"
+  },
+  {
+   "id": "calc-1730415590066",
+   "type": "Number",
+   "x": 508,
+   "y": 440,
+   "width": 110.0,
+   "height": 20,
+   "value": "",
+   "fontSize": 10,
+   "color": [
+    0,
+    0,
+    0
+   ],
+   "background": "none",
+   "border": "none",
+   "page": 3,
+   "isCalculated": true,
+   "calculationType": "sum",
+   "sourceFields": [
+    "client-transportation-publicTransit-0",
+    "client-transportation-carPayments-1",
+    "client-transportation-gasAndOil-2",
+    "client-transportation-insurance-3",
+    "client-transportation-repairsAndMaintenance-4",
+    "client-transportation-parking-5"
+   ],
+   "calculationName": "subTotalTransport"
+  },
+  {
+   "id": "client-housing-rentOrMortgage-0",
+   "type": "Number",
+   "x": 225,
+   "y": 469.27,
+   "width": 110,
+   "height": 20,
+   "value": "",
+   "fontSize": 10,
+   "color": [
+    0,
+    0,
+    0
+   ],
+   "background": "none",
+   "border": "none",
+   "page": 3,
+   "bind": "expenses.client.housing.rentOrMortgage",
+   "source": "expenses.client"
+  },
+  {
+   "id": "client-housing-propertyTaxes-1",
+   "type": "Number",
+   "x": 226,
+   "y": 492.79,
+   "width": 110,
+   "height": 20,
+   "value": "",
+   "fontSize": 10,
+   "color": [
+    0,
+    0,
+    0
+   ],
+   "background": "none",
+   "border": "none",
+   "page": 3,
+   "bind": "expenses.client.housing.propertyTaxes",
+   "source": "expenses.client"
+  },
+  {
+   "id": "client-health-eyecare-3",
+   "type": "Number",
+   "x": 508,
+   "y": 492.79,
+   "width": 110,
+   "height": 20,
+   "value": "",
+   "fontSize": 10,
+   "color": [
+    0,
+    0,
+    0
+   ],
+   "background": "none",
+   "border": "none",
+   "page": 3,
+   "bind": "expenses.client.health.eyecare",
+   "source": "expenses.client"
+  },
+  {
+   "id": "client-housing-propertyInsurance-2",
+   "type": "Number",
+   "x": 226,
+   "y": 516.55,
+   "width": 110,
+   "height": 20,
+   "value": "",
+   "fontSize": 10,
+   "color": [
+    0,
+    0,
+    0
+   ],
+   "background": "none",
+   "border": "none",
+   "page": 3,
+   "bind": "expenses.client.housing.propertyInsurance",
+   "source": "expenses.client"
+  },
+  {
+   "id": "client-health-medicine-2",
+   "type": "Number",
+   "x": 508,
+   "y": 516.55,
+   "width": 110,
+   "height": 20,
+   "value": "",
+   "fontSize": 10,
+   "color": [
+    0,
+    0,
+    0
+   ],
+   "background": "none",
+   "border": "none",
+   "page": 3,
+   "bind": "expenses.client.health.medicine",
+   "source": "expenses.client"
+  },
+  {
+   "id": "client-housing-condominiumFees-3",
+   "type": "Number",
+   "x": 227,
+   "y": 540.55,
+   "width": 110,
+   "height": 20,
+   "value": "",
+   "fontSize": 10,
+   "color": [
+    0,
+    0,
+    0
+   ],
+   "background": "none",
+   "border": "none",
+   "page": 3,
+   "bind": "expenses.client.housing.condominiumFees",
+   "source": "expenses.client"
+  },
+  {
+   "id": "client-health-dental-1",
+   "type": "Number",
+   "x": 508,
+   "y": 540.55,
+   "width": 110,
+   "height": 20,
+   "value": "",
+   "fontSize": 10,
+   "color": [
+    0,
+    0,
+    0
+   ],
+   "background": "none",
+   "border": "none",
+   "page": 3,
+   "bind": "expenses.client.health.dental",
+   "source": "expenses.client"
+  },
+  {
+   "id": "client-housing-repairsAndMaintenance-4",
+   "type": "Number",
+   "x": 226,
+   "y": 564.07,
+   "width": 110,
+   "height": 20,
+   "value": "",
+   "fontSize": 10,
+   "color": [
+    0,
+    0,
+    0
+   ],
+   "background": "none",
+   "border": "none",
+   "page": 3,
+   "bind": "expenses.client.housing.repairsAndMaintenance",
+   "source": "expenses.client"
+  },
+  {
+   "id": "client-health-insurance-0",
+   "type": "Number",
+   "x": 508,
+   "y": 564.07,
+   "width": 110,
+   "height": 20,
+   "value": "",
+   "fontSize": 10,
+   "color": [
+    0,
+    0,
+    0
+   ],
+   "background": "none",
+   "border": "none",
+   "page": 3,
+   "bind": "expenses.client.health.insurance",
+   "source": "expenses.client"
+  },
+  {
+   "id": "calc-1730415641678",
+   "type": "Number",
+   "x": 226.66666666666666,
+   "y": 588.31,
+   "width": 110.0,
+   "height": 20,
+   "value": "",
+   "fontSize": 10,
+   "color": [
+    0,
+    0,
+    0
+   ],
+   "background": "none",
+   "border": "none",
+   "page": 3,
+   "isCalculated": true,
+   "calculationType": "sum",
+   "sourceFields": [
+    "client-housing-repairsAndMaintenance-4",
+    "client-housing-condominiumFees-3",
+    "client-housing-propertyInsurance-2",
+    "client-housing-propertyTaxes-1",
+    "client-housing-rentOrMortgage-0"
+   ],
+   "calculationName": "subTotalHousing"
+  },
+  {
+   "id": "calc-1730415674334",
+   "type": "Number",
+   "x": 508,
+   "y": 588.31,
+   "width": 110.0,
+   "height": 20,
+   "value": "",
+   "fontSize": 10,
+   "color": [
+    0,
+    0,
+    0
+   ],
+   "background": "none",
+   "border": "none",
+   "page": 3,
+   "isCalculated": true,
+   "calculationType": "sum",
+   "sourceFields": [
+    "client-health-eyecare-3",
+    "client-health-medicine-2",
+    "client-health-dental-1",
+    "client-health-insurance-0"
+   ],
+   "calculationName": "subTotalHealth"
+  },
+  {
+   "id": "client-utilities-water-0",
+   "type": "Number",
+   "x": 226,
+   "y": 634.63,
+   "width": 110,
+   "height": 20.0,
+   "value": "",
+   "fontSize": 10,
+   "color": [
+    0,
+    0,
+    0
+   ],
+   "background": "none",
+   "border": "none",
+   "page": 3,
+   "bind": "expenses.client.utilities.water",
+   "source": "expenses.client"
+  },
+  {
+   "id": "client-personal-clothing-0",
+   "type": "Number",
+   "x": 508,
+   "y": 634.63,
+   "width": 110,
+   "height": 20,
+   "value": "",
+   "fontSize": 10,
+   "color": [
+    0,
+    0,
+    0
+   ],
+   "background": "none",
+   "border": "none",
+   "page": 3,
+   "bind": "expenses.client.personal.clothing",
+   "source": "expenses.client"
+  },
+  {
+   "id": "client-utilities-heat-1",
+   "type": "Number",
+   "x": 225,
+   "y": 658.15,
+   "width": 110,
+   "height": 20,
+   "value": "",
+   "fontSize": 10,
+   "color": [
+    0,
+    0,
+    0
+   ],
+   "background": "none",
+   "border": "none",
+   "page": 3,
+   "bind": "expenses.client.utilities.heat",
+   "source": "expenses.client"
+  },
+  {
+   "id": "client-personal-haircare-1",
+   "type": "Number",
+   "x": 508,
+   "y": 658.15,
+   "width": 110,
+   "height": 20,
+   "value": "",
+   "fontSize": 10,
+   "color": [
+    0,
+    0,
+    0
+   ],
+   "background": "none",
+   "border": "none",
+   "page": 3,
+   "bind": "expenses.client.personal.haircare",
+   "source": "expenses.client"
+  },
+  {
+   "id": "client-utilities-electricity-2",
+   "type": "Number",
+   "x": 224,
+   "y": 673.99,
+   "width": 110,
+   "height": 20,
+   "value": "",
+   "fontSize": 10,
+   "color": [
+    0,
+    0,
+    0
+   ],
+   "background": "none",
+   "border": "none",
+   "page": 3,
+   "bind": "expenses.client.utilities.electricity",
+   "source": "expenses.client"
+  },
+  {
+   "id": "client-personal-alcohol-2",
+   "type": "Number",
+   "x": 508,
+   "y": 673.99,
+   "width": 110,
+   "height": 20,
+   "value": "",
+   "fontSize": 10,
+   "color": [
+    0,
+    0,
+    0
+   ],
+   "background": "none",
+   "border": "none",
+   "page": 3,
+   "bind": "expenses.client.personal.alcohol",
+   "source": "expenses.client"
+  },
+  {
    "id": 1728057630146,
    "type": "TextField",
    "x": 445,
@@ -929,49 +1895,11 @@
    "bind": "court_info.courtFileNumber"
   },
   {
-   "id": 1728069829287,
-   "type": "TextField",
-   "x": 445,
-   "y": 47.11,
-   "width": 209,
-   "height": 20,
-   "value": "",
-   "fontSize": 10,
-   "color": [
-    0,
-    0,
-    0
-   ],
-   "background": "none",
-   "border": "none",
-   "page": 5,
-   "bind": "court_info.courtFileNumber"
-  },
-  {
-   "id": 1728073104897,
-   "type": "TextField",
-   "x": 455,
-   "y": 44.71,
-   "width": 193,
-   "height": 20,
-   "value": "",
-   "fontSize": 10,
-   "color": [
-    0,
-    0,
-    0
-   ],
-   "background": "none",
-   "border": "none",
-   "page": 6,
-   "bind": "court_info.courtFileNumber"
-  },
-  {
-   "id": "totalAssetsValue",
+   "id": "client-utilities-telephone-3",
    "type": "Number",
-   "x": 343,
-   "y": 432.07,
-   "width": 160.0,
+   "x": 226,
+   "y": 105.67,
+   "width": 110,
    "height": 20,
    "value": "",
    "fontSize": 10,
@@ -982,18 +1910,654 @@
    ],
    "background": "none",
    "border": "none",
-   "page": 6,
-   "linkedToId": "calc-1730452873765",
+   "page": 4,
+   "bind": "expenses.client.utilities.telephone",
+   "source": "expenses.client"
+  },
+  {
+   "id": "client-personal-education-3",
+   "type": "Number",
+   "x": 508,
+   "y": 105.67,
+   "width": 110,
+   "height": 20,
+   "value": "",
+   "fontSize": 10,
+   "color": [
+    0,
+    0,
+    0
+   ],
+   "background": "none",
+   "border": "none",
+   "page": 4,
+   "bind": "expenses.client.personal.education",
+   "source": "expenses.client"
+  },
+  {
+   "id": "client-utilities-cellPhone-4",
+   "type": "Number",
+   "x": 225,
+   "y": 128,
+   "width": 110,
+   "height": 20,
+   "value": "",
+   "fontSize": 10,
+   "color": [
+    0,
+    0,
+    0
+   ],
+   "background": "none",
+   "border": "none",
+   "page": 4,
+   "bind": "expenses.client.utilities.cellPhone",
+   "source": "expenses.client"
+  },
+  {
+   "id": "client-personal-entertainment-4",
+   "type": "Number",
+   "x": 508,
+   "y": 128,
+   "width": 110,
+   "height": 20,
+   "value": "",
+   "fontSize": 10,
+   "color": [
+    0,
+    0,
+    0
+   ],
+   "background": "none",
+   "border": "none",
+   "page": 4,
+   "bind": "expenses.client.personal.entertainment",
+   "source": "expenses.client"
+  },
+  {
+   "id": "client-utilities-cable-5",
+   "type": "Number",
+   "x": 225,
+   "y": 158.47,
+   "width": 110,
+   "height": 20,
+   "value": "",
+   "fontSize": 10,
+   "color": [
+    0,
+    0,
+    0
+   ],
+   "background": "none",
+   "border": "none",
+   "page": 4,
+   "bind": "expenses.client.utilities.cable",
+   "source": "expenses.client"
+  },
+  {
+   "id": "client-personal-gifts-5",
+   "type": "Number",
+   "x": 508,
+   "y": 158.47,
+   "width": 110,
+   "height": 20,
+   "value": "",
+   "fontSize": 10,
+   "color": [
+    0,
+    0,
+    0
+   ],
+   "background": "none",
+   "border": "none",
+   "page": 4,
+   "bind": "expenses.client.personal.gifts",
+   "source": "expenses.client"
+  },
+  {
+   "id": "client-utilities-internet-6",
+   "type": "Number",
+   "x": 226,
+   "y": 182.47,
+   "width": 110,
+   "height": 20,
+   "value": "",
+   "fontSize": 10,
+   "color": [
+    0,
+    0,
+    0
+   ],
+   "background": "none",
+   "border": "none",
+   "page": 4,
+   "bind": "expenses.client.utilities.internet",
+   "source": "expenses.client"
+  },
+  {
+   "id": "calc-1730415743499",
+   "type": "Number",
+   "x": 508.6666666666667,
+   "y": 182.47,
+   "width": 110.0,
+   "height": 20,
+   "value": "",
+   "fontSize": 10,
+   "color": [
+    0,
+    0,
+    0
+   ],
+   "background": "none",
+   "border": "none",
+   "page": 4,
    "isCalculated": true,
-   "calculationType": "linked",
+   "calculationType": "sum",
+   "sourceFields": [
+    "client-personal-clothing-0",
+    "client-personal-haircare-1",
+    "client-personal-alcohol-2",
+    "client-personal-education-3",
+    "client-personal-entertainment-4",
+    "client-personal-gifts-5"
+   ],
+   "calculationName": "subTotalPersonal"
+  },
+  {
+   "id": "calc-1730415713131",
+   "type": "Number",
+   "x": 226.66666666666666,
+   "y": 207.19,
+   "width": 110.0,
+   "height": 20,
+   "value": "",
+   "fontSize": 10,
+   "color": [
+    0,
+    0,
+    0
+   ],
+   "background": "none",
+   "border": "none",
+   "page": 4,
+   "isCalculated": true,
+   "calculationType": "sum",
+   "sourceFields": [
+    "client-utilities-water-0",
+    "client-utilities-heat-1",
+    "client-utilities-electricity-2",
+    "client-utilities-telephone-3",
+    "client-utilities-cellPhone-4",
+    "client-utilities-cable-5",
+    "client-utilities-internet-6"
+   ],
+   "calculationName": "subTotalUtilities"
+  },
+  {
+   "id": "client-other-lifeInsurance-0",
+   "type": "Number",
+   "x": 508,
+   "y": 231.91,
+   "width": 110,
+   "height": 20,
+   "value": "",
+   "fontSize": 10,
+   "color": [
+    0,
+    0,
+    0
+   ],
+   "background": "none",
+   "border": "none",
+   "page": 4,
+   "bind": "expenses.client.other.lifeInsurance",
+   "source": "expenses.client"
+  },
+  {
+   "id": "client-householdExpenses-groceries-0",
+   "type": "Number",
+   "x": 227,
+   "y": 250,
+   "width": 110,
+   "height": 20,
+   "value": "",
+   "fontSize": 10,
+   "color": [
+    0,
+    0,
+    0
+   ],
+   "background": "none",
+   "border": "none",
+   "page": 4,
+   "bind": "expenses.client.householdExpenses.groceries",
+   "source": "expenses.client"
+  },
+  {
+   "id": "client-other-rrsp-1",
+   "type": "Number",
+   "x": 508,
+   "y": 255.19,
+   "width": 110,
+   "height": 20,
+   "value": "",
+   "fontSize": 10,
+   "color": [
+    0,
+    0,
+    0
+   ],
+   "background": "none",
+   "border": "none",
+   "page": 4,
+   "bind": "expenses.client.other.rrsp",
+   "source": "expenses.client"
+  },
+  {
+   "id": "client-householdExpenses-householdSupplies-1",
+   "type": "Number",
+   "x": 227,
+   "y": 279.43,
+   "width": 110,
+   "height": 20,
+   "value": "",
+   "fontSize": 10,
+   "color": [
+    0,
+    0,
+    0
+   ],
+   "background": "none",
+   "border": "none",
+   "page": 4,
+   "bind": "expenses.client.householdExpenses.householdSupplies",
+   "source": "expenses.client"
+  },
+  {
+   "id": "client-other-vacations-2",
+   "type": "Number",
+   "x": 508,
+   "y": 279.43,
+   "width": 110,
+   "height": 20,
+   "value": "",
+   "fontSize": 10,
+   "color": [
+    0,
+    0,
+    0
+   ],
+   "background": "none",
+   "border": "none",
+   "page": 4,
+   "bind": "expenses.client.other.vacations",
+   "source": "expenses.client"
+  },
+  {
+   "id": "client-householdExpenses-mealsOutsideTheHome-2",
+   "type": "Number",
+   "x": 227,
+   "y": 302.71,
+   "width": 110,
+   "height": 20,
+   "value": "",
+   "fontSize": 10,
+   "color": [
+    0,
+    0,
+    0
+   ],
+   "background": "none",
+   "border": "none",
+   "page": 4,
+   "bind": "expenses.client.householdExpenses.mealsOutsideTheHome",
+   "source": "expenses.client"
+  },
+  {
+   "id": "client-other-school-3",
+   "type": "Number",
+   "x": 508,
+   "y": 302.71,
+   "width": 110,
+   "height": 20,
+   "value": "",
+   "fontSize": 10,
+   "color": [
+    0,
+    0,
+    0
+   ],
+   "background": "none",
+   "border": "none",
+   "page": 4,
+   "bind": "expenses.client.other.school",
+   "source": "expenses.client"
+  },
+  {
+   "id": "client-householdExpenses-petCare-3",
+   "type": "Number",
+   "x": 226,
+   "y": 326.71,
+   "width": 110,
+   "height": 20,
+   "value": "",
+   "fontSize": 10,
+   "color": [
+    0,
+    0,
+    0
+   ],
+   "background": "none",
+   "border": "none",
+   "page": 4,
+   "bind": "expenses.client.householdExpenses.petCare",
+   "source": "expenses.client"
+  },
+  {
+   "id": "client-other-clothingForChildren-4",
+   "type": "Number",
+   "x": 508,
+   "y": 326.71,
+   "width": 110,
+   "height": 20,
+   "value": "",
+   "fontSize": 10,
+   "color": [
+    0,
+    0,
+    0
+   ],
+   "background": "none",
+   "border": "none",
+   "page": 4,
+   "bind": "expenses.client.other.clothingForChildren",
+   "source": "expenses.client"
+  },
+  {
+   "id": "client-householdExpenses-laundryAndDryCleaning-4",
+   "type": "Number",
+   "x": 226,
+   "y": 348.07,
+   "width": 110,
+   "height": 20,
+   "value": "",
+   "fontSize": 10,
+   "color": [
+    0,
+    0,
+    0
+   ],
+   "background": "none",
+   "border": "none",
+   "page": 4,
+   "bind": "expenses.client.householdExpenses.laundryAndDryCleaning",
+   "source": "expenses.client"
+  },
+  {
+   "id": "client-other-childrenActivities-5",
+   "type": "Number",
+   "x": 507,
+   "y": 348.07,
+   "width": 110,
+   "height": 20,
+   "value": "",
+   "fontSize": 10,
+   "color": [
+    0,
+    0,
+    0
+   ],
+   "background": "none",
+   "border": "none",
+   "page": 4,
+   "bind": "expenses.client.other.childrenActivities",
+   "source": "expenses.client"
+  },
+  {
+   "id": "client-other-summerCamp-6",
+   "type": "Number",
+   "x": 507,
+   "y": 371.59,
+   "width": 110,
+   "height": 20,
+   "value": "",
+   "fontSize": 10,
+   "color": [
+    0,
+    0,
+    0
+   ],
+   "background": "none",
+   "border": "none",
+   "page": 4,
+   "bind": "expenses.client.other.summerCamp",
+   "source": "expenses.client"
+  },
+  {
+   "id": "calc-1730415771012",
+   "type": "Number",
+   "x": 226.66666666666666,
+   "y": 371.83,
+   "width": 110.0,
+   "height": 20,
+   "value": "",
+   "fontSize": 10,
+   "color": [
+    0,
+    0,
+    0
+   ],
+   "background": "none",
+   "border": "none",
+   "page": 4,
+   "isCalculated": true,
+   "calculationType": "sum",
+   "sourceFields": [
+    "client-householdExpenses-groceries-0",
+    "client-householdExpenses-householdSupplies-1",
+    "client-householdExpenses-mealsOutsideTheHome-2",
+    "client-householdExpenses-petCare-3",
+    "client-householdExpenses-laundryAndDryCleaning-4"
+   ],
+   "calculationName": "subTotalHouseHold"
+  },
+  {
+   "id": "client-other-debtPayments-7",
+   "type": "Number",
+   "x": 508,
+   "y": 396.55,
+   "width": 110,
+   "height": 20,
+   "value": "",
+   "fontSize": 10,
+   "color": [
+    0,
+    0,
+    0
+   ],
+   "background": "none",
+   "border": "none",
+   "page": 4,
+   "bind": "expenses.client.other.debtPayments",
+   "source": "expenses.client"
+  },
+  {
+   "id": "client-childcare-daycare-0",
+   "type": "Number",
+   "x": 226.33333333333334,
+   "y": 420.55,
+   "width": 110,
+   "height": 20,
+   "value": "",
+   "fontSize": 10,
+   "color": [
+    0,
+    0,
+    0
+   ],
+   "background": "none",
+   "border": "none",
+   "page": 4,
+   "bind": "expenses.client.childcare.daycare",
+   "source": "expenses.client"
+  },
+  {
+   "id": "client-other-supportPaidForOtherChildren-8",
+   "type": "Number",
+   "x": 508,
+   "y": 420.55,
+   "width": 110,
+   "height": 20,
+   "value": "",
+   "fontSize": 10,
+   "color": [
+    0,
+    0,
+    0
+   ],
+   "background": "none",
+   "border": "none",
+   "page": 4,
+   "bind": "expenses.client.other.supportPaidForOtherChildren",
+   "source": "expenses.client"
+  },
+  {
+   "id": "client-other-other-9",
+   "type": "Number",
+   "x": 507,
+   "y": 442,
+   "width": 110,
+   "height": 20,
+   "value": "",
+   "fontSize": 10,
+   "color": [
+    0,
+    0,
+    0
+   ],
+   "background": "none",
+   "border": "none",
+   "page": 4,
+   "bind": "expenses.client.other.other",
+   "source": "expenses.client"
+  },
+  {
+   "id": "client-childcare-babysitting-1",
+   "type": "Number",
+   "x": 226.33333333333334,
+   "y": 442.3333333333333,
+   "width": 110,
+   "height": 20,
+   "value": "",
+   "fontSize": 10,
+   "color": [
+    0,
+    0,
+    0
+   ],
+   "background": "none",
+   "border": "none",
+   "page": 4,
+   "bind": "expenses.client.childcare.babysitting",
+   "source": "expenses.client"
+  },
+  {
+   "id": "calc-1730415862795",
+   "type": "Number",
+   "x": 226.66666666666666,
+   "y": 469.27,
+   "width": 110.0,
+   "height": 20,
+   "value": "",
+   "fontSize": 10,
+   "color": [
+    0,
+    0,
+    0
+   ],
+   "background": "none",
+   "border": "none",
+   "page": 4,
+   "isCalculated": true,
+   "calculationType": "sum",
+   "sourceFields": [
+    "client-childcare-daycare-0",
+    "client-childcare-babysitting-1"
+   ],
+   "calculationName": "subTotalChildcare"
+  },
+  {
+   "id": "calc-1730415801949",
+   "type": "Number",
+   "x": 508,
+   "y": 469.27,
+   "width": 110.0,
+   "height": 20,
+   "value": "",
+   "fontSize": 10,
+   "color": [
+    0,
+    0,
+    0
+   ],
+   "background": "none",
+   "border": "none",
+   "page": 4,
+   "isCalculated": true,
+   "calculationType": "sum",
+   "sourceFields": [
+    "client-other-lifeInsurance-0",
+    "client-other-rrsp-1",
+    "client-other-vacations-2",
+    "client-other-school-3",
+    "client-other-clothingForChildren-4",
+    "client-other-childrenActivities-5",
+    "client-other-summerCamp-6",
+    "client-other-debtPayments-7",
+    "client-other-supportPaidForOtherChildren-8",
+    "client-other-other-9"
+   ],
+   "calculationName": "subTotalOtherExpenses"
+  },
+  {
+   "id": "calc-1730452709303",
+   "type": "Number",
+   "x": 494,
+   "y": 499.51,
+   "width": 130.0,
+   "height": 20,
+   "value": "",
+   "fontSize": 10,
+   "color": [
+    0,
+    0,
+    0
+   ],
+   "background": "none",
+   "border": "none",
+   "page": 4,
+   "isCalculated": true,
+   "calculationType": "add",
+   "sourceFields": [
+    "calc-1730415553997",
+    "calc-1730415590066",
+    "calc-1730415641678",
+    "calc-1730415674334",
+    "calc-1730415713131",
+    "calc-1730415743499",
+    "calc-1730415771012",
+    "calc-1730415801949",
+    "calc-1730415862795"
+   ],
+   "calculationName": "totalExpensesMonthly",
    "isDerived": true
   },
   {
-   "id": "totalDebtsValue",
+   "id": "calc-1730452751103",
    "type": "Number",
-   "x": 343,
-   "y": 451.27,
-   "width": 160.0,
+   "x": 494,
+   "y": 518.23,
+   "width": 130.0,
    "height": 20,
    "value": "",
    "fontSize": 10,
@@ -1004,931 +2568,15 @@
    ],
    "background": "none",
    "border": "none",
-   "page": 6,
-   "linkedToId": "calc-1730453339043",
+   "page": 4,
    "isCalculated": true,
-   "calculationType": "linked",
+   "calculationType": "multiply",
+   "sourceFields": [
+    "calc-1730452709303"
+   ],
+   "calculationValue": "12",
+   "calculationName": "totalExpensesYearly",
    "isDerived": true
-  },
-  {
-   "id": 1728073829093,
-   "type": "TextField",
-   "x": 174,
-   "y": 608,
-   "width": 306,
-   "height": 20,
-   "value": "",
-   "fontSize": 10,
-   "color": [
-    0,
-    0,
-    0
-   ],
-   "background": "none",
-   "border": "none",
-   "page": 6
-  },
-  {
-   "id": 1728073895289,
-   "type": "TextField",
-   "x": 55,
-   "y": 638,
-   "width": 484,
-   "height": 20,
-   "value": "",
-   "fontSize": 10,
-   "color": [
-    0,
-    0,
-    0
-   ],
-   "background": "none",
-   "border": "none",
-   "page": 6
-  },
-  {
-   "id": 1728073973936,
-   "type": "TextField",
-   "x": 58,
-   "y": 667,
-   "width": 168,
-   "height": 20,
-   "value": "",
-   "fontSize": 10,
-   "color": [
-    0,
-    0,
-    0
-   ],
-   "background": "none",
-   "border": "none",
-   "page": 6
-  },
-  {
-   "id": 215,
-   "type": "CheckBox",
-   "x": 550.2,
-   "y": 360.9,
-   "width": 13.77,
-   "height": 14.04,
-   "value": "",
-   "fontSize": 10,
-   "color": [
-    0,
-    0,
-    0
-   ],
-   "page": 6,
-   "shape": "square"
-  },
-  {
-   "id": 216,
-   "type": "CheckBox",
-   "x": 503.2,
-   "y": 360.9,
-   "width": 14.58,
-   "height": 14.04,
-   "value": "",
-   "fontSize": 10,
-   "color": [
-    0,
-    0,
-    0
-   ],
-   "page": 6,
-   "shape": "square"
-  },
-  {
-   "id": 217,
-   "type": "CheckBox",
-   "x": 550.2,
-   "y": 339.0,
-   "width": 13.77,
-   "height": 14.31,
-   "value": "",
-   "fontSize": 10,
-   "color": [
-    0,
-    0,
-    0
-   ],
-   "page": 6,
-   "shape": "square"
-  },
-  {
-   "id": 218,
-   "type": "CheckBox",
-   "x": 503.1,
-   "y": 339.0,
-   "width": 14.58,
-   "height": 14.31,
-   "value": "",
-   "fontSize": 10,
-   "color": [
-    0,
-    0,
-    0
-   ],
-   "page": 6,
-   "shape": "square"
-  },
-  {
-   "id": 219,
-   "type": "CheckBox",
-   "x": 550.1,
-   "y": 317.28,
-   "width": 13.77,
-   "height": 14.04,
-   "value": "",
-   "fontSize": 10,
-   "color": [
-    0,
-    0,
-    0
-   ],
-   "page": 6,
-   "shape": "square"
-  },
-  {
-   "id": 220,
-   "type": "CheckBox",
-   "x": 503.1,
-   "y": 317.28,
-   "width": 14.58,
-   "height": 14.04,
-   "value": "",
-   "fontSize": 10,
-   "color": [
-    0,
-    0,
-    0
-   ],
-   "page": 6,
-   "shape": "square"
-  },
-  {
-   "id": 221,
-   "type": "CheckBox",
-   "x": 550.18,
-   "y": 295.64,
-   "width": 13.77,
-   "height": 14.31,
-   "value": "",
-   "fontSize": 10,
-   "color": [
-    0,
-    0,
-    0
-   ],
-   "page": 6,
-   "shape": "square"
-  },
-  {
-   "id": 222,
-   "type": "CheckBox",
-   "x": 503.1,
-   "y": 295.64,
-   "width": 14.58,
-   "height": 14.31,
-   "value": "",
-   "fontSize": 10,
-   "color": [
-    0,
-    0,
-    0
-   ],
-   "page": 6,
-   "shape": "square"
-  },
-  {
-   "id": 223,
-   "type": "CheckBox",
-   "x": 550.1,
-   "y": 273.46,
-   "width": 13.77,
-   "height": 14.31,
-   "value": "",
-   "fontSize": 10,
-   "color": [
-    0,
-    0,
-    0
-   ],
-   "page": 6,
-   "shape": "square"
-  },
-  {
-   "id": 224,
-   "type": "CheckBox",
-   "x": 503.1,
-   "y": 273.46,
-   "width": 14.58,
-   "height": 14.31,
-   "value": "",
-   "fontSize": 10,
-   "color": [
-    0,
-    0,
-    0
-   ],
-   "page": 6,
-   "shape": "square"
-  },
-  {
-   "id": 225,
-   "type": "CheckBox",
-   "x": 550.1,
-   "y": 252.0,
-   "width": 13.77,
-   "height": 14.04,
-   "value": "",
-   "fontSize": 10,
-   "color": [
-    0,
-    0,
-    0
-   ],
-   "page": 6,
-   "shape": "square"
-  },
-  {
-   "id": 226,
-   "type": "CheckBox",
-   "x": 503.1,
-   "y": 252.0,
-   "width": 14.58,
-   "height": 14.04,
-   "value": "",
-   "fontSize": 10,
-   "color": [
-    0,
-    0,
-    0
-   ],
-   "page": 6,
-   "shape": "square"
-  },
-  {
-   "id": 227,
-   "type": "CheckBox",
-   "x": 550.1,
-   "y": 231.0,
-   "width": 13.77,
-   "height": 14.31,
-   "value": "",
-   "fontSize": 10,
-   "color": [
-    0,
-    0,
-    0
-   ],
-   "page": 6,
-   "shape": "square"
-  },
-  {
-   "id": 228,
-   "type": "CheckBox",
-   "x": 503.1,
-   "y": 231.0,
-   "width": 14.58,
-   "height": 14.04,
-   "value": "",
-   "fontSize": 10,
-   "color": [
-    0,
-    0,
-    0
-   ],
-   "page": 6,
-   "shape": "square"
-  },
-  {
-   "id": 229,
-   "type": "CheckBox",
-   "x": 550.1,
-   "y": 209.08,
-   "width": 13.77,
-   "height": 14.31,
-   "value": "",
-   "fontSize": 10,
-   "color": [
-    0,
-    0,
-    0
-   ],
-   "page": 6,
-   "shape": "square"
-  },
-  {
-   "id": 230,
-   "type": "CheckBox",
-   "x": 503.1,
-   "y": 209.08,
-   "width": 14.58,
-   "height": 14.31,
-   "value": "",
-   "fontSize": 10,
-   "color": [
-    0,
-    0,
-    0
-   ],
-   "page": 6,
-   "shape": "square"
-  },
-  {
-   "id": 231,
-   "type": "CheckBox",
-   "x": 550.18,
-   "y": 187.28,
-   "width": 13.77,
-   "height": 14.58,
-   "value": "",
-   "fontSize": 10,
-   "color": [
-    0,
-    0,
-    0
-   ],
-   "page": 6,
-   "shape": "square"
-  },
-  {
-   "id": 232,
-   "type": "CheckBox",
-   "x": 503.1,
-   "y": 187.28,
-   "width": 14.58,
-   "height": 14.58,
-   "value": "",
-   "fontSize": 10,
-   "color": [
-    0,
-    0,
-    0
-   ],
-   "page": 6,
-   "shape": "square"
-  },
-  {
-   "id": 233,
-   "type": "CheckBox",
-   "x": 550.1,
-   "y": 165.72,
-   "width": 13.77,
-   "height": 14.31,
-   "value": "",
-   "fontSize": 10,
-   "color": [
-    0,
-    0,
-    0
-   ],
-   "page": 6,
-   "shape": "square"
-  },
-  {
-   "id": 234,
-   "type": "CheckBox",
-   "x": 503.1,
-   "y": 165.64,
-   "width": 14.58,
-   "height": 14.31,
-   "value": "",
-   "fontSize": 10,
-   "color": [
-    0,
-    0,
-    0
-   ],
-   "page": 6,
-   "shape": "square"
-  },
-  {
-   "id": 235,
-   "type": "CheckBox",
-   "x": 550.1,
-   "y": 143.82,
-   "width": 13.77,
-   "height": 14.04,
-   "value": "",
-   "fontSize": 10,
-   "color": [
-    0,
-    0,
-    0
-   ],
-   "page": 6,
-   "shape": "square"
-  },
-  {
-   "id": 236,
-   "type": "CheckBox",
-   "x": 503.1,
-   "y": 143.82,
-   "width": 14.58,
-   "height": 14.04,
-   "value": "",
-   "fontSize": 10,
-   "color": [
-    0,
-    0,
-    0
-   ],
-   "page": 6,
-   "shape": "square"
-  },
-  {
-   "id": 237,
-   "type": "CheckBox",
-   "x": 550.2,
-   "y": 122.0,
-   "width": 13.77,
-   "height": 14.31,
-   "value": "",
-   "fontSize": 10,
-   "color": [
-    0,
-    0,
-    0
-   ],
-   "page": 6,
-   "shape": "square"
-  },
-  {
-   "id": 238,
-   "type": "CheckBox",
-   "x": 503.1,
-   "y": 122.0,
-   "width": 14.58,
-   "height": 14.31,
-   "value": "",
-   "fontSize": 10,
-   "color": [
-    0,
-    0,
-    0
-   ],
-   "page": 6,
-   "shape": "square"
-  },
-  {
-   "id": 1728076533392,
-   "type": "Number",
-   "x": 481,
-   "y": 132.07,
-   "width": 153,
-   "height": 20,
-   "value": "",
-   "fontSize": 10,
-   "color": [
-    0,
-    0,
-    0
-   ],
-   "background": "none",
-   "border": "none",
-   "page": 7
-  },
-  {
-   "id": 1728076563320,
-   "type": "Number",
-   "x": 481,
-   "y": 152,
-   "width": 153,
-   "height": 20,
-   "value": "",
-   "fontSize": 10,
-   "color": [
-    0,
-    0,
-    0
-   ],
-   "background": "none",
-   "border": "none",
-   "page": 7
-  },
-  {
-   "id": 1728076582234,
-   "type": "Number",
-   "x": 480,
-   "y": 181.51,
-   "width": 153.0,
-   "height": 20,
-   "value": "",
-   "fontSize": 10,
-   "color": [
-    0,
-    0,
-    0
-   ],
-   "background": "none",
-   "border": "none",
-   "page": 7
-  },
-  {
-   "id": 1728076587824,
-   "type": "Number",
-   "x": 480,
-   "y": 206.47,
-   "width": 153.0,
-   "height": 20,
-   "value": "",
-   "fontSize": 10,
-   "color": [
-    0,
-    0,
-    0
-   ],
-   "background": "none",
-   "border": "none",
-   "page": 7
-  },
-  {
-   "id": 1728076597743,
-   "type": "Number",
-   "x": 480,
-   "y": 231.19,
-   "width": 153.0,
-   "height": 20,
-   "value": "",
-   "fontSize": 10,
-   "color": [
-    0,
-    0,
-    0
-   ],
-   "background": "none",
-   "border": "none",
-   "page": 7
-  },
-  {
-   "id": 1728076607887,
-   "type": "Number",
-   "x": 481,
-   "y": 256.15,
-   "width": 153.0,
-   "height": 20,
-   "value": "",
-   "fontSize": 10,
-   "color": [
-    0,
-    0,
-    0
-   ],
-   "background": "none",
-   "border": "none",
-   "page": 7
-  },
-  {
-   "id": 1728076615368,
-   "type": "Number",
-   "x": 480,
-   "y": 280.63,
-   "width": 153.0,
-   "height": 20,
-   "value": "",
-   "fontSize": 10,
-   "color": [
-    0,
-    0,
-    0
-   ],
-   "background": "none",
-   "border": "none",
-   "page": 7
-  },
-  {
-   "id": 264,
-   "type": "CheckBox",
-   "x": 77.56,
-   "y": 432.18,
-   "width": 15.66,
-   "height": 15.66,
-   "value": "",
-   "fontSize": 10,
-   "color": [
-    0,
-    0,
-    0
-   ],
-   "page": 7,
-   "shape": "square"
-  },
-  {
-   "id": 265,
-   "type": "CheckBox",
-   "x": 77.56,
-   "y": 456.56,
-   "width": 15.66,
-   "height": 15.12,
-   "value": "",
-   "fontSize": 10,
-   "color": [
-    0,
-    0,
-    0
-   ],
-   "page": 7,
-   "shape": "square"
-  },
-  {
-   "id": 1728076825608,
-   "type": "TextField",
-   "x": 93,
-   "y": 470,
-   "width": 742,
-   "height": 20,
-   "value": "",
-   "fontSize": 10,
-   "color": [
-    0,
-    0,
-    0
-   ],
-   "background": "none",
-   "border": "none",
-   "page": 7
-  },
-  {
-   "id": 267,
-   "type": "CheckBox",
-   "x": 77.56,
-   "y": 498.54,
-   "width": 15.66,
-   "height": 15.39,
-   "value": "",
-   "fontSize": 10,
-   "color": [
-    0,
-    0,
-    0
-   ],
-   "page": 7,
-   "shape": "square"
-  },
-  {
-   "id": 1728076907012,
-   "type": "TextField",
-   "x": 92,
-   "y": 512,
-   "width": 740,
-   "height": 20,
-   "value": "",
-   "fontSize": 10,
-   "color": [
-    0,
-    0,
-    0
-   ],
-   "background": "none",
-   "border": "none",
-   "page": 7
-  },
-  {
-   "id": 269,
-   "type": "CheckBox",
-   "x": 77.56,
-   "y": 540.36,
-   "width": 15.66,
-   "height": 15.39,
-   "value": "",
-   "fontSize": 10,
-   "color": [
-    0,
-    0,
-    0
-   ],
-   "page": 7,
-   "shape": "square"
-  },
-  {
-   "id": 270,
-   "type": "CheckBox",
-   "x": 190.38,
-   "y": 565.46,
-   "width": 15.66,
-   "height": 15.39,
-   "value": "",
-   "fontSize": 10,
-   "color": [
-    0,
-    0,
-    0
-   ],
-   "page": 7,
-   "shape": "square"
-  },
-  {
-   "id": 271,
-   "type": "CheckBox",
-   "x": 190.38,
-   "y": 584.18,
-   "width": 15.66,
-   "height": 15.12,
-   "value": "",
-   "fontSize": 10,
-   "color": [
-    0,
-    0,
-    0
-   ],
-   "page": 7,
-   "shape": "square"
-  },
-  {
-   "id": 272,
-   "type": "CheckBox",
-   "x": 190.38,
-   "y": 609.26,
-   "width": 15.66,
-   "height": 15.12,
-   "value": "",
-   "fontSize": 10,
-   "color": [
-    0,
-    0,
-    0
-   ],
-   "page": 7,
-   "shape": "square"
-  },
-  {
-   "id": 273,
-   "type": "CheckBox",
-   "x": 190.38,
-   "y": 628.0,
-   "width": 15.66,
-   "height": 15.12,
-   "value": "",
-   "fontSize": 10,
-   "color": [
-    0,
-    0,
-    0
-   ],
-   "page": 7,
-   "shape": "square"
-  },
-  {
-   "id": 1728077038359,
-   "type": "TextField",
-   "x": 207,
-   "y": 538,
-   "width": 72,
-   "height": 20,
-   "value": "",
-   "fontSize": 10,
-   "color": [
-    0,
-    0,
-    0
-   ],
-   "background": "none",
-   "border": "none",
-   "page": 7
-  },
-  {
-   "id": 1728077060948,
-   "type": "TextField",
-   "x": 367,
-   "y": 562,
-   "width": 320,
-   "height": 20,
-   "value": "",
-   "fontSize": 10,
-   "color": [
-    0,
-    0,
-    0
-   ],
-   "background": "none",
-   "border": "none",
-   "page": 7
-  },
-  {
-   "id": 1728077081699,
-   "type": "TextField",
-   "x": 311,
-   "y": 605,
-   "width": 153,
-   "height": 20,
-   "value": "",
-   "fontSize": 10,
-   "color": [
-    0,
-    0,
-    0
-   ],
-   "background": "none",
-   "border": "none",
-   "page": 7
-  },
-  {
-   "id": 1728077099356,
-   "type": "TextField",
-   "x": 436,
-   "y": 605,
-   "width": 216,
-   "height": 20,
-   "value": "",
-   "fontSize": 10,
-   "color": [
-    0,
-    0,
-    0
-   ],
-   "background": "none",
-   "border": "none",
-   "page": 7
-  },
-  {
-   "id": 1728077116583,
-   "type": "TextField",
-   "x": 459,
-   "y": 648,
-   "width": 144,
-   "height": 20,
-   "value": "",
-   "fontSize": 10,
-   "color": [
-    0,
-    0,
-    0
-   ],
-   "background": "none",
-   "border": "none",
-   "page": 7
-  },
-  {
-   "id": 1728077136412,
-   "type": "TextField",
-   "x": 92,
-   "y": 667,
-   "width": 216,
-   "height": 20,
-   "value": "",
-   "fontSize": 10,
-   "color": [
-    0,
-    0,
-    0
-   ],
-   "background": "none",
-   "border": "none",
-   "page": 7
-  },
-  {
-   "id": 280,
-   "type": "CheckBox",
-   "x": 77.56,
-   "y": 651.82,
-   "width": 15.66,
-   "height": 15.39,
-   "value": "",
-   "fontSize": 10,
-   "color": [
-    0,
-    0,
-    0
-   ],
-   "page": 7,
-   "shape": "square"
-  },
-  {
-   "id": 1728077964615,
-   "type": "TextField",
-   "x": 107,
-   "y": 474,
-   "width": 148,
-   "height": 20,
-   "value": "",
-   "fontSize": 10,
-   "color": [
-    0,
-    0,
-    0
-   ],
-   "background": "none",
-   "border": "none",
-   "page": 8
-  },
-  {
-   "id": 292,
-   "type": "CheckBox",
-   "x": 42.92,
-   "y": 478.0,
-   "width": 15.39,
-   "height": 15.66,
-   "value": "",
-   "fontSize": 10,
-   "color": [
-    0,
-    0,
-    0
-   ],
-   "page": 8,
-   "shape": "square"
   },
   {
    "id": 1728374830596,
@@ -2171,11 +2819,11 @@
    "source": "houseHold"
   },
   {
-   "id": 1728374835951,
+   "id": 1728069829287,
    "type": "TextField",
-   "x": 166,
-   "y": 390.55,
-   "width": 460,
+   "x": 445,
+   "y": 47.11,
+   "width": 209,
    "height": 20,
    "value": "",
    "fontSize": 10,
@@ -2187,468 +2835,7 @@
    "background": "none",
    "border": "none",
    "page": 5,
-   "bind": "assets[0].category",
-   "source": "lifeInsurance"
-  },
-  {
-   "id": 1728374835952,
-   "type": "Number",
-   "x": 493,
-   "y": 390.55,
-   "width": 135,
-   "height": 20,
-   "value": "",
-   "fontSize": 10,
-   "color": [
-    0,
-    0,
-    0
-   ],
-   "background": "none",
-   "border": "none",
-   "page": 5,
-   "bind": "assets[0].today",
-   "source": "lifeInsurance"
-  },
-  {
-   "id": 1728374835954,
-   "type": "TextField",
-   "x": 166,
-   "y": 409.99,
-   "width": 460,
-   "height": 20,
-   "value": "",
-   "fontSize": 10,
-   "color": [
-    0,
-    0,
-    0
-   ],
-   "background": "none",
-   "border": "none",
-   "page": 5,
-   "bind": "assets[1].category",
-   "source": "lifeInsurance"
-  },
-  {
-   "id": 1728374835956,
-   "type": "Number",
-   "x": 493,
-   "y": 409.99,
-   "width": 135,
-   "height": 20,
-   "value": "",
-   "fontSize": 10,
-   "color": [
-    0,
-    0,
-    0
-   ],
-   "background": "none",
-   "border": "none",
-   "page": 5,
-   "bind": "assets[1].today",
-   "source": "lifeInsurance"
-  },
-  {
-   "id": 1728374835958,
-   "type": "TextField",
-   "x": 166,
-   "y": 430.39,
-   "width": 460,
-   "height": 20,
-   "value": "",
-   "fontSize": 10,
-   "color": [
-    0,
-    0,
-    0
-   ],
-   "background": "none",
-   "border": "none",
-   "page": 5,
-   "bind": "assets[2].category",
-   "source": "lifeInsurance"
-  },
-  {
-   "id": 1728374835959,
-   "type": "Number",
-   "x": 493,
-   "y": 430.39,
-   "width": 135,
-   "height": 20,
-   "value": "",
-   "fontSize": 10,
-   "color": [
-    0,
-    0,
-    0
-   ],
-   "background": "none",
-   "border": "none",
-   "page": 5,
-   "bind": "assets[2].today",
-   "source": "lifeInsurance"
-  },
-  {
-   "id": 1728374837078,
-   "type": "TextField",
-   "x": 166,
-   "y": 243.19,
-   "width": 460,
-   "height": 20,
-   "value": "",
-   "fontSize": 10,
-   "color": [
-    0,
-    0,
-    0
-   ],
-   "background": "none",
-   "border": "none",
-   "page": 5,
-   "bind": "assets[0].category",
-   "source": "bank"
-  },
-  {
-   "id": 1728374837079,
-   "type": "Number",
-   "x": 493,
-   "y": 243.19,
-   "width": 135,
-   "height": 20,
-   "value": "",
-   "fontSize": 10,
-   "color": [
-    0,
-    0,
-    0
-   ],
-   "background": "none",
-   "border": "none",
-   "page": 5,
-   "bind": "assets[0].today",
-   "source": "bank"
-  },
-  {
-   "id": 1728374837081,
-   "type": "TextField",
-   "x": 166,
-   "y": 262.63,
-   "width": 460,
-   "height": 20,
-   "value": "",
-   "fontSize": 10,
-   "color": [
-    0,
-    0,
-    0
-   ],
-   "background": "none",
-   "border": "none",
-   "page": 5,
-   "bind": "assets[1].category",
-   "source": "bank"
-  },
-  {
-   "id": 1728374837082,
-   "type": "Number",
-   "x": 493,
-   "y": 262.63,
-   "width": 135,
-   "height": 20,
-   "value": "",
-   "fontSize": 10,
-   "color": [
-    0,
-    0,
-    0
-   ],
-   "background": "none",
-   "border": "none",
-   "page": 5,
-   "bind": "assets[1].today",
-   "source": "bank"
-  },
-  {
-   "id": 1728374837084,
-   "type": "TextField",
-   "x": 166,
-   "y": 282.31,
-   "width": 460,
-   "height": 20,
-   "value": "",
-   "fontSize": 10,
-   "color": [
-    0,
-    0,
-    0
-   ],
-   "background": "none",
-   "border": "none",
-   "page": 5,
-   "bind": "assets[2].category",
-   "source": "bank"
-  },
-  {
-   "id": 1728374837085,
-   "type": "Number",
-   "x": 493,
-   "y": 282.31,
-   "width": 135,
-   "height": 20,
-   "value": "",
-   "fontSize": 10,
-   "color": [
-    0,
-    0,
-    0
-   ],
-   "background": "none",
-   "border": "none",
-   "page": 5,
-   "bind": "assets[2].today",
-   "source": "bank"
-  },
-  {
-   "id": 1728374837587,
-   "type": "TextField",
-   "x": 166,
-   "y": 463.99,
-   "width": 460,
-   "height": 20,
-   "value": "",
-   "fontSize": 10,
-   "color": [
-    0,
-    0,
-    0
-   ],
-   "background": "none",
-   "border": "none",
-   "page": 5,
-   "bind": "assets[0].firm_name",
-   "source": "interests"
-  },
-  {
-   "id": 1728374837588,
-   "type": "Number",
-   "x": 493,
-   "y": 463.99,
-   "width": 135,
-   "height": 20,
-   "value": "",
-   "fontSize": 10,
-   "color": [
-    0,
-    0,
-    0
-   ],
-   "background": "none",
-   "border": "none",
-   "page": 5,
-   "bind": "assets[0].today",
-   "source": "interests"
-  },
-  {
-   "id": 1728374837590,
-   "type": "TextField",
-   "x": 166,
-   "y": 484.63,
-   "width": 460,
-   "height": 20,
-   "value": "",
-   "fontSize": 10,
-   "color": [
-    0,
-    0,
-    0
-   ],
-   "background": "none",
-   "border": "none",
-   "page": 5,
-   "bind": "assets[1].firm_name",
-   "source": "interests"
-  },
-  {
-   "id": 1728374837591,
-   "type": "Number",
-   "x": 493,
-   "y": 484.63,
-   "width": 135,
-   "height": 20,
-   "value": "",
-   "fontSize": 10,
-   "color": [
-    0,
-    0,
-    0
-   ],
-   "background": "none",
-   "border": "none",
-   "page": 5,
-   "bind": "assets[1].today",
-   "source": "interests"
-  },
-  {
-   "id": 1728374837593,
-   "type": "TextField",
-   "x": 166,
-   "y": 503.83,
-   "width": 460,
-   "height": 20,
-   "value": "",
-   "fontSize": 10,
-   "color": [
-    0,
-    0,
-    0
-   ],
-   "background": "none",
-   "border": "none",
-   "page": 5,
-   "bind": "assets[2].firm_name",
-   "source": "interests"
-  },
-  {
-   "id": 1728374837594,
-   "type": "Number",
-   "x": 493,
-   "y": 503.83,
-   "width": 135,
-   "height": 20,
-   "value": "",
-   "fontSize": 10,
-   "color": [
-    0,
-    0,
-    0
-   ],
-   "background": "none",
-   "border": "none",
-   "page": 5,
-   "bind": "assets[2].today",
-   "source": "interests"
-  },
-  {
-   "id": 1728374838007,
-   "type": "TextField",
-   "x": 166,
-   "y": 537.67,
-   "width": 460,
-   "height": 20,
-   "value": "",
-   "fontSize": 10,
-   "color": [
-    0,
-    0,
-    0
-   ],
-   "background": "none",
-   "border": "none",
-   "page": 5,
-   "bind": "assets[0].category",
-   "source": "moneyOwed"
-  },
-  {
-   "id": 1728374838008,
-   "type": "Number",
-   "x": 493.6666666666667,
-   "y": 537.67,
-   "width": 135,
-   "height": 20,
-   "value": "",
-   "fontSize": 10,
-   "color": [
-    0,
-    0,
-    0
-   ],
-   "background": "none",
-   "border": "none",
-   "page": 5,
-   "bind": "assets[0].today",
-   "source": "moneyOwed"
-  },
-  {
-   "id": 1728374838010,
-   "type": "TextField",
-   "x": 166,
-   "y": 558.07,
-   "width": 460,
-   "height": 20,
-   "value": "",
-   "fontSize": 10,
-   "color": [
-    0,
-    0,
-    0
-   ],
-   "background": "none",
-   "border": "none",
-   "page": 5,
-   "bind": "assets[1].category",
-   "source": "moneyOwed"
-  },
-  {
-   "id": 1728374838011,
-   "type": "Number",
-   "x": 493,
-   "y": 558.07,
-   "width": 135,
-   "height": 20,
-   "value": "",
-   "fontSize": 10,
-   "color": [
-    0,
-    0,
-    0
-   ],
-   "background": "none",
-   "border": "none",
-   "page": 5,
-   "bind": "assets[1].today",
-   "source": "moneyOwed"
-  },
-  {
-   "id": 1728374838013,
-   "type": "TextField",
-   "x": 166,
-   "y": 577.75,
-   "width": 460,
-   "height": 20,
-   "value": "",
-   "fontSize": 10,
-   "color": [
-    0,
-    0,
-    0
-   ],
-   "background": "none",
-   "border": "none",
-   "page": 5,
-   "bind": "assets[2].category",
-   "source": "moneyOwed"
-  },
-  {
-   "id": 1728374838014,
-   "type": "Number",
-   "x": 493,
-   "y": 577.75,
-   "width": 135,
-   "height": 20,
-   "value": "",
-   "fontSize": 10,
-   "color": [
-    0,
-    0,
-    0
-   ],
-   "background": "none",
-   "border": "none",
-   "page": 5,
-   "bind": "assets[2].today",
-   "source": "moneyOwed"
+   "bind": "court_info.courtFileNumber"
   },
   {
    "id": 1728374838451,
@@ -2891,6 +3078,126 @@
    "source": "investments"
   },
   {
+   "id": 1728374837078,
+   "type": "TextField",
+   "x": 166,
+   "y": 243.19,
+   "width": 460,
+   "height": 20,
+   "value": "",
+   "fontSize": 10,
+   "color": [
+    0,
+    0,
+    0
+   ],
+   "background": "none",
+   "border": "none",
+   "page": 5,
+   "bind": "assets[0].category",
+   "source": "bank"
+  },
+  {
+   "id": 1728374837079,
+   "type": "Number",
+   "x": 493,
+   "y": 243.19,
+   "width": 135,
+   "height": 20,
+   "value": "",
+   "fontSize": 10,
+   "color": [
+    0,
+    0,
+    0
+   ],
+   "background": "none",
+   "border": "none",
+   "page": 5,
+   "bind": "assets[0].today",
+   "source": "bank"
+  },
+  {
+   "id": 1728374837081,
+   "type": "TextField",
+   "x": 166,
+   "y": 262.63,
+   "width": 460,
+   "height": 20,
+   "value": "",
+   "fontSize": 10,
+   "color": [
+    0,
+    0,
+    0
+   ],
+   "background": "none",
+   "border": "none",
+   "page": 5,
+   "bind": "assets[1].category",
+   "source": "bank"
+  },
+  {
+   "id": 1728374837082,
+   "type": "Number",
+   "x": 493,
+   "y": 262.63,
+   "width": 135,
+   "height": 20,
+   "value": "",
+   "fontSize": 10,
+   "color": [
+    0,
+    0,
+    0
+   ],
+   "background": "none",
+   "border": "none",
+   "page": 5,
+   "bind": "assets[1].today",
+   "source": "bank"
+  },
+  {
+   "id": 1728374837084,
+   "type": "TextField",
+   "x": 166,
+   "y": 282.31,
+   "width": 460,
+   "height": 20,
+   "value": "",
+   "fontSize": 10,
+   "color": [
+    0,
+    0,
+    0
+   ],
+   "background": "none",
+   "border": "none",
+   "page": 5,
+   "bind": "assets[2].category",
+   "source": "bank"
+  },
+  {
+   "id": 1728374837085,
+   "type": "Number",
+   "x": 493,
+   "y": 282.31,
+   "width": 135,
+   "height": 20,
+   "value": "",
+   "fontSize": 10,
+   "color": [
+    0,
+    0,
+    0
+   ],
+   "background": "none",
+   "border": "none",
+   "page": 5,
+   "bind": "assets[2].today",
+   "source": "bank"
+  },
+  {
    "id": 1728374839750,
    "type": "TextField",
    "x": 166,
@@ -3009,6 +3316,366 @@
    "page": 5,
    "bind": "assets[2].today",
    "source": "savings"
+  },
+  {
+   "id": 1728374835951,
+   "type": "TextField",
+   "x": 166,
+   "y": 390.55,
+   "width": 460,
+   "height": 20,
+   "value": "",
+   "fontSize": 10,
+   "color": [
+    0,
+    0,
+    0
+   ],
+   "background": "none",
+   "border": "none",
+   "page": 5,
+   "bind": "assets[0].category",
+   "source": "lifeInsurance"
+  },
+  {
+   "id": 1728374835952,
+   "type": "Number",
+   "x": 493,
+   "y": 390.55,
+   "width": 135,
+   "height": 20,
+   "value": "",
+   "fontSize": 10,
+   "color": [
+    0,
+    0,
+    0
+   ],
+   "background": "none",
+   "border": "none",
+   "page": 5,
+   "bind": "assets[0].today",
+   "source": "lifeInsurance"
+  },
+  {
+   "id": 1728374835954,
+   "type": "TextField",
+   "x": 166,
+   "y": 409.99,
+   "width": 460,
+   "height": 20,
+   "value": "",
+   "fontSize": 10,
+   "color": [
+    0,
+    0,
+    0
+   ],
+   "background": "none",
+   "border": "none",
+   "page": 5,
+   "bind": "assets[1].category",
+   "source": "lifeInsurance"
+  },
+  {
+   "id": 1728374835956,
+   "type": "Number",
+   "x": 493,
+   "y": 409.99,
+   "width": 135,
+   "height": 20,
+   "value": "",
+   "fontSize": 10,
+   "color": [
+    0,
+    0,
+    0
+   ],
+   "background": "none",
+   "border": "none",
+   "page": 5,
+   "bind": "assets[1].today",
+   "source": "lifeInsurance"
+  },
+  {
+   "id": 1728374835958,
+   "type": "TextField",
+   "x": 166,
+   "y": 430.39,
+   "width": 460,
+   "height": 20,
+   "value": "",
+   "fontSize": 10,
+   "color": [
+    0,
+    0,
+    0
+   ],
+   "background": "none",
+   "border": "none",
+   "page": 5,
+   "bind": "assets[2].category",
+   "source": "lifeInsurance"
+  },
+  {
+   "id": 1728374835959,
+   "type": "Number",
+   "x": 493,
+   "y": 430.39,
+   "width": 135,
+   "height": 20,
+   "value": "",
+   "fontSize": 10,
+   "color": [
+    0,
+    0,
+    0
+   ],
+   "background": "none",
+   "border": "none",
+   "page": 5,
+   "bind": "assets[2].today",
+   "source": "lifeInsurance"
+  },
+  {
+   "id": 1728374837587,
+   "type": "TextField",
+   "x": 166,
+   "y": 463.99,
+   "width": 460,
+   "height": 20,
+   "value": "",
+   "fontSize": 10,
+   "color": [
+    0,
+    0,
+    0
+   ],
+   "background": "none",
+   "border": "none",
+   "page": 5,
+   "bind": "assets[0].firm_name",
+   "source": "interests"
+  },
+  {
+   "id": 1728374837588,
+   "type": "Number",
+   "x": 493,
+   "y": 463.99,
+   "width": 135,
+   "height": 20,
+   "value": "",
+   "fontSize": 10,
+   "color": [
+    0,
+    0,
+    0
+   ],
+   "background": "none",
+   "border": "none",
+   "page": 5,
+   "bind": "assets[0].today",
+   "source": "interests"
+  },
+  {
+   "id": 1728374837590,
+   "type": "TextField",
+   "x": 166,
+   "y": 484.63,
+   "width": 460,
+   "height": 20,
+   "value": "",
+   "fontSize": 10,
+   "color": [
+    0,
+    0,
+    0
+   ],
+   "background": "none",
+   "border": "none",
+   "page": 5,
+   "bind": "assets[1].firm_name",
+   "source": "interests"
+  },
+  {
+   "id": 1728374837591,
+   "type": "Number",
+   "x": 493,
+   "y": 484.63,
+   "width": 135,
+   "height": 20,
+   "value": "",
+   "fontSize": 10,
+   "color": [
+    0,
+    0,
+    0
+   ],
+   "background": "none",
+   "border": "none",
+   "page": 5,
+   "bind": "assets[1].today",
+   "source": "interests"
+  },
+  {
+   "id": 1728374837593,
+   "type": "TextField",
+   "x": 166,
+   "y": 503.83,
+   "width": 460,
+   "height": 20,
+   "value": "",
+   "fontSize": 10,
+   "color": [
+    0,
+    0,
+    0
+   ],
+   "background": "none",
+   "border": "none",
+   "page": 5,
+   "bind": "assets[2].firm_name",
+   "source": "interests"
+  },
+  {
+   "id": 1728374837594,
+   "type": "Number",
+   "x": 493,
+   "y": 503.83,
+   "width": 135,
+   "height": 20,
+   "value": "",
+   "fontSize": 10,
+   "color": [
+    0,
+    0,
+    0
+   ],
+   "background": "none",
+   "border": "none",
+   "page": 5,
+   "bind": "assets[2].today",
+   "source": "interests"
+  },
+  {
+   "id": 1728374838007,
+   "type": "TextField",
+   "x": 166,
+   "y": 537.67,
+   "width": 460,
+   "height": 20,
+   "value": "",
+   "fontSize": 10,
+   "color": [
+    0,
+    0,
+    0
+   ],
+   "background": "none",
+   "border": "none",
+   "page": 5,
+   "bind": "assets[0].category",
+   "source": "moneyOwed"
+  },
+  {
+   "id": 1728374838008,
+   "type": "Number",
+   "x": 493.6666666666667,
+   "y": 537.67,
+   "width": 135,
+   "height": 20,
+   "value": "",
+   "fontSize": 10,
+   "color": [
+    0,
+    0,
+    0
+   ],
+   "background": "none",
+   "border": "none",
+   "page": 5,
+   "bind": "assets[0].today",
+   "source": "moneyOwed"
+  },
+  {
+   "id": 1728374838010,
+   "type": "TextField",
+   "x": 166,
+   "y": 558.07,
+   "width": 460,
+   "height": 20,
+   "value": "",
+   "fontSize": 10,
+   "color": [
+    0,
+    0,
+    0
+   ],
+   "background": "none",
+   "border": "none",
+   "page": 5,
+   "bind": "assets[1].category",
+   "source": "moneyOwed"
+  },
+  {
+   "id": 1728374838011,
+   "type": "Number",
+   "x": 493,
+   "y": 558.07,
+   "width": 135,
+   "height": 20,
+   "value": "",
+   "fontSize": 10,
+   "color": [
+    0,
+    0,
+    0
+   ],
+   "background": "none",
+   "border": "none",
+   "page": 5,
+   "bind": "assets[1].today",
+   "source": "moneyOwed"
+  },
+  {
+   "id": 1728374838013,
+   "type": "TextField",
+   "x": 166,
+   "y": 577.75,
+   "width": 460,
+   "height": 20,
+   "value": "",
+   "fontSize": 10,
+   "color": [
+    0,
+    0,
+    0
+   ],
+   "background": "none",
+   "border": "none",
+   "page": 5,
+   "bind": "assets[2].category",
+   "source": "moneyOwed"
+  },
+  {
+   "id": 1728374838014,
+   "type": "Number",
+   "x": 493,
+   "y": 577.75,
+   "width": 135,
+   "height": 20,
+   "value": "",
+   "fontSize": 10,
+   "color": [
+    0,
+    0,
+    0
+   ],
+   "background": "none",
+   "border": "none",
+   "page": 5,
+   "bind": "assets[2].today",
+   "source": "moneyOwed"
   },
   {
    "id": 1728374840429,
@@ -3131,6 +3798,112 @@
    "source": "Other"
   },
   {
+   "id": "calc-1730452873765",
+   "type": "Number",
+   "x": 496,
+   "y": 680.71,
+   "width": 125.0,
+   "height": 20,
+   "value": "",
+   "fontSize": 10,
+   "color": [
+    0,
+    0,
+    0
+   ],
+   "background": "none",
+   "border": "none",
+   "page": 5,
+   "isCalculated": true,
+   "calculationType": "sum",
+   "sourceFields": [
+    1728374830597,
+    1728374830600,
+    1728374830603,
+    1728374831102,
+    1728374831105,
+    1728374831108,
+    1728374838452,
+    1728374838455,
+    1728374838458,
+    1728374839306,
+    1728374839309,
+    1728374839312,
+    1728374837079,
+    1728374837082,
+    1728374837085,
+    1728374839751,
+    1728374839755,
+    1728374839758,
+    1728374835952,
+    1728374835956,
+    1728374835959,
+    1728374837588,
+    1728374837591,
+    1728374837594,
+    1728374838008,
+    1728374838011,
+    1728374838014,
+    1728374840430,
+    1728374840433,
+    1728374840436
+   ],
+   "calculationName": "totalProperty"
+  },
+  {
+   "id": 1728073104897,
+   "type": "TextField",
+   "x": 455,
+   "y": 44.71,
+   "width": 193,
+   "height": 20,
+   "value": "",
+   "fontSize": 10,
+   "color": [
+    0,
+    0,
+    0
+   ],
+   "background": "none",
+   "border": "none",
+   "page": 6,
+   "bind": "court_info.courtFileNumber"
+  },
+  {
+   "id": 238,
+   "type": "CheckBox",
+   "x": 503.1,
+   "y": 122.0,
+   "width": 14.58,
+   "height": 14.31,
+   "value": "",
+   "fontSize": 10,
+   "color": [
+    0,
+    0,
+    0
+   ],
+   "page": 6,
+   "shape": "square"
+  },
+  {
+   "id": 237,
+   "type": "CheckBox",
+   "x": 550.2,
+   "y": 122.0,
+   "width": 13.77,
+   "height": 14.31,
+   "value": "",
+   "fontSize": 10,
+   "color": [
+    0,
+    0,
+    0
+   ],
+   "page": 6,
+   "shape": "square"
+  },
+  {
    "id": "mortgages-23-0",
    "type": "TextField",
    "x": 129,
@@ -3189,6 +3962,40 @@
    "page": 6,
    "bind": "mortgages[0].monthlyPayment",
    "source": "debts"
+  },
+  {
+   "id": 236,
+   "type": "CheckBox",
+   "x": 503.1,
+   "y": 143.82,
+   "width": 14.58,
+   "height": 14.04,
+   "value": "",
+   "fontSize": 10,
+   "color": [
+    0,
+    0,
+    0
+   ],
+   "page": 6,
+   "shape": "square"
+  },
+  {
+   "id": 235,
+   "type": "CheckBox",
+   "x": 550.1,
+   "y": 143.82,
+   "width": 13.77,
+   "height": 14.04,
+   "value": "",
+   "fontSize": 10,
+   "color": [
+    0,
+    0,
+    0
+   ],
+   "page": 6,
+   "shape": "square"
   },
   {
    "id": "mortgages-49-3",
@@ -3251,6 +4058,40 @@
    "source": "debts"
   },
   {
+   "id": 234,
+   "type": "CheckBox",
+   "x": 503.1,
+   "y": 165.64,
+   "width": 14.58,
+   "height": 14.31,
+   "value": "",
+   "fontSize": 10,
+   "color": [
+    0,
+    0,
+    0
+   ],
+   "page": 6,
+   "shape": "square"
+  },
+  {
+   "id": 233,
+   "type": "CheckBox",
+   "x": 550.1,
+   "y": 165.72,
+   "width": 13.77,
+   "height": 14.31,
+   "value": "",
+   "fontSize": 10,
+   "color": [
+    0,
+    0,
+    0
+   ],
+   "page": 6,
+   "shape": "square"
+  },
+  {
    "id": "lineofcredits-21-0",
    "type": "TextField",
    "x": 129,
@@ -3311,12 +4152,12 @@
    "source": "debts"
   },
   {
-   "id": "otherloans-32-0",
-   "type": "TextField",
-   "x": 129,
-   "y": 318.31,
-   "width": 276,
-   "height": 20,
+   "id": 232,
+   "type": "CheckBox",
+   "x": 503.1,
+   "y": 187.28,
+   "width": 14.58,
+   "height": 14.58,
    "value": "",
    "fontSize": 10,
    "color": [
@@ -3324,19 +4165,16 @@
     0,
     0
    ],
-   "background": "none",
-   "border": "none",
    "page": 6,
-   "bind": "otherloans[0].details",
-   "source": "debts"
+   "shape": "square"
   },
   {
-   "id": "otherloans-32-1",
-   "type": "Number",
-   "x": 332,
-   "y": 318.31,
-   "width": 105,
-   "height": 20,
+   "id": 231,
+   "type": "CheckBox",
+   "x": 550.18,
+   "y": 187.28,
+   "width": 13.77,
+   "height": 14.58,
    "value": "",
    "fontSize": 10,
    "color": [
@@ -3344,31 +4182,8 @@
     0,
     0
    ],
-   "background": "none",
-   "border": "none",
    "page": 6,
-   "bind": "otherloans[0].on_valuation_date",
-   "source": "debts"
-  },
-  {
-   "id": "otherloans-32-2",
-   "type": "Number",
-   "x": 419,
-   "y": 318.31,
-   "width": 105,
-   "height": 20,
-   "value": "",
-   "fontSize": 10,
-   "color": [
-    0,
-    0,
-    0
-   ],
-   "background": "none",
-   "border": "none",
-   "page": 6,
-   "bind": "otherloans[0].monthlyPayment",
-   "source": "debts"
+   "shape": "square"
   },
   {
    "id": "outstandingcreditcardbalances-47-0",
@@ -3431,6 +4246,232 @@
    "source": "debts"
   },
   {
+   "id": 230,
+   "type": "CheckBox",
+   "x": 503.1,
+   "y": 209.08,
+   "width": 14.58,
+   "height": 14.31,
+   "value": "",
+   "fontSize": 10,
+   "color": [
+    0,
+    0,
+    0
+   ],
+   "page": 6,
+   "shape": "square"
+  },
+  {
+   "id": 229,
+   "type": "CheckBox",
+   "x": 550.1,
+   "y": 209.08,
+   "width": 13.77,
+   "height": 14.31,
+   "value": "",
+   "fontSize": 10,
+   "color": [
+    0,
+    0,
+    0
+   ],
+   "page": 6,
+   "shape": "square"
+  },
+  {
+   "id": 1730453005250,
+   "type": "TextField",
+   "x": 129,
+   "y": 210.07,
+   "width": 276.0,
+   "height": 20,
+   "value": "",
+   "fontSize": 10,
+   "color": [
+    0,
+    0,
+    0
+   ],
+   "background": "none",
+   "border": "none",
+   "page": 6,
+   "source": ""
+  },
+  {
+   "id": "table-0-1-1730452941631",
+   "type": "Number",
+   "x": 332.6666666666667,
+   "y": 210.07,
+   "width": 105.0,
+   "height": 20,
+   "value": "",
+   "bind": "",
+   "source": "",
+   "sourceType": "",
+   "fontSize": 10,
+   "color": [
+    0,
+    0,
+    0
+   ],
+   "background": "none",
+   "border": "none",
+   "page": 6
+  },
+  {
+   "id": "table-0-2-1730452941631",
+   "type": "TextField",
+   "x": 419,
+   "y": 210.07,
+   "width": 105.0,
+   "height": 20,
+   "value": "",
+   "bind": "",
+   "source": "",
+   "sourceType": "",
+   "fontSize": 10,
+   "color": [
+    0,
+    0,
+    0
+   ],
+   "background": "none",
+   "border": "none",
+   "page": 6
+  },
+  {
+   "id": 228,
+   "type": "CheckBox",
+   "x": 503.1,
+   "y": 231.0,
+   "width": 14.58,
+   "height": 14.04,
+   "value": "",
+   "fontSize": 10,
+   "color": [
+    0,
+    0,
+    0
+   ],
+   "page": 6,
+   "shape": "square"
+  },
+  {
+   "id": 227,
+   "type": "CheckBox",
+   "x": 550.1,
+   "y": 231.0,
+   "width": 13.77,
+   "height": 14.31,
+   "value": "",
+   "fontSize": 10,
+   "color": [
+    0,
+    0,
+    0
+   ],
+   "page": 6,
+   "shape": "square"
+  },
+  {
+   "id": "table-0-0-1730452941631",
+   "type": "TextField",
+   "x": 129,
+   "y": 231.91,
+   "width": 276.0,
+   "height": 20,
+   "value": "",
+   "bind": "",
+   "source": "",
+   "sourceType": "",
+   "fontSize": 10,
+   "color": [
+    0,
+    0,
+    0
+   ],
+   "background": "none",
+   "border": "none",
+   "page": 6
+  },
+  {
+   "id": "table-1-1-1730452941631",
+   "type": "Number",
+   "x": 332,
+   "y": 231.91,
+   "width": 105.0,
+   "height": 20,
+   "value": "",
+   "bind": "",
+   "source": "",
+   "sourceType": "",
+   "fontSize": 10,
+   "color": [
+    0,
+    0,
+    0
+   ],
+   "background": "none",
+   "border": "none",
+   "page": 6
+  },
+  {
+   "id": "table-1-2-1730452941631",
+   "type": "TextField",
+   "x": 419,
+   "y": 231.91,
+   "width": 105.0,
+   "height": 20,
+   "value": "",
+   "bind": "",
+   "source": "",
+   "sourceType": "",
+   "fontSize": 10,
+   "color": [
+    0,
+    0,
+    0
+   ],
+   "background": "none",
+   "border": "none",
+   "page": 6
+  },
+  {
+   "id": 226,
+   "type": "CheckBox",
+   "x": 503.1,
+   "y": 252.0,
+   "width": 14.58,
+   "height": 14.04,
+   "value": "",
+   "fontSize": 10,
+   "color": [
+    0,
+    0,
+    0
+   ],
+   "page": 6,
+   "shape": "square"
+  },
+  {
+   "id": 225,
+   "type": "CheckBox",
+   "x": 550.1,
+   "y": 252.0,
+   "width": 13.77,
+   "height": 14.04,
+   "value": "",
+   "fontSize": 10,
+   "color": [
+    0,
+    0,
+    0
+   ],
+   "page": 6,
+   "shape": "square"
+  },
+  {
    "id": "unpaidsupportamounts-48-0",
    "type": "TextField",
    "x": 129,
@@ -3489,6 +4530,324 @@
    "page": 6,
    "bind": "unpaidsupportamounts[0].monthlyPayment",
    "source": "debts"
+  },
+  {
+   "id": 224,
+   "type": "CheckBox",
+   "x": 503.1,
+   "y": 273.46,
+   "width": 14.58,
+   "height": 14.31,
+   "value": "",
+   "fontSize": 10,
+   "color": [
+    0,
+    0,
+    0
+   ],
+   "page": 6,
+   "shape": "square"
+  },
+  {
+   "id": 223,
+   "type": "CheckBox",
+   "x": 550.1,
+   "y": 273.46,
+   "width": 13.77,
+   "height": 14.31,
+   "value": "",
+   "fontSize": 10,
+   "color": [
+    0,
+    0,
+    0
+   ],
+   "page": 6,
+   "shape": "square"
+  },
+  {
+   "id": "table-1-0-1730452941631",
+   "type": "TextField",
+   "x": 129,
+   "y": 275.59,
+   "width": 276.0,
+   "height": 20,
+   "value": "",
+   "bind": "",
+   "source": "",
+   "sourceType": "",
+   "fontSize": 10,
+   "color": [
+    0,
+    0,
+    0
+   ],
+   "background": "none",
+   "border": "none",
+   "page": 6
+  },
+  {
+   "id": 1730453026523,
+   "type": "Number",
+   "x": 332,
+   "y": 275.59,
+   "width": 105.0,
+   "height": 20,
+   "value": "",
+   "fontSize": 10,
+   "color": [
+    0,
+    0,
+    0
+   ],
+   "background": "none",
+   "border": "none",
+   "page": 6,
+   "source": ""
+  },
+  {
+   "id": 1730453026322,
+   "type": "TextField",
+   "x": 419,
+   "y": 275.59,
+   "width": 105.0,
+   "height": 20,
+   "value": "",
+   "fontSize": 10,
+   "color": [
+    0,
+    0,
+    0
+   ],
+   "background": "none",
+   "border": "none",
+   "page": 6,
+   "source": ""
+  },
+  {
+   "id": 222,
+   "type": "CheckBox",
+   "x": 503.1,
+   "y": 295.64,
+   "width": 14.58,
+   "height": 14.31,
+   "value": "",
+   "fontSize": 10,
+   "color": [
+    0,
+    0,
+    0
+   ],
+   "page": 6,
+   "shape": "square"
+  },
+  {
+   "id": 221,
+   "type": "CheckBox",
+   "x": 550.18,
+   "y": 295.64,
+   "width": 13.77,
+   "height": 14.31,
+   "value": "",
+   "fontSize": 10,
+   "color": [
+    0,
+    0,
+    0
+   ],
+   "page": 6,
+   "shape": "square"
+  },
+  {
+   "id": "table-2-0-1730452941631",
+   "type": "TextField",
+   "x": 129,
+   "y": 296.71,
+   "width": 276.0,
+   "height": 20,
+   "value": "",
+   "bind": "",
+   "source": "",
+   "sourceType": "",
+   "fontSize": 10,
+   "color": [
+    0,
+    0,
+    0
+   ],
+   "background": "none",
+   "border": "none",
+   "page": 6
+  },
+  {
+   "id": "table-2-1-1730452941631",
+   "type": "Number",
+   "x": 332,
+   "y": 296.71,
+   "width": 105.0,
+   "height": 20,
+   "value": "",
+   "bind": "",
+   "source": "",
+   "sourceType": "",
+   "fontSize": 10,
+   "color": [
+    0,
+    0,
+    0
+   ],
+   "background": "none",
+   "border": "none",
+   "page": 6
+  },
+  {
+   "id": "table-2-2-1730452941631",
+   "type": "TextField",
+   "x": 419,
+   "y": 296.71,
+   "width": 105.0,
+   "height": 20,
+   "value": "",
+   "bind": "",
+   "source": "",
+   "sourceType": "",
+   "fontSize": 10,
+   "color": [
+    0,
+    0,
+    0
+   ],
+   "background": "none",
+   "border": "none",
+   "page": 6
+  },
+  {
+   "id": 220,
+   "type": "CheckBox",
+   "x": 503.1,
+   "y": 317.28,
+   "width": 14.58,
+   "height": 14.04,
+   "value": "",
+   "fontSize": 10,
+   "color": [
+    0,
+    0,
+    0
+   ],
+   "page": 6,
+   "shape": "square"
+  },
+  {
+   "id": 219,
+   "type": "CheckBox",
+   "x": 550.1,
+   "y": 317.28,
+   "width": 13.77,
+   "height": 14.04,
+   "value": "",
+   "fontSize": 10,
+   "color": [
+    0,
+    0,
+    0
+   ],
+   "page": 6,
+   "shape": "square"
+  },
+  {
+   "id": "otherloans-32-0",
+   "type": "TextField",
+   "x": 129,
+   "y": 318.31,
+   "width": 276,
+   "height": 20,
+   "value": "",
+   "fontSize": 10,
+   "color": [
+    0,
+    0,
+    0
+   ],
+   "background": "none",
+   "border": "none",
+   "page": 6,
+   "bind": "otherloans[0].details",
+   "source": "debts"
+  },
+  {
+   "id": "otherloans-32-1",
+   "type": "Number",
+   "x": 332,
+   "y": 318.31,
+   "width": 105,
+   "height": 20,
+   "value": "",
+   "fontSize": 10,
+   "color": [
+    0,
+    0,
+    0
+   ],
+   "background": "none",
+   "border": "none",
+   "page": 6,
+   "bind": "otherloans[0].on_valuation_date",
+   "source": "debts"
+  },
+  {
+   "id": "otherloans-32-2",
+   "type": "Number",
+   "x": 419,
+   "y": 318.31,
+   "width": 105,
+   "height": 20,
+   "value": "",
+   "fontSize": 10,
+   "color": [
+    0,
+    0,
+    0
+   ],
+   "background": "none",
+   "border": "none",
+   "page": 6,
+   "bind": "otherloans[0].monthlyPayment",
+   "source": "debts"
+  },
+  {
+   "id": 218,
+   "type": "CheckBox",
+   "x": 503.1,
+   "y": 339.0,
+   "width": 14.58,
+   "height": 14.31,
+   "value": "",
+   "fontSize": 10,
+   "color": [
+    0,
+    0,
+    0
+   ],
+   "page": 6,
+   "shape": "square"
+  },
+  {
+   "id": 217,
+   "type": "CheckBox",
+   "x": 550.2,
+   "y": 339.0,
+   "width": 13.77,
+   "height": 14.31,
+   "value": "",
+   "fontSize": 10,
+   "color": [
+    0,
+    0,
+    0
+   ],
+   "page": 6,
+   "shape": "square"
   },
   {
    "id": "otherdebts-50-0",
@@ -3551,11 +4910,45 @@
    "source": "debts"
   },
   {
-   "id": "client-automaticDeductions-cppContributions-0",
-   "type": "Number",
-   "x": 225,
-   "y": 301.03,
-   "width": 112,
+   "id": 216,
+   "type": "CheckBox",
+   "x": 503.2,
+   "y": 360.9,
+   "width": 14.58,
+   "height": 14.04,
+   "value": "",
+   "fontSize": 10,
+   "color": [
+    0,
+    0,
+    0
+   ],
+   "page": 6,
+   "shape": "square"
+  },
+  {
+   "id": 215,
+   "type": "CheckBox",
+   "x": 550.2,
+   "y": 360.9,
+   "width": 13.77,
+   "height": 14.04,
+   "value": "",
+   "fontSize": 10,
+   "color": [
+    0,
+    0,
+    0
+   ],
+   "page": 6,
+   "shape": "square"
+  },
+  {
+   "id": 1730453067200,
+   "type": "TextField",
+   "x": 129,
+   "y": 361.75,
+   "width": 276.0,
    "height": 20,
    "value": "",
    "fontSize": 10,
@@ -3566,16 +4959,15 @@
    ],
    "background": "none",
    "border": "none",
-   "page": 3,
-   "bind": "expenses.client.automaticDeductions.cppContributions",
-   "source": "expenses"
+   "page": 6,
+   "source": ""
   },
   {
-   "id": "client-automaticDeductions-eiPremiums-1",
+   "id": 1730453066709,
    "type": "Number",
-   "x": 225,
-   "y": 325.03,
-   "width": 111,
+   "x": 332,
+   "y": 361.75,
+   "width": 105.0,
    "height": 20,
    "value": "",
    "fontSize": 10,
@@ -3586,16 +4978,15 @@
    ],
    "background": "none",
    "border": "none",
-   "page": 3,
-   "bind": "expenses.client.automaticDeductions.eiPremiums",
-   "source": "expenses"
+   "page": 6,
+   "source": ""
   },
   {
-   "id": "client-automaticDeductions-incomeTaxes-2",
-   "type": "Number",
-   "x": 225,
-   "y": 348.07,
-   "width": 110,
+   "id": 1730453066531,
+   "type": "TextField",
+   "x": 419,
+   "y": 361.75,
+   "width": 105.0,
    "height": 20,
    "value": "",
    "fontSize": 10,
@@ -3606,16 +4997,15 @@
    ],
    "background": "none",
    "border": "none",
-   "page": 3,
-   "bind": "expenses.client.automaticDeductions.incomeTaxes",
-   "source": "expenses"
+   "page": 6,
+   "source": ""
   },
   {
-   "id": "client-automaticDeductions-employeePensionContributions-3",
+   "id": "calc-1730453339043",
    "type": "Number",
-   "x": 224,
-   "y": 372.31,
-   "width": 111,
+   "x": 495.3333333333333,
+   "y": 392.95,
+   "width": 130.0,
    "height": 20,
    "value": "",
    "fontSize": 10,
@@ -3626,16 +5016,31 @@
    ],
    "background": "none",
    "border": "none",
-   "page": 3,
-   "bind": "expenses.client.automaticDeductions.employeePensionContributions",
-   "source": "expenses"
+   "page": 6,
+   "isCalculated": true,
+   "calculationType": "sum",
+   "sourceFields": [
+    "mortgages-23-1",
+    "mortgages-49-4",
+    "lineofcredits-21-1",
+    "outstandingcreditcardbalances-47-1",
+    "table-0-1-1730452941631",
+    "table-1-1-1730452941631",
+    "unpaidsupportamounts-48-1",
+    1730453026523,
+    "table-2-1-1730452941631",
+    "otherloans-32-1",
+    "otherdebts-50-1",
+    1730453066709
+   ],
+   "calculationName": "totalDebts"
   },
   {
-   "id": "client-automaticDeductions-unionDues-4",
+   "id": "totalAssetsValue",
    "type": "Number",
-   "x": 225,
-   "y": 396.55,
-   "width": 110,
+   "x": 343,
+   "y": 432.07,
+   "width": 160.0,
    "height": 20,
    "value": "",
    "fontSize": 10,
@@ -3646,16 +5051,18 @@
    ],
    "background": "none",
    "border": "none",
-   "page": 3,
-   "bind": "expenses.client.automaticDeductions.unionDues",
-   "source": "expenses"
+   "page": 6,
+   "linkedToId": "calc-1730452873765",
+   "isCalculated": true,
+   "calculationType": "linked",
+   "isDerived": true
   },
   {
-   "id": "client-housing-rentOrMortgage-0",
+   "id": "totalDebtsValue",
    "type": "Number",
-   "x": 225,
-   "y": 469.27,
-   "width": 110,
+   "x": 343,
+   "y": 451.27,
+   "width": 160.0,
    "height": 20,
    "value": "",
    "fontSize": 10,
@@ -3666,16 +5073,18 @@
    ],
    "background": "none",
    "border": "none",
-   "page": 3,
-   "bind": "expenses.client.housing.rentOrMortgage",
-   "source": "expenses.client"
+   "page": 6,
+   "linkedToId": "calc-1730453339043",
+   "isCalculated": true,
+   "calculationType": "linked",
+   "isDerived": true
   },
   {
-   "id": "client-housing-propertyTaxes-1",
+   "id": "calc-1730575991943",
    "type": "Number",
-   "x": 226,
-   "y": 492.79,
-   "width": 110,
+   "x": 343,
+   "y": 470.23,
+   "width": 160.0,
    "height": 20,
    "value": "",
    "fontSize": 10,
@@ -3686,16 +5095,22 @@
    ],
    "background": "none",
    "border": "none",
-   "page": 3,
-   "bind": "expenses.client.housing.propertyTaxes",
-   "source": "expenses.client"
+   "page": 6,
+   "isCalculated": true,
+   "calculationType": "subtract",
+   "sourceFields": [
+    "totalAssetsValue",
+    "totalDebtsValue"
+   ],
+   "calculationName": "totalNetWorth",
+   "isDerived": true
   },
   {
-   "id": "client-housing-propertyInsurance-2",
-   "type": "Number",
-   "x": 226,
-   "y": 516.55,
-   "width": 110,
+   "id": 1728073829093,
+   "type": "TextField",
+   "x": 174,
+   "y": 608,
+   "width": 306,
    "height": 20,
    "value": "",
    "fontSize": 10,
@@ -3706,16 +5121,14 @@
    ],
    "background": "none",
    "border": "none",
-   "page": 3,
-   "bind": "expenses.client.housing.propertyInsurance",
-   "source": "expenses.client"
+   "page": 6
   },
   {
-   "id": "client-housing-condominiumFees-3",
-   "type": "Number",
-   "x": 227,
-   "y": 540.55,
-   "width": 110,
+   "id": 1728073895289,
+   "type": "TextField",
+   "x": 55,
+   "y": 638,
+   "width": 484,
    "height": 20,
    "value": "",
    "fontSize": 10,
@@ -3726,16 +5139,14 @@
    ],
    "background": "none",
    "border": "none",
-   "page": 3,
-   "bind": "expenses.client.housing.condominiumFees",
-   "source": "expenses.client"
+   "page": 6
   },
   {
-   "id": "client-housing-repairsAndMaintenance-4",
-   "type": "Number",
-   "x": 226,
-   "y": 564.07,
-   "width": 110,
+   "id": 1728073973936,
+   "type": "TextField",
+   "x": 58,
+   "y": 667,
+   "width": 168,
    "height": 20,
    "value": "",
    "fontSize": 10,
@@ -3746,16 +5157,14 @@
    ],
    "background": "none",
    "border": "none",
-   "page": 3,
-   "bind": "expenses.client.housing.repairsAndMaintenance",
-   "source": "expenses.client"
+   "page": 6
   },
   {
-   "id": "client-transportation-publicTransit-0",
+   "id": 1728076533392,
    "type": "Number",
-   "x": 508,
-   "y": 301.03,
-   "width": 110,
+   "x": 481,
+   "y": 132.07,
+   "width": 153,
    "height": 20,
    "value": "",
    "fontSize": 10,
@@ -3766,16 +5175,14 @@
    ],
    "background": "none",
    "border": "none",
-   "page": 3,
-   "bind": "expenses.client.transportation.publicTransit",
-   "source": "expenses.client"
+   "page": 7
   },
   {
-   "id": "client-transportation-carPayments-1",
+   "id": 1728076563320,
    "type": "Number",
-   "x": 508,
-   "y": 325.03,
-   "width": 110,
+   "x": 481,
+   "y": 152,
+   "width": 153,
    "height": 20,
    "value": "",
    "fontSize": 10,
@@ -3786,16 +5193,14 @@
    ],
    "background": "none",
    "border": "none",
-   "page": 3,
-   "bind": "expenses.client.transportation.carPayments",
-   "source": "expenses.client"
+   "page": 7
   },
   {
-   "id": "client-transportation-gasAndOil-2",
+   "id": 1728076582234,
    "type": "Number",
-   "x": 508,
-   "y": 348.07,
-   "width": 110,
+   "x": 480,
+   "y": 181.51,
+   "width": 153.0,
    "height": 20,
    "value": "",
    "fontSize": 10,
@@ -3806,16 +5211,14 @@
    ],
    "background": "none",
    "border": "none",
-   "page": 3,
-   "bind": "expenses.client.transportation.gasAndOil",
-   "source": "expenses.client"
+   "page": 7
   },
   {
-   "id": "client-transportation-insurance-3",
+   "id": 1728076587824,
    "type": "Number",
-   "x": 507,
-   "y": 372.31,
-   "width": 110,
+   "x": 480,
+   "y": 206.47,
+   "width": 153.0,
    "height": 20,
    "value": "",
    "fontSize": 10,
@@ -3826,16 +5229,14 @@
    ],
    "background": "none",
    "border": "none",
-   "page": 3,
-   "bind": "expenses.client.transportation.insurance",
-   "source": "expenses.client"
+   "page": 7
   },
   {
-   "id": "client-transportation-repairsAndMaintenance-4",
+   "id": 1728076597743,
    "type": "Number",
-   "x": 506,
-   "y": 396.55,
-   "width": 110,
+   "x": 480,
+   "y": 231.19,
+   "width": 153.0,
    "height": 20,
    "value": "",
    "fontSize": 10,
@@ -3846,16 +5247,14 @@
    ],
    "background": "none",
    "border": "none",
-   "page": 3,
-   "bind": "expenses.client.transportation.repairsAndMaintenance",
-   "source": "expenses.client"
+   "page": 7
   },
   {
-   "id": "client-transportation-parking-5",
+   "id": 1728076607887,
    "type": "Number",
-   "x": 507,
-   "y": 419.83,
-   "width": 110,
+   "x": 481,
+   "y": 256.15,
+   "width": 153.0,
    "height": 20,
    "value": "",
    "fontSize": 10,
@@ -3866,16 +5265,14 @@
    ],
    "background": "none",
    "border": "none",
-   "page": 3,
-   "bind": "expenses.client.transportation.parking",
-   "source": "expenses.client"
+   "page": 7
   },
   {
-   "id": "client-health-insurance-0",
+   "id": 1728076615368,
    "type": "Number",
-   "x": 508,
-   "y": 564.07,
-   "width": 110,
+   "x": 480,
+   "y": 280.63,
+   "width": 153.0,
    "height": 20,
    "value": "",
    "fontSize": 10,
@@ -3886,16 +5283,14 @@
    ],
    "background": "none",
    "border": "none",
-   "page": 3,
-   "bind": "expenses.client.health.insurance",
-   "source": "expenses.client"
+   "page": 7
   },
   {
-   "id": "client-health-dental-1",
+   "id": "calc-1730574789134",
    "type": "Number",
-   "x": 508,
-   "y": 540.55,
-   "width": 110,
+   "x": 482,
+   "y": 319.99,
+   "width": 150,
    "height": 20,
    "value": "",
    "fontSize": 10,
@@ -3906,16 +5301,60 @@
    ],
    "background": "none",
    "border": "none",
-   "page": 3,
-   "bind": "expenses.client.health.dental",
-   "source": "expenses.client"
+   "page": 7,
+   "isCalculated": true,
+   "calculationType": "sum",
+   "sourceFields": [
+    1728076533392,
+    1728076563320,
+    1728076582234,
+    1728076587824,
+    1728076597743,
+    1728076607887,
+    1728076615368
+   ],
+   "calculationName": "additionalIncomeSourceTotal"
   },
   {
-   "id": "client-health-medicine-2",
-   "type": "Number",
-   "x": 508,
-   "y": 516.55,
-   "width": 110,
+   "id": 264,
+   "type": "CheckBox",
+   "x": 77.56,
+   "y": 432.18,
+   "width": 15.66,
+   "height": 15.66,
+   "value": "",
+   "fontSize": 10,
+   "color": [
+    0,
+    0,
+    0
+   ],
+   "page": 7,
+   "shape": "square"
+  },
+  {
+   "id": 265,
+   "type": "CheckBox",
+   "x": 77.56,
+   "y": 456.56,
+   "width": 15.66,
+   "height": 15.12,
+   "value": "",
+   "fontSize": 10,
+   "color": [
+    0,
+    0,
+    0
+   ],
+   "page": 7,
+   "shape": "square"
+  },
+  {
+   "id": 1728076825608,
+   "type": "TextField",
+   "x": 93,
+   "y": 470,
+   "width": 742,
    "height": 20,
    "value": "",
    "fontSize": 10,
@@ -3926,16 +5365,31 @@
    ],
    "background": "none",
    "border": "none",
-   "page": 3,
-   "bind": "expenses.client.health.medicine",
-   "source": "expenses.client"
+   "page": 7
   },
   {
-   "id": "client-health-eyecare-3",
-   "type": "Number",
-   "x": 508,
-   "y": 492.79,
-   "width": 110,
+   "id": 267,
+   "type": "CheckBox",
+   "x": 77.56,
+   "y": 498.54,
+   "width": 15.66,
+   "height": 15.39,
+   "value": "",
+   "fontSize": 10,
+   "color": [
+    0,
+    0,
+    0
+   ],
+   "page": 7,
+   "shape": "square"
+  },
+  {
+   "id": 1728076907012,
+   "type": "TextField",
+   "x": 92,
+   "y": 512,
+   "width": 740,
    "height": 20,
    "value": "",
    "fontSize": 10,
@@ -3946,16 +5400,14 @@
    ],
    "background": "none",
    "border": "none",
-   "page": 3,
-   "bind": "expenses.client.health.eyecare",
-   "source": "expenses.client"
+   "page": 7
   },
   {
-   "id": "client-personal-education-3",
-   "type": "Number",
-   "x": 508,
-   "y": 105.67,
-   "width": 110,
+   "id": 1728077038359,
+   "type": "TextField",
+   "x": 207,
+   "y": 538,
+   "width": 72,
    "height": 20,
    "value": "",
    "fontSize": 10,
@@ -3966,16 +5418,31 @@
    ],
    "background": "none",
    "border": "none",
-   "page": 4,
-   "bind": "expenses.client.personal.education",
-   "source": "expenses.client"
+   "page": 7
   },
   {
-   "id": "client-personal-entertainment-4",
-   "type": "Number",
-   "x": 508,
-   "y": 128,
-   "width": 110,
+   "id": 269,
+   "type": "CheckBox",
+   "x": 77.56,
+   "y": 540.36,
+   "width": 15.66,
+   "height": 15.39,
+   "value": "",
+   "fontSize": 10,
+   "color": [
+    0,
+    0,
+    0
+   ],
+   "page": 7,
+   "shape": "square"
+  },
+  {
+   "id": 1728077060948,
+   "type": "TextField",
+   "x": 367,
+   "y": 562,
+   "width": 320,
    "height": 20,
    "value": "",
    "fontSize": 10,
@@ -3986,16 +5453,48 @@
    ],
    "background": "none",
    "border": "none",
-   "page": 4,
-   "bind": "expenses.client.personal.entertainment",
-   "source": "expenses.client"
+   "page": 7
   },
   {
-   "id": "client-personal-gifts-5",
-   "type": "Number",
-   "x": 508,
-   "y": 158.47,
-   "width": 110,
+   "id": 270,
+   "type": "CheckBox",
+   "x": 190.38,
+   "y": 565.46,
+   "width": 15.66,
+   "height": 15.39,
+   "value": "",
+   "fontSize": 10,
+   "color": [
+    0,
+    0,
+    0
+   ],
+   "page": 7,
+   "shape": "square"
+  },
+  {
+   "id": 271,
+   "type": "CheckBox",
+   "x": 190.38,
+   "y": 584.18,
+   "width": 15.66,
+   "height": 15.12,
+   "value": "",
+   "fontSize": 10,
+   "color": [
+    0,
+    0,
+    0
+   ],
+   "page": 7,
+   "shape": "square"
+  },
+  {
+   "id": 1728077081699,
+   "type": "TextField",
+   "x": 311,
+   "y": 605,
+   "width": 153,
    "height": 20,
    "value": "",
    "fontSize": 10,
@@ -4006,16 +5505,14 @@
    ],
    "background": "none",
    "border": "none",
-   "page": 4,
-   "bind": "expenses.client.personal.gifts",
-   "source": "expenses.client"
+   "page": 7
   },
   {
-   "id": "client-householdExpenses-groceries-0",
-   "type": "Number",
-   "x": 227,
-   "y": 250,
-   "width": 110,
+   "id": 1728077099356,
+   "type": "TextField",
+   "x": 436,
+   "y": 605,
+   "width": 216,
    "height": 20,
    "value": "",
    "fontSize": 10,
@@ -4026,16 +5523,48 @@
    ],
    "background": "none",
    "border": "none",
-   "page": 4,
-   "bind": "expenses.client.householdExpenses.groceries",
-   "source": "expenses.client"
+   "page": 7
   },
   {
-   "id": "client-householdExpenses-householdSupplies-1",
-   "type": "Number",
-   "x": 227,
-   "y": 279.43,
-   "width": 110,
+   "id": 272,
+   "type": "CheckBox",
+   "x": 190.38,
+   "y": 609.26,
+   "width": 15.66,
+   "height": 15.12,
+   "value": "",
+   "fontSize": 10,
+   "color": [
+    0,
+    0,
+    0
+   ],
+   "page": 7,
+   "shape": "square"
+  },
+  {
+   "id": 273,
+   "type": "CheckBox",
+   "x": 190.38,
+   "y": 628.0,
+   "width": 15.66,
+   "height": 15.12,
+   "value": "",
+   "fontSize": 10,
+   "color": [
+    0,
+    0,
+    0
+   ],
+   "page": 7,
+   "shape": "square"
+  },
+  {
+   "id": 1728077116583,
+   "type": "TextField",
+   "x": 459,
+   "y": 648,
+   "width": 144,
    "height": 20,
    "value": "",
    "fontSize": 10,
@@ -4046,16 +5575,31 @@
    ],
    "background": "none",
    "border": "none",
-   "page": 4,
-   "bind": "expenses.client.householdExpenses.householdSupplies",
-   "source": "expenses.client"
+   "page": 7
   },
   {
-   "id": "client-householdExpenses-mealsOutsideTheHome-2",
-   "type": "Number",
-   "x": 227,
-   "y": 302.71,
-   "width": 110,
+   "id": 280,
+   "type": "CheckBox",
+   "x": 77.56,
+   "y": 651.82,
+   "width": 15.66,
+   "height": 15.39,
+   "value": "",
+   "fontSize": 10,
+   "color": [
+    0,
+    0,
+    0
+   ],
+   "page": 7,
+   "shape": "square"
+  },
+  {
+   "id": 1728077136412,
+   "type": "TextField",
+   "x": 92,
+   "y": 667,
+   "width": 216,
    "height": 20,
    "value": "",
    "fontSize": 10,
@@ -4066,489 +5610,7 @@
    ],
    "background": "none",
    "border": "none",
-   "page": 4,
-   "bind": "expenses.client.householdExpenses.mealsOutsideTheHome",
-   "source": "expenses.client"
-  },
-  {
-   "id": "client-householdExpenses-petCare-3",
-   "type": "Number",
-   "x": 226,
-   "y": 326.71,
-   "width": 110,
-   "height": 20,
-   "value": "",
-   "fontSize": 10,
-   "color": [
-    0,
-    0,
-    0
-   ],
-   "background": "none",
-   "border": "none",
-   "page": 4,
-   "bind": "expenses.client.householdExpenses.petCare",
-   "source": "expenses.client"
-  },
-  {
-   "id": "client-householdExpenses-laundryAndDryCleaning-4",
-   "type": "Number",
-   "x": 226,
-   "y": 348.07,
-   "width": 110,
-   "height": 20,
-   "value": "",
-   "fontSize": 10,
-   "color": [
-    0,
-    0,
-    0
-   ],
-   "background": "none",
-   "border": "none",
-   "page": 4,
-   "bind": "expenses.client.householdExpenses.laundryAndDryCleaning",
-   "source": "expenses.client"
-  },
-  {
-   "id": "client-childcare-daycare-0",
-   "type": "Number",
-   "x": 226.33333333333334,
-   "y": 420.55,
-   "width": 110,
-   "height": 20,
-   "value": "",
-   "fontSize": 10,
-   "color": [
-    0,
-    0,
-    0
-   ],
-   "background": "none",
-   "border": "none",
-   "page": 4,
-   "bind": "expenses.client.childcare.daycare",
-   "source": "expenses.client"
-  },
-  {
-   "id": "client-childcare-babysitting-1",
-   "type": "Number",
-   "x": 226.33333333333334,
-   "y": 442.3333333333333,
-   "width": 110,
-   "height": 20,
-   "value": "",
-   "fontSize": 10,
-   "color": [
-    0,
-    0,
-    0
-   ],
-   "background": "none",
-   "border": "none",
-   "page": 4,
-   "bind": "expenses.client.childcare.babysitting",
-   "source": "expenses.client"
-  },
-  {
-   "id": "client-other-lifeInsurance-0",
-   "type": "Number",
-   "x": 508,
-   "y": 231.91,
-   "width": 110,
-   "height": 20,
-   "value": "",
-   "fontSize": 10,
-   "color": [
-    0,
-    0,
-    0
-   ],
-   "background": "none",
-   "border": "none",
-   "page": 4,
-   "bind": "expenses.client.other.lifeInsurance",
-   "source": "expenses.client"
-  },
-  {
-   "id": "client-other-rrsp-1",
-   "type": "Number",
-   "x": 508,
-   "y": 255.19,
-   "width": 110,
-   "height": 20,
-   "value": "",
-   "fontSize": 10,
-   "color": [
-    0,
-    0,
-    0
-   ],
-   "background": "none",
-   "border": "none",
-   "page": 4,
-   "bind": "expenses.client.other.rrsp",
-   "source": "expenses.client"
-  },
-  {
-   "id": "client-other-vacations-2",
-   "type": "Number",
-   "x": 508,
-   "y": 279.43,
-   "width": 110,
-   "height": 20,
-   "value": "",
-   "fontSize": 10,
-   "color": [
-    0,
-    0,
-    0
-   ],
-   "background": "none",
-   "border": "none",
-   "page": 4,
-   "bind": "expenses.client.other.vacations",
-   "source": "expenses.client"
-  },
-  {
-   "id": "client-other-school-3",
-   "type": "Number",
-   "x": 508,
-   "y": 302.71,
-   "width": 110,
-   "height": 20,
-   "value": "",
-   "fontSize": 10,
-   "color": [
-    0,
-    0,
-    0
-   ],
-   "background": "none",
-   "border": "none",
-   "page": 4,
-   "bind": "expenses.client.other.school",
-   "source": "expenses.client"
-  },
-  {
-   "id": "client-other-clothingForChildren-4",
-   "type": "Number",
-   "x": 508,
-   "y": 326.71,
-   "width": 110,
-   "height": 20,
-   "value": "",
-   "fontSize": 10,
-   "color": [
-    0,
-    0,
-    0
-   ],
-   "background": "none",
-   "border": "none",
-   "page": 4,
-   "bind": "expenses.client.other.clothingForChildren",
-   "source": "expenses.client"
-  },
-  {
-   "id": "client-other-childrenActivities-5",
-   "type": "Number",
-   "x": 507,
-   "y": 348.07,
-   "width": 110,
-   "height": 20,
-   "value": "",
-   "fontSize": 10,
-   "color": [
-    0,
-    0,
-    0
-   ],
-   "background": "none",
-   "border": "none",
-   "page": 4,
-   "bind": "expenses.client.other.childrenActivities",
-   "source": "expenses.client"
-  },
-  {
-   "id": "client-other-summerCamp-6",
-   "type": "Number",
-   "x": 507,
-   "y": 371.59,
-   "width": 110,
-   "height": 20,
-   "value": "",
-   "fontSize": 10,
-   "color": [
-    0,
-    0,
-    0
-   ],
-   "background": "none",
-   "border": "none",
-   "page": 4,
-   "bind": "expenses.client.other.summerCamp",
-   "source": "expenses.client"
-  },
-  {
-   "id": "client-other-debtPayments-7",
-   "type": "Number",
-   "x": 508,
-   "y": 396.55,
-   "width": 110,
-   "height": 20,
-   "value": "",
-   "fontSize": 10,
-   "color": [
-    0,
-    0,
-    0
-   ],
-   "background": "none",
-   "border": "none",
-   "page": 4,
-   "bind": "expenses.client.other.debtPayments",
-   "source": "expenses.client"
-  },
-  {
-   "id": "client-other-supportPaidForOtherChildren-8",
-   "type": "Number",
-   "x": 508,
-   "y": 420.55,
-   "width": 110,
-   "height": 20,
-   "value": "",
-   "fontSize": 10,
-   "color": [
-    0,
-    0,
-    0
-   ],
-   "background": "none",
-   "border": "none",
-   "page": 4,
-   "bind": "expenses.client.other.supportPaidForOtherChildren",
-   "source": "expenses.client"
-  },
-  {
-   "id": "client-other-other-9",
-   "type": "Number",
-   "x": 507,
-   "y": 442,
-   "width": 110,
-   "height": 20,
-   "value": "",
-   "fontSize": 10,
-   "color": [
-    0,
-    0,
-    0
-   ],
-   "background": "none",
-   "border": "none",
-   "page": 4,
-   "bind": "expenses.client.other.other",
-   "source": "expenses.client"
-  },
-  {
-   "id": "client-utilities-water-0",
-   "type": "Number",
-   "x": 226,
-   "y": 634.63,
-   "width": 110,
-   "height": 20.0,
-   "value": "",
-   "fontSize": 10,
-   "color": [
-    0,
-    0,
-    0
-   ],
-   "background": "none",
-   "border": "none",
-   "page": 3,
-   "bind": "expenses.client.utilities.water",
-   "source": "expenses.client"
-  },
-  {
-   "id": "client-utilities-heat-1",
-   "type": "Number",
-   "x": 225,
-   "y": 658.15,
-   "width": 110,
-   "height": 20,
-   "value": "",
-   "fontSize": 10,
-   "color": [
-    0,
-    0,
-    0
-   ],
-   "background": "none",
-   "border": "none",
-   "page": 3,
-   "bind": "expenses.client.utilities.heat",
-   "source": "expenses.client"
-  },
-  {
-   "id": "client-utilities-electricity-2",
-   "type": "Number",
-   "x": 224,
-   "y": 673.99,
-   "width": 110,
-   "height": 20,
-   "value": "",
-   "fontSize": 10,
-   "color": [
-    0,
-    0,
-    0
-   ],
-   "background": "none",
-   "border": "none",
-   "page": 3,
-   "bind": "expenses.client.utilities.electricity",
-   "source": "expenses.client"
-  },
-  {
-   "id": "client-utilities-telephone-3",
-   "type": "Number",
-   "x": 226,
-   "y": 105.67,
-   "width": 110,
-   "height": 20,
-   "value": "",
-   "fontSize": 10,
-   "color": [
-    0,
-    0,
-    0
-   ],
-   "background": "none",
-   "border": "none",
-   "page": 4,
-   "bind": "expenses.client.utilities.telephone",
-   "source": "expenses.client"
-  },
-  {
-   "id": "client-utilities-cellPhone-4",
-   "type": "Number",
-   "x": 225,
-   "y": 128,
-   "width": 110,
-   "height": 20,
-   "value": "",
-   "fontSize": 10,
-   "color": [
-    0,
-    0,
-    0
-   ],
-   "background": "none",
-   "border": "none",
-   "page": 4,
-   "bind": "expenses.client.utilities.cellPhone",
-   "source": "expenses.client"
-  },
-  {
-   "id": "client-utilities-cable-5",
-   "type": "Number",
-   "x": 225,
-   "y": 158.47,
-   "width": 110,
-   "height": 20,
-   "value": "",
-   "fontSize": 10,
-   "color": [
-    0,
-    0,
-    0
-   ],
-   "background": "none",
-   "border": "none",
-   "page": 4,
-   "bind": "expenses.client.utilities.cable",
-   "source": "expenses.client"
-  },
-  {
-   "id": "client-utilities-internet-6",
-   "type": "Number",
-   "x": 226,
-   "y": 182.47,
-   "width": 110,
-   "height": 20,
-   "value": "",
-   "fontSize": 10,
-   "color": [
-    0,
-    0,
-    0
-   ],
-   "background": "none",
-   "border": "none",
-   "page": 4,
-   "bind": "expenses.client.utilities.internet",
-   "source": "expenses.client"
-  },
-  {
-   "id": "client-personal-clothing-0",
-   "type": "Number",
-   "x": 508,
-   "y": 634.63,
-   "width": 110,
-   "height": 20,
-   "value": "",
-   "fontSize": 10,
-   "color": [
-    0,
-    0,
-    0
-   ],
-   "background": "none",
-   "border": "none",
-   "page": 3,
-   "bind": "expenses.client.personal.clothing",
-   "source": "expenses.client"
-  },
-  {
-   "id": "client-personal-haircare-1",
-   "type": "Number",
-   "x": 508,
-   "y": 658.15,
-   "width": 110,
-   "height": 20,
-   "value": "",
-   "fontSize": 10,
-   "color": [
-    0,
-    0,
-    0
-   ],
-   "background": "none",
-   "border": "none",
-   "page": 3,
-   "bind": "expenses.client.personal.haircare",
-   "source": "expenses.client"
-  },
-  {
-   "id": "client-personal-alcohol-2",
-   "type": "Number",
-   "x": 508,
-   "y": 673.99,
-   "width": 110,
-   "height": 20,
-   "value": "",
-   "fontSize": 10,
-   "color": [
-    0,
-    0,
-    0
-   ],
-   "background": "none",
-   "border": "none",
-   "page": 3,
-   "bind": "expenses.client.personal.alcohol",
-   "source": "expenses.client"
+   "page": 7
   },
   {
    "id": "client-name-0",
@@ -5351,1049 +6413,6 @@
    "source": "specialExpenses.client"
   },
   {
-   "id": "client-employmentIncome",
-   "type": "Number",
-   "x": 471,
-   "y": 429.67,
-   "width": 135,
-   "height": 20,
-   "value": "",
-   "fontSize": 10,
-   "color": [
-    0,
-    0,
-    0
-   ],
-   "background": "none",
-   "border": "none",
-   "page": 2,
-   "bind": "income.client.employmentIncome",
-   "source": "income.client"
-  },
-  {
-   "id": "client-commissionTipsBonuses",
-   "type": "Number",
-   "x": 471,
-   "y": 450.31,
-   "width": 135,
-   "height": 20,
-   "value": "",
-   "fontSize": 10,
-   "color": [
-    0,
-    0,
-    0
-   ],
-   "background": "none",
-   "border": "none",
-   "page": 2,
-   "bind": "income.client.commissionTipsBonuses",
-   "source": "income.client"
-  },
-  {
-   "id": "client-selfEmploymentIncome",
-   "type": "Number",
-   "x": 471,
-   "y": 472.39,
-   "width": 135,
-   "height": 20,
-   "value": "",
-   "fontSize": 10,
-   "color": [
-    0,
-    0,
-    0
-   ],
-   "background": "none",
-   "border": "none",
-   "page": 2,
-   "bind": "income.client.selfEmploymentIncome",
-   "source": "income.client"
-  },
-  {
-   "id": "client-employmentInsuranceBenefits",
-   "type": "Number",
-   "x": 471,
-   "y": 494.23,
-   "width": 135,
-   "height": 20,
-   "value": "",
-   "fontSize": 10,
-   "color": [
-    0,
-    0,
-    0
-   ],
-   "background": "none",
-   "border": "none",
-   "page": 2,
-   "bind": "income.client.employmentInsuranceBenefits",
-   "source": "income.client"
-  },
-  {
-   "id": "client-workersCompensationBenefits",
-   "type": "Number",
-   "x": 471,
-   "y": 515.83,
-   "width": 135,
-   "height": 20,
-   "value": "",
-   "fontSize": 10,
-   "color": [
-    0,
-    0,
-    0
-   ],
-   "background": "none",
-   "border": "none",
-   "page": 2,
-   "bind": "income.client.workersCompensationBenefits",
-   "source": "income.client"
-  },
-  {
-   "id": "client-socialAssistanceIncome",
-   "type": "Number",
-   "x": 471,
-   "y": 537.67,
-   "width": 135,
-   "height": 20,
-   "value": "",
-   "fontSize": 10,
-   "color": [
-    0,
-    0,
-    0
-   ],
-   "background": "none",
-   "border": "none",
-   "page": 2,
-   "bind": "income.client.socialAssistanceIncome",
-   "source": "income.client"
-  },
-  {
-   "id": "client-interestInvestmentIncome",
-   "type": "Number",
-   "x": 471,
-   "y": 559.51,
-   "width": 135,
-   "height": 20,
-   "value": "",
-   "fontSize": 10,
-   "color": [
-    0,
-    0,
-    0
-   ],
-   "background": "none",
-   "border": "none",
-   "page": 2,
-   "bind": "income.client.interestInvestmentIncome",
-   "source": "income.client"
-  },
-  {
-   "id": "client-pensionIncome",
-   "type": "Number",
-   "x": 471,
-   "y": 581.59,
-   "width": 135,
-   "height": 20,
-   "value": "",
-   "fontSize": 10,
-   "color": [
-    0,
-    0,
-    0
-   ],
-   "background": "none",
-   "border": "none",
-   "page": 2,
-   "bind": "income.client.pensionIncome",
-   "source": "income.client"
-  },
-  {
-   "id": "client-spousalSupport",
-   "type": "Number",
-   "x": 471,
-   "y": 603.19,
-   "width": 135,
-   "height": 20,
-   "value": "",
-   "fontSize": 10,
-   "color": [
-    0,
-    0,
-    0
-   ],
-   "background": "none",
-   "border": "none",
-   "page": 2,
-   "bind": "income.client.spousalSupport",
-   "source": "income.client"
-  },
-  {
-   "id": "client-childTaxBenefits",
-   "type": "Number",
-   "x": 471,
-   "y": 624.79,
-   "width": 135,
-   "height": 20,
-   "value": "",
-   "fontSize": 10,
-   "color": [
-    0,
-    0,
-    0
-   ],
-   "background": "none",
-   "border": "none",
-   "page": 2,
-   "bind": "income.client.childTaxBenefits",
-   "source": "income.client"
-  },
-  {
-   "id": "client-otherIncome",
-   "type": "Number",
-   "x": 471,
-   "y": 648.31,
-   "width": 135,
-   "height": 20,
-   "value": "",
-   "fontSize": 10,
-   "color": [
-    0,
-    0,
-    0
-   ],
-   "background": "none",
-   "border": "none",
-   "page": 2,
-   "bind": "income.client.otherIncome",
-   "source": "income.client"
-  },
-  {
-   "id": "calc-1730412168772",
-   "type": "Number",
-   "x": 471,
-   "y": 667.27,
-   "width": 135.0,
-   "height": 20,
-   "value": "",
-   "fontSize": 10,
-   "color": [
-    0,
-    0,
-    0
-   ],
-   "background": "none",
-   "border": "none",
-   "page": 2,
-   "isCalculated": true,
-   "calculationType": "sum",
-   "sourceFields": [
-    "client-employmentIncome",
-    "client-commissionTipsBonuses",
-    "client-selfEmploymentIncome",
-    "client-employmentInsuranceBenefits",
-    "client-workersCompensationBenefits",
-    "client-socialAssistanceIncome",
-    "client-interestInvestmentIncome",
-    "client-pensionIncome",
-    "client-spousalSupport",
-    "client-childTaxBenefits",
-    "client-otherIncome"
-   ],
-   "calculationName": "incomeSourceTotalField"
-  },
-  {
-   "id": "calc-1730412424821",
-   "type": "Number",
-   "x": 471,
-   "y": 682.39,
-   "width": 135.0,
-   "height": 20,
-   "value": "",
-   "fontSize": 10,
-   "color": [
-    0,
-    0,
-    0
-   ],
-   "background": "none",
-   "border": "none",
-   "page": 2,
-   "isCalculated": true,
-   "calculationType": "multiply",
-   "sourceFields": [
-    "calc-1730412168772"
-   ],
-   "calculationValue": "12",
-   "calculationName": "incomeSourceAnnual",
-   "isDerived": true
-  },
-  {
-   "id": "calc-1730415553997",
-   "type": "Number",
-   "x": 225.33333333333334,
-   "y": 420.07,
-   "width": 110.0,
-   "height": 20,
-   "value": "",
-   "fontSize": 10,
-   "color": [
-    0,
-    0,
-    0
-   ],
-   "background": "none",
-   "border": "none",
-   "page": 3,
-   "isCalculated": true,
-   "calculationType": "sum",
-   "sourceFields": [
-    "client-automaticDeductions-cppContributions-0",
-    "client-automaticDeductions-eiPremiums-1",
-    "client-automaticDeductions-incomeTaxes-2",
-    "client-automaticDeductions-employeePensionContributions-3",
-    "client-automaticDeductions-unionDues-4"
-   ],
-   "calculationName": "subTotalAutomaticDeductions"
-  },
-  {
-   "id": "calc-1730415590066",
-   "type": "Number",
-   "x": 508,
-   "y": 440,
-   "width": 110.0,
-   "height": 20,
-   "value": "",
-   "fontSize": 10,
-   "color": [
-    0,
-    0,
-    0
-   ],
-   "background": "none",
-   "border": "none",
-   "page": 3,
-   "isCalculated": true,
-   "calculationType": "sum",
-   "sourceFields": [
-    "client-transportation-publicTransit-0",
-    "client-transportation-carPayments-1",
-    "client-transportation-gasAndOil-2",
-    "client-transportation-insurance-3",
-    "client-transportation-repairsAndMaintenance-4",
-    "client-transportation-parking-5"
-   ],
-   "calculationName": "subTotalTransport"
-  },
-  {
-   "id": "calc-1730415641678",
-   "type": "Number",
-   "x": 226.66666666666666,
-   "y": 588.31,
-   "width": 110.0,
-   "height": 20,
-   "value": "",
-   "fontSize": 10,
-   "color": [
-    0,
-    0,
-    0
-   ],
-   "background": "none",
-   "border": "none",
-   "page": 3,
-   "isCalculated": true,
-   "calculationType": "sum",
-   "sourceFields": [
-    "client-housing-repairsAndMaintenance-4",
-    "client-housing-condominiumFees-3",
-    "client-housing-propertyInsurance-2",
-    "client-housing-propertyTaxes-1",
-    "client-housing-rentOrMortgage-0"
-   ],
-   "calculationName": "subTotalHousing"
-  },
-  {
-   "id": "calc-1730415674334",
-   "type": "Number",
-   "x": 508,
-   "y": 588.31,
-   "width": 110.0,
-   "height": 20,
-   "value": "",
-   "fontSize": 10,
-   "color": [
-    0,
-    0,
-    0
-   ],
-   "background": "none",
-   "border": "none",
-   "page": 3,
-   "isCalculated": true,
-   "calculationType": "sum",
-   "sourceFields": [
-    "client-health-eyecare-3",
-    "client-health-medicine-2",
-    "client-health-dental-1",
-    "client-health-insurance-0"
-   ],
-   "calculationName": "subTotalHealth"
-  },
-  {
-   "id": "calc-1730415713131",
-   "type": "Number",
-   "x": 226.66666666666666,
-   "y": 207.19,
-   "width": 110.0,
-   "height": 20,
-   "value": "",
-   "fontSize": 10,
-   "color": [
-    0,
-    0,
-    0
-   ],
-   "background": "none",
-   "border": "none",
-   "page": 4,
-   "isCalculated": true,
-   "calculationType": "sum",
-   "sourceFields": [
-    "client-utilities-water-0",
-    "client-utilities-heat-1",
-    "client-utilities-electricity-2",
-    "client-utilities-telephone-3",
-    "client-utilities-cellPhone-4",
-    "client-utilities-cable-5",
-    "client-utilities-internet-6"
-   ],
-   "calculationName": "subTotalUtilities"
-  },
-  {
-   "id": "calc-1730415743499",
-   "type": "Number",
-   "x": 508.6666666666667,
-   "y": 182.47,
-   "width": 110.0,
-   "height": 20,
-   "value": "",
-   "fontSize": 10,
-   "color": [
-    0,
-    0,
-    0
-   ],
-   "background": "none",
-   "border": "none",
-   "page": 4,
-   "isCalculated": true,
-   "calculationType": "sum",
-   "sourceFields": [
-    "client-personal-clothing-0",
-    "client-personal-haircare-1",
-    "client-personal-alcohol-2",
-    "client-personal-education-3",
-    "client-personal-entertainment-4",
-    "client-personal-gifts-5"
-   ],
-   "calculationName": "subTotalPersonal"
-  },
-  {
-   "id": "calc-1730415771012",
-   "type": "Number",
-   "x": 226.66666666666666,
-   "y": 371.83,
-   "width": 110.0,
-   "height": 20,
-   "value": "",
-   "fontSize": 10,
-   "color": [
-    0,
-    0,
-    0
-   ],
-   "background": "none",
-   "border": "none",
-   "page": 4,
-   "isCalculated": true,
-   "calculationType": "sum",
-   "sourceFields": [
-    "client-householdExpenses-groceries-0",
-    "client-householdExpenses-householdSupplies-1",
-    "client-householdExpenses-mealsOutsideTheHome-2",
-    "client-householdExpenses-petCare-3",
-    "client-householdExpenses-laundryAndDryCleaning-4"
-   ],
-   "calculationName": "subTotalHouseHold"
-  },
-  {
-   "id": "calc-1730415801949",
-   "type": "Number",
-   "x": 508,
-   "y": 469.27,
-   "width": 110.0,
-   "height": 20,
-   "value": "",
-   "fontSize": 10,
-   "color": [
-    0,
-    0,
-    0
-   ],
-   "background": "none",
-   "border": "none",
-   "page": 4,
-   "isCalculated": true,
-   "calculationType": "sum",
-   "sourceFields": [
-    "client-other-lifeInsurance-0",
-    "client-other-rrsp-1",
-    "client-other-vacations-2",
-    "client-other-school-3",
-    "client-other-clothingForChildren-4",
-    "client-other-childrenActivities-5",
-    "client-other-summerCamp-6",
-    "client-other-debtPayments-7",
-    "client-other-supportPaidForOtherChildren-8",
-    "client-other-other-9"
-   ],
-   "calculationName": "subTotalOtherExpenses"
-  },
-  {
-   "id": "calc-1730415862795",
-   "type": "Number",
-   "x": 226.66666666666666,
-   "y": 469.27,
-   "width": 110.0,
-   "height": 20,
-   "value": "",
-   "fontSize": 10,
-   "color": [
-    0,
-    0,
-    0
-   ],
-   "background": "none",
-   "border": "none",
-   "page": 4,
-   "isCalculated": true,
-   "calculationType": "sum",
-   "sourceFields": [
-    "client-childcare-daycare-0",
-    "client-childcare-babysitting-1"
-   ],
-   "calculationName": "subTotalChildcare"
-  },
-  {
-   "id": "calc-1730452709303",
-   "type": "Number",
-   "x": 494,
-   "y": 499.51,
-   "width": 130.0,
-   "height": 20,
-   "value": "",
-   "fontSize": 10,
-   "color": [
-    0,
-    0,
-    0
-   ],
-   "background": "none",
-   "border": "none",
-   "page": 4,
-   "isCalculated": true,
-   "calculationType": "add",
-   "sourceFields": [
-    "calc-1730415553997",
-    "calc-1730415590066",
-    "calc-1730415641678",
-    "calc-1730415674334",
-    "calc-1730415713131",
-    "calc-1730415743499",
-    "calc-1730415771012",
-    "calc-1730415801949",
-    "calc-1730415862795"
-   ],
-   "calculationName": "totalExpensesMonthly",
-   "isDerived": true
-  },
-  {
-   "id": "calc-1730452751103",
-   "type": "Number",
-   "x": 494,
-   "y": 518.23,
-   "width": 130.0,
-   "height": 20,
-   "value": "",
-   "fontSize": 10,
-   "color": [
-    0,
-    0,
-    0
-   ],
-   "background": "none",
-   "border": "none",
-   "page": 4,
-   "isCalculated": true,
-   "calculationType": "multiply",
-   "sourceFields": [
-    "calc-1730452709303"
-   ],
-   "calculationValue": "12",
-   "calculationName": "totalExpensesYearly",
-   "isDerived": true
-  },
-  {
-   "id": "calc-1730452873765",
-   "type": "Number",
-   "x": 496,
-   "y": 680.71,
-   "width": 125.0,
-   "height": 20,
-   "value": "",
-   "fontSize": 10,
-   "color": [
-    0,
-    0,
-    0
-   ],
-   "background": "none",
-   "border": "none",
-   "page": 5,
-   "isCalculated": true,
-   "calculationType": "sum",
-   "sourceFields": [
-    1728374830597,
-    1728374830600,
-    1728374830603,
-    1728374831102,
-    1728374831105,
-    1728374831108,
-    1728374838452,
-    1728374838455,
-    1728374838458,
-    1728374839306,
-    1728374839309,
-    1728374839312,
-    1728374837079,
-    1728374837082,
-    1728374837085,
-    1728374839751,
-    1728374839755,
-    1728374839758,
-    1728374835952,
-    1728374835956,
-    1728374835959,
-    1728374837588,
-    1728374837591,
-    1728374837594,
-    1728374838008,
-    1728374838011,
-    1728374838014,
-    1728374840430,
-    1728374840433,
-    1728374840436
-   ],
-   "calculationName": "totalProperty"
-  },
-  {
-   "id": "table-0-0-1730452941631",
-   "type": "TextField",
-   "x": 129,
-   "y": 231.91,
-   "width": 276.0,
-   "height": 20,
-   "value": "",
-   "bind": "",
-   "source": "",
-   "sourceType": "",
-   "fontSize": 10,
-   "color": [
-    0,
-    0,
-    0
-   ],
-   "background": "none",
-   "border": "none",
-   "page": 6
-  },
-  {
-   "id": "table-0-1-1730452941631",
-   "type": "Number",
-   "x": 332.6666666666667,
-   "y": 210.07,
-   "width": 105.0,
-   "height": 20,
-   "value": "",
-   "bind": "",
-   "source": "",
-   "sourceType": "",
-   "fontSize": 10,
-   "color": [
-    0,
-    0,
-    0
-   ],
-   "background": "none",
-   "border": "none",
-   "page": 6
-  },
-  {
-   "id": "table-0-2-1730452941631",
-   "type": "TextField",
-   "x": 419,
-   "y": 210.07,
-   "width": 105.0,
-   "height": 20,
-   "value": "",
-   "bind": "",
-   "source": "",
-   "sourceType": "",
-   "fontSize": 10,
-   "color": [
-    0,
-    0,
-    0
-   ],
-   "background": "none",
-   "border": "none",
-   "page": 6
-  },
-  {
-   "id": "table-1-0-1730452941631",
-   "type": "TextField",
-   "x": 129,
-   "y": 275.59,
-   "width": 276.0,
-   "height": 20,
-   "value": "",
-   "bind": "",
-   "source": "",
-   "sourceType": "",
-   "fontSize": 10,
-   "color": [
-    0,
-    0,
-    0
-   ],
-   "background": "none",
-   "border": "none",
-   "page": 6
-  },
-  {
-   "id": "table-1-1-1730452941631",
-   "type": "Number",
-   "x": 332,
-   "y": 231.91,
-   "width": 105.0,
-   "height": 20,
-   "value": "",
-   "bind": "",
-   "source": "",
-   "sourceType": "",
-   "fontSize": 10,
-   "color": [
-    0,
-    0,
-    0
-   ],
-   "background": "none",
-   "border": "none",
-   "page": 6
-  },
-  {
-   "id": "table-1-2-1730452941631",
-   "type": "TextField",
-   "x": 419,
-   "y": 231.91,
-   "width": 105.0,
-   "height": 20,
-   "value": "",
-   "bind": "",
-   "source": "",
-   "sourceType": "",
-   "fontSize": 10,
-   "color": [
-    0,
-    0,
-    0
-   ],
-   "background": "none",
-   "border": "none",
-   "page": 6
-  },
-  {
-   "id": "table-2-0-1730452941631",
-   "type": "TextField",
-   "x": 129,
-   "y": 296.71,
-   "width": 276.0,
-   "height": 20,
-   "value": "",
-   "bind": "",
-   "source": "",
-   "sourceType": "",
-   "fontSize": 10,
-   "color": [
-    0,
-    0,
-    0
-   ],
-   "background": "none",
-   "border": "none",
-   "page": 6
-  },
-  {
-   "id": "table-2-1-1730452941631",
-   "type": "Number",
-   "x": 332,
-   "y": 296.71,
-   "width": 105.0,
-   "height": 20,
-   "value": "",
-   "bind": "",
-   "source": "",
-   "sourceType": "",
-   "fontSize": 10,
-   "color": [
-    0,
-    0,
-    0
-   ],
-   "background": "none",
-   "border": "none",
-   "page": 6
-  },
-  {
-   "id": "table-2-2-1730452941631",
-   "type": "TextField",
-   "x": 419,
-   "y": 296.71,
-   "width": 105.0,
-   "height": 20,
-   "value": "",
-   "bind": "",
-   "source": "",
-   "sourceType": "",
-   "fontSize": 10,
-   "color": [
-    0,
-    0,
-    0
-   ],
-   "background": "none",
-   "border": "none",
-   "page": 6
-  },
-  {
-   "id": 1730453005250,
-   "type": "TextField",
-   "x": 129,
-   "y": 210.07,
-   "width": 276.0,
-   "height": 20,
-   "value": "",
-   "fontSize": 10,
-   "color": [
-    0,
-    0,
-    0
-   ],
-   "background": "none",
-   "border": "none",
-   "page": 6,
-   "source": ""
-  },
-  {
-   "id": 1730453026322,
-   "type": "TextField",
-   "x": 419,
-   "y": 275.59,
-   "width": 105.0,
-   "height": 20,
-   "value": "",
-   "fontSize": 10,
-   "color": [
-    0,
-    0,
-    0
-   ],
-   "background": "none",
-   "border": "none",
-   "page": 6,
-   "source": ""
-  },
-  {
-   "id": 1730453026523,
-   "type": "Number",
-   "x": 332,
-   "y": 275.59,
-   "width": 105.0,
-   "height": 20,
-   "value": "",
-   "fontSize": 10,
-   "color": [
-    0,
-    0,
-    0
-   ],
-   "background": "none",
-   "border": "none",
-   "page": 6,
-   "source": ""
-  },
-  {
-   "id": 1730453066531,
-   "type": "TextField",
-   "x": 419,
-   "y": 361.75,
-   "width": 105.0,
-   "height": 20,
-   "value": "",
-   "fontSize": 10,
-   "color": [
-    0,
-    0,
-    0
-   ],
-   "background": "none",
-   "border": "none",
-   "page": 6,
-   "source": ""
-  },
-  {
-   "id": 1730453066709,
-   "type": "Number",
-   "x": 332,
-   "y": 361.75,
-   "width": 105.0,
-   "height": 20,
-   "value": "",
-   "fontSize": 10,
-   "color": [
-    0,
-    0,
-    0
-   ],
-   "background": "none",
-   "border": "none",
-   "page": 6,
-   "source": ""
-  },
-  {
-   "id": 1730453067200,
-   "type": "TextField",
-   "x": 129,
-   "y": 361.75,
-   "width": 276.0,
-   "height": 20,
-   "value": "",
-   "fontSize": 10,
-   "color": [
-    0,
-    0,
-    0
-   ],
-   "background": "none",
-   "border": "none",
-   "page": 6,
-   "source": ""
-  },
-  {
-   "id": "calc-1730453339043",
-   "type": "Number",
-   "x": 495.3333333333333,
-   "y": 392.95,
-   "width": 130.0,
-   "height": 20,
-   "value": "",
-   "fontSize": 10,
-   "color": [
-    0,
-    0,
-    0
-   ],
-   "background": "none",
-   "border": "none",
-   "page": 6,
-   "isCalculated": true,
-   "calculationType": "sum",
-   "sourceFields": [
-    "mortgages-23-1",
-    "mortgages-49-4",
-    "lineofcredits-21-1",
-    "outstandingcreditcardbalances-47-1",
-    "table-0-1-1730452941631",
-    "table-1-1-1730452941631",
-    "unpaidsupportamounts-48-1",
-    1730453026523,
-    "table-2-1-1730452941631",
-    "otherloans-32-1",
-    "otherdebts-50-1",
-    1730453066709
-   ],
-   "calculationName": "totalDebts"
-  },
-  {
-   "id": "calc-1730574789134",
-   "type": "Number",
-   "x": 482,
-   "y": 319.99,
-   "width": 150,
-   "height": 20,
-   "value": "",
-   "fontSize": 10,
-   "color": [
-    0,
-    0,
-    0
-   ],
-   "background": "none",
-   "border": "none",
-   "page": 7,
-   "isCalculated": true,
-   "calculationType": "sum",
-   "sourceFields": [
-    1728076533392,
-    1728076563320,
-    1728076582234,
-    1728076587824,
-    1728076597743,
-    1728076607887,
-    1728076615368
-   ],
-   "calculationName": "additionalIncomeSourceTotal"
-  },
-  {
-   "id": "calc-1730575991943",
-   "type": "Number",
-   "x": 343,
-   "y": 470.23,
-   "width": 160.0,
-   "height": 20,
-   "value": "",
-   "fontSize": 10,
-   "color": [
-    0,
-    0,
-    0
-   ],
-   "background": "none",
-   "border": "none",
-   "page": 6,
-   "isCalculated": true,
-   "calculationType": "subtract",
-   "sourceFields": [
-    "totalAssetsValue",
-    "totalDebtsValue"
-   ],
-   "calculationName": "totalNetWorth",
-   "isDerived": true
-  },
-  {
    "id": "calc-1730576224566",
    "type": "Number",
    "x": 492.6666666666667,
@@ -6451,6 +6470,41 @@
    "calculationValue": "12",
    "calculationName": "specialExpensesMonthly",
    "isDerived": true
+  },
+  {
+   "id": 1728077964615,
+   "type": "TextField",
+   "x": 107,
+   "y": 474,
+   "width": 148,
+   "height": 20,
+   "value": "",
+   "fontSize": 10,
+   "color": [
+    0,
+    0,
+    0
+   ],
+   "background": "none",
+   "border": "none",
+   "page": 8
+  },
+  {
+   "id": 292,
+   "type": "CheckBox",
+   "x": 42.92,
+   "y": 478.0,
+   "width": 15.39,
+   "height": 15.66,
+   "value": "",
+   "fontSize": 10,
+   "color": [
+    0,
+    0,
+    0
+   ],
+   "page": 8,
+   "shape": "square"
   }
  ]
 }

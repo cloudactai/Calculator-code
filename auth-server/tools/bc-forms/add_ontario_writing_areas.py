@@ -39,6 +39,25 @@ PLAN = {
 CAPTIONS = {
     "Form32_1": [(3, "is to pay child support for the following children:"),
                  (3, "The special or extraordinary expenses for the children")],
+    # Each "Yes (Give ...)" on page 4 is answered in the space under it, and the
+    # cruelty ground on page 5 the same way -- separation and adultery, the two
+    # grounds either side of it, already have theirs. The anchor is the caption's
+    # last line, since two of these run over.
+    "Form8A": [(4, "more space.)"),
+               (4, "Yes (Give date(s) of Notice(s) of Calculation"),
+               (4, "Yes (Provide an explanation)"),
+               (5, "make continued cohabitation intolerable. (Give details.)")],
+}
+
+# The same thing on a page whose text cannot be read. Form 13 p1 asks how you are
+# employed and leaves a gap under each of the three answers; the gaps are between
+# the printed lines, which on this page run 603.8-614.9, 634.1-645.1 and
+# 664.8-675.4, and the column is the one those lines are set in.
+# doc_id -> [(page, top, bottom, left, right)]
+BANDS = {
+    "Form13": [(1, 616.0, 632.0, 93.0, 586.0),
+               (1, 647.0, 663.0, 93.0, 586.0),
+               (1, 677.0, 693.0, 93.0, 586.0)],
 }
 
 
@@ -94,17 +113,17 @@ def lines(page):
 def answer_gap(page, caption):
     """The empty band under a caption: down to whatever prints next.
 
-    The column runs from the caption's own margin out to the widest line in the
-    body of the page, which is how far the form itself sets type.
+    The answer is set where its prompt is -- the box opens at the caption's own
+    indent -- and runs out to the widest line on the page, which is how far the
+    form itself sets type.
     """
     printed = lines(page)
     anchor = next((rect for rect, text in printed if text.startswith(caption)), None)
     if anchor is None:
         raise SystemExit("caption %r not found" % caption)
     floor = min([rect.y0 for rect, _ in printed if rect.y0 > anchor.y1 + 1] + [page.rect.y1])
-    left = min(rect.x0 for rect, _ in printed if abs(rect.y0 - anchor.y0) < 2)
     right = max(rect.x1 for rect, _ in printed)
-    return fitz.Rect(left, anchor.y1 + PAD, right, floor - PAD)
+    return fitz.Rect(anchor.x0, anchor.y1 + PAD, right, floor - PAD)
 
 
 def covered(fields, page_number, area):
@@ -132,12 +151,14 @@ def wanted(doc_id, pdf):
         out.append((page_number, fitz.Rect(edges[0], gap[0] + PAD, edges[1], gap[1] - PAD)))
     for page_number, caption in CAPTIONS.get(doc_id, []):
         out.append((page_number, answer_gap(pdf[page_number - 1], caption)))
+    for page_number, top, bottom, left, right in BANDS.get(doc_id, []):
+        out.append((page_number, fitz.Rect(left, top, right, bottom)))
     return out
 
 
 def main():
     write = "--write" in sys.argv
-    for doc_id in sorted(set(PLAN) | set(CAPTIONS)):
+    for doc_id in sorted(set(PLAN) | set(CAPTIONS) | set(BANDS)):
         path = os.path.join(EXPORT, "%s.json" % doc_id)
         data = json.loads(open(path).read())
         fields = data["staticFields"]
