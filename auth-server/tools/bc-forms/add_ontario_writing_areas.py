@@ -34,6 +34,13 @@ PLAN = {
     "Form14A": (2, (566.0, 600.0)),   # the caption and rule below it
 }
 
+# Captions answered in the space beneath them, on pages that carry their text.
+# doc_id -> [(page, caption)]
+CAPTIONS = {
+    "Form32_1": [(3, "is to pay child support for the following children:"),
+                 (3, "The special or extraordinary expenses for the children")],
+}
+
 
 def profile(page):
     """How much ink is on each row of the page, and the row height in points."""
@@ -74,6 +81,32 @@ def column(page, band):
     return columns[0] * step, (columns[-1] + 1) * step
 
 
+def lines(page):
+    out = []
+    for block in page.get_text("dict")["blocks"]:
+        for line in block.get("lines", []):
+            text = "".join(span["text"] for span in line["spans"]).strip()
+            if text:
+                out.append((fitz.Rect(line["bbox"]), text))
+    return sorted(out, key=lambda item: item[0].y0)
+
+
+def answer_gap(page, caption):
+    """The empty band under a caption: down to whatever prints next.
+
+    The column runs from the caption's own margin out to the widest line in the
+    body of the page, which is how far the form itself sets type.
+    """
+    printed = lines(page)
+    anchor = next((rect for rect, text in printed if text.startswith(caption)), None)
+    if anchor is None:
+        raise SystemExit("caption %r not found" % caption)
+    floor = min([rect.y0 for rect, _ in printed if rect.y0 > anchor.y1 + 1] + [page.rect.y1])
+    left = min(rect.x0 for rect, _ in printed if abs(rect.y0 - anchor.y0) < 2)
+    right = max(rect.x1 for rect, _ in printed)
+    return fitz.Rect(left, anchor.y1 + PAD, right, floor - PAD)
+
+
 def covered(fields, page_number, area):
     for field in fields:
         if field["page"] != page_number:
@@ -86,45 +119,57 @@ def covered(fields, page_number, area):
     return False
 
 
-def main():
-    write = "--write" in sys.argv
-    for doc_id, (page_number, anchor) in PLAN.items():
-        path = os.path.join(EXPORT, "%s.json" % doc_id)
-        data = json.loads(open(path).read())
-        fields = data["staticFields"]
-        pdf = fitz.open(os.path.join(EXPORT, "%s.pdf" % doc_id))
+def wanted(doc_id, pdf):
+    """(page, area) for every writing area this form is short of."""
+    out = []
+    if doc_id in PLAN:
+        page_number, anchor = PLAN[doc_id]
         page = pdf[page_number - 1]
-
         gap = tallest_gap(page)
         edges = column(page, anchor)
         if gap is None or edges is None:
             raise SystemExit("%s p%d: nothing to measure" % (doc_id, page_number))
-        area = fitz.Rect(edges[0], gap[0] + PAD, edges[1], gap[1] - PAD)
+        out.append((page_number, fitz.Rect(edges[0], gap[0] + PAD, edges[1], gap[1] - PAD)))
+    for page_number, caption in CAPTIONS.get(doc_id, []):
+        out.append((page_number, answer_gap(pdf[page_number - 1], caption)))
+    return out
+
+
+def main():
+    write = "--write" in sys.argv
+    for doc_id in sorted(set(PLAN) | set(CAPTIONS)):
+        path = os.path.join(EXPORT, "%s.json" % doc_id)
+        data = json.loads(open(path).read())
+        fields = data["staticFields"]
+        pdf = fitz.open(os.path.join(EXPORT, "%s.pdf" % doc_id))
+        areas = wanted(doc_id, pdf)
         pdf.close()
 
-        if covered(fields, page_number, area):
-            print("%-8s p%d already has a box in that space" % (doc_id, page_number))
-            continue
+        added = 0
+        for page_number, area in areas:
+            if covered(fields, page_number, area):
+                print("%-8s p%d already has a box in that space" % (doc_id, page_number))
+                continue
+            numeric = [f["id"] for f in fields if isinstance(f["id"], int)]
+            fields.append({
+                "id": max(numeric) + 1,
+                "type": "TextArea",
+                "x": round(area.x0, 2),
+                "y": round(area.y0, 2),
+                "width": round(area.width * SCALE, 2),
+                "height": round(area.height * SCALE, 2),
+                "value": "",
+                "fontSize": 10,
+                "color": [0, 0, 0],
+                "background": "none",
+                "border": "none",
+                "page": page_number,
+            })
+            added += 1
+            print("%-8s p%d writing area x=%.2f y=%.2f %.2fx%.2f"
+                  % (doc_id, page_number, area.x0, area.y0, area.width, area.height))
 
-        numeric = [f["id"] for f in fields if isinstance(f["id"], int)]
-        fields.append({
-            "id": max(numeric) + 1,
-            "type": "TextArea",
-            "x": round(area.x0, 2),
-            "y": round(area.y0, 2),
-            "width": round(area.width * SCALE, 2),
-            "height": round(area.height * SCALE, 2),
-            "value": "",
-            "fontSize": 10,
-            "color": [0, 0, 0],
-            "background": "none",
-            "border": "none",
-            "page": page_number,
-        })
-        print("%-8s p%d writing area x=%.2f y=%.2f %.2fx%.2f"
-              % (doc_id, page_number, area.x0, area.y0, area.width, area.height))
-
-        if write:
+        if write and added:
             fields.sort(key=lambda f: (f["page"], f["y"], f["x"]))
             out = io.StringIO()
             json.dump(data, out, indent=1)
