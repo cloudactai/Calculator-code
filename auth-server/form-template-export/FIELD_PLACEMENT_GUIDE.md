@@ -347,12 +347,12 @@ your measurement didn't think to check:
    Two passes that each correct the other oscillate happily and look fine on
    a single run — count start-to-end, not per step.
 10. **Actual visual check** — render representative pages (especially ones
-   flagged by 1-6, plus a random sample of "normal" pages) and look for:
-   description/text boxes that are one line tall when the printed cell is
-   clearly multi-line; boxes overlapping printed labels/words; checkboxes
-   that read as ovals/rectangles instead of matching the printed shape;
-   stray extra boxes; missing boxes on pages that have visible blank
-   lines/cells.
+    flagged by 1-6, plus a random sample of "normal" pages) and look for:
+    description/text boxes that are one line tall when the printed cell is
+    clearly multi-line; boxes overlapping printed labels/words; checkboxes
+    that read as ovals/rectangles instead of matching the printed shape;
+    stray extra boxes; missing boxes on pages that have visible blank
+    lines/cells.
 11. Only after the user confirms a render looks right: apply the same rule to
     the rest of the batch, and only then update this guide / commit the rule
     as "settled."

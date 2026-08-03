@@ -9,6 +9,7 @@
 const express = require("express");
 const prisma = require("../../prismaClient");
 const { authMiddleware } = require("../middleware/authMiddleware");
+const { findMatterForUser } = require("../utils/matterLookup");
 
 const router = express.Router();
 router.use(authMiddleware);
@@ -18,20 +19,9 @@ const errorBody = (message, code = 404) => ({
   data: { code, status: "error", message },
 });
 
-// Helper: find matter by matterNumber or numeric id (same as mattersRoutes)
+// Helper: find matter by matterNumber, then numeric id (same as mattersRoutes)
 async function findMatter(userId, matterParam) {
-  const asNumber = Number(matterParam);
-  return prisma.matter.findFirst({
-    where: {
-      userId,
-      OR: [
-        { matterNumber: String(matterParam) },
-        ...(Number.isInteger(asNumber) && asNumber > 0
-          ? [{ id: asNumber }]
-          : []),
-      ],
-    },
-  });
+  return findMatterForUser(prisma, userId, matterParam);
 }
 
 // ── Save a calculation report ───────────────────────────────────────────────

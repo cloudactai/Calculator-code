@@ -6,6 +6,7 @@ const prisma = require("../../prismaClient");
 const { authMiddleware } = require("../middleware/authMiddleware");
 const { parseStoredJson, prefillFields, supportType } = require("../utils/formPrefillResolver");
 const { buildLegacyPrefill } = require("../utils/formPrefillCompat");
+const { findMatterForUser } = require("../utils/matterLookup");
 const {
   CHANGE_LOG_TYPE,
   sanitizeChanges,
@@ -58,10 +59,7 @@ router.use((req, res, next) => {
 const normaliseFolderTitle = (value) => String(value || "").trim().replace(/\s+/g, " ").toLocaleLowerCase();
 
 async function matterForUser(userId, matterNumber) {
-  const id = Number(matterNumber);
-  return prisma.matter.findFirst({
-    where: { userId, OR: [{ matterNumber: String(matterNumber) }, ...(Number.isInteger(id) ? [{ id }] : [])] },
-  });
+  return findMatterForUser(prisma, userId, matterNumber);
 }
 
 const TASK_STATUSES = new Set(["not_started", "in_progress", "completed"]);

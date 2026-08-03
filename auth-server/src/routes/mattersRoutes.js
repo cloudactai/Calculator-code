@@ -22,6 +22,7 @@ const {
   mergeRecordRows,
 } = require("../utils/matterPatchMerge");
 const { applyDerivedFields } = require("../utils/derivedFields");
+const { findMatterForUser } = require("../utils/matterLookup");
 
 const router = express.Router();
 router.use(authMiddleware);
@@ -125,16 +126,7 @@ const normalizeAssetItem = (assetType, item) => {
 
 // Matter helpers
 async function findMatter(userId, matterParam, db = prisma) {
-  const asNumber = Number(matterParam);
-  return db.matter.findFirst({
-    where: {
-      userId,
-      OR: [
-        { matterNumber: String(matterParam) },
-        ...(Number.isInteger(asNumber) && asNumber > 0 ? [{ id: asNumber }] : []),
-      ],
-    },
-  });
+  return findMatterForUser(db, userId, matterParam);
 }
 
 // Legacy f_ca_matters row shape the dashboard/list pages consume.
