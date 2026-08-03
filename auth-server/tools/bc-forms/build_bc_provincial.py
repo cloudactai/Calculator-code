@@ -59,6 +59,7 @@ def main():
         bp.clamp_to_page(fields, audit["pageSizes"])
         nudged = bp.nudge_off_hint(background, fields)
         snapped, missed = bp.snap_checkboxes(background, fields)
+        bp.assign_marks(background, fields)
         bp.stamp_shapes(background, fields)
         bp.snap_text_fields(background, fields)
         bp.expand_ruled_blocks(fields, background)

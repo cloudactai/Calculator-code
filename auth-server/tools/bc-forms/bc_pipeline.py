@@ -223,24 +223,63 @@ def printed_mark(page, box, pad=3.0):
     # The printed ❑ wins outright. BC shades a panel behind it, and that shading
     # is a rectangle of much the same size, so taking vector art first unioned
     # the two and dropped the control below its own tick box.
-    for glyph in printed_chars(page, search, glyphs=True):
-        found = glyph if found is None else (found | glyph)
-    if found is None:
-        for drawing in page.get_drawings():
-            rect = drawing["rect"]
-            if not (3 <= rect.width <= 26 and 3 <= rect.height <= 26):
-                continue
-            if not rect.intersects(search):
-                continue
-            if (rect & search).get_area() < 0.25 * rect.get_area():
-                continue
-            # Skip the shading itself: it is a filled grey panel, not the outline.
-            fill = drawing.get("fill")
-            if fill and min(fill) > 0.75 and max(fill) < 0.99 and not drawing.get("color"):
-                continue
-            found = rect if found is None else (found | rect)
-    if found is None:
+    #
+    # One glyph, never a union of them. A ❑ is a single character, so a second one
+    # in range belongs to the next option: BCPC_22 stacks its options 14 pt apart,
+    # within reach of this search, and unioning the pair gave a 27 pt candidate
+    # that failed the squareness test and fell back to a square centred in the gap
+    # between the two — a control sitting between the boxes it should be on.
+    candidates = mark_candidates(page, search)
+    if not candidates:
         return None
+    found = max(candidates, key=lambda c: ((c & box).get_area(), -abs(
+        (c.y0 + c.y1) / 2 - (box.y0 + box.y1) / 2)))
+    return refine_mark(page, found, search)
+
+
+def mark_candidates(page, search):
+    """Every distinct tick target printed in `search`, best-first order not applied.
+
+    One glyph is one candidate, never a union of them: a ❑ is a single character,
+    so a second one in range belongs to the next option. BCPC_22 stacks its options
+    14 pt apart, within reach of this search, and unioning the pair gave a 27 pt
+    candidate that failed the squareness test and fell back to a square centred in
+    the gap — a control sitting between the two boxes it should be on.
+
+    Vector art is clustered rather than unioned outright, for the same reason at
+    the other end: one mark is drawn as several paths (a white disc with a grey
+    ring over it) and those must merge, but F43's two signature circles are 14 pt
+    apart and merging *those* put both controls midway between them.
+    """
+    # The printed ❑ wins outright. BC shades a panel behind it, and that shading
+    # is a rectangle of much the same size, so taking vector art first unioned
+    # the two and dropped the control below its own tick box.
+    glyphs = printed_chars(page, search, glyphs=True)
+    if glyphs:
+        return glyphs
+    clusters = []
+    for drawing in page.get_drawings():
+        rect = drawing["rect"]
+        if not (3 <= rect.width <= 26 and 3 <= rect.height <= 26):
+            continue
+        if not rect.intersects(search):
+            continue
+        if (rect & search).get_area() < 0.25 * rect.get_area():
+            continue
+        # Skip the shading itself: it is a filled grey panel, not the outline.
+        fill = drawing.get("fill")
+        if fill and min(fill) > 0.75 and max(fill) < 0.99 and not drawing.get("color"):
+            continue
+        joined = next((c for c in clusters if c.intersects(rect)), None)
+        if joined is None:
+            clusters.append(fitz.Rect(rect))
+        else:
+            joined |= rect
+    return clusters
+
+
+def refine_mark(page, found, search):
+    """Tighten a candidate to its printed ink, or square it up if the ink is unusable."""
     refined = ink_bounds(page, found)
     if refined:
         refined = symmetric_ink(found, refined, printed_letters(page, search))
@@ -318,6 +357,58 @@ def snap_checkboxes(pdf_path, fields, max_shift=12.0):
             snapped += 1
     doc.close()
     return snapped, missed
+
+
+def assign_marks(pdf_path, fields, max_shift=12.0, stretch=40.0):
+    """Break ties where two controls resolve onto the same printed mark.
+
+    printed_mark answers for one field at a time and cannot tell that the mark it
+    likes best is the mark the control above already sits on. XFA sometimes hands
+    back two controls with identical boxes — BCPC_3 p9 stacks "I am the child's
+    guardian" and "I am applying to be appointed" on the same geometry, F43 does
+    the same with its two signature circles — and then one option is unclickable.
+
+    Only controls that actually collide are touched, and they are dealt the marks
+    around them in reading order, skipping any their neighbours already hold. A
+    control that resolved cleanly keeps exactly what printed_mark gave it.
+    """
+    doc = fitz.open(pdf_path)
+    moved = 0
+    for page_number in sorted({f["page"] for f in fields}):
+        page = doc[page_number - 1]
+        controls = [f for f in fields if f["page"] == page_number and f["type"] == "CheckBox"]
+        held = {}
+        for field in controls:
+            held.setdefault((round(field["x"], 1), round(field["y"], 1)), []).append(field)
+        for (x, y), sharing in sorted(held.items()):
+            if len(sharing) < 2:
+                continue
+            box = fitz.Rect(x, y, x + sharing[0]["width"] / SCALE,
+                            y + sharing[0]["height"] / SCALE)
+            window = box + (-stretch, -stretch, stretch, stretch)
+            taken = {spot for spot in held if spot != (x, y)}
+            marks = []
+            for candidate in sorted(mark_candidates(page, window),
+                                    key=lambda r: (round(r.y0, 1), r.x0)):
+                centre = fitz.Point((candidate.x0 + candidate.x1) / 2,
+                                    (candidate.y0 + candidate.y1) / 2)
+                if not window.contains(centre):
+                    continue
+                mark = refine_mark(page, candidate, candidate)
+                if (round(mark.x0, 1), round(mark.y0, 1)) in taken:
+                    continue  # a neighbour already sits here
+                marks.append(mark)
+            if len(marks) < len(sharing):
+                continue
+            for field, mark in zip(sharing, marks[:len(sharing)]):
+                new = {"x": round(mark.x0, 2), "y": round(mark.y0, 2),
+                       "width": round(mark.width * SCALE, 2),
+                       "height": round(mark.height * SCALE, 2)}
+                if any(field[k] != v for k, v in new.items()):
+                    field.update(new)
+                    moved += 1
+    doc.close()
+    return moved
 
 
 def shaded_boxes(page, min_width=20.0, min_height=6.0, max_height=60.0):

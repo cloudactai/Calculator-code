@@ -63,6 +63,7 @@ def reapply(path, write):
                "height": round(mark.height * bp.SCALE, 2)}
         field.update(new)
     doc.close()
+    bp.assign_marks(background, fields)
     bp.expand_ruled_blocks(fields, background)
     changed = sum(1 for old, f in zip(was, fields)
                   if old != (f["x"], f["y"], f["width"], f["height"]))
