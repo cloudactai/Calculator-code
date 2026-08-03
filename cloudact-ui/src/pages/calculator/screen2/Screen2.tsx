@@ -234,6 +234,7 @@ const Screen2 = ({
   const calculatorId = useQuery();
   const [showAlertFillAllDetails, setShowAlertFillAllDetails] = useState(false);
   const [showFlaskError, setShowFlaskError] = useState(false);
+  const [showNoChildrenError, setShowNoChildrenError] = useState(false);
   const storedMatterNumber = JSON.parse(localStorage.getItem('selectedCalculatorMatterNumber') || '""');
 
   // const [taxeswithAddSupport, settaxeswithAddSupport] = useState({
@@ -403,8 +404,6 @@ const Screen2 = ({
         },
       ],
   });
-
-  console.log('specialExpensesArrINp',specialExpensesArr)
 
   const [otherhouseholdmember, setOtherHouseholdMember] = useState({
     party1: screen2?.otherhouseholdmember
@@ -1031,9 +1030,6 @@ const Screen2 = ({
     disabilityCredits: 0,
     disabilityCreditsProv: 0,
   });
-
-  console.log('checkAllcreditsParty2',allCreditsParty2)
-  console.log('checkAllcreditsParty1',allCreditsParty1)
 
 
 
@@ -2184,11 +2180,9 @@ const Screen2 = ({
       console.log("[SAVE-DEBUG] Step 8: Skipping PATCH (saveValues =", saveValues, ", id =", id, ")");
     }
 
-    console.log("[SAVE-DEBUG] Step 10: Setting screen2 state and navigating to Screen4");
     settingScreen2StateFromChild({ ..._obj, report_data: _report_data });
 
     const navUrl = `${AUTH_ROUTES.CALCULATOR}?id=${getCalculatorIdFromQuery(calculatorId)}&step=3&saveValues=${saveValues}`;
-    console.log("[SAVE-DEBUG] Step 11: Navigating to", navUrl);
     history.push(navUrl);
     return;
 
@@ -2677,7 +2671,6 @@ const Screen2 = ({
       },
     };
 
-    console.log('report data for calculator',report_data)
     if ((id !== null || isNaN(id) === false) && saveValues) {
       await apiCalculatorById.edit_value(id, {
         report_data: report_data,
@@ -2892,9 +2885,6 @@ const Screen2 = ({
     return screen1.background.party2province;
   };
 
-  // console.log("getProvinceOfParty1 info",getTotalDeductionsParty1())
-  // console.log("getProvinceOfParty2 info",getTotalDeductionsParty2())
-
   const getDeductionsMinusBenefits = (partyNum: number) => {
 
     let val = 0;
@@ -2930,13 +2920,7 @@ const Screen2 = ({
   //   }
 
   //  return CPP2Amt;
-      return 0;
-     
-    //  let result =  Math.max((income-68500),0) * 0.04;
-    //  console.log("THIidg",Math.min(result,188), CPP2Amt)
-    //  return  Math.min(result,188) + CPP2Amt;
-
-  
+      return 0;  
   }
 
 
@@ -3546,10 +3530,6 @@ const Screen2 = ({
       Number(childSupport) -
       specialExpensesRef.current.party1;
 
-      console.log("checkallvalicome p1",val)
-
-
-
     return val + nonTaxableIncomeParty1();
   };
 
@@ -3568,16 +3548,6 @@ const Screen2 = ({
       Number(sumAllBenefits(2)) -
       Number(childSupport) -
       specialExpensesRef.current.party2;
-
-      console.log("checkallvalicome p2",Number(totalIncomeByIncomeState(income.party2)) ,
-      Number(totalIncomeByIncomeState(guidelineIncome.party2)) ,
-      Number(isNaN(calculateTotalTaxes(2)) ? 0 : calculateTotalTaxes(2)) ,
-      // Number(calculateTotalTaxes(2)) +
-      Number(sumAllBenefits(2)) ,
-      Number(childSupport) ,
-      specialExpensesRef.current.party2)
-
-
 
     return val + nonTaxableIncomeParty2();
   };
@@ -3942,13 +3912,6 @@ const Screen2 = ({
     );
    }
 
-
-   console.log('houseHoldIncome2 in iterative',houseHoldIncome1)
-   console.log('houseHoldIncome2 in iterative p2',houseHoldIncome2)
-
-     
-
-
       let spousalSupportVal;
 
       if (time === 0) {
@@ -3997,15 +3960,12 @@ const Screen2 = ({
         //store value for tax
 
         assignValuesToLowKeysWithoutSpecialExpenses();
-        // console.log("& pushing to low one Tax", taxesWithoutSpecialExpenses);
       } else if (rate === calpercentageRef.mid / 100 && time === 1) {
         matchResultsWithoutSpecialExpenses.current.push(spousalSupportVal);
-        // console.log("& pushing to med one Tax", taxesWithoutSpecialExpenses);
 
         assignValuesToMedKeysWithoutSpecialExpenses();
       } else if (rate === calpercentageRef.high / 100 && time === 1) {
         matchResultsHighWithoutSpecialExpenses.current.push(spousalSupportVal);
-        // console.log("& pushing to high one Tax", taxesWithoutSpecialExpenses);
 
         assignValuesToHighKeysWithoutSpecialExpenses();
       } else if (rate === calpercentageRef.low / 100 && time === 2) {
@@ -4039,7 +3999,6 @@ const Screen2 = ({
         // else assignValuesToHighKeys();
 
         // matchResultsHigh.current.push(spousalSupportVal);
-        // console.log("Tracking HIGH case array", matchResultsHigh);
       }
 
       resolve({
@@ -4150,7 +4109,6 @@ const Screen2 = ({
     let amountToBeDeducted = 0;
 
     if (partyWhoPayed === 1) {
-      // console.log("party 1 payed");
       amountToBeDeducted = party1TaxesMinusDeductions;
       if (type === "Low") {
         changeInTaxesAndBenefitLow.current.party1 = amountToBeDeducted;
@@ -4160,7 +4118,6 @@ const Screen2 = ({
         changeInTaxesAndBenefitHigh.current.party1 = amountToBeDeducted;
       }
     } else if (partyWhoPayed === 2) {
-      // console.log("party 2 payed");
       amountToBeDeducted = party2TaxesMinusDeductions;
       if (type === "Low") {
         changeInTaxesAndBenefitLow.current.party2 = amountToBeDeducted;
@@ -4248,10 +4205,8 @@ const Screen2 = ({
 
     setSpecialExpenses(obj);
     specialExpensesRef.current = obj;
-    console.log("what its set onspl ",obj)
 
     if (type === "Low") {
-      console.log("checkhowmanytimethisfunrun")
       specialExpensesLowVal.current = {
         party1: annualPaymentByPayingParty1,
         party2: annualPaymentByPayingParty2,
@@ -4267,33 +4222,6 @@ const Screen2 = ({
         party2: annualPaymentByPayingParty2,
       };
     }
-
-    //total special expense - annualPaymentByPayingParty1
-    console.log("&* total amount to be shared", {
-      taxesWithoutSpecialExpensesType1,
-      taxesWithoutSpecialExpensesType2,
-      totalTaxes1: calculateTotalTaxes(1),
-      totalTaxes2: calculateTotalTaxes(2),
-      totalBenefits1: sumAllBenefits(1),
-      totalBenefits2: sumAllBenefits(2),
-      partyWhoPayed,
-      amountToBeDeducted,
-      party1TaxesMinusDeductions,
-      party2TaxesMinusDeductions,
-      totalAmountToBeShared,
-      householdIncome,
-      percentageParty1,
-      percentageParty2,
-      spousalSupportHigh,
-      deductableSupport,
-      supportReceived,
-      annualPaymentByPayingParty1,
-      annualPaymentByPayingParty2,
-      annualPaymentMonthly1: annualPaymentByPayingParty1 / 12,
-      annualPaymentMonthly2: annualPaymentByPayingParty2 / 12,
-      result: obj,
-    });
-
     return obj;
   };
 
@@ -4484,11 +4412,6 @@ const Screen2 = ({
         taxableIncome: getTaxableIncomeAfterSupportParty1(),
         provincialCredits: totalOntarioCredits(paramsForProvincialCredits(1), nonTaxableIncomeParty1()),
       };
-
-
-
-      // console.log("logs AB prov obj 1", objAB);
-
       return determineProvTaxAB(objAB);
     }
   };
@@ -4521,8 +4444,6 @@ const Screen2 = ({
         taxableIncome: getTaxableIncomeAfterSupportParty2(),
         provincialCredits: totalOntarioCredits(paramsForProvincialCredits(2), nonTaxableIncomeParty2()),
       };
-
-      console.log("getprovinceofparty2inner", objAB)
 
       return determineProvTaxAB(objAB);
     }
@@ -4581,23 +4502,6 @@ const Screen2 = ({
     // !!federal tax is wrong.
     // !!Provincial Tax is wrong
 
-    console.log("alltaxesind party2",
-      Number(determineProvTax(getProvinceOfParty1(), 2)),
-      Number(federalTax.current.party2),
-      calculateCPPandELDeductionsForEmployed(2),
-      calculateCPPandEIDeductionsForSelfEmployed(2),
-      -calculateCanadaWorkersBenefits(2),
-      -Number(calculateProvincialCreditsParty2()),
-    )
-
-    console.log("alltaxesind party1",
-      Number(determineProvTax(getProvinceOfParty1(), 1)),
-      Number(federalTax.current.party1),
-      calculateCPPandELDeductionsForEmployed(1),
-      calculateCPPandEIDeductionsForSelfEmployed(1),
-      -calculateCanadaWorkersBenefits(1),
-      -Number(calculateProvincialCreditsParty1()),
-    )
 
 
     return partyNum === 1
@@ -4665,19 +4569,6 @@ const Screen2 = ({
   }, []);
 
   useEffect(()=>{
-    // console.log("check in useEffect disposeable income new ", calculateDisposableIncome1WithoutEnhancedCPP(
-    //   ChildSupportInitValue.current.party1 + notionalAmountRef.current.party1
-    // ))
-
-    console.log("check in useEffect disposeable income old p1",calculateDisposableIncome1WithoutEnhancedCPP(
-      childSupportRef.current.party1 + notionalAmountRef.current.party1
-    ))
-
-    console.log("check in useEffect disposeable income old p2",calculateDisposableIncome2WithoutEnhancedCPP(
-      childSupportRef.current.party2 + notionalAmountRef.current.party2
-    ))
-    
-
 
   },[income])
 
@@ -4693,7 +4584,7 @@ const Screen2 = ({
           screen1.aboutTheChildren,
           getTaxableIncomeAfterSupportParty1(),
           typeOfSplitting,
-          party1Name(),
+          "Party 1",
           1,
           fetchedDynamicValues
         )
@@ -4701,10 +4592,6 @@ const Screen2 = ({
     );
 
     val = ifSharedDivideBy2(typeOfSplitting, val);
-
-    // console.log("canada Child benefit", val);
-
-
 
     return val;
   };
@@ -4718,7 +4605,7 @@ const Screen2 = ({
           screen1.aboutTheChildren,
           getTaxableIncomeAfterSupportParty2(),
           typeOfSplitting,
-          party2Name(),
+          "Party 2",
           2,
           fetchedDynamicValues
         )
@@ -4740,7 +4627,7 @@ const Screen2 = ({
           screen1.aboutTheChildren,
           totalIncomeByIncomeState(income.party1),
           typeOfSplitting,
-          party1Name(),
+          "Party 1",
           1,
           fetchedDynamicValues
         )
@@ -4748,8 +4635,6 @@ const Screen2 = ({
     );
 
     val = ifSharedDivideBy2(typeOfSplitting, val);
-
-    // console.log("canada Child benefit", val);
 
     return val;
   };
@@ -4762,7 +4647,7 @@ const Screen2 = ({
           screen1.aboutTheChildren,
           totalIncomeByIncomeState(income.party2),
           typeOfSplitting,
-          party2Name(),
+          "Party 2",
           2,
           fetchedDynamicValues
         )
@@ -4891,8 +4776,6 @@ const Screen2 = ({
       )
     );
     
-
-    // console.log("logs Ontario child benefit", val);
     for (
       let i = 0;
       i < noOfSharedChildrenInHybrid(screen1, typeOfSplitting);
@@ -5057,20 +4940,16 @@ const Screen2 = ({
 
   const sumAllBenefits = (partyNum: number = 2) => {
 
-
-    console.log("check sums party1", partyNum, Number(ontarioSalesTax.current.party1),
       Number(OntarioChildBenefit.current.party1),
       Number(GSTHSTBenefit.current.party1),
       Number(childBenefit.current.party1),
       Number(climateChangeVal.current.party1),
-      Number(childDisabilityBenefit.current.party1))
-
-    console.log("check sums party2", partyNum, Number(ontarioSalesTax.current.party2),
+      Number(childDisabilityBenefit.current.party1),
       Number(OntarioChildBenefit.current.party2),
       Number(GSTHSTBenefit.current.party2),
       Number(childBenefit.current.party2),
       Number(climateChangeVal.current.party2),
-      Number(childDisabilityBenefit.current.party2))
+      Number(childDisabilityBenefit.current.party2)
 
     if (partyNum === 1) {
       return render0IfValueIsNegative(
@@ -5291,7 +5170,6 @@ const Screen2 = ({
           time: 0 | 1 | 2
         ): number | undefined => {
           if (rate === calpercentageRef.low / 100 && time === 1) {
-            // console.log("&* in low Tax column");
 
             const val =
               matchResultsLowWithoutSpecialExpenses.current[
@@ -5300,7 +5178,6 @@ const Screen2 = ({
 
             return val;
           } else if (rate === calpercentageRef.mid / 100 && time === 1) {
-            // console.log("&* in med Tax column");
             const val =
               matchResultsWithoutSpecialExpenses.current[
               matchResultsWithoutSpecialExpenses.current.length - 1
@@ -5308,25 +5185,21 @@ const Screen2 = ({
 
             return val;
           } else if (rate === calpercentageRef.high / 100 && time === 1) {
-            // console.log("&* in high Tax column");
             const val =
               matchResultsHighWithoutSpecialExpenses.current[
               matchResultsHighWithoutSpecialExpenses.current.length - 1
               ];
             return val;
           } else if (rate === calpercentageRef.low / 100 && time === 2) {
-            // console.log("&* in low Tax column");
             const val =
               specialExpensesLow.current[specialExpensesLow.current.length - 1];
             return val;
           } else if (rate === calpercentageRef.mid / 100 && time === 2) {
-            // console.log("&* in med Tax column");
             const val =
               specialExpensesMed.current[specialExpensesMed.current.length - 1];
 
             return val;
           } else if (rate === calpercentageRef.high / 100 && time === 2) {
-            // console.log("&* in high Tax column");
             const val =
               specialExpensesHigh.current[
               specialExpensesHigh.current.length - 1
@@ -5343,7 +5216,6 @@ const Screen2 = ({
         let count = 0;
 
         const timer = setInterval(async (rateParam, time) => {
-          // console.log("&* set interval called ", rateParam, time);
           if (ifStatementAccToRate(rateParam, count, time)) {
             clearInterval(timer);
             // refButtonResetValues.current.click();
@@ -5375,10 +5247,6 @@ const Screen2 = ({
                 calpercentageRef.mid / 100,
                 1
               );
-              // console.log(
-              //   "&* Med one Tax work",
-              //   matchResultsWithoutSpecialExpenses
-              // );
             }
             else if (rateParam === calpercentageRef.high / 100 && time === 1) {
               clearSpecialExpensesToZero();
@@ -5386,11 +5254,6 @@ const Screen2 = ({
                 calpercentageRef.high / 100,
                 1
               );
-
-              // console.log(
-              //   "&* High one Tax work",
-              //   matchResultsHighWithoutSpecialExpenses
-              // );
             }
             else if (rateParam === calpercentageRef.low / 100 && time === 2) {
               syncUpParty1Deduction(specialExpensesArr, "21400");
@@ -5409,10 +5272,6 @@ const Screen2 = ({
                 calpercentageRef.low / 100,
                 2
               );
-              // console.log(
-              //   "&* Low one Special Expenses work",
-              //   specialExpensesLow
-              // );
             }
             else if (rateParam === calpercentageRef.mid / 100 && time === 2) {
               syncUpParty1Deduction(specialExpensesArr, "21400");
@@ -5429,11 +5288,6 @@ const Screen2 = ({
                 calpercentageRef.mid / 100,
                 2
               );
-
-              // console.log(
-              //   "&* Med one Special Expenses work",
-              //   specialExpensesMed
-              // );
             }
             else if (rateParam === calpercentageRef.high / 100 && time === 2) {
               syncUpParty1Deduction(specialExpensesArr, "21400");
@@ -5451,19 +5305,12 @@ const Screen2 = ({
                 calpercentageRef.high / 100,
                 2
               );
-              // console.log(
-              //   "&* High one Special Expenses work",
-              //   specialExpensesHigh
-              // );
             }
             //This condition runs for the HIGH scenerio.
             else if (rateParam === 0.5 && time === 0) {
               await calculateChildAndSpousalSupportManually(0.5, 0);
-
-              // console.log("&* High Limit one work", matchResultsHigh);
             }
           } catch (err) {
-            console.log("err in iterative formula", err);
             // window.location.href = "/calculator";
             clearInterval(timer);
             reject(err);
@@ -5477,24 +5324,20 @@ const Screen2 = ({
     if (data.lowTaxes) {
       //clearSpecialExpensesToZero();
       await waitUntil(calpercentageRef.low / 100, 1);
-      // console.log("&* response Low Tax 2", resTaxLow2);
     }
     if (data.medTaxes) {
       //clearSpecialExpensesToZero();
       await waitUntil(calpercentageRef.mid / 100, 1);
-      // console.log("&* response Low Tax 2", resTaxMed2);
     }
     if (data.highTaxes) {
       // refButtonResetSpecialExpense.current.click();
       //clearSpecialExpensesToZero();
       await waitUntil(calpercentageRef.high / 100, 1);
-      // console.log("&* response High Tax 2", resTaxHigh2);
     }
 
     if (data.highLimit) {
 
       //await waitUntil(0.5, 0);
-      // console.log("&* response High Limit", resHighLimit);
 
       let { lowSupport, medSupport, highSupport, high, med, low } =
         calculateSpousalSupportAccToSalaryDiff({
@@ -5624,15 +5467,6 @@ const Screen2 = ({
     }
 
     assignValuesAfterAllCalculations();
-
-    // console.log(
-    //   "&* response for taxes",
-    //   taxesWithSpecialExpenses,
-    //   taxesWithoutSpecialExpenses
-    // );
-    // NOTE: setShowCalculationCompleted / setShowSaveCalculatorValues moved to
-    // calculateChildAndSpousalSupportAuto so the modal only appears AFTER Flask
-    // has overridden the spousal support refs with the correct values.
   };
 
   const getDateofBirthParty=(PartyNum:number)=>{
@@ -5652,10 +5486,6 @@ const Screen2 = ({
 
 
   const calculateChildAndSpousalSupportAuto = async () => {
-
-    console.log('Screen1Allinfo',screen1)
-    console.log('Screen2Allinfo',screen2)
-
 
     let objforApi = {
       "tax_year": distinctYears?.selectedYear,
@@ -5737,24 +5567,31 @@ const Screen2 = ({
       // ── Child-support-only path ────────────────────────────────────────────
       if (typeOfCalculatorSelected === CHILD_SUPPORT_CAL) {
         const childrenList: any[] = screen1.aboutTheChildren.childrenInfo ?? [];
+        if (childrenList.length === 0) {
+          setShowNoChildrenError(true);
+          setLoading(false);
+          return;
+        }
         const csPayload = {
           party1_income: totalIncomeByIncomeState(income.party1) + nonTaxableIncomeParty1(),
           party2_income: totalIncomeByIncomeState(income.party2) + nonTaxableIncomeParty2(),
-          party1_name: party1Name(),
-          party2_name: party2Name(),
+          party1_name: "Party 1",
+          party2_name: "Party 2",
           children: childrenList.map((c: any) => ({
             name: c.name ?? "",
             csg_table: c.CSGTable ?? "No",
             child_support_override: c.ChildSupportOverride ?? 0,
-            custody_arrangement: c.custodyArrangement ?? "Party 1",
+            custody_arrangement: c.custodyArrangement || "Party 1",
           })),
         };
-        console.log('[Flask CS] payload:', csPayload);
+
+        console.log("[CS-Only] Payload:", JSON.stringify(csPayload, null, 2));
 
         const csResult = await calcChildSupportFlask(csPayload);
-        console.log('[Flask CS] result:', csResult);
+        console.log("[CS-Only] Result:", csResult);
 
         if (!csResult) {
+          console.error("[CS-Only] Child support call failed — no result returned");
           setLoading(false);
           setShowFlaskError(true);
           return;
@@ -5772,6 +5609,7 @@ const Screen2 = ({
           party2: csResult.party2_annual,
         };
 
+        console.log("[CS-Only] Success:", { party1_annual: csResult.party1_annual, party2_annual: csResult.party2_annual });
         Cookies.set('demo_cal_data', JSON.stringify(objforApi), { path: '/' });
         setLoading(false);
         setShowCalculationCompleted(true);
@@ -5792,24 +5630,28 @@ const Screen2 = ({
 
       // ── Call /calculate first to get Python CS amounts ───────────────────────
 
+      console.log("[Calc] Children state:", { hasChildren, count: childrenList.length, childAges, youngestChildAge });
+      console.log("[Calc] Incomes:", { p1Income, p2Income });
+
       if (hasChildren) {
         const csPayload = {
           party1_income: p1Income,
           party2_income: p2Income,
-          party1_name: party1Name(),
-          party2_name: party2Name(),
+          party1_name: "Party 1",
+          party2_name: "Party 2",
           children: childrenList.map((c: any) => ({
             name: c.name ?? "",
             csg_table: c.CSGTable ?? "No",
             child_support_override: c.ChildSupportOverride ?? 0,
-            custody_arrangement: c.custodyArrangement ?? "Party 1",
+            custody_arrangement: c.custodyArrangement || "Party 1",
           })),
         };
-        console.log('[Flask CS] payload:', csPayload);
+        console.log("[Calc] CS pre-fetch payload:", JSON.stringify(csPayload, null, 2));
         const csResult = await calcChildSupportFlask(csPayload);
-        console.log('[Flask CS] result:', csResult);
+        console.log("[Calc] CS pre-fetch result:", csResult);
 
         if (!csResult) {
+          console.error("[Calc] CS pre-fetch failed — aborting");
           setLoading(false);
           setShowFlaskError(true);
           return;
@@ -5837,11 +5679,14 @@ const Screen2 = ({
       const p2Age = momentFunction.calculateNumberOfYears(screen1.background.party2DateOfBirth);
       const recipientAge = p1Income >= p2Income ? p2Age : p1Age;
 
+      console.log("[Calc] Ages:", { p1Age, p2Age, recipientAge, p1DOB: screen1.background.party1DateOfBirth, p2DOB: screen1.background.party2DateOfBirth });
+      console.log("[Calc] Relationship dates:", { dateOfMarriage: screen1.aboutTheRelationship.dateOfMarriage, dateOfSeparation: screen1.aboutTheRelationship.dateOfSeparation });
+
       const flaskPayload = {
         party1_net_income: p1Income,
         party2_net_income: p2Income,
-        party1_name: party1Name(),
-        party2_name: party2Name(),
+        party1_name: "Party 1",
+        party2_name: "Party 2",
         party1_age: p1Age,
         recipient_age: recipientAge,
         years: momentFunction.differenceBetweenTwoDates(
@@ -5855,18 +5700,17 @@ const Screen2 = ({
         // Let the Flask API compute CS amounts from children_list + incomes
         // rather than passing potentially wrong-direction values.
       };
-      console.log('[Flask] payload:', flaskPayload);
 
+      console.log("[Calc] Spousal support payload:", JSON.stringify(flaskPayload, null, 2));
       const flaskResult = await calcSpousalSupportFlask(flaskPayload);
-
-      console.log('[Flask] result:', flaskResult);
-      console.log('[Flask] refs before override - low:', spousalSupportLow.current, 'med:', spousalSupportMed.current, 'high:', spousalSupportHigh.current);
+      console.log("[Calc] Spousal support result:", flaskResult);
 
       if (flaskResult) {
         // Use the Flask API's payor/recipient determination (based on INDI
         // comparison, matching the old app's disposable-income logic) to
         // assign spousal support to the correct party slot.
-        const payorIsParty1 = flaskResult.payor === party1Name();
+        const payorIsParty1 = flaskResult.payor === "Party 1";
+        console.log("[Calc] Payor direction:", { flaskPayor: flaskResult.payor, payorIsParty1 });
         flaskSpousalPayorIsParty1.current = payorIsParty1;
         if (payorIsParty1) {
           // Party 1 pays → support given to Party 2
@@ -5885,7 +5729,6 @@ const Screen2 = ({
           spousalSupportHigh.current.party1 = flaskResult.monthly_high;
           spousalSupportHigh.current.party2 = 0;
         }
-        console.log('[Flask] refs after override - low:', spousalSupportLow.current, 'med:', spousalSupportMed.current, 'high:', spousalSupportHigh.current);
 
         // Store INDI (disposable income) values, mapping payor/recipient → party1/party2
         if (payorIsParty1) {
@@ -5991,8 +5834,6 @@ const Screen2 = ({
         ? employedIncome10100Party1()
         : employedIncome10100Party2();
 
-    // console.log("child support in credits", childSupport);
-
     return {
       screen1: screen1,
       childSupport: {
@@ -6086,16 +5927,6 @@ const Screen2 = ({
       });
     }
 
-
-
-    // console.log(
-    //   "Enhanced CPP deductions",
-    //   total,
-    //   employedIncome10100Party2(),
-    //   selfEmployedIncomeParty2(),
-    //   fetchedDynamicValues
-    // );
-
     return total;
   };
 
@@ -6177,7 +6008,6 @@ const Screen2 = ({
         `update_matter/${sid}/${storedMatterNumber}/calculatorState`,
         [calcState]
       ).then(() => {
-        console.log("[Calculator] Saved calculator state to matter DB");
       }).catch((err) => {
         console.warn("[Calculator] Failed to save calculator state:", err);
       });
@@ -6223,7 +6053,6 @@ const Screen2 = ({
           },
         ]
       ).then(() => {
-        console.log("[Calculator] Saved background details to matter DB");
       }).catch((err) => {
         console.warn("[Calculator] Failed to save background details:", err);
       });
@@ -6250,7 +6079,6 @@ const Screen2 = ({
           `update_matter/${sid}/${storedMatterNumber}/children`,
           childrenRows
         ).then(() => {
-          console.log("[Calculator] Saved children details to matter DB");
         }).catch((err) => {
           console.warn("[Calculator] Failed to save children details:", err);
         });
@@ -6268,7 +6096,6 @@ const Screen2 = ({
           dateOfSeparation: rel.dateOfSeparation || "",
         }]
       ).then(() => {
-        console.log("[Calculator] Saved relationship details to matter DB");
       }).catch((err) => {
         console.warn("[Calculator] Failed to save relationship details:", err);
       });
@@ -6322,7 +6149,6 @@ const Screen2 = ({
         `update_matter/${sid}/${storedMatterNumber}/incomeBenefits`,
         incomeBenefitsBody
       ).then(() => {
-        console.log("[Calculator] Saved income to income_benefits for intake sync");
       }).catch((err) => {
         console.warn("[Calculator] Failed to save income_benefits:", err);
       });
@@ -6531,7 +6357,6 @@ const Screen2 = ({
         .then((res) => {
 
           // fetchChildSupportValues(year, province, "1,23,4").then((childSupportValues) => {
-          //   console.log("values", childSupportValues);
           //   // setFetchedChildSupportValues(childSupportValues)
           //   resolve(true)
           // }).catch((err) => { console.log("err", err); reject(false) });
@@ -6554,12 +6379,10 @@ const Screen2 = ({
           const obj = convertArrToObj(res.dynamicValues);
 
           setFetchedDynamicValues({ ...obj, year, province });
-          console.log("checkratiokeyts", res)
           //year to be added later in DB
           resolve(true);
         })
         .catch((err) => {
-          console.log(`Error Fetching Values from DB ${err}`);
           // alert(`Error Fetching Values from DB ${err}`);
           reject(err);
         });
@@ -6591,7 +6414,7 @@ const Screen2 = ({
     screen1Data.childrenInfo.forEach((e) => {
       if (
         momentFunction.differenceBetweenNowAndThen(e.dateOfBirth) >= 18 &&
-        e.custodyArrangement === screen1.background.party1FirstName
+        e.custodyArrangement === "Party 1"
       ) {
         isChildGreaterThan18WithParty1++;
       }
@@ -6600,7 +6423,7 @@ const Screen2 = ({
     screen1Data.childrenInfo.forEach((e) => {
       if (
         momentFunction.differenceBetweenNowAndThen(e.dateOfBirth) >= 18 &&
-        e.custodyArrangement === screen1.background.party2FirstName
+        e.custodyArrangement === "Party 2"
       ) {
         isChildGreaterThan18WithParty2++;
       }
@@ -7120,15 +6943,6 @@ const Screen2 = ({
 
   const calculateProvincialCreditsParty2 = () => {
 
-    console.log('calculateProvincialCreditsParty2PPPPP',{
-      childCareExpenses: Math.min(
-        AllemployedIncomeParty2() * (2 / 3),
-        capAndAccumulateChildExpense(deductions.party2)
-      ),
-      taxableAmountAfterSupport: getTaxableIncomeAfterSupportParty2(),
-      rates: fetchedONCareTaxDB,
-    })
-
     return province === "ON" &&  specialExpensesRef.current.party2 !== 0 
       ? formulaForProvincialCredits(
         {
@@ -7145,9 +6959,6 @@ const Screen2 = ({
   };
 
   const calculateAndSetProvincialCredits = (partyNum: number) => {
-
-    console.log("specialExpensesRefCheckValfghj",specialExpensesRef.current.party1)
-
 
     // if(specialExpensesRef.current.party1 !== 0){
     //   if (partyNum === 1) {
@@ -7181,13 +6992,6 @@ const Screen2 = ({
         party2: calculateProvincialCreditsParty2(),
       };
     }
-
-
-    
-
-    
-
-    console.log('checkProvCredFun',provincialCredits)
   };
 
 
@@ -7530,8 +7334,6 @@ const Screen2 = ({
     };
   };
 
-  console.log("allCreditsParty1.current>r p1",allCreditsParty1.current)
-  console.log("allCreditsParty1.current>r p2",allCreditsParty2.current)
 
 
   const clearAllCreditsParty2 = () => {
@@ -7697,7 +7499,6 @@ const Screen2 = ({
 
       if (!eiPremiumFixed.party1.isFixed) {
         EIPremiumVal = EIPremiums(data, nonTaxableIncomeParty1());
-        console.log("EIPremiumValchecking", EIPremiumVal)
       } else {
         EIPremiumVal = eiPremiumFixed.party1.value;
       }
@@ -7756,7 +7557,6 @@ const Screen2 = ({
 
       if (!baseCPPContributionFixed.party2.isFixed) {
         baseCPPContributionVal = baseCPPContribution(data, nonTaxableIncomeParty2());
-        console.log("baseCPPContributionVal", baseCPPContributionVal)
       } else {
         baseCPPContributionVal = baseCPPContributionFixed.party2.value;
       }
@@ -7839,8 +7639,6 @@ const Screen2 = ({
     result += data.baseCPPContribution + data.eiPremiums;
     result += data.disabilityCreditsProv
 
-    console.log("checkcredits>>>",result)
-
     return result;
   };
 
@@ -7862,8 +7660,6 @@ const Screen2 = ({
     partyNum: number
   ) => {
     const purifyValue = Number(event.target.value.replace(/[$,]/g, ""));
-
-    console.log("purifyValuefun>",purifyValue)
 
     switch (name) {
       //canada child benefit
@@ -8142,6 +7938,18 @@ const Screen2 = ({
         >
           <p className="heading-5">
             The spousal support calculation could not be completed. Please ensure the backend is running and try again.
+          </p>
+        </ModalInputCenter>
+        <ModalInputCenter
+          heading="No Children Added"
+          handleClick={() => setShowNoChildrenError(false)}
+          changeShow={() => setShowNoChildrenError(false)}
+          show={showNoChildrenError}
+          action="Ok"
+          cancelOption="Cancel"
+        >
+          <p className="heading-5">
+            Please add at least one child in the Background section before running a child support calculation.
           </p>
         </ModalInputCenter>
       </>
@@ -9928,7 +9736,7 @@ const Screen2 = ({
                 expenses. These expenses will be apportioned based on the income
                 of each party to get the s7 child special expenses support
               </span>
-              {showAlertFillAllDetails && AlertFillAllDetails()}
+              {(showAlertFillAllDetails || showFlaskError || showNoChildrenError) && AlertFillAllDetails()}
               <div className="row">
                 <div className="col-md-6">
                   {specialExpensesArr.party1.map((e: any, index: number) => {
@@ -10345,7 +10153,6 @@ const Screen2 = ({
 
                 <div className="col-md-6">
                   {
-                    console.log("checkinmapotherhouseholdmember",otherhouseholdmember.party1)
                   }
                 {
                   
@@ -10938,8 +10745,6 @@ const RenderCalculationValues = ({ data }: { data: any }) => {
     credits: false,
     benefits: false,
   });
-
-  console.log("DataRenderCalculationValues",data)
 
   const onDeductionsAdd = () => {
     setPopup((prev) => ({ ...prev, deductions: !prev.deductions }));

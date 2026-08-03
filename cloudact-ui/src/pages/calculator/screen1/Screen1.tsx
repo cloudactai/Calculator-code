@@ -115,10 +115,7 @@ const Screen1 = ({
     aboutTheChildrenInfo: false,
     aboutTheChildrenNumberInfo: -1,
   });
-  console.log("calpercentageupper",calpercentageRef)
-  console.log("calpercentageNew",calpercentageRef)
   
-
   const [showAlertFillAllDetails, setShowAlertFillAllDetails] = useState(false);
   const [showsettingModal, setShowsettingModal] = useState(false);
 
@@ -204,13 +201,9 @@ const Screen1 = ({
                 setAboutTheChildrenStateByObj({ childrenInfo: details });
               }}
               options={[
-                background.party1FirstName
-                  ? background.party1FirstName
-                  : "Party 1",
-                background.party2FirstName
-                  ? background.party2FirstName
-                  : "Party 2",
-                "Shared",
+                { value: "Party 1", label: background.party1FirstName || "Party 1" },
+                { value: "Party 2", label: background.party2FirstName || "Party 2" },
+                { value: "Shared", label: "Shared" },
               ]}
               value={aboutTheChildren.childrenInfo[index].custodyArrangement}
             />
@@ -436,16 +429,10 @@ const Screen1 = ({
     };
 
     for (let i = 0; i < liveWithDetails.length; i++) {
-      if (
-        liveWithDetails[i] === "Party 1" ||
-        liveWithDetails[i] === background.party1FirstName
-      ) {
+      if (liveWithDetails[i] === "Party 1") {
         count.party1++;
         count.party1WithAdultChild++;
-      } else if (
-        liveWithDetails[i] === "Party 2" ||
-        liveWithDetails[i] === background.party2FirstName
-      ) {
+      } else if (liveWithDetails[i] === "Party 2") {
         count.party2++;
         count.party2WithAdultChild++;
       } else if (liveWithDetails[i] === "Shared") {

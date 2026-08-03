@@ -1,0 +1,188 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="pdf_viewer.css">
+<style>
+  html, body { margin: 0; padding: 0; background: #fff; }
+  /* XFA lays out in 72dpi points-as-px; CSS print inches are 96dpi. Scaling the
+     72dpi page up by 4/3 makes one XFA page exactly one US Letter sheet. */
+  .sheet { position: relative; width: 8.5in; height: 11in; overflow: hidden;
+           page-break-after: always; break-after: page; }
+  .sheet:last-child { page-break-after: auto; break-after: auto; }
+  .page { position: relative; width: 612px; height: 792px;
+          transform: scale(1.3333333); transform-origin: 0 0; }
+  .xfaLayer { position: absolute; top: 0; left: 0; transform-origin: 0 0; }
+  /* Print the form's own rules and boxes, not browser chrome. */
+  .xfaLayer input, .xfaLayer textarea, .xfaLayer select { background: transparent; }
+  /* XFA action buttons ("Prepare Paper Copy", "Add Additional Parties") are
+     viewer controls, not part of the printed form. */
+  .xfaLayer button, .xfaLayer .xfaButton { display: none !important; }
+  /* pdf.js emits XFA rich text lists as bare ol/li with no indent, so the marker
+     prints on top of its own item text. Indent them and drop the default margins
+     the browser adds, which also stops the block overflowing its box. */
+  .xfaRich ol, .xfaRich ul { margin: 0; padding-left: 0; }
+  .xfaRich li { list-style-position: inside; margin: 0; }
+  .xfaRich p { margin: 0; }
+  @page { size: 8.5in 11in; margin: 0; }
+</style>
+</head>
+<body>
+<div id="pages"></div>
+<script type="module">
+import { getDocument, XfaLayer, GlobalWorkerOptions } from "./pdf.mjs";
+GlobalWorkerOptions.workerSrc = "./pdf.worker.mjs";
+
+const params = new URLSearchParams(location.search);
+const file = params.get("file");
+
+async function main() {
+  console.log("start", file);
+  const doc = await getDocument({
+    url: file,
+    enableXfa: true,
+    standardFontDataUrl: "./standard_fonts/",
+    cMapUrl: "./cmaps/",
+    cMapPacked: true,
+  }).promise;
+  console.log("loaded", doc.numPages);
+  const xfa = await doc.allXfaHtml;
+  console.log("xfa", !!xfa);
+  const storage = doc.annotationStorage;
+  const host = document.getElementById("pages");
+  const linkService = { addLinkAttributes() {}, getDestinationHash: () => "", getAnchorUrl: () => "" };
+
+  for (let i = 1; i <= doc.numPages; i += 1) {
+    const page = await doc.getPage(i);
+    const viewport = page.getViewport({ scale: 1 });
+    const sheet = document.createElement("div");
+    sheet.className = "sheet";
+    const wrapper = document.createElement("div");
+    wrapper.className = "page";
+    wrapper.style.width = viewport.width + "px";
+    wrapper.style.height = viewport.height + "px";
+    const layer = document.createElement("div");
+    wrapper.append(layer);
+    sheet.append(wrapper);
+    host.append(sheet);
+    XfaLayer.render({
+      viewport: viewport.clone({ dontFlip: true }),
+      div: layer,
+      xfaHtml: xfa.children[i - 1],
+      annotationStorage: storage,
+      linkService,
+      intent: "print",
+    });
+  }
+  // pdf.js positions a flowed subform without running Adobe's layout engine, so
+  // on a few pages consecutive paragraphs are placed at overlapping heights and
+  // print on top of each other. Push the lower block — and everything below it —
+  // down until the page reads sequentially again.
+  // Root cause of the overlaps: pdf.js substitutes LiberationSans for the
+  // government's embedded font, and the substitute is wider, so a paragraph wraps
+  // to one more line than XFA allocated and spills onto the block below. Shrink
+  // only the blocks that actually overflow, until their text fits the box the
+  // form gave them. Nothing moves, so no cascade.
+  function fitOverflowingText(pageEl) {
+    const blocks = [...pageEl.querySelectorAll(".xfaDraw")].filter((el) => el.textContent.trim());
+    let fixed = 0;
+    for (const el of blocks) {
+      if (el.scrollHeight <= el.clientHeight + 1 || !el.clientHeight) continue;
+      const start = parseFloat(getComputedStyle(el).fontSize) || 10;
+      for (let scale = 0.98; scale >= 0.62; scale -= 0.02) {
+        el.style.fontSize = `${start * scale}px`;
+        if (el.scrollHeight <= el.clientHeight + 1) break;
+      }
+      fixed += 1;
+    }
+    return fixed;
+  }
+
+  function separateOverlaps(pageEl) {
+    // pdf.js emits one .xfaDraw per printed text block. Comparing anything finer
+    // (a paragraph and the spans inside it) makes a block collide with itself.
+    const all = [...pageEl.querySelectorAll(".xfaDraw")].filter((el) => el.textContent.trim());
+    const nodes = all.filter((el) => !all.some((other) => other !== el && other.contains(el)));
+    const box = (el) => {
+      const r = el.getBoundingClientRect();
+      const o = pageEl.getBoundingClientRect();
+      // XFA gives each block a fixed height. When the text wraps to more lines
+      // than fit, it spills out visibly but the border box stays the declared
+      // size, so the real extent is the content height.
+      const height = Math.max(r.height, el.scrollHeight);
+      return { top: r.top - o.top, bottom: r.top - o.top + height,
+               left: r.left - o.left, right: r.right - o.left };
+    };
+    const shifted = new Map();
+    for (let pass = 0; pass < 6; pass += 1) {
+      const items = nodes.map((el) => ({ el, ...box(el) })).sort((a, b) => a.top - b.top);
+      let moved = false;
+      for (let i = 0; i < items.length; i += 1) {
+        for (let j = i + 1; j < items.length; j += 1) {
+          const a = items[i];
+          const b = items[j];
+          const sameColumn = a.right > b.left + 2 && a.left < b.right - 2;
+          const vertical = Math.min(a.bottom, b.bottom) - Math.max(a.top, b.top);
+          if (!sameColumn || vertical <= 1) continue;
+          const delta = a.bottom - b.top + 2;
+          for (const item of items) {
+            if (item.top < b.top - 0.5) continue;
+            const current = shifted.get(item.el) || 0;
+            shifted.set(item.el, current + delta);
+            item.el.style.transform = `translateY(${current + delta}px)`;
+          }
+          moved = true;
+          break;
+        }
+        if (moved) break;
+      }
+      if (!moved) break;
+    }
+    return shifted.size;
+  }
+
+  // The XFA DOM carries the government's own field boxes, so overlay geometry is
+  // read straight off them instead of guessing from printed lines. Coordinates
+  // come back in PDF points (the unscaled 72dpi page space).
+  const sheets = [...document.querySelectorAll(".sheet .page")];
+  sheets.forEach(fitOverflowingText);
+  sheets.forEach(separateOverlaps);
+  window.__fields = sheets.flatMap((pageEl, index) => {
+    const origin = pageEl.getBoundingClientRect();
+    const scale = 1.3333333;
+    return [...pageEl.querySelectorAll("input, textarea, select")].map((el) => {
+      const box = el.getBoundingClientRect();
+      // A field carrying a default ("Claimant", "1st affidavit", a paragraph
+      // number) has that text baked into the printed background by the flatten,
+      // so the builder must not lay an editable box over it.
+      const tag = el.tagName.toLowerCase();
+      const printed = tag === "select"
+        ? ((el.options[el.selectedIndex] || {}).text || "")
+        : (el.value || "");
+      return {
+        page: index + 1,
+        tag,
+        inputType: (el.getAttribute("type") || "").toLowerCase(),
+        printedValue: String(printed).trim(),
+        name: el.getAttribute("xfaname") || el.name || el.id || "",
+        multiline: el.tagName.toLowerCase() === "textarea",
+        x: (box.left - origin.left) / scale,
+        y: (box.top - origin.top) / scale,
+        width: box.width / scale,
+        height: box.height / scale,
+      };
+    });
+  }).filter((f) => f.width > 1 && f.height > 1);
+
+  document.title = "ready:" + doc.numPages;
+  window.__renderDone = doc.numPages;
+}
+
+main().catch((error) => {
+  console.log("FAIL " + error.message);
+  document.title = "error:" + error.message;
+  window.__renderDone = -1;
+});
+</script>
+</body>
+</html>

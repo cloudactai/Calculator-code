@@ -4,6 +4,7 @@ import { CALCULATOR_API } from "../../config";
 import { patchMatterIntake } from "../../utils/Apis/matters/saveMatterInformation/saveMattersActions";
 import refreshIcon from "../../assets/images/refresh-icon.png";
 import {
+  SECTION_LABELS,
   buildStoredMatterContextMessage,
   normalizeStoredIntakeData,
 } from "./matterIntakeContext";
@@ -23,20 +24,6 @@ import "./MatterWorkflow.css";
  *   matterId     – string
  *   onComplete   – () => void   called once intake data has been saved
  */
-
-// Human labels for the PascalCase section keys the agent returns.
-const SECTION_LABELS = {
-  Background: "Background",
-  Relationship: "Relationship",
-  Children: "Children",
-  IncomeAndBenefits: "Income & benefits",
-  EmploymentDetails: "Employment",
-  Expenses: "Expenses",
-  Assets: "Assets",
-  DebtsAndLiabilities: "Debts",
-  Court: "Court",
-  OtherPersonsInHousehold: "Other persons",
-};
 
 function renderText(text) {
   const escaped = String(text)

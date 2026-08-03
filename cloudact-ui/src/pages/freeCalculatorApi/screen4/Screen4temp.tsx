@@ -359,13 +359,7 @@ const Screen4temp = ({
     // }
   
     // }
-
-    console.log("screen2 in free",screen2)
-    console.log("screen1 in free",screen1)
-
   
-
-
 
   const spousalSupportMedGreater = () => {
     return Math.max(

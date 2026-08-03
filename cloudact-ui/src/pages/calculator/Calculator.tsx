@@ -588,7 +588,6 @@ const Calculator = () => {
       changeInTaxesAndBenefitHigh2: 0,
     },
   });
-  console.log("screen2 bef",screen2)
 
   useEffect(() => {
     if (matterData) {
@@ -612,6 +611,25 @@ const Calculator = () => {
       });
 
       if (matterData.theChildren) {
+        const party1Name = (matterData?.applicant?.fullLegalName || "").trim().toLowerCase();
+        const party2Name = (matterData?.respondent?.fullLegalName || "").trim().toLowerCase();
+
+        console.log("[Intake→Calc] Children from intake:", matterData.theChildren);
+        console.log("[Intake→Calc] Party names for custody mapping:", { party1Name, party2Name });
+
+        const mapCustody = (nowLivesWith: string) => {
+          const val = (nowLivesWith || "").trim().toLowerCase();
+          let result = "Party 1";
+          if (!val) result = "Party 1";
+          else if (val === "both" || val === "shared") result = "Shared";
+          else if (party1Name && val === party1Name) result = "Party 1";
+          else if (party2Name && val === party2Name) result = "Party 2";
+          else if (val.includes("client") || val === "party 1") result = "Party 1";
+          else if (val.includes("opposing") || val === "party 2") result = "Party 2";
+          console.log("[Intake→Calc] mapCustody:", { nowLivesWith, val, result });
+          return result;
+        };
+
         setAboutTheChildren(prevState => ({
           ...prevState,
           numberOfChildren: matterData.theChildren.length,
@@ -620,7 +638,7 @@ const Calculator = () => {
           childrenInfo: matterData.theChildren.map(child => ({
             name: child.fullLegalName,
             dateOfBirth: child.birthdate,
-            custodyArrangement: "",
+            custodyArrangement: mapCustody(child.nowLivingWith),
             childHasDisability: "No",
             childOfRelationship: "Yes",
             adultChildStillALegalDependant: "Yes",
@@ -678,7 +696,6 @@ const Calculator = () => {
   })
 
   const [allApiDataCal ,setAllApiDataCal] = useState(null);
-  console.log("allApiDataCalallApiDataCal",allApiDataCal);
   
 
 

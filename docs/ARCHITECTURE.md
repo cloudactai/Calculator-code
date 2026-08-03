@@ -50,7 +50,7 @@ flowchart TD
 
     User --> UI
     UI -->|REACT_APP_API_BASE_URL<br/>login, matters, forms, folders| AUTH
-    UI -->|CALCULATOR_API<br/>/chat, /intake-chat, /download-report| FLASK
+    UI -->|CALCULATOR_API<br/>/chat, /intake-chat, /update-chat, /download-report| FLASK
     AUTH -->|DATABASE_URL Prisma/pg over SSL| DB
     AUTH -->|EMAIL_MICROSOFT_*| Graph
 ```
@@ -126,9 +126,11 @@ Two more that are **not** set here but exist as optional overrides in `config.ts
 
 The Python service ([app.py](../app.py), started with `web: gunicorn app:app` via
 [Procfile](../Procfile)). It powers everything conversational and every generated PDF —
-the child/spousal support calculators, the matter-intake agent, and the downloadable
-reports. It is **stateless** and talks only to Anthropic; it does **not** touch the
-database (all persistence is the frontend calling the auth-server). From the screenshot:
+the child/spousal support calculators, the matter-intake agent, the update-information
+agent, and the downloadable reports. It is **stateless** and talks only to Anthropic; it
+does **not** touch the database (all persistence is the frontend calling the
+auth-server) — which is why even the update agent returns its changes as patches for
+the frontend to write, rather than saving them itself. From the screenshot:
 
 - **Service name:** `Calculator-code` · **Type:** Web Service · **Runtime:** Python 3 ·
   **Instance:** **Free**.
@@ -302,6 +304,7 @@ Anthropic.**
 | Database | PostgreSQL on **AWS RDS** (via `DATABASE_URL`) |
 | Email | Microsoft Graph (`EMAIL_MICROSOFT_*`), sender `notifications@cloudforlawfirms.com` |
 
-See also: [MATTERS.md](MATTERS.md), [FORMS.md](FORMS.md), and the auth handoff notes in
+See also: [MATTERS.md](MATTERS.md), [FORMS.md](FORMS.md), [DATABASE.html](DATABASE.html)
+(every table and column, rendered — open it in a browser), and the auth handoff notes in
 [AUTH_HANDOFF/](AUTH_HANDOFF/).
 </content>

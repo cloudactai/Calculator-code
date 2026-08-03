@@ -1,0 +1,658 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CloudAct — Database Overview</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='88'>🗄️</text></svg>">
+<style>
+  :root {
+    --ground: #f5f7fa;
+    --surface: #ffffff;
+    --surface-2: #fbfcfe;
+    --ink: #171b24;
+    --muted: #5a6472;
+    --faint: #8a93a2;
+    --hairline: #e4e8ee;
+    --hairline-strong: #d3d9e2;
+    --accent: #3b5bdb;
+
+    --d-identity: #b45309;
+    --d-matters: #0f766e;
+    --d-calc: #7c3aed;
+    --d-forms: #1d4ed8;
+
+    --mono: ui-monospace, "SF Mono", "SFMono-Regular", Menlo, Consolas, "Liberation Mono", monospace;
+    --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+
+    --maxw: 1120px;
+    --r: 12px;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --ground: #0d1017;
+      --surface: #141922;
+      --surface-2: #10151e;
+      --ink: #e7ebf2;
+      --muted: #9aa4b3;
+      --faint: #6b7688;
+      --hairline: #242c39;
+      --hairline-strong: #2f3948;
+      --accent: #8298f7;
+
+      --d-identity: #f59e0b;
+      --d-matters: #2dd4bf;
+      --d-calc: #a78bfa;
+      --d-forms: #60a5fa;
+    }
+  }
+
+  * { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+
+  body {
+    margin: 0;
+    background: var(--ground);
+    color: var(--ink);
+    font-family: var(--sans);
+    line-height: 1.55;
+    -webkit-font-smoothing: antialiased;
+    font-feature-settings: "kern" 1;
+  }
+
+  .wrap {
+    max-width: var(--maxw);
+    margin: 0 auto;
+    padding: clamp(28px, 5vw, 64px) clamp(18px, 4vw, 40px) 96px;
+  }
+
+  /* ── Header ─────────────────────────────────────────── */
+  .eyebrow {
+    font-family: var(--mono);
+    font-size: 12px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin: 0 0 14px;
+  }
+  h1 {
+    font-size: clamp(30px, 5.2vw, 48px);
+    line-height: 1.04;
+    letter-spacing: -0.02em;
+    font-weight: 700;
+    text-wrap: balance;
+    margin: 0 0 18px;
+    max-width: 20ch;
+  }
+  .lede {
+    font-size: clamp(16px, 2.1vw, 18px);
+    color: var(--muted);
+    max-width: 66ch;
+    margin: 0;
+  }
+  .lede code, .foot code, .card__desc code {
+    font-family: var(--mono);
+    font-size: 0.86em;
+    background: var(--surface);
+    border: 1px solid var(--hairline);
+    border-radius: 5px;
+    padding: 1px 6px;
+    color: var(--ink);
+  }
+
+  /* ── Stat strip ─────────────────────────────────────── */
+  .stats {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1px;
+    background: var(--hairline);
+    border: 1px solid var(--hairline);
+    border-radius: var(--r);
+    overflow: hidden;
+    margin: 34px 0 12px;
+  }
+  .stat { background: var(--surface); padding: 18px 20px; }
+  .stat__n {
+    font-family: var(--mono);
+    font-size: clamp(22px, 3.4vw, 30px);
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    font-variant-numeric: tabular-nums;
+  }
+  .stat__l { font-size: 12.5px; color: var(--muted); margin-top: 3px; }
+  @media (max-width: 620px) { .stats { grid-template-columns: repeat(2, 1fr); } }
+
+  /* ── Callout ────────────────────────────────────────── */
+  .callout {
+    display: flex;
+    gap: 14px;
+    align-items: flex-start;
+    background: var(--surface);
+    border: 1px solid var(--hairline);
+    border-left: 3px solid var(--accent);
+    border-radius: 10px;
+    padding: 16px 20px;
+    margin: 22px 0 6px;
+    font-size: 15px;
+  }
+  .callout strong { color: var(--ink); }
+  .callout p { margin: 0; color: var(--muted); }
+  .callout .mk { color: var(--accent); font-family: var(--mono); font-weight: 600; font-size: 15px; line-height: 1.4; }
+
+  /* ── Section scaffolding ────────────────────────────── */
+  .section-title {
+    font-family: var(--mono);
+    font-size: 12px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--faint);
+    margin: 56px 0 18px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--hairline);
+  }
+
+  /* ── Relationship map (static, no JS) ───────────────── */
+  .map {
+    background: var(--surface);
+    border: 1px solid var(--hairline);
+    border-radius: var(--r);
+    padding: 22px clamp(14px, 3vw, 26px);
+    overflow-x: auto;
+  }
+  .map__caption {
+    font-family: var(--mono);
+    font-size: 11.5px;
+    letter-spacing: 0.04em;
+    color: var(--faint);
+    margin: 0 0 20px;
+  }
+  .map__group { display: flex; flex-direction: column; gap: 16px; min-width: 560px; }
+  .map__group + .map__group { margin-top: 22px; padding-top: 22px; border-top: 1px dashed var(--hairline-strong); }
+  .map__gh {
+    font-family: var(--mono);
+    font-size: 11.5px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin: 0;
+  }
+  .rel { display: flex; align-items: center; gap: 8px 10px; flex-wrap: wrap; }
+  .nodes { display: inline-flex; flex-wrap: wrap; gap: 8px; }
+  .node {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    padding: 6px 11px;
+    border-radius: 8px;
+    border: 1px solid var(--hairline-strong);
+    background: var(--surface-2);
+    font-family: var(--mono);
+    font-size: 12.5px;
+    font-weight: 600;
+    color: var(--ink);
+    white-space: nowrap;
+  }
+  .node .dot { width: 8px; height: 8px; border-radius: 2px; flex: none; }
+  .arrow { font-family: var(--mono); font-size: 11.5px; color: var(--muted); white-space: nowrap; }
+
+  /* ── Domain groups ──────────────────────────────────── */
+  .domain { margin-top: 40px; }
+  .domain__head {
+    display: flex;
+    align-items: baseline;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-bottom: 16px;
+  }
+  .swatch { width: 11px; height: 11px; border-radius: 3px; flex: none; transform: translateY(1px); }
+  .domain__name { font-size: 19px; font-weight: 700; letter-spacing: -0.01em; margin: 0; }
+  .domain__desc { color: var(--muted); font-size: 14.5px; margin: 0; flex: 1 1 240px; }
+  .domain__count { font-family: var(--mono); font-size: 12px; color: var(--faint); white-space: nowrap; }
+
+  .cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(330px, 1fr)); gap: 16px; }
+
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--hairline);
+    border-top: 2px solid var(--dhue, var(--accent));
+    border-radius: 10px;
+    padding: 16px 16px 14px;
+    display: flex;
+    flex-direction: column;
+  }
+  .card__head { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
+  .card__name { font-family: var(--mono); font-size: 15.5px; font-weight: 600; letter-spacing: -0.01em; color: var(--ink); margin: 0; }
+  .card__meta { font-family: var(--mono); font-size: 11px; color: var(--faint); white-space: nowrap; }
+  .card__desc { font-size: 13px; color: var(--muted); margin: 8px 0 12px; line-height: 1.5; }
+
+  .cols { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
+  .col {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    padding: 4px 0;
+    border-top: 1px solid var(--hairline);
+    font-family: var(--mono);
+    font-size: 12.5px;
+  }
+  .col:first-child { border-top: none; }
+  .col__name { color: var(--ink); font-weight: 500; }
+  .col__type { color: var(--muted); }
+  .col__type .opt { color: var(--faint); }
+  .col__dflt { color: var(--faint); font-size: 11.5px; }
+  .col__spacer { flex: 1; }
+  .col__fk { color: var(--d-forms); font-size: 11.5px; white-space: nowrap; }
+
+  .badge {
+    font-family: var(--mono);
+    font-size: 9.5px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    padding: 1px 5px;
+    border-radius: 4px;
+    white-space: nowrap;
+    line-height: 1.5;
+  }
+  .badge--pk { background: var(--ink); color: var(--ground); }
+  .badge--uk { border: 1px solid var(--hairline-strong); color: var(--muted); }
+  .badge--fk { border: 1px solid var(--d-forms); color: var(--d-forms); }
+
+  .card__rel {
+    margin-top: 12px;
+    padding-top: 10px;
+    border-top: 1px dashed var(--hairline-strong);
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--faint);
+    line-height: 1.6;
+  }
+  .card__rel b { color: var(--muted); font-weight: 600; }
+  .card__rel code { font-family: var(--mono); }
+
+  /* ── Legend ─────────────────────────────────────────── */
+  .legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 18px 26px;
+    margin-top: 20px;
+    padding: 16px 20px;
+    background: var(--surface-2);
+    border: 1px solid var(--hairline);
+    border-radius: 10px;
+    font-size: 12.5px;
+    color: var(--muted);
+  }
+  .legend div { display: flex; align-items: center; gap: 8px; }
+  .legend .badge, .legend .swatch { flex: none; }
+
+  /* ── Footer note ────────────────────────────────────── */
+  .foot {
+    margin-top: 48px;
+    padding-top: 20px;
+    border-top: 1px solid var(--hairline);
+    font-size: 14px;
+    color: var(--muted);
+    max-width: 74ch;
+  }
+  .foot b { color: var(--ink); }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <p class="eyebrow">Database reference · schema.prisma</p>
+  <h1>The CloudAct database, end to end</h1>
+  <p class="lede">
+    One Postgres database, reached through Prisma from the auth-server
+    (<code>calculator-code-auth</code>). It holds everything the app persists —
+    accounts, matters, saved calculator runs, and the whole forms engine. There
+    is no second store: matters and calculator data live side by side in the same
+    tables.
+  </p>
+
+  <div class="stats">
+    <div class="stat"><div class="stat__n">11</div><div class="stat__l">tables</div></div>
+    <div class="stat"><div class="stat__n">~124</div><div class="stat__l">columns</div></div>
+    <div class="stat"><div class="stat__n">1</div><div class="stat__l">Postgres database</div></div>
+    <div class="stat"><div class="stat__n">4</div><div class="stat__l">domains</div></div>
+  </div>
+
+  <div class="callout">
+    <span class="mk">↳</span>
+    <p><strong>Where the calculator data already lives.</strong> Saved calculator
+    runs sit in <code>SavedCalculation</code>, in the same database as
+    <code>Matter</code>. Adding a new table means a new Prisma model + migration
+    that deploys here automatically — no AWS console, no separate calculator store.</p>
+  </div>
+
+  <!-- ── Relationship map ─────────────────────────────── -->
+  <p class="section-title">Entity-relationship map</p>
+  <div class="map">
+    <p class="map__caption">how the tables connect · → one-to-many · ⇠ optional ⇢ nullable link</p>
+
+    <div class="map__group">
+      <p class="map__gh">Ownership — from the account down</p>
+      <div class="rel">
+        <span class="node"><span class="dot" style="background:var(--d-identity)"></span>User</span>
+        <span class="arrow">— owns →</span>
+        <span class="nodes">
+          <span class="node"><span class="dot" style="background:var(--d-matters)"></span>Matter</span>
+          <span class="node"><span class="dot" style="background:var(--d-calc)"></span>SavedCalculation</span>
+        </span>
+      </div>
+      <div class="rel">
+        <span class="node"><span class="dot" style="background:var(--d-matters)"></span>Matter</span>
+        <span class="arrow">— has →</span>
+        <span class="nodes">
+          <span class="node"><span class="dot" style="background:var(--d-matters)"></span>MatterRecord</span>
+          <span class="node"><span class="dot" style="background:var(--d-matters)"></span>MatterTaskState</span>
+          <span class="node"><span class="dot" style="background:var(--d-forms)"></span>MatterFolder</span>
+          <span class="node"><span class="dot" style="background:var(--d-forms)"></span>MatterFormDocument</span>
+        </span>
+      </div>
+      <div class="rel">
+        <span class="node"><span class="dot" style="background:var(--d-calc)"></span>SavedCalculation</span>
+        <span class="arrow">⇠ optional link ⇢</span>
+        <span class="node"><span class="dot" style="background:var(--d-matters)"></span>Matter</span>
+      </div>
+    </div>
+
+    <div class="map__group">
+      <p class="map__gh">Forms pipeline — template to stored PDF</p>
+      <div class="rel">
+        <span class="node"><span class="dot" style="background:var(--d-forms)"></span>FormTemplate</span>
+        <span class="arrow">→</span>
+        <span class="node"><span class="dot" style="background:var(--d-forms)"></span>FormTemplateVersion</span>
+        <span class="arrow">→</span>
+        <span class="node"><span class="dot" style="background:var(--d-forms)"></span>MatterFormDocument</span>
+        <span class="arrow">→</span>
+        <span class="node"><span class="dot" style="background:var(--d-forms)"></span>MatterFormPdfRevision</span>
+        <span class="arrow">→</span>
+        <span class="node"><span class="dot" style="background:var(--d-forms)"></span>MatterFormPdfChunk</span>
+      </div>
+      <div class="rel">
+        <span class="node"><span class="dot" style="background:var(--d-forms)"></span>MatterFolder</span>
+        <span class="arrow">— groups →</span>
+        <span class="node"><span class="dot" style="background:var(--d-forms)"></span>MatterFormDocument</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="legend">
+    <div><span class="badge badge--pk">PK</span> primary key</div>
+    <div><span class="badge badge--uk">UK</span> unique constraint</div>
+    <div><span class="badge badge--fk">FK</span> foreign key</div>
+    <div><span class="col__type" style="font-family:var(--mono)"><span class="opt">?</span></span> nullable</div>
+    <div><span class="swatch" style="background:var(--d-identity)"></span> identity</div>
+    <div><span class="swatch" style="background:var(--d-matters)"></span> matters</div>
+    <div><span class="swatch" style="background:var(--d-calc)"></span> calculator</div>
+    <div><span class="swatch" style="background:var(--d-forms)"></span> forms</div>
+  </div>
+
+  <!-- ── Tables by domain ─────────────────────────────── -->
+  <p class="section-title">The tables, by domain</p>
+
+  <!-- IDENTITY -->
+  <section class="domain">
+    <div class="domain__head">
+      <span class="swatch" style="background:var(--d-identity)"></span>
+      <h2 class="domain__name">Identity</h2>
+      <p class="domain__desc">Who's signed in — credentials, profile, and account-lifecycle tokens.</p>
+      <span class="domain__count">1 table</span>
+    </div>
+    <div class="cards">
+      <article class="card" style="--dhue:var(--d-identity)">
+        <div class="card__head"><h3 class="card__name">User</h3><span class="card__meta">21 fields</span></div>
+        <p class="card__desc">One account. Login credentials, profile fields edited on the Profile page, plus email-verification and password-reset tokens.</p>
+        <ul class="cols">
+          <li class="col"><span class="col__name">id</span><span class="col__type">String</span><span class="col__spacer"></span><span class="badge badge--pk">PK</span></li>
+          <li class="col"><span class="col__name">email</span><span class="col__type">String</span><span class="col__spacer"></span><span class="badge badge--uk">UK</span></li>
+          <li class="col"><span class="col__name">passwordHash</span><span class="col__type">String</span></li>
+          <li class="col"><span class="col__name">name</span><span class="col__type">String<span class="opt">?</span></span></li>
+          <li class="col"><span class="col__name">jobTitle</span><span class="col__type">String<span class="opt">?</span></span></li>
+          <li class="col"><span class="col__name">profilePic</span><span class="col__type">String<span class="opt">?</span></span></li>
+          <li class="col"><span class="col__name">firstName</span><span class="col__type">String<span class="opt">?</span></span></li>
+          <li class="col"><span class="col__name">lastName</span><span class="col__type">String<span class="opt">?</span></span></li>
+          <li class="col"><span class="col__name">phoneNumber</span><span class="col__type">String<span class="opt">?</span></span></li>
+          <li class="col"><span class="col__name">description</span><span class="col__type">String<span class="opt">?</span></span></li>
+          <li class="col"><span class="col__name">signature</span><span class="col__type">String<span class="opt">?</span></span></li>
+          <li class="col"><span class="col__name">street</span><span class="col__type">String<span class="opt">?</span></span></li>
+          <li class="col"><span class="col__name">addressProvince</span><span class="col__type">String<span class="opt">?</span></span></li>
+          <li class="col"><span class="col__name">country</span><span class="col__type">String<span class="opt">?</span></span></li>
+          <li class="col"><span class="col__name">emailVerifiedAt</span><span class="col__type">DateTime<span class="opt">?</span></span></li>
+          <li class="col"><span class="col__name">emailVerificationTokenHash</span><span class="col__type">String<span class="opt">?</span></span></li>
+          <li class="col"><span class="col__name">emailVerificationExpiresAt</span><span class="col__type">DateTime<span class="opt">?</span></span></li>
+          <li class="col"><span class="col__name">resetPasswordTokenHash</span><span class="col__type">String<span class="opt">?</span></span></li>
+          <li class="col"><span class="col__name">resetPasswordExpiresAt</span><span class="col__type">DateTime<span class="opt">?</span></span></li>
+          <li class="col"><span class="col__name">createdAt</span><span class="col__type">DateTime</span></li>
+          <li class="col"><span class="col__name">updatedAt</span><span class="col__type">DateTime</span></li>
+        </ul>
+        <div class="card__rel"><b>owns →</b> Matter, SavedCalculation</div>
+      </article>
+    </div>
+  </section>
+
+  <!-- MATTERS -->
+  <section class="domain">
+    <div class="domain__head">
+      <span class="swatch" style="background:var(--d-matters)"></span>
+      <h2 class="domain__name">Matters &amp; case data</h2>
+      <p class="domain__desc">The client matter and everything the five-step intake saves against it.</p>
+      <span class="domain__count">3 tables</span>
+    </div>
+    <div class="cards">
+      <article class="card" style="--dhue:var(--d-matters)">
+        <div class="card__head"><h3 class="card__name">Matter</h3><span class="card__meta">17 fields</span></div>
+        <p class="card__desc">A family-law matter — the client and case. Mirrors the legacy <code>f_ca_matters</code> row shape the UI expects.</p>
+        <ul class="cols">
+          <li class="col"><span class="col__name">id</span><span class="col__type">Int</span><span class="col__spacer"></span><span class="badge badge--pk">PK</span></li>
+          <li class="col"><span class="col__name">userId</span><span class="col__type">String</span><span class="col__spacer"></span><span class="col__fk">→ User</span><span class="badge badge--fk">FK</span></li>
+          <li class="col"><span class="col__name">clientName</span><span class="col__type">String</span></li>
+          <li class="col"><span class="col__name">matterNumber</span><span class="col__type">String</span><span class="col__spacer"></span><span class="badge badge--uk">UK</span></li>
+          <li class="col"><span class="col__name">clientRole</span><span class="col__type">String<span class="opt">?</span></span></li>
+          <li class="col"><span class="col__name">childrenInvolved</span><span class="col__type">String<span class="opt">?</span></span></li>
+          <li class="col"><span class="col__name">province</span><span class="col__type">String<span class="opt">?</span></span></li>
+          <li class="col"><span class="col__name">checkedItems</span><span class="col__type">String<span class="opt">?</span></span></li>
+          <li class="col"><span class="col__name">source</span><span class="col__type">String</span><span class="col__spacer"></span><span class="col__dflt">= "Internal"</span></li>
+          <li class="col"><span class="col__name">informationCompleted</span><span class="col__type">Int</span><span class="col__spacer"></span><span class="col__dflt">= 0</span></li>
+          <li class="col"><span class="col__name">status</span><span class="col__type">Int</span><span class="col__spacer"></span><span class="col__dflt">= 0</span></li>
+          <li class="col"><span class="col__name">firstflag</span><span class="col__type">Int</span><span class="col__spacer"></span><span class="col__dflt">= 1</span></li>
+          <li class="col"><span class="col__name">valuationDate</span><span class="col__type">String<span class="opt">?</span></span></li>
+          <li class="col"><span class="col__name">fyIncomeBenefits</span><span class="col__type">String<span class="opt">?</span></span></li>
+          <li class="col"><span class="col__name">fyExpenses</span><span class="col__type">String<span class="opt">?</span></span></li>
+          <li class="col"><span class="col__name">createdAt</span><span class="col__type">DateTime</span></li>
+          <li class="col"><span class="col__name">updatedAt</span><span class="col__type">DateTime</span></li>
+        </ul>
+        <div class="card__rel"><b>has →</b> MatterRecord, MatterFolder, MatterFormDocument, MatterTaskState, SavedCalculation</div>
+      </article>
+
+      <article class="card" style="--dhue:var(--d-matters)">
+        <div class="card__head"><h3 class="card__name">MatterRecord</h3><span class="card__meta">6 fields</span></div>
+        <p class="card__desc">One JSON document per <b>(matter, dataType)</b>: the five-step section arrays (income, expenses, assets…), folders/files metadata, per-file form data, and the change log (<code>matter_change_log</code>) — a dated, append-only record of values amended through the Update Information agent. New kinds of per-matter data land here as a new <code>dataType</code> rather than a new table, so they need no migration.</p>
+        <ul class="cols">
+          <li class="col"><span class="col__name">id</span><span class="col__type">Int</span><span class="col__spacer"></span><span class="badge badge--pk">PK</span></li>
+          <li class="col"><span class="col__name">matterId</span><span class="col__type">Int</span><span class="col__spacer"></span><span class="col__fk">→ Matter</span><span class="badge badge--fk">FK</span></li>
+          <li class="col"><span class="col__name">dataType</span><span class="col__type">String</span><span class="col__spacer"></span><span class="badge badge--uk">UK</span></li>
+          <li class="col"><span class="col__name">data</span><span class="col__type">Json</span></li>
+          <li class="col"><span class="col__name">createdAt</span><span class="col__type">DateTime</span></li>
+          <li class="col"><span class="col__name">updatedAt</span><span class="col__type">DateTime</span></li>
+        </ul>
+        <div class="card__rel"><b>unique</b> (matterId, dataType)</div>
+      </article>
+
+      <article class="card" style="--dhue:var(--d-matters)">
+        <div class="card__head"><h3 class="card__name">MatterTaskState</h3><span class="card__meta">6 fields</span></div>
+        <p class="card__desc">Per-matter checklist status — one row per task key (e.g. intake step complete / open).</p>
+        <ul class="cols">
+          <li class="col"><span class="col__name">id</span><span class="col__type">Int</span><span class="col__spacer"></span><span class="badge badge--pk">PK</span></li>
+          <li class="col"><span class="col__name">matterId</span><span class="col__type">Int</span><span class="col__spacer"></span><span class="col__fk">→ Matter</span><span class="badge badge--fk">FK</span></li>
+          <li class="col"><span class="col__name">taskKey</span><span class="col__type">String</span><span class="col__spacer"></span><span class="badge badge--uk">UK</span></li>
+          <li class="col"><span class="col__name">status</span><span class="col__type">String</span></li>
+          <li class="col"><span class="col__name">createdAt</span><span class="col__type">DateTime</span></li>
+          <li class="col"><span class="col__name">updatedAt</span><span class="col__type">DateTime</span></li>
+        </ul>
+        <div class="card__rel"><b>unique</b> (matterId, taskKey)</div>
+      </article>
+    </div>
+  </section>
+
+  <!-- CALCULATOR -->
+  <section class="domain">
+    <div class="domain__head">
+      <span class="swatch" style="background:var(--d-calc)"></span>
+      <h2 class="domain__name">Calculator</h2>
+      <p class="domain__desc">Saved calculator runs — this is the "calculator information" store, already here.</p>
+      <span class="domain__count">1 table</span>
+    </div>
+    <div class="cards">
+      <article class="card" style="--dhue:var(--d-calc)">
+        <div class="card__head"><h3 class="card__name">SavedCalculation</h3><span class="card__meta">16 fields</span></div>
+        <p class="card__desc">A saved calculator run — <code>data</code> is the JSON string the calculator stores and re-parses on load, plus an optional generated report. Mirrors legacy <code>tbl_calculator_values</code>.</p>
+        <ul class="cols">
+          <li class="col"><span class="col__name">id</span><span class="col__type">Int</span><span class="col__spacer"></span><span class="badge badge--pk">PK</span></li>
+          <li class="col"><span class="col__name">userId</span><span class="col__type">String</span><span class="col__spacer"></span><span class="col__fk">→ User</span><span class="badge badge--fk">FK</span></li>
+          <li class="col"><span class="col__name">label</span><span class="col__type">String</span><span class="col__spacer"></span><span class="badge badge--uk">UK</span></li>
+          <li class="col"><span class="col__name">description</span><span class="col__type">String<span class="opt">?</span></span></li>
+          <li class="col"><span class="col__name">taxYear</span><span class="col__type">String<span class="opt">?</span></span></li>
+          <li class="col"><span class="col__name">status</span><span class="col__type">String<span class="opt">?</span></span></li>
+          <li class="col"><span class="col__name">type</span><span class="col__type">String<span class="opt">?</span></span></li>
+          <li class="col"><span class="col__name">calculatorType</span><span class="col__type">String<span class="opt">?</span></span></li>
+          <li class="col"><span class="col__name">matterId</span><span class="col__type">String<span class="opt">?</span></span></li>
+          <li class="col"><span class="col__name">matterDbId</span><span class="col__type">Int<span class="opt">?</span></span><span class="col__spacer"></span><span class="col__fk">→ Matter</span><span class="badge badge--fk">FK</span></li>
+          <li class="col"><span class="col__name">data</span><span class="col__type">String<span class="opt">?</span></span></li>
+          <li class="col"><span class="col__name">reportUrl</span><span class="col__type">String<span class="opt">?</span></span></li>
+          <li class="col"><span class="col__name">reportData</span><span class="col__type">String<span class="opt">?</span></span></li>
+          <li class="col"><span class="col__name">createdBy</span><span class="col__type">String<span class="opt">?</span></span></li>
+          <li class="col"><span class="col__name">createdAt</span><span class="col__type">DateTime</span></li>
+          <li class="col"><span class="col__name">updatedAt</span><span class="col__type">DateTime</span></li>
+        </ul>
+        <div class="card__rel"><b>unique</b> (userId, label) &nbsp;·&nbsp; matter link is optional (SetNull)</div>
+      </article>
+    </div>
+  </section>
+
+  <!-- FORMS -->
+  <section class="domain">
+    <div class="domain__head">
+      <span class="swatch" style="background:var(--d-forms)"></span>
+      <h2 class="domain__name">Forms engine</h2>
+      <p class="domain__desc">Court-form templates, their versions, and the filled PDFs generated per matter.</p>
+      <span class="domain__count">6 tables</span>
+    </div>
+    <div class="cards">
+      <article class="card" style="--dhue:var(--d-forms)">
+        <div class="card__head"><h3 class="card__name">FormTemplate</h3><span class="card__meta">14 fields</span></div>
+        <p class="card__desc">A court/legal form available to fill, scoped by province and category.</p>
+        <ul class="cols">
+          <li class="col"><span class="col__name">id</span><span class="col__type">Int</span><span class="col__spacer"></span><span class="badge badge--pk">PK</span></li>
+          <li class="col"><span class="col__name">docId</span><span class="col__type">String</span><span class="col__spacer"></span><span class="badge badge--uk">UK</span></li>
+          <li class="col"><span class="col__name">province</span><span class="col__type">String</span></li>
+          <li class="col"><span class="col__name">category</span><span class="col__type">String</span></li>
+          <li class="col"><span class="col__name">title</span><span class="col__type">String</span></li>
+          <li class="col"><span class="col__name">shortTitle</span><span class="col__type">String<span class="opt">?</span></span></li>
+          <li class="col"><span class="col__name">fileName</span><span class="col__type">String</span></li>
+          <li class="col"><span class="col__name">footerText</span><span class="col__type">String<span class="opt">?</span></span></li>
+          <li class="col"><span class="col__name">status</span><span class="col__type">String</span><span class="col__spacer"></span><span class="col__dflt">= "active"</span></li>
+          <li class="col"><span class="col__name">productionReady</span><span class="col__type">Boolean</span><span class="col__spacer"></span><span class="col__dflt">= false</span></li>
+          <li class="col"><span class="col__name">mappingReady</span><span class="col__type">Boolean</span><span class="col__spacer"></span><span class="col__dflt">= false</span></li>
+          <li class="col"><span class="col__name">sortOrder</span><span class="col__type">Int</span><span class="col__spacer"></span><span class="col__dflt">= 0</span></li>
+          <li class="col"><span class="col__name">createdAt</span><span class="col__type">DateTime</span></li>
+          <li class="col"><span class="col__name">updatedAt</span><span class="col__type">DateTime</span></li>
+        </ul>
+        <div class="card__rel"><b>has →</b> FormTemplateVersion</div>
+      </article>
+
+      <article class="card" style="--dhue:var(--d-forms)">
+        <div class="card__head"><h3 class="card__name">FormTemplateVersion</h3><span class="card__meta">12 fields</span></div>
+        <p class="card__desc">A specific version of a template — the PDF bytes (or path), its field-mapping, and checksums.</p>
+        <ul class="cols">
+          <li class="col"><span class="col__name">id</span><span class="col__type">Int</span><span class="col__spacer"></span><span class="badge badge--pk">PK</span></li>
+          <li class="col"><span class="col__name">templateId</span><span class="col__type">Int</span><span class="col__spacer"></span><span class="col__fk">→ FormTemplate</span><span class="badge badge--fk">FK</span></li>
+          <li class="col"><span class="col__name">version</span><span class="col__type">Int</span><span class="col__spacer"></span><span class="badge badge--uk">UK</span></li>
+          <li class="col"><span class="col__name">pdfBytes</span><span class="col__type">Bytes<span class="opt">?</span></span></li>
+          <li class="col"><span class="col__name">pdfPath</span><span class="col__type">String<span class="opt">?</span></span></li>
+          <li class="col"><span class="col__name">fieldMapping</span><span class="col__type">Json<span class="opt">?</span></span></li>
+          <li class="col"><span class="col__name">pageCount</span><span class="col__type">Int<span class="opt">?</span></span></li>
+          <li class="col"><span class="col__name">pdfChecksum</span><span class="col__type">String<span class="opt">?</span></span></li>
+          <li class="col"><span class="col__name">mappingChecksum</span><span class="col__type">String<span class="opt">?</span></span></li>
+          <li class="col"><span class="col__name">effectiveDate</span><span class="col__type">DateTime<span class="opt">?</span></span></li>
+          <li class="col"><span class="col__name">active</span><span class="col__type">Boolean</span><span class="col__spacer"></span><span class="col__dflt">= true</span></li>
+          <li class="col"><span class="col__name">createdAt</span><span class="col__type">DateTime</span></li>
+        </ul>
+        <div class="card__rel"><b>unique</b> (templateId, version) &nbsp;·&nbsp; <b>has →</b> MatterFormDocument</div>
+      </article>
+
+      <article class="card" style="--dhue:var(--d-forms)">
+        <div class="card__head"><h3 class="card__name">MatterFolder</h3><span class="card__meta">7 fields</span></div>
+        <p class="card__desc">A folder grouping a matter's form documents.</p>
+        <ul class="cols">
+          <li class="col"><span class="col__name">id</span><span class="col__type">Int</span><span class="col__spacer"></span><span class="badge badge--pk">PK</span></li>
+          <li class="col"><span class="col__name">matterId</span><span class="col__type">Int</span><span class="col__spacer"></span><span class="col__fk">→ Matter</span><span class="badge badge--fk">FK</span></li>
+          <li class="col"><span class="col__name">title</span><span class="col__type">String</span></li>
+          <li class="col"><span class="col__name">normalizedTitle</span><span class="col__type">String</span><span class="col__spacer"></span><span class="badge badge--uk">UK</span></li>
+          <li class="col"><span class="col__name">type</span><span class="col__type">String<span class="opt">?</span></span></li>
+          <li class="col"><span class="col__name">createdAt</span><span class="col__type">DateTime</span></li>
+          <li class="col"><span class="col__name">updatedAt</span><span class="col__type">DateTime</span></li>
+        </ul>
+        <div class="card__rel"><b>unique</b> (matterId, normalizedTitle) &nbsp;·&nbsp; <b>groups →</b> MatterFormDocument</div>
+      </article>
+
+      <article class="card" style="--dhue:var(--d-forms)">
+        <div class="card__head"><h3 class="card__name">MatterFormDocument</h3><span class="card__meta">14 fields</span></div>
+        <p class="card__desc">A form being filled for a matter — its field values and provenance, plus the latest generated PDF.</p>
+        <ul class="cols">
+          <li class="col"><span class="col__name">id</span><span class="col__type">Int</span><span class="col__spacer"></span><span class="badge badge--pk">PK</span></li>
+          <li class="col"><span class="col__name">matterId</span><span class="col__type">Int</span><span class="col__spacer"></span><span class="col__fk">→ Matter</span><span class="badge badge--fk">FK</span></li>
+          <li class="col"><span class="col__name">folderId</span><span class="col__type">Int<span class="opt">?</span></span><span class="col__spacer"></span><span class="col__fk">→ MatterFolder</span><span class="badge badge--fk">FK</span></li>
+          <li class="col"><span class="col__name">templateVersionId</span><span class="col__type">Int</span><span class="col__spacer"></span><span class="col__fk">→ …Version</span><span class="badge badge--fk">FK</span></li>
+          <li class="col"><span class="col__name">displayName</span><span class="col__type">String</span></li>
+          <li class="col"><span class="col__name">status</span><span class="col__type">String</span><span class="col__spacer"></span><span class="col__dflt">= "OPEN"</span></li>
+          <li class="col"><span class="col__name">fieldValues</span><span class="col__type">Json</span><span class="col__spacer"></span><span class="col__dflt">= {}</span></li>
+          <li class="col"><span class="col__name">fieldProvenance</span><span class="col__type">Json</span><span class="col__spacer"></span><span class="col__dflt">= {}</span></li>
+          <li class="col"><span class="col__name">generatedPdf</span><span class="col__type">Bytes<span class="opt">?</span></span></li>
+          <li class="col"><span class="col__name">generatedAt</span><span class="col__type">DateTime<span class="opt">?</span></span></li>
+          <li class="col"><span class="col__name">generatedPdfRevision</span><span class="col__type">Int</span><span class="col__spacer"></span><span class="col__dflt">= 0</span></li>
+          <li class="col"><span class="col__name">revision</span><span class="col__type">Int</span><span class="col__spacer"></span><span class="col__dflt">= 1</span></li>
+          <li class="col"><span class="col__name">createdAt</span><span class="col__type">DateTime</span></li>
+          <li class="col"><span class="col__name">updatedAt</span><span class="col__type">DateTime</span></li>
+        </ul>
+        <div class="card__rel"><b>has →</b> MatterFormPdfRevision</div>
+      </article>
+
+      <article class="card" style="--dhue:var(--d-forms)">
+        <div class="card__head"><h3 class="card__name">MatterFormPdfRevision</h3><span class="card__meta">7 fields</span></div>
+        <p class="card__desc">A generated-PDF revision of a form document — checksum plus the PDF bytes.</p>
+        <ul class="cols">
+          <li class="col"><span class="col__name">id</span><span class="col__type">Int</span><span class="col__spacer"></span><span class="badge badge--pk">PK</span></li>
+          <li class="col"><span class="col__name">documentId</span><span class="col__type">Int</span><span class="col__spacer"></span><span class="col__fk">→ …Document</span><span class="badge badge--fk">FK</span></li>
+          <li class="col"><span class="col__name">revision</span><span class="col__type">Int</span><span class="col__spacer"></span><span class="badge badge--uk">UK</span></li>
+          <li class="col"><span class="col__name">checksum</span><span class="col__type">String</span></li>
+          <li class="col"><span class="col__name">pdf</span><span class="col__type">Bytes</span></li>
+          <li class="col"><span class="col__name">complete</span><span class="col__type">Boolean</span><span class="col__spacer"></span><span class="col__dflt">= true</span></li>
+          <li class="col"><span class="col__name">createdAt</span><span class="col__type">DateTime</span></li>
+        </ul>
+        <div class="card__rel"><b>unique</b> (documentId, revision) &nbsp;·&nbsp; <b>has →</b> MatterFormPdfChunk</div>
+      </article>
+
+      <article class="card" style="--dhue:var(--d-forms)">
+        <div class="card__head"><h3 class="card__name">MatterFormPdfChunk</h3><span class="card__meta">4 fields</span></div>
+        <p class="card__desc">A byte-range chunk of a revision's PDF — large PDFs are split across rows for storage.</p>
+        <ul class="cols">
+          <li class="col"><span class="col__name">id</span><span class="col__type">Int</span><span class="col__spacer"></span><span class="badge badge--pk">PK</span></li>
+          <li class="col"><span class="col__name">revisionId</span><span class="col__type">Int</span><span class="col__spacer"></span><span class="col__fk">→ …Revision</span><span class="badge badge--fk">FK</span></li>
+          <li class="col"><span class="col__name">position</span><span class="col__type">Int</span><span class="col__spacer"></span><span class="badge badge--uk">UK</span></li>
+          <li class="col"><span class="col__name">pdf</span><span class="col__type">Bytes</span></li>
+        </ul>
+        <div class="card__rel"><b>unique</b> (revisionId, position)</div>
+      </article>
+    </div>
+  </section>
+
+  <p class="foot">
+    <b>Source of truth:</b> <code>auth-server/prisma/schema.prisma</code>, deployed through 9 tracked migrations
+    (<code>prisma migrate deploy</code> runs on every release). To add a table, add a Prisma model and a
+    migration — it lands in <b>this same database</b>, no console access required.
+  </p>
+</div>
+</body>
+</html>

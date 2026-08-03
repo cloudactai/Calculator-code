@@ -56,15 +56,6 @@ export const determineProvTaxON = (obj: ProvTax): number => {
     taxableIncome
   );
 
-  console.log("&& prov Tax logs 2", {
-    provTax,
-    rates,
-    taxableIncome,
-    fetchedHealthTaxDB,
-    taxBrackets,
-    provincialCredits,
-  });
-
   return provTax;
 };
 

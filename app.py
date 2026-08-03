@@ -564,7 +564,7 @@ def chat():
 
 # ── /intake-chat ────────────────────────────────────────────────────────────────
 
-INTAKE_SYSTEM = """
+INTAKE_INTRO = """
 You are a matter-intake assistant for CloudAct, an Ontario family-law platform.
 
 Your job is to collect a family-law client's intake information through
@@ -610,9 +610,21 @@ restate unknown fields as empty strings and never use an empty value to clear an
 existing value. Never invent data. Optional sections (Expenses, Assets,
 DebtsAndLiabilities, Court, OtherPersonsInHousehold) can be skipped if the user has
 nothing to add.
+"""
 
+# Shared by the intake agent and the update-information agent so both write
+# through save_matter_section with byte-identical field names.
+INTAKE_SECTION_SHAPES = """
 SECTIONS AND THEIR EXACT DATA SHAPES
 (use these field names verbatim — they must match the intake form):
+
+LINKED FIELDS: some fields are derived from each other and are kept in step when
+saved, exactly as the intake form does it. "monthlyAmount" and "yearlyAmount" (in
+IncomeAndBenefits and Expenses) are one figure expressed two ways — send whichever
+the user gave you and the other is recomputed, with the yearly figure taking
+precedence if you send both. A child's "age" is derived from their "dateOfBirth".
+Never send a monthly and a yearly amount that disagree, and when you change one
+side of a linked pair say that its partner changed too.
 
 1. section="Background"
    data: {
@@ -764,12 +776,81 @@ SECTIONS AND THEIR EXACT DATA SHAPES
     - "spouse_partner_work_status" MUST be EXACTLY one of: "Full Time", "Part Time",
       "Unemployed", "Retired", "Disabled", "Other" (a work status, not a job title).
     - "number_of_children" and "amount_spouse_partner_earns" are numbers as strings.
+"""
 
+INTAKE_OUTRO = """
 When all required sections are complete and every optional section has either been
 provided or explicitly skipped, your final plain-text response MUST begin exactly:
 "Intake complete and saved." Briefly summarise what was captured and tell the user
 they can return to Tasks. Do not ask another intake question after this final message.
 """
+
+INTAKE_SYSTEM = INTAKE_INTRO + INTAKE_SECTION_SHAPES + INTAKE_OUTRO
+
+# ── Update Information agent ────────────────────────────────────────────────────
+# Same tool and the same section shapes as intake, but this agent only changes
+# values that are already on file — it never runs an intake.
+
+UPDATE_INTRO = """
+You are the update-information assistant for CloudAct, an Ontario family-law
+platform. This matter's intake has already been done. Your ONLY job is to change
+values that are already on file. You never run a fresh intake.
+
+The conversation opens with an authoritative snapshot of everything currently
+stored for this matter. Treat that snapshot as the truth.
+
+Your FIRST message must be one short question asking what the user wants to
+change (for example: "What would you like to change?"). Do not list every field
+and do not summarise the file unless the user asks.
+
+For each change the user asks for:
+
+1. Work out exactly which stored value they mean. If more than one record could
+   match — two properties, two children, two income lines, both parties — ask
+   which one before saving anything. Never guess which record to change.
+
+2. In that SAME turn, call the save_matter_section tool once with the smallest
+   patch that makes the change: the new value plus only the identity fields
+   needed to match the existing record (party role, child name/date of birth,
+   income or expense type, asset category and its address/description, debt
+   category and details).
+
+3. Then reply in exactly this form, on its own line:
+   Updated **<field>** from **<old value>** to **<new value>**.
+   Take <old value> verbatim from the snapshot, or from a change made earlier in
+   this same conversation. If the field had no stored value, write "(not set)"
+   as the old value. NEVER invent, round, or approximate an old value. If you
+   cannot find the old value in the snapshot, say so instead of guessing.
+   After that line, ask whether there is anything else to change.
+
+CRITICAL: never end a turn with only a promise to save ("let me update that").
+When you have the change, EMIT the save_matter_section tool call in that turn.
+
+Each save_matter_section call is a PATCH, not a replacement. Send only the value
+being changed plus the identity fields that match the record. Never restate
+unrelated fields, never send empty strings for fields you were not asked about,
+and never use a blank value to clear a stored value. Never invent data.
+
+Do not ask for information the user did not offer, and do not work through the
+intake sections in order. If the user asks what is currently on file, answer
+from the snapshot and save nothing. If they ask to change something that has no
+stored value yet, save it and report the old value as "(not set)".
+
+Use direct, professional language. Do not open replies with filler such as
+"Absolutely" or "You're right".
+"""
+
+UPDATE_OUTRO = """
+Pick the section that owns the value the user named. For example: a property's
+value is Assets → that category's item → its market_value block; a phone number
+or address is Background → that party's record; a salary is IncomeAndBenefits →
+that party's income line; a separation date is Relationship.
+
+Never produce an "intake complete" summary — this assistant stays available for
+as many changes as the user wants to make.
+"""
+
+UPDATE_SYSTEM = UPDATE_INTRO + INTAKE_SECTION_SHAPES + UPDATE_OUTRO
 
 SAVE_SECTION_TOOL = {
     "name": "save_matter_section",
@@ -797,6 +878,19 @@ SAVE_SECTION_TOOL = {
             },
         },
     },
+}
+
+# Same tool name and schema as intake — only the description changes, so the
+# update agent is told to send a single targeted patch rather than a whole section.
+UPDATE_SECTION_TOOL = {
+    **SAVE_SECTION_TOOL,
+    "description": (
+        "Apply one change to a value already stored for this matter. Send only "
+        "the field being changed plus the identity fields needed to match the "
+        "existing record. 'section' must be one of the exact section names listed "
+        "in the system prompt and 'data' must match that section's documented "
+        "shape exactly. This is a patch: omitted fields keep their stored values."
+    ),
 }
 
 
@@ -896,6 +990,95 @@ def intake_chat():
                     set(INTAKE_SECTION_NAMES).issubset(saved_section_names)
                     or is_intake_complete_reply(reply)
                 ),
+            })
+
+        return jsonify({"error": "Reached iteration limit without a final reply."}), 500
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+# ── /update-chat ────────────────────────────────────────────────────────────────
+
+
+@app.route("/update-chat", methods=["POST"])
+def update_chat():
+    """Update-information AI agent.
+
+    Same message loop as /intake-chat and the same save_matter_section tool, but
+    the agent only edits values that are already on file. Like /intake-chat it
+    never writes to the matter database itself: it returns the requested changes
+    as `saved_sections` patches, and the authenticated frontend persists them and
+    reports the real before/after values it read back from the database.
+    """
+    try:
+        body = request.get_json(force=True)
+        messages = body.get("messages", [])
+
+        client = anthropic.Anthropic()  # reads ANTHROPIC_API_KEY from env
+
+        saved_sections = []  # [{ "section": str, "data": object|array }, ...]
+        nudges = 0           # how many times we've pushed a stalled "I'll save" turn
+
+        # Bounded loop — exits on the first turn with no tool call. Tool calls are
+        # answered by PRESENCE (not stop_reason) for the same reason as intake: a
+        # max_tokens cut-off would otherwise leave tool_use blocks unpaired and 400
+        # the next request.
+        for _ in range(16):
+
+            response = client.messages.create(
+                model=os.getenv("CLAUDE_MODEL", "claude-sonnet-4-6"),
+                max_tokens=8192,
+                system=UPDATE_SYSTEM,
+                tools=[UPDATE_SECTION_TOOL],
+                messages=messages,
+            )
+
+            assistant_content = []
+            for block in response.content:
+                if hasattr(block, "model_dump"):
+                    assistant_content.append(block.model_dump())
+                else:
+                    assistant_content.append(block)
+
+            messages.append({"role": "assistant", "content": assistant_content})
+
+            tool_uses = [b for b in assistant_content if b.get("type") == "tool_use"]
+            if tool_uses:
+                tool_results = []
+                for block in tool_uses:
+                    section = block.get("input", {}).get("section")
+                    data = block.get("input", {}).get("data")
+                    saved_sections.append({"section": section, "data": data})
+                    tool_results.append({
+                        "type":        "tool_result",
+                        "tool_use_id": block["id"],
+                        "content":     json.dumps({"status": "saved", "section": section}),
+                    })
+                messages.append({"role": "user", "content": tool_results})
+                continue
+
+            reply = "".join(
+                b["text"] for b in assistant_content if b.get("type") == "text"
+            )
+            # Same stall guard as intake: the model says it will make the change
+            # but ends the turn without emitting a tool call, so nothing is saved.
+            if should_nudge_intake_reply(reply) and nudges < 2:
+                nudges += 1
+                messages.append({
+                    "role": "user",
+                    "content": (
+                        "Go ahead now: call the save_matter_section tool for the "
+                        "change I asked for — do not just describe what you will "
+                        "do. If you still need to know which record to change, ask "
+                        "that question instead."
+                    ),
+                })
+                continue
+            return jsonify({
+                "reply": reply,
+                "messages": messages,
+                "saved_sections": saved_sections,
             })
 
         return jsonify({"error": "Reached iteration limit without a final reply."}), 500

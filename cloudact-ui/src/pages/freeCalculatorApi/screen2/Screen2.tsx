@@ -3481,8 +3481,8 @@ const Screen2 = ({
         const csPayload = {
           party1_income: p1Income,
           party2_income: p2Income,
-          party1_name: party1Name(),
-          party2_name: party2Name(),
+          party1_name: "Party 1",
+          party2_name: "Party 2",
           children: childrenList.map((c: any) => ({
             name: c.name ?? "",
             csg_table: c.CSGTable ?? "No",
@@ -4012,7 +4012,7 @@ const Screen2 = ({
     screen1Data.childrenInfo.forEach((e) => {
       if (
         momentFunction.differenceBetweenNowAndThen(e.dateOfBirth) >= 18 &&
-        e.custodyArrangement === screen1.background.party1FirstName
+        e.custodyArrangement === "Party 1"
       ) {
         isChildGreaterThan18WithParty1++;
       }
@@ -4021,7 +4021,7 @@ const Screen2 = ({
     screen1Data.childrenInfo.forEach((e) => {
       if (
         momentFunction.differenceBetweenNowAndThen(e.dateOfBirth) >= 18 &&
-        e.custodyArrangement === screen1.background.party2FirstName
+        e.custodyArrangement === "Party 2"
       ) {
         isChildGreaterThan18WithParty2++;
       }
