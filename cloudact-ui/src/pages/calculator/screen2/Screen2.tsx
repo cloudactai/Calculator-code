@@ -5580,7 +5580,7 @@ const Screen2 = ({
             name: c.name ?? "",
             csg_table: c.CSGTable ?? "No",
             child_support_override: c.ChildSupportOverride ?? 0,
-            custody_arrangement: c.custodyArrangement ?? "Party 1",
+            custody_arrangement: c.custodyArrangement || "Party 1",
           })),
         };
 
@@ -5634,7 +5634,7 @@ const Screen2 = ({
             name: c.name ?? "",
             csg_table: c.CSGTable ?? "No",
             child_support_override: c.ChildSupportOverride ?? 0,
-            custody_arrangement: c.custodyArrangement ?? "Party 1",
+            custody_arrangement: c.custodyArrangement || "Party 1",
           })),
         };
         const csResult = await calcChildSupportFlask(csPayload);
