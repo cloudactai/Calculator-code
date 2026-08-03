@@ -234,6 +234,7 @@ const Screen2 = ({
   const calculatorId = useQuery();
   const [showAlertFillAllDetails, setShowAlertFillAllDetails] = useState(false);
   const [showFlaskError, setShowFlaskError] = useState(false);
+  const [showNoChildrenError, setShowNoChildrenError] = useState(false);
   const storedMatterNumber = JSON.parse(localStorage.getItem('selectedCalculatorMatterNumber') || '""');
 
   // const [taxeswithAddSupport, settaxeswithAddSupport] = useState({
@@ -5565,6 +5566,11 @@ const Screen2 = ({
       // ── Child-support-only path ────────────────────────────────────────────
       if (typeOfCalculatorSelected === CHILD_SUPPORT_CAL) {
         const childrenList: any[] = screen1.aboutTheChildren.childrenInfo ?? [];
+        if (childrenList.length === 0) {
+          setShowNoChildrenError(true);
+          setLoading(false);
+          return;
+        }
         const csPayload = {
           party1_income: totalIncomeByIncomeState(income.party1) + nonTaxableIncomeParty1(),
           party2_income: totalIncomeByIncomeState(income.party2) + nonTaxableIncomeParty2(),
@@ -7916,6 +7922,18 @@ const Screen2 = ({
             The spousal support calculation could not be completed. Please ensure the backend is running and try again.
           </p>
         </ModalInputCenter>
+        <ModalInputCenter
+          heading="No Children Added"
+          handleClick={() => setShowNoChildrenError(false)}
+          changeShow={() => setShowNoChildrenError(false)}
+          show={showNoChildrenError}
+          action="Ok"
+          cancelOption="Cancel"
+        >
+          <p className="heading-5">
+            Please add at least one child in the Background section before running a child support calculation.
+          </p>
+        </ModalInputCenter>
       </>
     );
   };
@@ -9700,7 +9718,7 @@ const Screen2 = ({
                 expenses. These expenses will be apportioned based on the income
                 of each party to get the s7 child special expenses support
               </span>
-              {showAlertFillAllDetails && AlertFillAllDetails()}
+              {(showAlertFillAllDetails || showFlaskError || showNoChildrenError) && AlertFillAllDetails()}
               <div className="row">
                 <div className="col-md-6">
                   {specialExpensesArr.party1.map((e: any, index: number) => {
