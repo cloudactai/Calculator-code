@@ -686,7 +686,8 @@ def stamp_shapes(pdf_path, fields):
     return counts
 
 
-def merge_sliver_fields(pdf_path, fields, max_width=22.0, gap=12.0, margin=54.0):
+def merge_sliver_fields(pdf_path, fields, max_width=22.0, merge_width=32.0,
+                        gap=12.0, margin=54.0):
     """Fold XFA's narrow leading cell into the writing area beside it.
 
     XFA emits a ~14 pt cell to the left of a free-text block — the paragraph
@@ -694,6 +695,13 @@ def merge_sliver_fields(pdf_path, fields, max_width=22.0, gap=12.0, margin=54.0)
     little box next to the real one. Where a wide field follows on the same line
     the two become one; where the sliver stands alone it grows to the writing
     area it labels.
+
+    The two branches take different width limits, because they carry different
+    risk. A narrow cell butted against a wide block on the same line is a
+    paragraph marker whatever its exact width, so merging reaches to `merge_width`
+    — F51.1's is 27 pt and was left stranded by a flat 22. A cell standing alone
+    might be a real small field, so growing keeps the tighter `max_width`; F31's
+    "minutes" box is 24.69 pt and must not be stretched across the page.
     """
     doc = fitz.open(pdf_path)
     merged = grown = 0
@@ -704,7 +712,7 @@ def merge_sliver_fields(pdf_path, fields, max_width=22.0, gap=12.0, margin=54.0)
         right_edge = page.rect.width - margin
         for field in page_fields:
             width = field["width"] / SCALE
-            if width >= max_width:
+            if width >= merge_width:
                 continue
             left, top = field["x"], field["y"]
             height = field["height"] / SCALE
@@ -713,7 +721,8 @@ def merge_sliver_fields(pdf_path, fields, max_width=22.0, gap=12.0, margin=54.0)
                       # Tolerance, not zero: the sliver's right edge and the
                       # block's left edge are the same coordinate, and the
                       # subtraction lands a hair below zero.
-                      and -0.5 <= g["x"] - (left + width) < gap]
+                      and -0.5 <= g["x"] - (left + width) < gap
+                      and g["width"] / SCALE > 100]
             if beside:
                 partner = min(beside, key=lambda g: g["x"])
                 field["width"] = round((partner["x"] + partner["width"] / SCALE - left) * SCALE, 2)
@@ -721,6 +730,8 @@ def merge_sliver_fields(pdf_path, fields, max_width=22.0, gap=12.0, margin=54.0)
                 field["type"] = "TextArea"
                 drop.append(partner)
                 merged += 1
+                continue
+            if width >= max_width:
                 continue
             # Nothing beside it: grow to the writing area, stopping at whatever
             # is printed or fielded to the right.
