@@ -614,16 +614,20 @@ const Calculator = () => {
         const party1Name = (matterData?.applicant?.fullLegalName || "").trim().toLowerCase();
         const party2Name = (matterData?.respondent?.fullLegalName || "").trim().toLowerCase();
 
+        console.log("[Intake→Calc] Children from intake:", matterData.theChildren);
+        console.log("[Intake→Calc] Party names for custody mapping:", { party1Name, party2Name });
+
         const mapCustody = (nowLivesWith: string) => {
           const val = (nowLivesWith || "").trim().toLowerCase();
-          if (!val) return "Party 1";
-          if (val === "both" || val === "shared") return "Shared";
-          if (party1Name && val === party1Name) return "Party 1";
-          if (party2Name && val === party2Name) return "Party 2";
-          // Fallback: check if it contains "client" or "opposing"
-          if (val.includes("client") || val === "party 1") return "Party 1";
-          if (val.includes("opposing") || val === "party 2") return "Party 2";
-          return "Party 1";
+          let result = "Party 1";
+          if (!val) result = "Party 1";
+          else if (val === "both" || val === "shared") result = "Shared";
+          else if (party1Name && val === party1Name) result = "Party 1";
+          else if (party2Name && val === party2Name) result = "Party 2";
+          else if (val.includes("client") || val === "party 1") result = "Party 1";
+          else if (val.includes("opposing") || val === "party 2") result = "Party 2";
+          console.log("[Intake→Calc] mapCustody:", { nowLivesWith, val, result });
+          return result;
         };
 
         setAboutTheChildren(prevState => ({
