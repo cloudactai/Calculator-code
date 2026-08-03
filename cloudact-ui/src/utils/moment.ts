@@ -14,8 +14,6 @@ export const momentFunction = {
       .endOf("date")._d;
     const date2Moment = moment(new Date(date2)).endOf("date")._d;
 
-    console.log("dates", { date1Moment, date2Moment });
-
     return moment.duration(moment(date2Moment).diff(date1Moment)).years();
   },
   differenceBetweenNowAndThen: (date: string | number) => {

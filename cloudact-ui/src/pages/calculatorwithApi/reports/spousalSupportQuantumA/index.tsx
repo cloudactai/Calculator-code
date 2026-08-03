@@ -300,9 +300,6 @@ const LowMedHighTable = (val: {
 
 const SpousalSupportDuration = ({ data }: { data: any }) => {
   const durationOfRelationship = () => {
-    console.log("dates", {
-      date: data?.aboutTheRelationship,
-    });
     return momentFunction.differenceBetweenTwoDates(
       data?.aboutTheRelationship?.dateOfMarriage,
       data?.aboutTheRelationship?.dateOfSeparation
