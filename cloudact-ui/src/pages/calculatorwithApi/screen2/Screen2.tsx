@@ -3293,18 +3293,22 @@ const Screen2 = ({
       custody_arrangement: child.custodyArrangement || "Party 1",
     }));
 
-    const flaskResult = await calcChildSupportFlask({
+    const csPayload = {
       party1_income: totalIncomeParty1WithGuideline,
       party2_income: totalIncomeParty2WithGuideline,
-      party1_name: screen1.background.party1FirstName || "Party 1",
-      party2_name: screen1.background.party2FirstName || "Party 2",
+      party1_name: "Party 1",
+      party2_name: "Party 2",
       party1_province: getProvinceOfParty1(),
       party2_province: getProvinceOfParty2(),
       children: childrenPayload,
-    });
+    };
+    console.log("[CalcWithApi CS] Payload:", JSON.stringify(csPayload, null, 2));
+
+    const flaskResult = await calcChildSupportFlask(csPayload);
+    console.log("[CalcWithApi CS] Result:", flaskResult);
 
     if (!flaskResult) {
-      console.error("[calculateChildSupport] Flask /calculate returned null");
+      console.error("[CalcWithApi CS] Flask /calculate returned null");
       return { party1: 0, party2: 0 };
     }
 
@@ -5158,7 +5162,7 @@ const Screen2 = ({
         child_has_disability: child.childHasDisability === "Yes",
       }));
 
-      const spousalIterativeResult = await calcSpousalSupportFlask({
+      const spousalPayload = {
         party1_gross_income: party1GrossAnnual,
         party2_gross_income: party2GrossAnnual,
         party1_age: party1Age,
@@ -5167,7 +5171,11 @@ const Screen2 = ({
         province: getProvinceOfParty1(),
         year: distinctYears?.selectedYear ?? new Date().getFullYear(),
         children: childrenPayload,
-      });
+      };
+      console.log("[CalcWithApi Spousal] Payload:", JSON.stringify(spousalPayload, null, 2));
+
+      const spousalIterativeResult = await calcSpousalSupportFlask(spousalPayload);
+      console.log("[CalcWithApi Spousal] Result:", spousalIterativeResult);
 
       // Store in ref so passStateToParentAndNextPage uses Python values
       // instead of the local JS formula when building screen2.spousalSupport.
