@@ -26,32 +26,47 @@ import sys
 EXPORT = ("/Users/lorelaiphinnemore/Documents/CloudAct/Frontend "
           "/Calculator-code/auth-server/form-template-export")
 
-# doc_id -> ids to drop. A duplicated id drops one of the two copies.
+# doc_id -> ids to drop.
 DROP = {
     # p3: off the row grid its own table keeps.
     "Form13A": [1728474492397, 1728474492213, 1728474491973, 1728474492525,
                 # p3: off the page altogether.
                 1728473931702, 1728473932334, 1728473932494, 1728473932626,
                 # p4: same fault, the 367pt column.
-                1728475874575, 1728475874719],
+                1728475874575, 1728475874719,
+                # p4: two more of that column above the table altogether, over
+                # the "Date of Document" heading and the banner under it. Its
+                # own p3 carries nothing above the first row.
+                1728475875775, 1728475875087],
     "Form15": [120],
+}
+
+# doc_id -> ids that appear twice, of which the second copy goes. Kept apart from
+# DROP because the id survives the edit: asking for it again on an already-clean
+# file would otherwise take the real field with it.
+DEDUPE = {
     "Form17E": [33],
 }
 
 
 def main():
     write = "--write" in sys.argv
-    for doc_id, drop in DROP.items():
+    for doc_id in sorted(set(DROP) | set(DEDUPE)):
+        drop = DROP.get(doc_id, [])
+        dedupe = DEDUPE.get(doc_id, [])
         path = os.path.join(EXPORT, "%s.json" % doc_id)
         data = json.load(open(path))
         fields = data["staticFields"]
 
+        seen = []
         kept, removed = [], []
         for field in fields:
-            # A duplicated id is dropped once, not twice.
-            if field["id"] in drop and field["id"] not in [f["id"] for f in removed]:
+            # A dedupe id is dropped only where it repeats — a file already
+            # cleaned holds one of them, and that one is the real field.
+            if field["id"] in drop or (field["id"] in dedupe and field["id"] in seen):
                 removed.append(field)
             else:
+                seen.append(field["id"])
                 kept.append(field)
 
         missing = set(drop) - {f["id"] for f in removed}
