@@ -85,7 +85,7 @@ const CalculationTable = ({ data }: any) => {
     gettaxsAndDedutionByIncome,
     totalIncomeParty2,
     aboutTheChildren,
-    undueHardshipIncome,
+    undueHardshipIncomeTotal: undueHardshipIncome,
     spousalSupport,
     federalTaxValues,
     ontarioTaxValues,
