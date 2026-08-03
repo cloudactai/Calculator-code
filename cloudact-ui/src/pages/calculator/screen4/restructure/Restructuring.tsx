@@ -1794,7 +1794,7 @@ const Restructuring = ({
           screen1.aboutTheChildren,
           getTaxableIncomeAfterSupportParty1(),
           typeOfSplitting,
-          party1Name(),
+          "Party 1",
           1,
           fetchedDynamicValues
         )
@@ -1814,7 +1814,7 @@ const Restructuring = ({
           screen1.aboutTheChildren,
           getTaxableIncomeAfterSupportParty2(),
           typeOfSplitting,
-          party2Name(),
+          "Party 2",
           2,
           fetchedDynamicValues
         )
@@ -1834,7 +1834,7 @@ const Restructuring = ({
           screen1.aboutTheChildren,
           totalIncomeByIncomeState(income.party1),
           typeOfSplitting,
-          party1Name(),
+          "Party 1",
           1,
           fetchedDynamicValues
         )
@@ -1853,7 +1853,7 @@ const Restructuring = ({
           screen1.aboutTheChildren,
           totalIncomeByIncomeState(income.party2),
           typeOfSplitting,
-          party2Name(),
+          "Party 2",
           2,
           fetchedDynamicValues
         )
