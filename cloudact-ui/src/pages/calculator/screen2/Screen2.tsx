@@ -6329,7 +6329,7 @@ const Screen2 = ({
 
     passStateToParentAndNextPage(
       Number(getCalculatorIdFromQuery(calculatorId)),
-      false
+      true
     );
   };
 
