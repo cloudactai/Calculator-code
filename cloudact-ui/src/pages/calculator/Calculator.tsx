@@ -611,6 +611,21 @@ const Calculator = () => {
       });
 
       if (matterData.theChildren) {
+        const party1Name = (matterData?.applicant?.fullLegalName || "").trim().toLowerCase();
+        const party2Name = (matterData?.respondent?.fullLegalName || "").trim().toLowerCase();
+
+        const mapCustody = (nowLivesWith: string) => {
+          const val = (nowLivesWith || "").trim().toLowerCase();
+          if (!val) return "Party 1";
+          if (val === "both" || val === "shared") return "Shared";
+          if (party1Name && val === party1Name) return "Party 1";
+          if (party2Name && val === party2Name) return "Party 2";
+          // Fallback: check if it contains "client" or "opposing"
+          if (val.includes("client") || val === "party 1") return "Party 1";
+          if (val.includes("opposing") || val === "party 2") return "Party 2";
+          return "Party 1";
+        };
+
         setAboutTheChildren(prevState => ({
           ...prevState,
           numberOfChildren: matterData.theChildren.length,
@@ -619,7 +634,7 @@ const Calculator = () => {
           childrenInfo: matterData.theChildren.map(child => ({
             name: child.fullLegalName,
             dateOfBirth: child.birthdate,
-            custodyArrangement: "",
+            custodyArrangement: mapCustody(child.nowLivingWith),
             childHasDisability: "No",
             childOfRelationship: "Yes",
             adultChildStillALegalDependant: "Yes",
