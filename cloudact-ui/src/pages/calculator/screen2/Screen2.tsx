@@ -2115,7 +2115,8 @@ const Screen2 = ({
         screen1.aboutTheChildren
       ),
       guidelineIncomeObj: guidelineIncome,
-      undueHardshipIncome: {
+      undueHardshipIncome,
+      undueHardshipIncomeTotal: {
         party1: totalIncomeByIncomeState(undueHardshipIncome.party1),
         party2: totalIncomeByIncomeState(undueHardshipIncome.party2),
       },
@@ -6155,7 +6156,7 @@ const Screen2 = ({
 
     passStateToParentAndNextPage(
       Number(getCalculatorIdFromQuery(calculatorId)),
-      false
+      true
     );
   };
 
