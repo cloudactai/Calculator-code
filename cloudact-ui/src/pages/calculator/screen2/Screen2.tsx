@@ -3547,15 +3547,6 @@ const Screen2 = ({
       Number(childSupport) -
       specialExpensesRef.current.party2;
 
-      Number(totalIncomeByIncomeState(guidelineIncome.party2)) ,
-      Number(isNaN(calculateTotalTaxes(2)) ? 0 : calculateTotalTaxes(2)) ,
-      // Number(calculateTotalTaxes(2)) +
-      Number(sumAllBenefits(2)) ,
-      Number(childSupport) ,
-      specialExpensesRef.current.party2)
-
-
-
     return val + nonTaxableIncomeParty2();
   };
 
