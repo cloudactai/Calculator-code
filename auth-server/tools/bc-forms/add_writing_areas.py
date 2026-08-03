@@ -5,7 +5,7 @@ scripting, so the pages we can flatten come back with the heading printed and no
 field behind it. That is not a misplaced box, it is an absent one, and no
 detector can find it — the page has to be read and the area placed by hand.
 
-Four pages are affected:
+Three shapes of it:
 
 * F32 Part 1 (p1) and Parts 4, 5 and 6 (p2) print their heading, their bracketed
   instruction, and then the note "[if more space is required - attach page...]"
@@ -14,6 +14,12 @@ Four pages are affected:
 * F51 and F52 print "THIS COURT ORDERS that" near the foot of p1 and then a
   wholly empty p2 to continue on. The body runs from under that heading to the
   footer, and the continuation page carries the same column.
+* F3 and F5 — the claim and the counterclaim, the same page either side — print
+  "for the following reasons:" and leave the space under it empty. The box runs
+  down to whatever prints next, which is the rule closing the section.
+
+Re-runnable: a band already covered by a box is left alone, so this does not
+double up on the areas it has already added.
 
 Every edge here is read off the page — the anchor lines at run time, the column
 from the boxes the form already has — so nothing is estimated. The one judgement
@@ -37,12 +43,19 @@ MORE_SPACE = "if more space is required"
 FOOTER = 700.0
 PAD = 4.0
 
-# doc_id -> (pages carrying a "[if more space]" gap, order-body spec or None)
+# doc_id -> (pages carrying a "[if more space]" gap, order-body spec or None,
+#            captions whose answer space was never emitted)
 # The order-body spec is (heading, page of the heading, continuation page).
 PLAN = {
-    "BCSC_F32": ([1, 2], None),
-    "BCSC_F51": ([], ("THIS COURT ORDERS that", 1, 2)),
-    "BCSC_F52": ([], ("THIS COURT ORDERS that", 1, 2)),
+    "BCSC_F32": ([1, 2], None, []),
+    "BCSC_F51": ([], ("THIS COURT ORDERS that", 1, 2), []),
+    "BCSC_F52": ([], ("THIS COURT ORDERS that", 1, 2), []),
+    # F3 and F5 are the claim and the counterclaim, the same page either side.
+    "BCSC_F3": ([], None, [(3, "for the following reasons:")]),
+    "BCSC_F5": ([], None, [(2, "for the following reasons:")]),
+    # The same order body as F51 and F52, missed there because this one's
+    # heading carries a colon.
+    "BCSC_F51_1": ([], None, [(1, "THIS COURT ORDERS that:")]),
 }
 
 
@@ -74,6 +87,39 @@ def order_column(fields, page_number, left):
     return max((f["x"] + f["width"] / bp.SCALE for f in on_page), default=None)
 
 
+def answer_space(page, caption):
+    """The empty band under a caption: down to the next thing printed below it.
+
+    "for the following reasons:" and "THIS COURT ORDERS that:" are answered in
+    the space beneath them, and on these forms that space came back empty. The
+    floor is whatever prints next — the next line of type, or the rule that ends
+    the section — so the box stops where the form does.
+    """
+    anchor = next((r for r, t in lines(page) if t.startswith(caption)), None)
+    if anchor is None:
+        return None
+    floor = min([r.y0 for r, _ in lines(page) if r.y0 > anchor.y1 + 1 and r.y0 < FOOTER]
+                + [d["rect"].y0 for d in page.get_drawings()
+                   if d["rect"].width > 200 and d["rect"].height < 3
+                   and anchor.y1 + 1 < d["rect"].y0 < FOOTER]
+                + [FOOTER])
+    return anchor.x0, anchor.y1 + PAD, floor - PAD
+
+
+def already_there(fields, page_number, x, y, width, height):
+    """True if a box already covers this band — keeps a re-run from doubling up."""
+    band = fitz.Rect(x, y, x + width, y + height)
+    for field in fields:
+        if field["page"] != page_number:
+            continue
+        box = fitz.Rect(field["x"], field["y"],
+                        field["x"] + field["width"] / bp.SCALE,
+                        field["y"] + field["height"] / bp.SCALE)
+        if (band & box).get_area() > 0.5 * band.get_area():
+            return True
+    return False
+
+
 def gaps_above_notes(page):
     """(indent, top, bottom) of each empty band directly above a '[if more space]' note."""
     found = []
@@ -93,7 +139,7 @@ def gaps_above_notes(page):
 def main():
     write = "--write" in sys.argv
     added_total = 0
-    for doc_id, (note_pages, order) in PLAN.items():
+    for doc_id, (note_pages, order, captions) in PLAN.items():
         path = os.path.join(EXPORT, "%s.json" % doc_id)
         background = os.path.join(EXPORT, "%s.pdf" % doc_id)
         fields = json.load(open(path))["staticFields"]
@@ -123,6 +169,16 @@ def main():
             # The continuation page opens at the margin the heading is set to.
             new.append((carry_on, anchor.x0, anchor.x0, width, FOOTER - anchor.x0))
 
+        for page_number, caption in captions:
+            space = answer_space(doc[page_number - 1], caption)
+            if space is None:
+                raise SystemExit("%s p%d: caption %r not found" % (doc_id, page_number, caption))
+            left, top, bottom = space
+            right = order_column(fields, page_number, left)
+            new.append((page_number, left, top, right - left, bottom - top))
+
+        new = [item for item in new
+               if not already_there(fields, item[0], item[1], item[2], item[3], item[4])]
         for page_number, x, y, w, h in new:
             next_index += 1
             fields.append({
