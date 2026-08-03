@@ -27,7 +27,6 @@ export const CanadaWorkersBenefitFormula = (
       ? data.aboutTheChildren.count.party1
       : data.aboutTheChildren.count.party2;
 
-    console.log("workerBenefits number of child",NumChildren)  
 
   let basicMinVal =
     NumChildren > 0

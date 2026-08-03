@@ -115,10 +115,7 @@ const Screen1 = ({
     aboutTheChildrenInfo: false,
     aboutTheChildrenNumberInfo: -1,
   });
-  console.log("calpercentageupper",calpercentageRef)
-  console.log("calpercentageNew",calpercentageRef)
   
-
   const [showAlertFillAllDetails, setShowAlertFillAllDetails] = useState(false);
   const [showsettingModal, setShowsettingModal] = useState(false);
 

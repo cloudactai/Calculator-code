@@ -4022,27 +4022,6 @@ const Screen2 = ({
   /// =========================== TOTAL TAX ========================================
 
   const calculateTotalTaxes = (partyNum: number) => {
-    // !!federal tax is wrong.
-    // !!Provincial Tax is wrong
-
-    console.log("alltaxesind party2",
-      Number(determineProvTax(getProvinceOfParty1(), 2)),
-      Number(federalTax.current.party2),
-      calculateCPPandELDeductionsForEmployed(2),
-      calculateCPPandEIDeductionsForSelfEmployed(2),
-      -calculateCanadaWorkersBenefits(2),
-      -Number(calculateProvincialCreditsParty2()),
-    )
-
-    console.log("alltaxesind party1",
-      Number(determineProvTax(getProvinceOfParty1(), 1)),
-      Number(federalTax.current.party1),
-      calculateCPPandELDeductionsForEmployed(1),
-      calculateCPPandEIDeductionsForSelfEmployed(1),
-      -calculateCanadaWorkersBenefits(1),
-      -Number(calculateProvincialCreditsParty1()),
-    )
-
 
     return partyNum === 1
       ? Math.round(
@@ -6999,7 +6978,6 @@ const Screen2 = ({
     result += data.baseCPPContribution + data.eiPremiums;
     result += data.disabilityCreditsProv
 
-    console.log("checkcredits>>>",result)
 
     return result;
   };
