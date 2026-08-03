@@ -81,7 +81,11 @@ def groups(page, window):
 
 def outline(page, box):
     """The printed square this control belongs on, or None if it cannot be read."""
-    window = fitz.Rect(box.x0 - PAD, box.y0 - PAD, box.x1 + PAD, box.y1 + PAD)
+    # Snapped to the render's own pixel grid, so that fitting a box and looking
+    # again reads the same edges rather than drifting a pixel each time.
+    step = 72.0 / DPI
+    window = fitz.Rect(int((box.x0 - PAD) / step) * step, int((box.y0 - PAD) / step) * step,
+                       box.x1 + PAD, box.y1 + PAD)
     window = window & page.rect
     if window.is_empty:
         return None
