@@ -588,7 +588,6 @@ const Calculator = () => {
       changeInTaxesAndBenefitHigh2: 0,
     },
   });
-  console.log("screen2 bef",screen2)
 
   useEffect(() => {
     if (matterData) {
@@ -678,7 +677,6 @@ const Calculator = () => {
   })
 
   const [allApiDataCal ,setAllApiDataCal] = useState(null);
-  console.log("allApiDataCalallApiDataCal",allApiDataCal);
   
 
 

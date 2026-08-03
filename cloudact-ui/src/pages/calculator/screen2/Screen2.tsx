@@ -4580,23 +4580,6 @@ const Screen2 = ({
     // !!federal tax is wrong.
     // !!Provincial Tax is wrong
 
-    console.log("alltaxesind party2",
-      Number(determineProvTax(getProvinceOfParty1(), 2)),
-      Number(federalTax.current.party2),
-      calculateCPPandELDeductionsForEmployed(2),
-      calculateCPPandEIDeductionsForSelfEmployed(2),
-      -calculateCanadaWorkersBenefits(2),
-      -Number(calculateProvincialCreditsParty2()),
-    )
-
-    console.log("alltaxesind party1",
-      Number(determineProvTax(getProvinceOfParty1(), 1)),
-      Number(federalTax.current.party1),
-      calculateCPPandELDeductionsForEmployed(1),
-      calculateCPPandEIDeductionsForSelfEmployed(1),
-      -calculateCanadaWorkersBenefits(1),
-      -Number(calculateProvincialCreditsParty1()),
-    )
 
 
     return partyNum === 1
@@ -7119,15 +7102,6 @@ const Screen2 = ({
 
   const calculateProvincialCreditsParty2 = () => {
 
-    console.log('calculateProvincialCreditsParty2PPPPP',{
-      childCareExpenses: Math.min(
-        AllemployedIncomeParty2() * (2 / 3),
-        capAndAccumulateChildExpense(deductions.party2)
-      ),
-      taxableAmountAfterSupport: getTaxableIncomeAfterSupportParty2(),
-      rates: fetchedONCareTaxDB,
-    })
-
     return province === "ON" &&  specialExpensesRef.current.party2 !== 0 
       ? formulaForProvincialCredits(
         {
@@ -7837,8 +7811,6 @@ const Screen2 = ({
 
     result += data.baseCPPContribution + data.eiPremiums;
     result += data.disabilityCreditsProv
-
-    console.log("checkcredits>>>",result)
 
     return result;
   };

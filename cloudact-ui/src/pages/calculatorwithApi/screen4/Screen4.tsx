@@ -118,7 +118,6 @@ const Screen4 = ({
   } = screen2.insurenceReport;
 
 
-  console.log("screen2", screen2)
 
 
 
