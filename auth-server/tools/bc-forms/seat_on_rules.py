@@ -32,6 +32,8 @@ DPI = 300
 NEAR = 6.0        # how far from the foot a rule may be and still be its own
 CLEAR = 1.0       # where the box comes to rest above the rule
 COVERAGE = 0.8    # how much of the box's width the rule must run under
+LINE = 4.0 / 3.0  # a line of type, as a multiple of the point size
+PANEL = 1.7       # over this many lines deep, a box is a panel, not a line
 INK = 150
 
 
@@ -93,6 +95,17 @@ def main():
             rule = rule_under(page, box)
             if rule is None:
                 continue
+            # A box on an underline holds one line. Some came out several lines
+            # deep -- Form 20B's signature blocks are 86 pt of empty page above
+            # their rule -- which reads as a panel where the form draws a line.
+            # A genuinely multi-line answer is a TextArea and is left alone.
+            height = round(field["fontSize"] * LINE * SCALE, 2)
+            if field["type"] == "TextField" and field["height"] > PANEL * height:
+                print("   %-10s p%-2d %s %.0f pt tall on an underline -> one line"
+                      % (doc_id, field["page"], field["id"],
+                         field["height"] / SCALE))
+                field["height"] = height
+                box.y0 = box.y1 - height / SCALE
             y = round(rule - CLEAR - box.height, 2)
             if y == field["y"]:
                 continue
@@ -108,8 +121,8 @@ def main():
         if write and moved:
             check = json.loads(raw)
             for before, after in zip(check["staticFields"], fields):
-                assert {k: v for k, v in before.items() if k != "y"} == \
-                    {k: v for k, v in after.items() if k != "y"}, before["id"]
+                assert {k: v for k, v in before.items() if k not in ("y", "height")} == \
+                    {k: v for k, v in after.items() if k not in ("y", "height")}, before["id"]
             out = io.StringIO()
             json.dump(data, out, indent=1)
             open(path, "w").write(out.getvalue())
