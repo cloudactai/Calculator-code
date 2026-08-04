@@ -1614,12 +1614,9 @@ const Screen4 = ({
             onClick={async () => {
               if (!reportRef.current) return;
               const reportContainer = reportRef.current.parentElement;
-              const origStyles = reportContainer
-                ? { opacity: reportContainer.style.opacity, visibility: reportContainer.style.visibility }
-                : null;
+              const origLeft = reportContainer?.style.left;
               if (reportContainer) {
-                reportContainer.style.opacity = "1";
-                reportContainer.style.visibility = "visible";
+                reportContainer.style.left = "0px";
               }
               try {
                 await html2pdf()
@@ -1634,9 +1631,8 @@ const Screen4 = ({
                   .from(reportRef.current)
                   .save();
               } finally {
-                if (reportContainer && origStyles) {
-                  reportContainer.style.opacity = origStyles.opacity;
-                  reportContainer.style.visibility = origStyles.visibility;
+                if (reportContainer && origLeft !== undefined) {
+                  reportContainer.style.left = origLeft;
                 }
               }
             }}
@@ -1689,15 +1685,13 @@ const Screen4 = ({
       {/* Hidden Report Template for PDF Generation */}
       <div
         style={{
-          position: "fixed",
-          left: 0,
+          position: "absolute",
+          left: "-9999px",
           top: 0,
           width: "1100px",
-          opacity: 0,
-          visibility: "hidden",
           pointerEvents: "none",
-          zIndex: -1,
           overflow: "visible",
+          background: "#fff",
         }}
       >
         <CalculationReport
