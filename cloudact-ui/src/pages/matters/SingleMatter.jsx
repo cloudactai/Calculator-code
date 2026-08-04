@@ -205,6 +205,7 @@ const SingleMatter = () => {
         // Income from the last saved calculation (not from MatterRecord)
         last_calculation: incomeInfo,
         last_calculation_full: fullState || null,
+        income_benefits_information: incomeBenefitsData?.body || null,
         employment_information: employmentData?.body?.[0] || null,
         assets_information: assetsData?.body || null,
         expense_information: expenseData?.body?.[0] || null,
@@ -212,7 +213,7 @@ const SingleMatter = () => {
         court_information: courtData?.body?.[0] || null,
       });
     }
-  }, [matterData, id, latestCalcReport, backgroundData, childrenData, relationshipData, employmentData, assetsData, expenseData, debtData, courtData]);
+  }, [matterData, id, latestCalcReport, backgroundData, childrenData, relationshipData, incomeBenefitsData, employmentData, assetsData, expenseData, debtData, courtData]);
 
   const matterName =
     matterData?.client_id || history.location?.state?.clientName || "Matter";
