@@ -132,7 +132,7 @@ const CalculationReport = forwardRef<HTMLDivElement, CalculationReportProps>(
             font-family: 'Calibri', 'Segoe UI', Arial, sans-serif;
             font-size: 11px;
             color: #333;
-            padding: 20px 30px;
+            padding: 20px 30px 0 30px;
             background: #fff;
             width: 960px;
           }
@@ -166,6 +166,13 @@ const CalculationReport = forwardRef<HTMLDivElement, CalculationReportProps>(
             width: 100%;
             border-collapse: collapse;
             margin-bottom: 2px;
+          }
+          .calc-report > *:last-child {
+            margin-bottom: 0 !important;
+            padding-bottom: 0 !important;
+          }
+          .calc-report table:last-child {
+            margin-bottom: 0;
           }
           .calc-report td, .calc-report th {
             padding: 4px 8px;

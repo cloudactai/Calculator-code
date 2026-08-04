@@ -211,15 +211,13 @@ export default function CalculationPDf({ matterId }) {
       {renderReport && (
         <div
           style={{
-            position: "fixed",
-            left: 0,
+            position: "absolute",
+            left: "-9999px",
             top: 0,
             width: "1100px",
-            opacity: 0,
-            visibility: "hidden",
             pointerEvents: "none",
-            zIndex: -1,
             overflow: "visible",
+            background: "#fff",
           }}
         >
           <CalculationReport
