@@ -145,6 +145,42 @@ function buildContextMessage(matterData) {
       parts.push(`Party 2 province: ${lastCalc.party2_province}`);
   }
 
+  // ── Income & benefits from matter intake ──
+  const incBen = matterData.income_benefits_information;
+  if (incBen && Array.isArray(incBen) && incBen.length > 0) {
+    const normalize = (r) =>
+      String(r || "").trim().toLowerCase().replace(/[^a-z]/g, "");
+    const clientItems = incBen.filter((i) => normalize(i.role) === "client");
+    const opItems = incBen.filter((i) => normalize(i.role) === "opposingparty");
+    const formatItems = (items, label) => {
+      if (!items.length) return;
+      const incomeItems = items.filter(
+        (i) => String(i.incomeBenefit || "income").toLowerCase() !== "benefit"
+      );
+      const benefitItems = items.filter(
+        (i) => String(i.incomeBenefit || "").toLowerCase() === "benefit"
+      );
+      if (incomeItems.length) {
+        parts.push(`${label} intake income:`);
+        incomeItems.forEach((i) => {
+          const desc = i.type || i.description || "Income";
+          const amt = i.annual || i.monthly || i.amount || "";
+          parts.push(`  ${desc}${amt ? `: $${amt}` : ""}`);
+        });
+      }
+      if (benefitItems.length) {
+        parts.push(`${label} benefits:`);
+        benefitItems.forEach((i) => {
+          const desc = i.type || i.description || "Benefit";
+          const amt = i.annual || i.monthly || i.amount || "";
+          parts.push(`  ${desc}${amt ? `: $${amt}` : ""}`);
+        });
+      }
+    };
+    formatItems(clientItems, "Party 1");
+    formatItems(opItems, "Party 2");
+  }
+
   // ── Employment ──
   const emp = matterData.employment_information;
   if (emp) {
