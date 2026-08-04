@@ -185,35 +185,37 @@ function buildContextMessage(matterData) {
   console.log("[SpousalChat] Sections retrieved:", retrieved.map((s) => SECTION_LABELS[s]).join(", ") || "none");
   console.log("[SpousalChat] Sections missing:", missing.map((s) => SECTION_LABELS[s]).join(", ") || "none");
 
-  const parts = [];
-
+  // Session metadata — sent to AI only, not shown in the chat bubble
+  const aiOnly = [];
   const userInfo = getAllUserInfo();
   const currentRole = getCurrentUserFromCookies();
   const companyInfo = getCompanyInfo();
   const province = getUserProvince();
 
-  if (companyInfo?.company_name) parts.push(`Law firm: ${companyInfo.company_name}`);
-  if (currentRole?.short_firmname) parts.push(`Firm ID: ${currentRole.short_firmname}`);
+  if (companyInfo?.company_name) aiOnly.push(`Law firm: ${companyInfo.company_name}`);
+  if (currentRole?.short_firmname) aiOnly.push(`Firm ID: ${currentRole.short_firmname}`);
   if (userInfo?.first_name || userInfo?.last_name) {
-    parts.push(
+    aiOnly.push(
       `Lawyer / user: ${[userInfo.first_name, userInfo.last_name].filter(Boolean).join(" ")}`
     );
   }
-  if (province) parts.push(`Province: ${province}`);
-  if (matterData.matter_number) parts.push(`Matter number: ${matterData.matter_number}`);
-  if (matterData.client_id) parts.push(`Client name: ${matterData.client_id}`);
+  if (province) aiOnly.push(`Province: ${province}`);
+  if (matterData.matter_number) aiOnly.push(`Matter number: ${matterData.matter_number}`);
+  if (matterData.client_id) aiOnly.push(`Client name: ${matterData.client_id}`);
 
-  parts.push(...formatSections(savedSections));
+  // Matter data — shown to user and sent to AI
+  const displayParts = formatSections(savedSections);
 
-  if (parts.length === 0) return null;
+  if (aiOnly.length === 0 && displayParts.length === 0) return null;
 
-  const intro = "I'm working on a divorce matter. Here is all the information on file:\n\n";
-  const body = parts.join("\n");
+  const intro = "Here is all the information on file for this matter:\n\n";
+  const aiBody = [...aiOnly, ...displayParts].join("\n");
+  const displayBody = displayParts.join("\n");
   const closing = "\n\nPlease use this information to help with the calculation. Do not ask for values already listed — only ask about missing details.";
 
   return {
-    display: intro + body,
-    ai: intro + body + closing,
+    display: displayBody.length > 0 ? intro + displayBody : null,
+    ai: intro + aiBody + closing,
   };
 }
 
@@ -264,10 +266,13 @@ export default function SpousalSupportChatPanel({
     const userText = (text != null ? text : input).trim();
     if (!userText || loading) return;
 
+    const hideUserBubble = displayText === null;
     const bubbleText = displayText || userText;
     const nextMessages = [...messages, { role: "user", content: userText }];
 
-    setBubbles((b) => [...b, { role: "user", text: bubbleText }]);
+    if (!hideUserBubble) {
+      setBubbles((b) => [...b, { role: "user", text: bubbleText }]);
+    }
     setMessages(nextMessages);
     setInput("");
     setLoading(true);
