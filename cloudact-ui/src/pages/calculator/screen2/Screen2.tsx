@@ -6044,7 +6044,7 @@ const Screen2 = ({
             ...rawClientBg, // preserve intake-only fields (address, phone, email, postalCode, municipality, etc.)
             id: 1,
             role: "Client",
-            name: `${bg.party1FirstName || ""} ${bg.party1LastName || ""}`.trim() || "",
+            name: ((f, l) => { const fn = (f||"").trim(), ln = (l||"").trim(); return (!ln || fn === ln || fn.endsWith(ln)) ? fn : `${fn} ${ln}`; })(bg.party1FirstName, bg.party1LastName),
             dateOfBirth: bg.party1DateOfBirth || "",
             province: bg.party1province || "",
             liveInOntario: bg.party1LiveInOntario || "",
@@ -6057,7 +6057,7 @@ const Screen2 = ({
             ...rawOpposingBg, // preserve intake-only fields
             id: 2,
             role: "Opposing Party",
-            name: `${bg.party2FirstName || ""} ${bg.party2LastName || ""}`.trim() || "",
+            name: ((f, l) => { const fn = (f||"").trim(), ln = (l||"").trim(); return (!ln || fn === ln || fn.endsWith(ln)) ? fn : `${fn} ${ln}`; })(bg.party2FirstName, bg.party2LastName),
             dateOfBirth: bg.party2DateOfBirth || "",
             province: bg.party2province || "",
             liveInOntario: bg.party2LiveInOntario || "",

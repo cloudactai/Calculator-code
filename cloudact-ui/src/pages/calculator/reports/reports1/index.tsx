@@ -23,6 +23,14 @@ import { mapAmountFieldAndTotal } from "../../screen2/Screen2";
 //   };
 // };
 
+const displayName = (first?: string, last?: string): string => {
+  const f = (first || "").trim();
+  const l = (last || "").trim();
+  if (!f && !l) return "";
+  if (!l || f === l || f.endsWith(` ${l}`) || f.endsWith(l)) return f;
+  return `${f} ${l}`;
+};
+
 const Reports1 = ({ data }: any) => {
   const reportType = data?.report_type;
   const calculatorType = data?.calculator_type;
@@ -133,7 +141,7 @@ const DetailsAboutParties = ({
         <>
           <span className="textPDF" style={{ margin: "30px 10px 10px 10px" }}>
             <strong>
-              {data?.party1FirstName} {data?.party1LastName},{" "}
+              {displayName(data?.party1FirstName, data?.party1LastName)},{" "}
               {momentFunction.formatDate(data?.party1DateOfBirth)}, Resident of{" "}
               {getProvinceForm(data?.party1province)}
             </strong>
@@ -208,7 +216,7 @@ const DetailsAboutParties = ({
         <>
           <span className="textPDF" style={{ margin: "30px 10px 10px 10px" }}>
             <strong>
-              {data?.party2FirstName} {data?.party2LastName},{" "}
+              {displayName(data?.party2FirstName, data?.party2LastName)},{" "}
               {momentFunction.formatDate(data?.party2DateOfBirth)}, Resident of{" "}
               {getProvinceForm(data?.party2province)}
             </strong>

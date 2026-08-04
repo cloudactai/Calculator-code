@@ -29,6 +29,17 @@ const CalculationReport = forwardRef<HTMLDivElement, CalculationReportProps>(
     const showSpousalSupport = hasSpousalSupportData || hasRelationshipDates || typeStr.includes("SPOUSAL");
 
     // --- Helpers ---
+    const displayName = (first?: string, last?: string): string => {
+      const f = (first || "").trim();
+      const l = (last || "").trim();
+      if (!f && !l) return "";
+      if (!l || f === l || f.endsWith(` ${l}`) || f.endsWith(l)) return f;
+      return `${f} ${l}`;
+    };
+
+    const party1Name = displayName(background?.party1FirstName, background?.party1LastName);
+    const party2Name = displayName(background?.party2FirstName, background?.party2LastName);
+
     const safeNumber = (val: any): number => {
       const n = Number(val);
       return isNaN(n) ? 0 : n;
@@ -231,8 +242,8 @@ const CalculationReport = forwardRef<HTMLDivElement, CalculationReportProps>(
               <thead>
                 <tr>
                   <th></th>
-                  <th>{background?.party1FirstName} {background?.party1LastName}</th>
-                  <th>{background?.party2FirstName} {background?.party2LastName}</th>
+                  <th>{party1Name}</th>
+                  <th>{party2Name}</th>
                 </tr>
                 <tr>
                   <td></td>
