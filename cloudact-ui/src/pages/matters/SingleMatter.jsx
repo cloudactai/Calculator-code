@@ -347,6 +347,8 @@ const SingleMatter = () => {
       setSupportMatterData(null);
       setView(type === "child" ? "child_support" : "spousal_support");
       const storedMatter = await dispatch(getMatterData(id));
+      console.log("[SingleMatter] getMatterData for support chat:", storedMatter ? Object.keys(storedMatter) : "null");
+      console.log("[SingleMatter] background rows:", storedMatter?.background?.length ?? 0, "children rows:", storedMatter?.children?.length ?? 0, "income_benefits rows:", storedMatter?.income_benefits?.length ?? 0);
       setSupportMatterData(
         storedMatter || {
           matter_number: id,
