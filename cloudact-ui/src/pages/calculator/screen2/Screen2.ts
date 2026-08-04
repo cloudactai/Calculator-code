@@ -681,7 +681,9 @@ export const filterAllIncomesExceptEmployedAndSelfEmployedAndSum = (
   return val;
 };
 
-export const mapAmountFieldAndTotal = (data: partyIncomeAndAmount[]) => {
+export const mapAmountFieldAndTotal = (data: partyIncomeAndAmount[] | number | undefined) => {
+  if (typeof data === "number") return data;
+  if (!Array.isArray(data)) return 0;
   return data
     .map(({ amount }) => Number(amount))
     .reduce((curr, acc) => curr + acc, 0);
