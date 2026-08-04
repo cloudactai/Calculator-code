@@ -1583,7 +1583,7 @@ const Screen4 = ({
           <button
             className="btn btnPrimary rounded-pill me-3"
             onClick={() => {
-              history.push("/SupportCalculator");
+              history.push("/home");
             }}
           >
             Home Page
