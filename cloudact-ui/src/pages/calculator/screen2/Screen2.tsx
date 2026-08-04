@@ -235,6 +235,7 @@ const Screen2 = ({
   const [showAlertFillAllDetails, setShowAlertFillAllDetails] = useState(false);
   const [showFlaskError, setShowFlaskError] = useState(false);
   const [showNoChildrenError, setShowNoChildrenError] = useState(false);
+  const [showSaveNavigateError, setShowSaveNavigateError] = useState<string | null>(null);
   const storedMatterNumber = JSON.parse(localStorage.getItem('selectedCalculatorMatterNumber') || '""');
 
   // const [taxeswithAddSupport, settaxeswithAddSupport] = useState({
@@ -5613,7 +5614,15 @@ const Screen2 = ({
         Cookies.set('demo_cal_data', JSON.stringify(objforApi), { path: '/' });
         setLoading(false);
         setShowCalculationCompleted(true);
-        promptSaveOrContinue();
+        try {
+          promptSaveOrContinue();
+        } catch (saveErr: any) {
+          console.error("[Calculator] promptSaveOrContinue failed:", saveErr);
+          setShowCalculationCompleted(false);
+          setShowSaveNavigateError(
+            `Could not proceed to results: ${saveErr?.message || "unknown error"} (in promptSaveOrContinue)`
+          );
+        }
         return;
       }
       // ── End child-support-only path ───────────────────────────────────────
@@ -5797,11 +5806,17 @@ const Screen2 = ({
 
       setLoading(false);
       setShowCalculationCompleted(true);
-      promptSaveOrContinue();
+      try {
+        promptSaveOrContinue();
+      } catch (saveErr: any) {
+        console.error("[Calculator] promptSaveOrContinue failed:", saveErr);
+        setShowCalculationCompleted(false);
+        setShowSaveNavigateError(
+          `Could not proceed to results: ${saveErr?.message || "unknown error"} (in promptSaveOrContinue)`
+        );
+      }
 
-      //else if if any party has more income and also have child custody,
-      //then spousal support will be calculated by years of living together (same as highlimit and when there is no child.)
-      } catch (err) {
+      } catch (err: any) {
         console.error("[Calculator] calculateChildAndSpousalSupportAuto error:", err);
         setShowFlaskError(true);
       } finally {
@@ -6157,7 +6172,13 @@ const Screen2 = ({
     passStateToParentAndNextPage(
       Number(getCalculatorIdFromQuery(calculatorId)),
       true
-    );
+    ).catch((err: any) => {
+      console.error("[Calculator] passStateToParentAndNextPage failed:", err);
+      setShowCalculationCompleted(false);
+      setShowSaveNavigateError(
+        `Could not proceed to results: ${err?.message || "unknown error"} (in passStateToParentAndNextPage)`
+      );
+    });
   };
 
 
@@ -7952,6 +7973,21 @@ const Screen2 = ({
             Please add at least one child in the Background section before running a child support calculation.
           </p>
         </ModalInputCenter>
+        <ModalInputCenter
+          heading="Navigation Failed"
+          handleClick={() => setShowSaveNavigateError(null)}
+          changeShow={() => setShowSaveNavigateError(null)}
+          show={!!showSaveNavigateError}
+          action="Ok"
+          cancelOption="Cancel"
+        >
+          <p className="heading-5">
+            {showSaveNavigateError}
+          </p>
+          <p style={{ fontSize: "0.85rem", marginTop: "0.5rem" }}>
+            Please try pressing Next again. If the issue persists, create a new calculation.
+          </p>
+        </ModalInputCenter>
       </>
     );
   };
@@ -9736,7 +9772,7 @@ const Screen2 = ({
                 expenses. These expenses will be apportioned based on the income
                 of each party to get the s7 child special expenses support
               </span>
-              {(showAlertFillAllDetails || showFlaskError || showNoChildrenError) && AlertFillAllDetails()}
+              {(showAlertFillAllDetails || showFlaskError || showNoChildrenError || showSaveNavigateError) && AlertFillAllDetails()}
               <div className="row">
                 <div className="col-md-6">
                   {specialExpensesArr.party1.map((e: any, index: number) => {
