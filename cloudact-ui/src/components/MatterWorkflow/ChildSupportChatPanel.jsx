@@ -7,7 +7,7 @@ import {
   getCompanyInfo,
   getUserProvince,
 } from "../../utils/helpers";
-import { normalizeStoredIntakeData } from "./matterIntakeContext";
+import { normalizeStoredIntakeData, SECTION_LABELS } from "./matterIntakeContext";
 import "./MatterWorkflow.css";
 import refreshIcon from "../../assets/images/refresh-icon.png";
 
@@ -44,6 +44,13 @@ function buildContextMessage(matterData) {
   if (!matterData) return null;
 
   const savedSections = normalizeStoredIntakeData(matterData);
+
+  const allSections = Object.keys(SECTION_LABELS);
+  const retrieved = allSections.filter((s) => s in savedSections);
+  const missing = allSections.filter((s) => !(s in savedSections));
+  console.log("[ChildChat] Matter data keys received:", Object.keys(matterData));
+  console.log("[ChildChat] Sections retrieved:", retrieved.map((s) => SECTION_LABELS[s]).join(", ") || "none");
+  console.log("[ChildChat] Sections missing:", missing.map((s) => SECTION_LABELS[s]).join(", ") || "none");
 
   const sessionParts = [];
   const userInfo = getAllUserInfo();
