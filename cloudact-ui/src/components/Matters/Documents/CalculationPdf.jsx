@@ -122,8 +122,17 @@ export default function CalculationPDf({ matterId }) {
       };
     }
 
+    // Fix names saved with the old bug where fullLegalName was stored as firstName
+    const bg = { ...fullState.background };
+    if (bg.party1FirstName && bg.party1LastName && bg.party1FirstName.endsWith(bg.party1LastName)) {
+      bg.party1FirstName = bg.party1FirstName.slice(0, -(bg.party1LastName.length)).trim() || bg.party1FirstName;
+    }
+    if (bg.party2FirstName && bg.party2LastName && bg.party2FirstName.endsWith(bg.party2LastName)) {
+      bg.party2FirstName = bg.party2FirstName.slice(0, -(bg.party2LastName.length)).trim() || bg.party2FirstName;
+    }
+
     setRenderReport({
-      background: fullState.background,
+      background: bg,
       aboutTheChildren: fullState.aboutTheChildren,
       aboutTheRelationship: fullState.aboutTheRelationship,
       screen2: fullState.screen2,
