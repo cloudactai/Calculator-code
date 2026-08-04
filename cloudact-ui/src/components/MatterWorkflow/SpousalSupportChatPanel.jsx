@@ -40,6 +40,139 @@ function extractDownloadUrl(text) {
   return match ? `${CALCULATOR_API}${match[1]}` : null;
 }
 
+function formatSections(sections) {
+  const lines = [];
+
+  const bg = sections.Background;
+  if (bg) {
+    const c = bg.client;
+    const o = bg.opposingParty;
+    if (c?.name) lines.push(`Party 1 (Client): ${c.name}`);
+    if (c?.dateOfBirth) lines.push(`  DOB: ${c.dateOfBirth}`);
+    if (c?.address) lines.push(`  Address: ${c.address}`);
+    if (o?.name) lines.push(`Party 2 (Opposing Party): ${o.name}`);
+    if (o?.dateOfBirth) lines.push(`  DOB: ${o.dateOfBirth}`);
+    if (o?.address) lines.push(`  Address: ${o.address}`);
+  }
+
+  const rel = sections.Relationship;
+  if (rel) {
+    if (rel.dateOfMarriage) lines.push(`Date of marriage: ${rel.dateOfMarriage}`);
+    if (rel.dateOfSeparation) lines.push(`Date of separation: ${rel.dateOfSeparation}`);
+    if (rel.dateOfDivorce) lines.push(`Date of divorce: ${rel.dateOfDivorce}`);
+    if (rel.typeOfRelationship) lines.push(`Relationship type: ${rel.typeOfRelationship}`);
+  }
+
+  const children = sections.Children;
+  if (Array.isArray(children) && children.length > 0) {
+    lines.push(`Number of children: ${children.length}`);
+    children.forEach((c, i) => {
+      const info = [];
+      if (c.childName) info.push(c.childName);
+      if (c.dateOfBirth) info.push(`DOB: ${c.dateOfBirth}`);
+      if (c.nowLivesWith) info.push(`lives with: ${c.nowLivesWith}`);
+      if (c.isDependent) info.push(`dependent: ${c.isDependent}`);
+      if (info.length) lines.push(`  Child ${i + 1}: ${info.join(", ")}`);
+    });
+  }
+
+  const inc = sections.IncomeAndBenefits;
+  if (inc) {
+    if (inc.financialYear) lines.push(`Financial year: ${inc.financialYear}`);
+    const fmtPartyIncome = (party, label) => {
+      if (!party) return;
+      const incItems = Array.isArray(party.income) ? party.income : [];
+      const benItems = Array.isArray(party.benefit) ? party.benefit : [];
+      if (incItems.length) {
+        lines.push(`${label} income:`);
+        incItems.forEach((item) => {
+          const desc = item.type || item.description || "Income";
+          const amt = item.annual || item.monthly || item.amount || "";
+          lines.push(`  ${desc}${amt ? `: $${amt}` : ""}`);
+        });
+      }
+      if (benItems.length) {
+        lines.push(`${label} benefits:`);
+        benItems.forEach((item) => {
+          const desc = item.type || item.description || "Benefit";
+          const amt = item.annual || item.monthly || item.amount || "";
+          lines.push(`  ${desc}${amt ? `: $${amt}` : ""}`);
+        });
+      }
+    };
+    fmtPartyIncome(inc.client, "Party 1");
+    fmtPartyIncome(inc.opposingParty, "Party 2");
+  }
+
+  const emp = sections.EmploymentDetails;
+  if (emp) {
+    if (emp.client?.employer) lines.push(`Party 1 employer: ${emp.client.employer}`);
+    if (emp.client?.position) lines.push(`  Position: ${emp.client.position}`);
+    if (emp.opposingParty?.employer) lines.push(`Party 2 employer: ${emp.opposingParty.employer}`);
+    if (emp.opposingParty?.position) lines.push(`  Position: ${emp.opposingParty.position}`);
+  }
+
+  const exp = sections.Expenses;
+  if (exp) {
+    const fmtExpenses = (party, label) => {
+      if (!party) return;
+      const items = Array.isArray(party.expenses) ? party.expenses : [];
+      const special = Array.isArray(party.specialChildExpenses) ? party.specialChildExpenses : [];
+      if (items.length) {
+        lines.push(`${label} expenses:`);
+        items.forEach((e) => {
+          const desc = e.type || e.description || "Expense";
+          const amt = e.monthly || e.annual || e.amount || "";
+          lines.push(`  ${desc}${amt ? `: $${amt}` : ""}`);
+        });
+      }
+      if (special.length) {
+        lines.push(`${label} special child expenses:`);
+        special.forEach((e) => {
+          const desc = e.type || e.description || "Expense";
+          const amt = e.monthly || e.annual || e.amount || "";
+          lines.push(`  ${desc}${amt ? `: $${amt}` : ""}`);
+        });
+      }
+    };
+    fmtExpenses(exp.client, "Party 1");
+    fmtExpenses(exp.opposingParty, "Party 2");
+  }
+
+  const assets = sections.Assets;
+  if (assets) {
+    if (assets.valuation_date) lines.push(`Valuation date: ${assets.valuation_date}`);
+    Object.entries(assets).forEach(([category, items]) => {
+      if (category === "valuation_date" || !Array.isArray(items) || !items.length) return;
+      lines.push(`Assets — ${category}:`);
+      items.forEach((a) => {
+        const desc = a.description || a.type || category;
+        const val = a.value || a.amount || "";
+        lines.push(`  ${desc}${val ? `: $${val}` : ""}`);
+      });
+    });
+  }
+
+  const debts = sections.DebtsAndLiabilities;
+  if (Array.isArray(debts) && debts.length) {
+    lines.push(`Debts on file: ${debts.length}`);
+    debts.forEach((d) => {
+      const desc = d.description || d.creditor || "Debt";
+      const val = d.amount || d.balance || "";
+      lines.push(`  ${desc}${val ? `: $${val}` : ""}`);
+    });
+  }
+
+  const court = sections.Court;
+  if (court) {
+    if (court.name) lines.push(`Court: ${court.name}`);
+    if (court.fileNumber) lines.push(`Court file number: ${court.fileNumber}`);
+    if (court.municipality) lines.push(`Municipality: ${court.municipality}`);
+  }
+
+  return lines;
+}
+
 function buildContextMessage(matterData) {
   if (!matterData) return null;
 
@@ -52,38 +185,36 @@ function buildContextMessage(matterData) {
   console.log("[SpousalChat] Sections retrieved:", retrieved.map((s) => SECTION_LABELS[s]).join(", ") || "none");
   console.log("[SpousalChat] Sections missing:", missing.map((s) => SECTION_LABELS[s]).join(", ") || "none");
 
-  const sessionParts = [];
+  const parts = [];
+
   const userInfo = getAllUserInfo();
   const currentRole = getCurrentUserFromCookies();
   const companyInfo = getCompanyInfo();
   const province = getUserProvince();
 
-  if (companyInfo?.company_name) sessionParts.push(`Law firm: ${companyInfo.company_name}`);
-  if (currentRole?.short_firmname) sessionParts.push(`Firm ID: ${currentRole.short_firmname}`);
+  if (companyInfo?.company_name) parts.push(`Law firm: ${companyInfo.company_name}`);
+  if (currentRole?.short_firmname) parts.push(`Firm ID: ${currentRole.short_firmname}`);
   if (userInfo?.first_name || userInfo?.last_name) {
-    sessionParts.push(
+    parts.push(
       `Lawyer / user: ${[userInfo.first_name, userInfo.last_name].filter(Boolean).join(" ")}`
     );
   }
-  if (province) sessionParts.push(`Province: ${province}`);
+  if (province) parts.push(`Province: ${province}`);
+  if (matterData.matter_number) parts.push(`Matter number: ${matterData.matter_number}`);
+  if (matterData.client_id) parts.push(`Client name: ${matterData.client_id}`);
 
-  const matter = {};
-  if (matterData.matter_number) matter.matterNumber = matterData.matter_number;
-  if (matterData.client_id) matter.clientName = matterData.client_id;
+  parts.push(...formatSections(savedSections));
 
-  if (!matter.matterNumber && Object.keys(savedSections).length === 0) return null;
+  if (parts.length === 0) return null;
 
-  const snapshot = JSON.stringify({ matter, savedSections }, null, 2);
-  const sessionLine = sessionParts.length > 0 ? sessionParts.join("\n") + "\n\n" : "";
+  const intro = "I'm working on a divorce matter. Here is all the information on file:\n\n";
+  const body = parts.join("\n");
+  const closing = "\n\nPlease use this information to help with the calculation. Do not ask for values already listed — only ask about missing details.";
 
-  const intro = "I'm working on a divorce matter. Here is the authoritative database snapshot.\n" +
-    "Do not ask for a value that is already populated — only ask about genuinely missing fields.\n" +
-    "If I explicitly provide a different value, treat it as a correction.\n\n";
-
-  const display = intro + sessionLine + snapshot;
-  const ai = display + "\n\nPlease use this information to help with the calculation. Only ask me for missing details.";
-
-  return { display, ai };
+  return {
+    display: intro + body,
+    ai: intro + body + closing,
+  };
 }
 
 export default function SpousalSupportChatPanel({
