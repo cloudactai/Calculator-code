@@ -125,10 +125,20 @@ export default function CalculationPDf({ matterId }) {
     // Fix names saved with the old bug where fullLegalName was stored as firstName
     const bg = { ...fullState.background };
     if (bg.party1FirstName && bg.party1LastName && bg.party1FirstName.endsWith(bg.party1LastName)) {
-      bg.party1FirstName = bg.party1FirstName.slice(0, -(bg.party1LastName.length)).trim() || bg.party1FirstName;
+      const stripped = bg.party1FirstName.slice(0, -(bg.party1LastName.length)).trim();
+      if (stripped) {
+        bg.party1FirstName = stripped;
+      } else {
+        bg.party1LastName = "";
+      }
     }
     if (bg.party2FirstName && bg.party2LastName && bg.party2FirstName.endsWith(bg.party2LastName)) {
-      bg.party2FirstName = bg.party2FirstName.slice(0, -(bg.party2LastName.length)).trim() || bg.party2FirstName;
+      const stripped = bg.party2FirstName.slice(0, -(bg.party2LastName.length)).trim();
+      if (stripped) {
+        bg.party2FirstName = stripped;
+      } else {
+        bg.party2LastName = "";
+      }
     }
 
     setRenderReport({

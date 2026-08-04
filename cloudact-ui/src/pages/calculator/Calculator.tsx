@@ -593,10 +593,18 @@ const Calculator = () => {
     if (matterData) {
       setBackground(prevBackground => ({
         ...prevBackground,
-        party1FirstName: matterData?.applicant.fullLegalName?.split(' ').slice(0, -1).join(' ') || matterData?.applicant.fullLegalName || "Party 1",
-        party2FirstName: matterData.respondent.fullLegalName?.split(' ').slice(0, -1).join(' ') || matterData.respondent.fullLegalName || "Party 2",
-        party1LastName: matterData.applicant.fullLegalName?.split(' ').pop() || "",
-        party2LastName: matterData.respondent.fullLegalName?.split(' ').pop() || "",
+        party1FirstName: (matterData?.applicant.fullLegalName?.trim().includes(' ')
+          ? matterData.applicant.fullLegalName.split(' ').slice(0, -1).join(' ')
+          : matterData?.applicant.fullLegalName) || "Party 1",
+        party2FirstName: (matterData?.respondent.fullLegalName?.trim().includes(' ')
+          ? matterData.respondent.fullLegalName.split(' ').slice(0, -1).join(' ')
+          : matterData?.respondent.fullLegalName) || "Party 2",
+        party1LastName: matterData?.applicant.fullLegalName?.trim().includes(' ')
+          ? matterData.applicant.fullLegalName.split(' ').pop() || ""
+          : "",
+        party2LastName: matterData?.respondent.fullLegalName?.trim().includes(' ')
+          ? matterData.respondent.fullLegalName.split(' ').pop() || ""
+          : "",
         party1DateOfBirth: matterData.applicant.dateOfBirth,
         party2DateOfBirth: matterData.respondent.dateOfBirth || "",
         party1province:  "ON",
