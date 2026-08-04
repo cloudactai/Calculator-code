@@ -7,6 +7,7 @@ import {
   getCompanyInfo,
   getUserProvince,
 } from "../../utils/helpers";
+import { normalizeStoredIntakeData } from "./matterIntakeContext";
 import "./MatterWorkflow.css";
 import refreshIcon from "../../assets/images/refresh-icon.png";
 
@@ -39,211 +40,43 @@ function extractDownloadUrl(text) {
   return match ? `${CALCULATOR_API}${match[1]}` : null;
 }
 
-/** Format a value that may be a Unix-ms timestamp into YYYY-MM-DD. */
-function fmtDate(value) {
-  if (value == null) return value;
-  const n = typeof value === "string" ? Number(value) : value;
-  if (typeof n === "number" && !isNaN(n) && n > 9999999999 && n < 9999999999999) {
-    return new Date(n).toISOString().slice(0, 10);
-  }
-  return value;
-}
-
 function buildContextMessage(matterData) {
   if (!matterData) return null;
-  console.log("[ChildChat] buildContextMessage called with keys:", Object.keys(matterData));
-  console.log("[ChildChat] last_calculation:", JSON.stringify(matterData.last_calculation));
-  console.log("[ChildChat] last_calculation_full keys:", matterData.last_calculation_full ? Object.keys(matterData.last_calculation_full) : "null");
 
-  const parts = [];
+  const savedSections = normalizeStoredIntakeData(matterData);
 
-  // ── Session / firm context from cookies ──
+  const sessionParts = [];
   const userInfo = getAllUserInfo();
   const currentRole = getCurrentUserFromCookies();
   const companyInfo = getCompanyInfo();
   const province = getUserProvince();
 
-  if (companyInfo?.company_name) {
-    parts.push(`Law firm: ${companyInfo.company_name}`);
-  }
-  if (currentRole?.short_firmname) {
-    parts.push(`Firm ID: ${currentRole.short_firmname}`);
-  }
+  if (companyInfo?.company_name) sessionParts.push(`Law firm: ${companyInfo.company_name}`);
+  if (currentRole?.short_firmname) sessionParts.push(`Firm ID: ${currentRole.short_firmname}`);
   if (userInfo?.first_name || userInfo?.last_name) {
-    parts.push(
-      `Lawyer / user: ${[userInfo.first_name, userInfo.last_name]
-        .filter(Boolean)
-        .join(" ")}`
+    sessionParts.push(
+      `Lawyer / user: ${[userInfo.first_name, userInfo.last_name].filter(Boolean).join(" ")}`
     );
   }
-  if (province) {
-    parts.push(`Province: ${province}`);
-  }
+  if (province) sessionParts.push(`Province: ${province}`);
 
-  // ── Matter identifiers ──
-  if (matterData.matter_number) {
-    parts.push(`Matter number: ${matterData.matter_number}`);
-  }
-  if (matterData.client_id) {
-    parts.push(`Client name: ${matterData.client_id}`);
-  }
+  const matter = {};
+  if (matterData.matter_number) matter.matterNumber = matterData.matter_number;
+  if (matterData.client_id) matter.clientName = matterData.client_id;
 
-  // ── Background / party info ──
-  const bg = matterData.background_information;
-  if (bg) {
-    if (bg.client?.name) parts.push(`Party 1 (Client): ${bg.client.name}`);
-    if (bg.client?.dateOfBirth)
-      parts.push(`  DOB: ${fmtDate(bg.client.dateOfBirth)}`);
-    if (bg.client?.address)
-      parts.push(`  Address: ${bg.client.address}`);
-    if (bg.opposing_party?.name)
-      parts.push(`Party 2 (Opposing Party): ${bg.opposing_party.name}`);
-    if (bg.opposing_party?.dateOfBirth)
-      parts.push(`  DOB: ${fmtDate(bg.opposing_party.dateOfBirth)}`);
-    if (bg.opposing_party?.address)
-      parts.push(`  Address: ${bg.opposing_party.address}`);
-  }
+  if (!matter.matterNumber && Object.keys(savedSections).length === 0) return null;
 
-  // ── Relationship ──
-  const rel = matterData.relationship_information;
-  if (rel) {
-    if (rel.dateOfMarriage)
-      parts.push(`Date of marriage: ${fmtDate(rel.dateOfMarriage)}`);
-    if (rel.dateOfSeparation)
-      parts.push(`Date of separation: ${fmtDate(rel.dateOfSeparation)}`);
-    if (rel.dateOfDivorce)
-      parts.push(`Date of divorce: ${fmtDate(rel.dateOfDivorce)}`);
-    if (rel.typeOfRelationship)
-      parts.push(`Relationship type: ${rel.typeOfRelationship}`);
-  }
+  const snapshot = JSON.stringify({ matter, savedSections }, null, 2);
+  const sessionLine = sessionParts.length > 0 ? sessionParts.join("\n") + "\n\n" : "";
 
-  // ── Children ──
-  const children = matterData.children_information;
-  if (children && Array.isArray(children) && children.length > 0) {
-    parts.push(`Number of children: ${children.length}`);
-    children.forEach((c, idx) => {
-      const info = [];
-      if (c.childName) info.push(c.childName);
-      if (c.dateOfBirth) info.push(`DOB: ${fmtDate(c.dateOfBirth)}`);
-      if (c.nowLivesWith) info.push(`lives with: ${c.nowLivesWith}`);
-      if (c.isDependent) info.push(`dependent: ${c.isDependent}`);
-      if (info.length)
-        parts.push(`  Child ${idx + 1}: ${info.join(", ")}`);
-    });
-  }
+  const intro = "I'm working on a divorce matter. Here is the authoritative database snapshot.\n" +
+    "Do not ask for a value that is already populated — only ask about genuinely missing fields.\n" +
+    "If I explicitly provide a different value, treat it as a correction.\n\n";
 
-  // ── Income from last saved calculation ──
-  const lastCalc = matterData.last_calculation;
-  if (lastCalc) {
-    if (lastCalc.party1_income)
-      parts.push(`Party 1 gross annual income: $${lastCalc.party1_income}`);
-    if (lastCalc.party2_income)
-      parts.push(`Party 2 gross annual income: $${lastCalc.party2_income}`);
-    if (lastCalc.party1_province)
-      parts.push(`Party 1 province: ${lastCalc.party1_province}`);
-    if (lastCalc.party2_province)
-      parts.push(`Party 2 province: ${lastCalc.party2_province}`);
-  }
+  const display = intro + sessionLine + snapshot;
+  const ai = display + "\n\nPlease use this information to help with the calculation. Only ask me for missing details.";
 
-  // ── Income & benefits from matter intake ──
-  const incBen = matterData.income_benefits_information;
-  if (incBen && Array.isArray(incBen) && incBen.length > 0) {
-    const normalize = (r) =>
-      String(r || "").trim().toLowerCase().replace(/[^a-z]/g, "");
-    const clientItems = incBen.filter((i) => normalize(i.role) === "client");
-    const opItems = incBen.filter((i) => normalize(i.role) === "opposingparty");
-    const formatItems = (items, label) => {
-      if (!items.length) return;
-      const incomeItems = items.filter(
-        (i) => String(i.incomeBenefit || "income").toLowerCase() !== "benefit"
-      );
-      const benefitItems = items.filter(
-        (i) => String(i.incomeBenefit || "").toLowerCase() === "benefit"
-      );
-      if (incomeItems.length) {
-        parts.push(`${label} intake income:`);
-        incomeItems.forEach((i) => {
-          const desc = i.type || i.description || "Income";
-          const amt = i.annual || i.monthly || i.amount || "";
-          parts.push(`  ${desc}${amt ? `: $${amt}` : ""}`);
-        });
-      }
-      if (benefitItems.length) {
-        parts.push(`${label} benefits:`);
-        benefitItems.forEach((i) => {
-          const desc = i.type || i.description || "Benefit";
-          const amt = i.annual || i.monthly || i.amount || "";
-          parts.push(`  ${desc}${amt ? `: $${amt}` : ""}`);
-        });
-      }
-    };
-    formatItems(clientItems, "Party 1");
-    formatItems(opItems, "Party 2");
-  }
-
-  // ── Employment ──
-  const emp = matterData.employment_information;
-  if (emp) {
-    if (emp.client?.employer)
-      parts.push(`Party 1 employer: ${emp.client.employer}`);
-    if (emp.opposing_party?.employer)
-      parts.push(`Party 2 employer: ${emp.opposing_party.employer}`);
-  }
-
-  // ── Assets ──
-  const assets = matterData.assets_information;
-  if (assets && Array.isArray(assets) && assets.length > 0) {
-    parts.push(`Assets on file: ${assets.length}`);
-    assets.forEach((a) => {
-      const desc = a.description || a.type || "Asset";
-      const val = a.value || a.amount || "";
-      parts.push(`  ${desc}${val ? ` — $${val}` : ""}`);
-    });
-  }
-
-  // ── Expenses ──
-  const exp = matterData.expense_information;
-  if (exp) {
-    if (exp.client?.totalMonthlyExpenses)
-      parts.push(
-        `Party 1 monthly expenses: $${exp.client.totalMonthlyExpenses}`
-      );
-    if (exp.opposing_party?.totalMonthlyExpenses)
-      parts.push(
-        `Party 2 monthly expenses: $${exp.opposing_party.totalMonthlyExpenses}`
-      );
-  }
-
-  // ── Debts ──
-  const debts = matterData.debt_information;
-  if (debts && Array.isArray(debts) && debts.length > 0) {
-    parts.push(`Debts on file: ${debts.length}`);
-    debts.forEach((d) => {
-      const desc = d.description || d.creditor || "Debt";
-      const val = d.amount || d.balance || "";
-      parts.push(`  ${desc}${val ? ` — $${val}` : ""}`);
-    });
-  }
-
-  // ── Court information ──
-  const court = matterData.court_information;
-  if (court) {
-    if (court.courtName) parts.push(`Court: ${court.courtName}`);
-    if (court.courtFileNumber)
-      parts.push(`Court file number: ${court.courtFileNumber}`);
-    if (court.municipality) parts.push(`Municipality: ${court.municipality}`);
-  }
-
-  if (parts.length === 0) return null;
-
-  const intro = "I'm working on a divorce matter. Here is all the information I have:\n\n";
-  const body = parts.join("\n");
-  const closing = "\n\nPlease use this information to help with the calculation. Ask me for any missing details.";
-
-  return {
-    display: intro + body,
-    ai: intro + body + closing,
-  };
+  return { display, ai };
 }
 
 export default function ChildSupportChatPanel({

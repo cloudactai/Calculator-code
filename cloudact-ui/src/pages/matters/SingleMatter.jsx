@@ -80,6 +80,9 @@ const SingleMatter = () => {
   // Fresh database snapshot used only by matter intake. It is deliberately
   // separate from the legacy support-calculator context above.
   const [intakeMatterData, setIntakeMatterData] = useState(null);
+  // Fresh database snapshot for child / spousal support chats. Uses the same
+  // getMatterData() call as intake so all fields arrive in one response.
+  const [supportMatterData, setSupportMatterData] = useState(null);
   // Same snapshot shape, loaded separately for Update Information so the two
   // chats can never show each other's stale view of the record.
   const [updateMatterData, setUpdateMatterData] = useState(null);
@@ -339,11 +342,17 @@ const SingleMatter = () => {
     }
   }
 
-  function handleSupportTypeChoice(type) {
-    if (type === "child") {
-      setView("child_support");
-    } else if (type === "spousal") {
-      setView("spousal_support");
+  async function handleSupportTypeChoice(type) {
+    if (type === "child" || type === "spousal") {
+      setSupportMatterData(null);
+      setView(type === "child" ? "child_support" : "spousal_support");
+      const storedMatter = await dispatch(getMatterData(id));
+      setSupportMatterData(
+        storedMatter || {
+          matter_number: id,
+          client_id: matterData?.client_id || "",
+        }
+      );
     }
   }
 
@@ -635,7 +644,7 @@ const SingleMatter = () => {
             {/* Child Support chat */}
             {view === "child_support" && (
               <ChildSupportChatPanel
-                matterData={fullMatterData}
+                matterData={supportMatterData}
                 matterId={id}
                 onComplete={handleChildSupportComplete}
               />
@@ -644,7 +653,7 @@ const SingleMatter = () => {
             {/* Spousal Support chat */}
             {view === "spousal_support" && (
               <SpousalSupportChatPanel
-                matterData={fullMatterData}
+                matterData={supportMatterData}
                 matterId={id}
                 onComplete={() => {
                   persistTaskStatus("child_spousal_support", "completed");
