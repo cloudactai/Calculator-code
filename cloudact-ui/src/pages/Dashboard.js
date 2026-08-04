@@ -99,7 +99,10 @@ const Dashboard = ({ userInfo, currentUserRole }) => {
           },
         }));
       } catch (error) {
-        toast.error("Could not load dashboard data");
+        console.error("[Dashboard] Failed to load data:", error?.response?.status, error?.response?.data || error?.message);
+        const status = error?.response?.status;
+        const detail = error?.response?.data?.error || error?.message || "Unknown error";
+        toast.error(`Could not load dashboard data: ${status ? `${status} - ` : ""}${detail}`);
       } finally {
         setFirmDashboardData((prev) => ({ ...prev, loading: false }));
         setLoaded(true);
