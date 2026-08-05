@@ -90,53 +90,82 @@ def run(label, **kwargs):
 # All children live with Party 2. Party 1 pays.
 # Change the values below to match your case.
 # ===========================================================================
-run(
-    "SCENARIO 1 — SEPARATED (all children with Party 2)",
+# run(
+#     "SCENARIO 1 — SEPARATED (all children with Party 2)",
 
-    party1_guideline_income = 180000,
-    party2_guideline_income = 50000,
-    party1_province         = "ON",
-    party2_province         = "ON",
+#     party1_guideline_income = 180000,
+#     party2_guideline_income = 50000,
+#     party1_province         = "ON",
+#     party2_province         = "ON",
 
-    type_of_splitting = "SEPARATED",
+#     type_of_splitting = "SEPARATED",
 
-    child_counts = {
-        "party1": 1,
-        "party2": 0,
-        "shared": 0,
-        "party1WithAdultChild": 0,
-        "party2WithAdultChild": 0,
-    },
+#     child_counts = {
+#         "party1": 1,
+#         "party2": 0,
+#         "shared": 0,
+#         "party1WithAdultChild": 0,
+#         "party2WithAdultChild": 0,
+#     },
 
-    # One dict per child.
-    # csg_table: "No" = normal Schedule I table
-    #            "Yes" = use child_support_override amount instead
-    # child_support_override: monthly dollar amount (only used when csg_table = "Yes")
-    # custody_arrangement: "Party 1" | "Party 2" | "Shared"
-    children = [
-        {"csg_table": "No", "child_support_override": 0, "custody_arrangement": "Party 2"},
-        # {"csg_table": "No", "child_support_override": 0, "custody_arrangement": "Party 1"},
-    ],
-)
+#     # One dict per child.
+#     # csg_table: "No" = normal Schedule I table
+#     #            "Yes" = use child_support_override amount instead
+#     # child_support_override: monthly dollar amount (only used when csg_table = "Yes")
+#     # custody_arrangement: "Party 1" | "Party 2" | "Shared"
+#     children = [
+#         {"csg_table": "No", "child_support_override": 0, "custody_arrangement": "Party 2"},
+#         # {"csg_table": "No", "child_support_override": 0, "custody_arrangement": "Party 1"},
+#     ],
+# )
 
 
 # ===========================================================================
 # SCENARIO 2 — BC SEPARATED
 # Same setup as Scenario 1 but using British Columbia tables.
 # ===========================================================================
-run(
-    "SCENARIO 2 — BC SEPARATED (all children with Party 2)",
+# run(
+#     "SCENARIO 2 — BC SEPARATED (all children with Party 2)",
 
-    party1_guideline_income = 180000,
-    party2_guideline_income = 50000,
+#     party1_guideline_income = 180000,
+#     party2_guideline_income = 50000,
+#     party1_province         = "BC",
+#     party2_province         = "BC",
+
+#     type_of_splitting = "SEPARATED",
+
+#     child_counts = {
+#         "party1": 1,
+#         "party2": 0,
+#         "shared": 0,
+#         "party1WithAdultChild": 0,
+#         "party2WithAdultChild": 0,
+#     },
+
+#     children = [
+#         {"csg_table": "No", "child_support_override": 0, "custody_arrangement": "Party 2"},
+#     ],
+# )
+
+
+# ===========================================================================
+# SCENARIO 3 — BC SEPARATED
+# Matches the app screenshot: P1=$99k, P2=$0, 1 child with Party 2, BC.
+# Compare with ON result ($923) to verify province difference.
+# ===========================================================================
+run(
+    "SCENARIO 3 — BC SEPARATED (1 child with Party 2)",
+
+    party1_guideline_income = 99000,
+    party2_guideline_income = 0,
     party1_province         = "BC",
     party2_province         = "BC",
 
     type_of_splitting = "SEPARATED",
 
     child_counts = {
-        "party1": 1,
-        "party2": 0,
+        "party1": 0,
+        "party2": 1,
         "shared": 0,
         "party1WithAdultChild": 0,
         "party2WithAdultChild": 0,
@@ -144,34 +173,5 @@ run(
 
     children = [
         {"csg_table": "No", "child_support_override": 0, "custody_arrangement": "Party 2"},
-    ],
-)
-
-
-# ===========================================================================
-# SCENARIO 3 — BC SHARED
-# Two children in shared custody, using BC tables.
-# ===========================================================================
-run(
-    "SCENARIO 3 — BC SHARED (2 children shared custody)",
-
-    party1_guideline_income = 100000,
-    party2_guideline_income = 60000,
-    party1_province         = "BC",
-    party2_province         = "BC",
-
-    type_of_splitting = "SHARED",
-
-    child_counts = {
-        "party1": 0,
-        "party2": 0,
-        "shared": 2,
-        "party1WithAdultChild": 0,
-        "party2WithAdultChild": 0,
-    },
-
-    children = [
-        {"csg_table": "No", "child_support_override": 0, "custody_arrangement": "Shared"},
-        {"csg_table": "No", "child_support_override": 0, "custody_arrangement": "Shared"},
     ],
 )
