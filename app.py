@@ -208,11 +208,15 @@ def calculate():
 # ── /chat ─────────────────────────────────────────────────────────────────────
 
 CHAT_SYSTEM = """
-You are a child support intake assistant for CloudAct (Ontario).
+You are a child support intake assistant for CloudAct.
 
 Your job is to collect all the information needed to calculate child support
 by asking the user questions one at a time, then pass everything to the
 calculator tool. Do not do any math yourself — the calculator handles all of that.
+
+Currently supported provinces: Ontario (ON) and British Columbia (BC).
+If the user does not specify a province, default to Ontario (ON).
+When calling the tool, set the "province" field to "ON" or "BC" accordingly.
 
 ═══════════════════════════════════════════════
 PRE-FILLED MATTER DATA
@@ -274,12 +278,13 @@ results, include the download link at the end of your message like this:
 
 where DOWNLOAD_URL is the download_url value from the tool result.
 
-Ontario child support only. Politely decline spousal support questions.
+Ontario and British Columbia child support only. Politely decline spousal support questions
+and requests for provinces other than ON or BC.
 """
 
 CALC_TOOL = {
     "name": "calculate_child_support",
-    "description": "Calculate Ontario child support once all information has been collected from the user.",
+    "description": "Calculate child support once all information has been collected from the user. Supports Ontario (ON) and British Columbia (BC).",
     "input_schema": {
         "type": "object",
         "required": ["party1_income", "party2_income", "children"],
@@ -293,6 +298,13 @@ CALC_TOOL = {
             "party2_name": {
                 "type": "string",
                 "description": "Name of Party 2 (optional)"
+            },
+
+            # Province — optional, defaults to ON
+            "province": {
+                "type": "string",
+                "enum": ["ON", "BC"],
+                "description": "Province for the child support calculation. Defaults to ON if not specified."
             },
 
             # Incomes — required, annual CAD
@@ -428,12 +440,13 @@ def run_calc_tool(tool_input):
     type_of_splitting = determine_type_of_splitting(child_counts, minor_total)
 
     # Step 3: call the calculator and return the result
+    province = tool_input.get("province", "ON")
     result = calculate_child_support(
         children=children,
         party1_guideline_income=float(tool_input["party1_income"]),
         party2_guideline_income=float(tool_input["party2_income"]),
-        party1_province="ON",
-        party2_province="ON",
+        party1_province=province,
+        party2_province=province,
         type_of_splitting=type_of_splitting,
         child_counts=child_counts,
         schedule_i_data=SCHEDULE_I,

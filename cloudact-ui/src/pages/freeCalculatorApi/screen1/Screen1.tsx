@@ -395,22 +395,21 @@ const Screen1 = ({
       <div className="form-group">
         {/* <label>Province*</label> */}
         <Dropdown
+          disabled={partyNumber === 2}
           value={
             partyNumber === 1
               ? background.party1province
               : background.party2province
           }
           onChange={(event) => {
-
-
             if (partyNumber === 1) {
               setBackgroundStateByObj({
                 party1province: event.value,
-                party2province: event.value, // Set the same value for party2province
+                party2province: event.value,
               });
             } else {
               setBackgroundStateByObj({
-                party1province: event.value, // Set the same value for party1province
+                party1province: event.value,
                 party2province: event.value,
               });
             }

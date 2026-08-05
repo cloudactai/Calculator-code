@@ -118,3 +118,60 @@ run(
         # {"csg_table": "No", "child_support_override": 0, "custody_arrangement": "Party 1"},
     ],
 )
+
+
+# ===========================================================================
+# SCENARIO 2 — BC SEPARATED
+# Same setup as Scenario 1 but using British Columbia tables.
+# ===========================================================================
+run(
+    "SCENARIO 2 — BC SEPARATED (all children with Party 2)",
+
+    party1_guideline_income = 180000,
+    party2_guideline_income = 50000,
+    party1_province         = "BC",
+    party2_province         = "BC",
+
+    type_of_splitting = "SEPARATED",
+
+    child_counts = {
+        "party1": 1,
+        "party2": 0,
+        "shared": 0,
+        "party1WithAdultChild": 0,
+        "party2WithAdultChild": 0,
+    },
+
+    children = [
+        {"csg_table": "No", "child_support_override": 0, "custody_arrangement": "Party 2"},
+    ],
+)
+
+
+# ===========================================================================
+# SCENARIO 3 — BC SHARED
+# Two children in shared custody, using BC tables.
+# ===========================================================================
+run(
+    "SCENARIO 3 — BC SHARED (2 children shared custody)",
+
+    party1_guideline_income = 100000,
+    party2_guideline_income = 60000,
+    party1_province         = "BC",
+    party2_province         = "BC",
+
+    type_of_splitting = "SHARED",
+
+    child_counts = {
+        "party1": 0,
+        "party2": 0,
+        "shared": 2,
+        "party1WithAdultChild": 0,
+        "party2WithAdultChild": 0,
+    },
+
+    children = [
+        {"csg_table": "No", "child_support_override": 0, "custody_arrangement": "Shared"},
+        {"csg_table": "No", "child_support_override": 0, "custody_arrangement": "Shared"},
+    ],
+)
