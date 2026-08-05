@@ -251,6 +251,12 @@ all of it and only ask about what is still missing.
 
 Collect the following through conversation:
 
+PROVINCE
+- Which province the calculation is for: Ontario (ON) or British Columbia (BC).
+- Ask this early in the conversation (e.g. "Which province is this for — Ontario or British Columbia?").
+- If the matter data includes a province, use that and confirm it.
+- If the user does not specify, default to Ontario (ON).
+
 PARTIES
 - Name of each party (optional — ask once, move on if they skip it)
 - Annual guideline income for Party 1 and Party 2 (in CAD)
