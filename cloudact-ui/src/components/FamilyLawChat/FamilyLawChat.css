@@ -163,13 +163,13 @@
 }
 
 .flc-welcome h3 {
-  font-size: 1.05rem;
+  font-size: 1.9rem;
   font-weight: 700;
   margin: 0 0 8px;
 }
 
 .flc-welcome p {
-  font-size: 0.82rem;
+  font-size: 1.5rem;
   color: #5b6480;
   line-height: 1.45;
   margin: 0 0 16px;
@@ -186,7 +186,7 @@
   border: 1px solid #cfe0fb;
   border-radius: 10px;
   color: #307ff4;
-  font-size: 0.8rem;
+  font-size: 1.5rem;
   font-weight: 500;
   font-family: inherit;
   padding: 10px 12px;
@@ -215,10 +215,10 @@
 
 .flc-bubble {
   max-width: 82%;
-  padding: 10px 13px;
+  padding: 11px 14px;
   border-radius: 14px;
-  font-size: 0.84rem;
-  line-height: 1.45;
+  font-size: 1.6rem;
+  line-height: 1.55;
   word-wrap: break-word;
   white-space: normal;
 }
@@ -242,7 +242,7 @@
   align-items: center;
   gap: 5px;
   color: #5b6480;
-  font-size: 0.78rem;
+  font-size: 1.4rem;
 }
 
 .flc-dot {
@@ -287,8 +287,8 @@
   resize: none;
   border: 1px solid #d4ddee;
   border-radius: 10px;
-  padding: 10px 12px;
-  font-size: 0.84rem;
+  padding: 11px 13px;
+  font-size: 1.6rem;
   font-family: inherit;
   color: #171d34;
   max-height: 120px;
