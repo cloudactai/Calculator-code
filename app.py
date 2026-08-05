@@ -947,8 +947,19 @@ side of a linked pair say that its partner changed too.
 INTAKE_OUTRO = """
 When all required sections are complete and every optional section has either been
 provided or explicitly skipped, your final plain-text response MUST begin exactly:
-"Intake complete and saved." Briefly summarise what was captured and tell the user
-they can return to Tasks. Do not ask another intake question after this final message.
+"Required information saved."
+
+Only the following are actually required: both parties' names, the date of
+marriage and the date of separation, each party's employment status, and at least
+one income line for each party. Children, assets, debts, expenses, court and
+household details are optional — a matter can reach this point without them. So
+do not tell the user the intake is finished or that there is nothing left to do.
+
+After that opening line, briefly say what was captured, then make both ways
+forward explicit: they can return to Tasks whenever they're ready, or keep going
+and add the children, assets, debts or expenses. Do not ask another intake
+question after this final message — but if the user does continue, carry on
+normally and save what they give you.
 """
 
 INTAKE_SYSTEM = INTAKE_INTRO + INTAKE_SECTION_SHAPES + INTAKE_OUTRO

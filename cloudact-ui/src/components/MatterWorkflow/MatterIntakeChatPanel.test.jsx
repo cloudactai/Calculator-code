@@ -53,7 +53,7 @@ test("shows the completion action only when backend storage validation marks com
   fireEvent.click(screen.getByRole("button", { name: "Start intake" }));
 
   expect(
-    await screen.findByText(/Intake complete and saved. Return to Tasks/i)
+    await screen.findByText(/Required information saved. Return to Tasks/i)
   ).toBeInTheDocument();
   expect(onComplete).toHaveBeenCalledTimes(1);
 
@@ -63,7 +63,7 @@ test("shows the completion action only when backend storage validation marks com
   fireEvent.click(screen.getByRole("button", { name: "New conversation" }));
   await waitFor(() => {
     expect(
-      screen.queryByText(/Intake complete and saved. Return to Tasks/i)
+      screen.queryByText(/Required information saved. Return to Tasks/i)
     ).not.toBeInTheDocument();
   });
 });

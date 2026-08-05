@@ -255,7 +255,8 @@ export default function MatterIntakeChatPanel({
           }}
         >
           <span style={{ color: "#22c55e", fontWeight: 600 }}>
-            ✓ Intake complete and saved. Return to Tasks when you’re ready.
+            ✓ Required information saved. Return to Tasks, or keep going to add
+            more detail.
           </span>
           <button
             className="btn btnPrimary rounded-pill"

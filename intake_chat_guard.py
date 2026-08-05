@@ -17,6 +17,7 @@ INTAKE_SECTION_NAMES = (
 _INTAKE_DONE_PHRASES = (
     "intake is complete",
     "complete and saved",
+    "required information saved",
     "has been saved",
     "have been saved",
     "all sections",
@@ -75,5 +76,8 @@ def is_intake_complete_reply(reply: str) -> bool:
             r"\b(?:complete|completed|saved)\b.{0,40}\bintake\b",
             r"\b(?:everything|all (?:sections|information|details))\b.{0,60}"
             r"\b(?:complete|completed|captured|saved)\b",
+            # Current wording: the reply opens "Required information saved."
+            r"\brequired information\b.{0,40}"
+            r"\b(?:saved|complete|completed|captured)\b",
         )
     )

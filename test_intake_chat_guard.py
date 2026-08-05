@@ -44,6 +44,19 @@ class IntakeChatGuardTests(unittest.TestCase):
             is_intake_complete_reply("All information has now been captured and saved.")
         )
 
+    def test_recognises_the_required_information_wording(self):
+        self.assertTrue(
+            is_intake_complete_reply(
+                "Required information saved. I have both names, the marriage and "
+                "separation dates, employment status and income for each party."
+            )
+        )
+        self.assertFalse(
+            is_intake_complete_reply(
+                "The required information has not been saved yet."
+            )
+        )
+
     def test_does_not_treat_an_incomplete_reply_as_complete(self):
         self.assertFalse(is_intake_complete_reply("The intake is not complete yet."))
 
