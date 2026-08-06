@@ -1,15 +1,15 @@
 # Matters
 
-The **Matters** area is the case-management surface of the app: the list of every
-file a lawyer is working, and the per-matter workspace where intake, support
-calculations, and document drafting all happen. It is the heart of the workflow —
+The **Matters** area is the case-management part of the app: the list of every file a
+lawyer is working on, and the per-matter workspace where intake, support
+calculations, and document drafting all happen. It is the centre of the workflow:
 almost every other feature is reached by opening a matter first.
 
-> **Provenance.** The `cloudact-ui/` React app was pulled from `cloudact-frontend-main`,
-> the UI for the main CloudAct SaaS platform, and adapted for this project. A lot of
-> the styling, component vocabulary (`panel trans`, `pHead`/`pBody`, `statusBadge`,
-> `customBadge`, the modal shells), and the Redux plumbing come straight from that
-> parent app. Where you see "the old platform" referenced in code comments, that's
+> **Origin.** The `cloudact-ui/` React app was taken from `cloudact-frontend-main`, the
+> UI for the main CloudAct SaaS platform, and adapted for this project. Much of the
+> styling, the component naming (`panel trans`, `pHead`/`pBody`, `statusBadge`,
+> `customBadge`, the modal shells), and the Redux wiring come directly from that parent
+> app. Where code comments refer to "the old platform", they mean
 > `cloudact-frontend-main`. The chatbot panels described below deliberately reuse the
 > same chat UI and backend endpoints as the platform's report-generation chat (the
 > floating FamilyLawChat widget), so the two look and behave the same.
@@ -67,7 +67,7 @@ searchable table of every matter belonging to the signed-in user (scoped by `sid
 
 The **New Matter** button opens `NewMatterModal`. On continue, `handleContinue(state)`:
 
-1. Generates a matter number if the modal didn't supply one, in the format
+1. Generates a matter number if the modal did not supply one, in the format
    `CA-<year>-<zero-padded count>` (e.g. `CA-2024-00007`).
 2. Builds `formData` (sid from `getUserSID()`, checked services, client name, role,
    children-involved flag, province) and only proceeds if every required field is present.
@@ -111,16 +111,17 @@ Tasks are defined once in `TASK_DEFS` and mirror the Excel workflow document
 (MATTER INTAKE, MATTER INTAKE USING TAX RETURN, CALCULATE CHILD & SPOUSAL SUPPORT,
 DRAFT DIVORCE APPLICATION DOCUMENTS, REVIEW FORMS, … through CLOSE FILE and
 GENERAL QUERY). Only a subset is currently **enabled** — the ones with a real
-database-backed experience; the rest render as "Disabled" until their feature exists.
+database-backed experience. The rest render as "Disabled" until their feature is built.
 
 **Task status is server-backed.** On mount and on every `id` change, the page loads
 statuses via `formsService.listTaskStates(id)` and merges them over a
 `not_started` baseline. `persistTaskStatus(taskId, status)` optimistically updates
 local state and PUTs to `formsService.setTaskState(...)`; if that write fails it
 reloads the authoritative state from the server. **There is deliberately no
-localStorage fallback** — a failed request must never silently diverge from the DB.
+localStorage fallback**: a failed request must never leave the screen showing something
+different from the database.
 
-`handleTaskStart(taskId)` is the router for what each task does:
+`handleTaskStart(taskId)` decides what each task does:
 
 - **matter_intake** → marks in-progress, shows the `intake_choice` chooser.
 - **matter_intake_tax_return** → navigates to `/t1-upload` with the matter number in
@@ -130,17 +131,16 @@ localStorage fallback** — a failed request must never silently diverge from th
   the form-creation page pre-selects it (this is the bridge into the Forms area — see
   [FORMS.md](FORMS.md)).
 - **review_forms** → shows `profile_summary`.
-- **update_information** → marks in-progress, re-reads the full matter record
-  (`getMatterData`) and shows `update_information` — the AI chat that changes values
-  already on file. Flips to completed on the first change that actually altered a
-  stored value.
+- **update_information** → marks the task in progress, re-reads the full matter record
+  (`getMatterData`), and shows `update_information`, the AI chat that changes values
+  already on file. This task is never marked completed; see the note further down.
 
 ### Loading matter data
 
 The page pulls data in layers:
 
 1. `getSingleMatter(id)` loads the header row (`selectSingleMatter.body[0]`) into
-   `matterData`. If it can't load, it falls back to a stub `{ client_id: "", matterNumber: id }`
+   `matterData`. If it cannot load, it falls back to a stub `{ client_id: "", matterNumber: id }`
    so the page stays usable, and shows a non-blocking warning banner.
 2. Once `matterData` exists, it dispatches `getSingleMatterData(id, <section>)` for
    every intake section: `background`, `children`, `relationship`, `incomeBenefits`,
@@ -156,18 +156,18 @@ the next.
 
 `handleIntakeChoice(choice)`:
 
-- **manual** → navigates to `/5-steps/:id`, the 5-step accordion intake. These are
-  the *Simple forms that hydrate from the DB and save as you go.
-- **ai** → switches to the `intake_chat` view. **Crucially, before showing the chat it
-  re-fetches stored matter data** via `getMatterData(id)` into `intakeMatterData`.
-  Manual entry and earlier AI conversations write to the *same* backend record, so the
-  agent must see the latest saved values before asking its first question. This fresh
+- **manual** → navigates to `/5-steps/:id`, the 5-step accordion intake. These are the
+  `*Simple` forms, which load from the database and save as you go.
+- **ai** → switches to the `intake_chat` view. **Before showing the chat it re-fetches
+  the stored matter data** via `getMatterData(id)` into `intakeMatterData`. This step
+  matters: manual entry and earlier AI conversations write to the *same* backend record,
+  so the agent must see the latest saved values before asking its first question. This fresh
   snapshot (`intakeMatterData`) is kept deliberately separate from the legacy
   `fullMatterData` used by the support calculators.
 
 ### Support calculations
 
-`handleSupportChoice` → `handleSupportTypeChoice` funnels into either the child or
+`handleSupportChoice` → `handleSupportTypeChoice` leads to either the child or the
 spousal chat panel. The **manual** support path stores the matter number in
 `localStorage` under `selectedCalculatorMatterNumber` and navigates to
 `/SupportCalculator` so the calculator's welcome screen pre-selects the matter.
@@ -227,24 +227,24 @@ Where they differ:
   agent states the change in prose, but the green receipt underneath is computed by
   `diffMatterSnapshots`
   ([matterUpdateDiff.js](cloudact-ui/src/components/MatterWorkflow/matterUpdateDiff.js))
-  from the snapshot held *before* the patch against the record the write endpoint read
-  *back* — both normalised through `normalizeStoredIntakeData`, so row ids and blank
-  placeholders never surface as changes. A write that altered nothing says so, and a
-  rejected write posts a "not saved" bubble that contradicts the reply above it.
+  by comparing the snapshot held *before* the patch with the record the write endpoint
+  read *back*. Both are normalised through `normalizeStoredIntakeData`, so row ids and
+  blank placeholders never appear as changes. A write that changed nothing is reported
+  as such, and a rejected write shows a "not saved" message even when the reply above it
+  claims otherwise.
 
   **The conversation is deliberately not persisted; the change log is.** Replaying an
   old transcript would feed the agent a stale snapshot primer, resend the client's
   whole financial record to the model on every turn, and keep a second copy of that
   record on disk. So each visit starts a fresh chat against current data, while the
   verified receipts are appended to a per-matter change log
-  ([changeLog.js](../auth-server/src/utils/changeLog.js)) and shown collapsed at the
-  top of the panel — a dated record of what was amended, which is the part with
-  lasting value on a file. It lives in `MatterRecord` under the `matter_change_log`
-  dataType (so it needed no migration — see [DATABASE.html](DATABASE.html)), is
-  appended inside a Serializable
-  transaction so two saves in flight cannot drop each other, and is bounded at 200
-  entries. A failed append never calls the change itself into question — the write
-  already succeeded, so it only costs the history line.
+  ([changeLog.js](../auth-server/src/utils/changeLog.js)) and shown collapsed at the top
+  of the panel: a dated record of what was amended, which is the part with lasting value
+  on a file. It is stored in `MatterRecord` under the `matter_change_log` dataType, so it
+  needed no migration (see [DATABASE.html](DATABASE.html)). Entries are appended inside a
+  Serializable transaction, so two saves in flight cannot overwrite each other, and the
+  log is limited to 200 entries. A failed append does not put the change itself in doubt:
+  the write has already succeeded, so only the history entry is lost.
 
   **UPDATE INFORMATION never reaches "Completed"** — changing information is
   recurring work, so the task stays on Resume for the life of the matter, and any
@@ -266,13 +266,13 @@ ports the old platform's matter-profile page:
   [cloudact-ui/src/pages/fiveSteps/](cloudact-ui/src/pages/fiveSteps/)) inside a modal.
   These are the exact same hydrate-from-DB / save-as-you-go forms used by the 5-step
   manual intake, so AI-captured and manually-entered data render and edit the same way.
-- Saving dispatches `updateMatterData({ type, matter_id, data })`; a success effect
-  closes the modal and toasts.
+- Saving dispatches `updateMatterData({ type, matter_id, data })`; on success an effect
+  closes the modal and shows a confirmation toast.
 - The right column is the documents/folders panel (`FolderStructure`), backed by
   `get_folders` / `create_folder`.
 
 > The old page's per-section S3 upload table is intentionally dropped — that storage
-> doesn't exist on the new backend.
+> does not exist on the new backend.
 
 ---
 
@@ -287,15 +287,15 @@ the auth-server (see [../auth-server/](../auth-server/)); the conversational end
 the Redux action/selector modules under
 [cloudact-ui/src/utils/Apis/matters/](cloudact-ui/src/utils/Apis/matters/).
 
-## Gotchas worth knowing
+## Common pitfalls
 
-- **`:id` is the matter *number*, not the numeric DB id.** Everything keys off the
-  human-readable `CA-YYYY-NNNNN` string.
-- **Views are local state, not routes.** Refreshing the browser drops you back to the
+- **`:id` is the matter *number*, not the numeric database id.** Everything is keyed on
+  the readable `CA-YYYY-NNNNN` string.
+- **Views are local state, not routes.** Refreshing the browser returns you to the
   `tasks` view; only `/5-steps`, `/t1-upload`, and the forms editor are real URLs.
-- **Task status must round-trip to the server**; the code specifically refuses a
+- **Task status must be saved to the server.** The code deliberately refuses a
   browser-storage fallback.
-- **Re-fetch matter data before AI intake** so the agent sees prior saves — this is a
-  deliberate step in `handleIntakeChoice`, not an accident.
-- **Header fields (financial year, valuation date) live on the matter row**, so reload
-  the header after an intake save.
+- **Matter data is re-fetched before AI intake** so the agent sees earlier saves. This is
+  a deliberate step in `handleIntakeChoice`, not an oversight.
+- **Header fields (financial year, valuation date) live on the matter row**, so the
+  header must be reloaded after an intake save.

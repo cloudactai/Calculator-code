@@ -1,10 +1,10 @@
 # Sign-in, profile & the authentication process
 
-How a user creates an account, verifies their email, signs in, stays signed in,
-edits their profile, and signs out — and what happens on the server for each. If
-you're chasing a "why am I getting logged out / 401 / can't sign in" bug, start here.
+How a user creates an account, verifies their email, signs in, stays signed in, edits
+their profile, and signs out, and what happens on the server at each step. Start here if
+you are investigating an unexpected logout, a 401 response, or a sign-in that fails.
 
-> **The model in one sentence.** This is a **personal** auth system: each account is
+> **The model in short.** This is a **personal** auth system: each account is
 > its own tenant, the real session is an **httpOnly JWT cookie** set by the
 > **auth-server** (Node), and a small **bridge** re-creates the client-readable cookies
 > the older UI expects so every existing page keeps working. There is no law firm, no
@@ -49,9 +49,9 @@ you're chasing a "why am I getting logged out / 401 / can't sign in" bug, start 
 
 ---
 
-## The two-cookie model (the important bit)
+## The two-cookie model (and why it matters)
 
-There are **two** kinds of cookie, and confusing them causes most auth bugs:
+There are **two** kinds of cookie, and confusing them is the cause of most auth bugs:
 
 1. **The real session — httpOnly, set by the auth-server.** On login/verify the server
    issues JWTs and sets them as httpOnly cookies: `auth_token`, `AccessToken`
@@ -67,10 +67,10 @@ There are **two** kinds of cookie, and confusing them causes most auth bugs:
    [personalAuthSession.js](../cloudact-ui/src/utils/personalAuthSession.js) rebuilds
    these from the auth-server's `user` payload so nothing downstream has to change.
 
-`establishSession(user, accessToken)` is the one-stop bridge:
+`establishSession(user, accessToken)` performs the whole bridge in one place:
 
 ```
-clearClientSessionCookies()          // wipe any stale legacy cookies
+clearClientSessionCookies()          // clear any stale legacy cookies
 userInfo = buildLegacyUserInfo(user) // map {id,email,name,…} → legacy shape
 seedSessionCookies(userInfo, token)  // write allUserInfo / currentUserRole / access_pages / …
 ```
@@ -82,11 +82,12 @@ Key transforms it does:
 - **`role: [{ …, role: "ADMIN" }]`** and **`access_pages = ALL_ACCESS`** — every
   `auth_*` page flag is `true`, so [Routes.jsx](../cloudact-ui/src/routes/Routes.jsx)
   lets the user into everything.
-- **Clio/QBO are marked "connected"** (`authClio`/`authIntuit = true`) so nothing tries
-  to bounce the user into the legacy firm setup wizard.
-- **Avatar & signature (base64) are kept OUT of cookies** — they'd overflow the 4KB
-  cookie limit and silently drop the whole session. They live in `localStorage` via
-  [profileMedia.js](../cloudact-ui/src/utils/profileMedia.js); only lean, image-free
+- **Clio/QBO are marked "connected"** (`authClio`/`authIntuit = true`) so nothing
+  redirects the user into the legacy firm setup wizard.
+- **Avatar and signature (base64) are kept OUT of cookies.** They would exceed the 4KB
+  cookie limit and cause the whole session to be dropped without any error. They are
+  stored in `localStorage` via
+  [profileMedia.js](../cloudact-ui/src/utils/profileMedia.js); only small, image-free
   objects go into cookies.
 
 ---
@@ -118,10 +119,10 @@ time; the password is never stored. (It used to store the password too — that 
 removed, and SignIn purges any stale `password` key on mount. "Stay signed in" longer
 than 24h is a future refresh-token task, not stored credentials.)
 
-> **Vestigial OTP modal:** SignIn.js still contains a 4-digit OTP modal wired to
+> **Unused OTP modal:** SignIn.js still contains a 4-digit OTP modal wired to
 > `userLoginAuth`/`userOPTMatch`. The personal-auth login never populates
-> `userLoginAuth`, so **the modal never opens** — it's dead UI left from the old SMS-2FA
-> flow, not part of the current process.
+> `userLoginAuth`, so **the modal never opens**. It is leftover UI from the old SMS
+> two-factor flow and is not part of the current process.
 
 ---
 
@@ -134,9 +135,9 @@ Form: [CreateAccount.js](../cloudact-ui/src/pages/CreateAccount.js) · route
 
 - validates email format and an 8-char minimum password;
 - **already-verified email → 409** "sign in instead";
-- **existing-but-unverified email → reuses that row** (refreshes password + token and
-  re-sends the email) instead of dead-ending — this covers "the first email never
-  arrived";
+- **existing but unverified email → reuses that row** (refreshes the password and token
+  and re-sends the email) rather than rejecting the request; this covers the case where
+  the first email never arrived;
 - hashes the password with `bcrypt` (cost 12), stores a **hashed** verification token
   with a 24h expiry, and emails a link `${FRONTEND_URL}/verify-email?token=…` via
   Microsoft Graph;
@@ -157,13 +158,13 @@ Landing page: [VerifyEmail.js](../cloudact-ui/src/pages/VerifyEmail.js) · route
 - With a `token` in the URL it calls `verifyEmail(token)` → `POST /api/verify-email`.
 - **Server** hashes the token, finds the matching **unexpired** user, sets
   `emailVerifiedAt`, clears the token, **and logs them in** (sets the same session
-  cookies as login) — so verifying flows straight into the app.
+  cookies as login), so verifying takes the user straight into the app.
 - **Frontend** runs `establishSession(...)` on success and `history.replace("/")`.
 - Without a token the page shows a "check your email" state with a **resend** form
   (`resendVerification(email)` → `POST /api/resend-verification`).
 
 Both signup and resend responses are deliberately **generic** ("if that email
-exists…") so the endpoint can't be used to enumerate which emails are registered.
+exists…") so the endpoint cannot be used to find out which emails are registered.
 
 ---
 
@@ -181,11 +182,11 @@ exists…") so the endpoint can't be used to enumerate which emails are register
 
 ---
 
-## How a request proves it's authenticated
+## How a request proves that it is authenticated
 
 Every data/API call carries auth **two ways**, and the middleware accepts either:
 
-- **Cookie:** the httpOnly `auth_token`/`AccessToken` rides along automatically because
+- **Cookie:** the httpOnly `auth_token`/`AccessToken` is sent automatically because
   the frontend uses `withCredentials: true` (axios,
   [utils/axios.js](../cloudact-ui/src/utils/axios.js)) / `credentials: "include"`
   (fetch).
@@ -208,7 +209,8 @@ which is different from a 500 (a *database* problem — see ARCHITECTURE.md).
 ### Cross-domain cookies — the config that makes it work
 
 The frontend (Vercel) and auth-server (Render) are different origins, so the session
-cookie is cross-domain. Three things must all be true or the browser silently drops it:
+cookie is cross-domain. All three of the following must be true, or the browser drops
+the cookie without reporting an error:
 
 1. **Server:** `NODE_ENV=production` → cookies set `Secure` + `SameSite=None`
    (`buildCookieOptions` in authRoutes.js). Locally (http) it uses `SameSite=Lax`.
@@ -216,8 +218,8 @@ cookie is cross-domain. Three things must all be true or the browser silently dr
    ([server.js](../auth-server/server.js)).
 3. **Client:** every auth call sends `credentials: "include"` / `withCredentials`.
 
-If logins "succeed" but the user isn't actually signed in on the next page, this trio is
-almost always the culprit (usually `NODE_ENV` not being `production`).
+If a login appears to succeed but the user is not signed in on the next page, these three
+settings are almost always the cause — usually `NODE_ENV` not being set to `production`.
 
 ---
 
@@ -231,8 +233,8 @@ client cookies, with an **Edit Profile** link.
 `/profile/edit`): the real profile management screen. It:
 
 - **Saves profile fields** via `updateProfile(body)` → `PUT /api/profile`. The server
-  does a **partial update** — it only writes columns the request actually carries, so a
-  photo-only save (`{ profilePic }`) won't blank out name/phone/etc.
+  does a **partial update**: it only writes the columns the request actually contains, so
+  a photo-only save (`{ profilePic }`) does not clear the name, phone, or other fields.
 - **After each save, mirrors the change into the client cookies** with
   `updatePersonalSessionProfile(profile)` so the UI (header name, address panel) updates
   without needing a fresh login.
@@ -257,8 +259,8 @@ which:
 
 1. calls `logout()` from authApi.js → **`POST /api/logout`** (with
    `credentials: "include"`) so the server clears its **httpOnly** session cookies —
-   the only cookies JS can't touch. This is wrapped in try/catch so a failure never
-   blocks sign-out.
+   the only cookies JavaScript cannot touch. This is wrapped in try/catch so a failure
+   never blocks sign-out.
 2. calls `clearClientSessionCookies()` to wipe every readable client cookie
    (`allUserInfo`, `currentUserRole`, `access_pages`, `AccessToken`, `RefreshToken`, …)
    **and** the localStorage avatar/signature media, plus the extra legacy calculator
@@ -266,10 +268,10 @@ which:
 3. resets Redux auth state and redirects to `/signIn` — unconditionally, so the user is
    always logged out even if the network call failed.
 
-> This was previously posting to the data client's `/v1/logout` (which doesn't exist)
-> and only redirecting on a `status === 'success'` that never came, so the httpOnly
-> server session was never revoked. Fixed to hit `/api/logout` and always clear +
-> redirect.
+> This previously posted to the data client's `/v1/logout` (which does not exist) and
+> only redirected on a `status === 'success'` response that never arrived, so the
+> httpOnly server session was never revoked. It now calls `/api/logout` and always
+> clears the session and redirects.
 
 ---
 
@@ -293,7 +295,7 @@ All under `/api` on the auth-server, rate-limited to 60 requests / 15 min per IP
 
 ---
 
-## Security notes (what's already handled)
+## Security measures already in place
 
 - **Passwords:** `bcrypt` hashed at cost 12; never returned to the client.
 - **Tokens at rest:** email-verification and password-reset tokens are stored **hashed**
@@ -309,23 +311,27 @@ All under `/api` on the auth-server, rate-limited to 60 requests / 15 min per IP
 
 ---
 
-## Gotchas worth knowing
+## Common pitfalls
 
-- **`NODE_ENV=production` is mandatory in prod** or the cross-domain cookie is dropped
-  and logins don't stick. #1 cause of "it logs in then forgets me."
-- **401 ≠ 500.** 401 = session/token (JWT expired, cookie missing, `JWT_SECRET`
-  mismatch). 500 on `/v1/*` = the database (see [ARCHITECTURE.md](ARCHITECTURE.md)).
-- **Rotating `JWT_SECRET` logs everyone out** (all existing tokens fail to verify).
-- **Changing your password logs you out** — the server clears cookies on success.
-- **"Remember me" is email-only** — the password is no longer persisted. A longer-lived
-  session (beyond the 24h access token) still needs the refresh-token flow (unbuilt).
-- **The OTP modal in SignIn.js is dead code** — it never opens under personal auth.
-- **Avatar/signature never go in cookies** — they're in localStorage; if a user's photo
-  vanishes but their session is fine, look at profileMedia/localStorage, not the cookie.
-- **No token refresh flow** — a 30-day refresh cookie is set but unused, so sessions end
-  when the 24h access token expires.
+- **`NODE_ENV=production` is mandatory in production**, or the cross-domain cookie is
+  dropped and logins do not persist. This is the most common cause of "it signs in, then
+  forgets me".
+- **401 is not 500.** A 401 is a session or token problem (expired JWT, missing cookie,
+  mismatched `JWT_SECRET`). A 500 on `/v1/*` is a database problem — see
+  [ARCHITECTURE.md](ARCHITECTURE.md).
+- **Rotating `JWT_SECRET` signs everyone out**, because all existing tokens then fail
+  verification.
+- **Changing a password signs that user out**: the server clears the cookies on success.
+- **"Remember me" stores the email only.** The password is no longer saved. A session
+  lasting longer than the 24-hour access token still requires the refresh-token flow,
+  which has not been built.
+- **The OTP modal in SignIn.js is unused code** and never opens under personal auth.
+- **Avatar and signature are never stored in cookies.** They are in localStorage, so if
+  a user's photo disappears while their session is fine, check profileMedia and
+  localStorage rather than the cookies.
+- **There is no token refresh flow.** A 30-day refresh cookie is set but not used, so
+  sessions end when the 24-hour access token expires.
 
 See also: [ARCHITECTURE.md](ARCHITECTURE.md) (hosting, env vars, DB),
 [AUTH_HANDOFF/](AUTH_HANDOFF/) (original wiring notes), [MATTERS.md](MATTERS.md),
 [FORMS.md](FORMS.md).
-</content>

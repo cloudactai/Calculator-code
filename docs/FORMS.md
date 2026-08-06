@@ -1,19 +1,19 @@
 # Forms
 
-The **Forms** area is where a matter's court documents (family-law PDFs — Form 8A,
-Form 13, etc.) get created, prefilled from the matter's data, edited, saved, and
-exported as completed PDFs. It's reached from a matter's task list
+The **Forms** area is where a matter's court documents (family-law PDFs such as Form 8A
+and Form 13) are created, prefilled from the matter's data, edited, saved, and
+exported as completed PDFs. It is reached from a matter's task list
 ("DRAFT DIVORCE APPLICATION DOCUMENTS") and produces the physical documents a lawyer
 files with the court.
 
-> **Provenance.** Like the rest of `cloudact-ui/`, the forms pages were pulled from
-> `cloudact-frontend-main`, the UI for the main CloudAct SaaS platform. The original
-> app carried a large **client-side** prefill/binding engine that mapped matter data
-> into PDF field values in the browser. That engine still physically exists in
-> [FillPdf.jsx](cloudact-ui/src/pages/formPages/FillPdf.jsx) but is **commented out and
-> retired** — prefilled values and field mappings now arrive ready-made from the
-> authenticated Forms API. Understanding this "old vs new" split is the single most
-> important thing about this code.
+> **Origin.** Like the rest of `cloudact-ui/`, the forms pages were taken from
+> `cloudact-frontend-main`, the UI for the main CloudAct SaaS platform. The original app
+> carried a large **client-side** prefill and binding engine that mapped matter data into
+> PDF field values in the browser. That engine is still present in
+> [FillPdf.jsx](cloudact-ui/src/pages/formPages/FillPdf.jsx), but it is **commented out
+> and no longer used**: prefilled values and field mappings now arrive ready-made from
+> the authenticated Forms API. This "old versus new" split is the most important thing to
+> understand about this code.
 
 ---
 
@@ -60,7 +60,7 @@ entry point. Flow:
    just a hardcoded Divorce / Child-Protection pair.
 4. **Pick / create a folder.** Forms must be saved into a folder. The page lists
    existing folders (`formsService.listFolders`) and lets you create one
-   (`formsService.createFolder`). You can't create forms without selecting a folder.
+   (`formsService.createFolder`). A form cannot be created without a folder.
 5. **Select forms.** Clicking a category opens the "Add Forms" modal
    (`GeneralModal`), which has a searchable list of that category's forms with
    checkboxes. Selected forms show as chips on the main page (removable via the ✕).
@@ -78,10 +78,10 @@ the project's forms migration notes.
 
 ## Step 2 — Fill / view a form
 
-[FillPdf.jsx](cloudact-ui/src/pages/formPages/FillPdf.jsx) is the editor. It's a big
-file, but most of its length is the **retired legacy prefill engine** (a ~1,400-line
-commented-out block, `bindFieldsToData` and friends). The live logic is at the top and
-bottom of the file.
+[FillPdf.jsx](cloudact-ui/src/pages/formPages/FillPdf.jsx) is the editor. It is a large
+file, but most of its length is the **retired legacy prefill engine** (a commented-out
+block of about 1,400 lines: `bindFieldsToData` and its helpers). The active logic is at
+the top and bottom of the file.
 
 ### Loading a document
 
@@ -159,17 +159,17 @@ same object blanked the viewer without re-triggering the load effect.
 
 ---
 
-## Old vs new — the prefill split (read this)
+## Old versus new — the prefill split (important)
 
-This is the thing most likely to confuse someone new to the file:
+This is the most likely source of confusion for anyone new to the file:
 
 - **Old platform (`cloudact-frontend-main`):** the browser held the field mappings and a
-  giant `bindFieldsToData` engine that walked the matter's assets/debts/children/etc.
-  and computed each PDF field's value client-side. That code is still visible in
-  [FillPdf.jsx](cloudact-ui/src/pages/formPages/FillPdf.jsx) inside a big `/* … */`
-  block (roughly lines 240–1663), plus a `calculateAge` / `generateDetails` /
-  `formatNumberWithCommas` helper set. **It is not executed** and must not be called; it
-  remains only pending a dedicated source-size cleanup.
+  large `bindFieldsToData` engine that walked through the matter's assets, debts,
+  children and so on, and calculated each PDF field's value in the browser. That code is
+  still visible in [FillPdf.jsx](cloudact-ui/src/pages/formPages/FillPdf.jsx) inside a
+  long `/* … */` block (roughly lines 240–1663), along with the `calculateAge`,
+  `generateDetails` and `formatNumberWithCommas` helpers. **It never runs** and must not
+  be called. It remains in place only until a separate clean-up removes it.
 - **Now:** the **Forms API** owns both the field mapping (`mapping.staticFields`) and the
   prefilled values (`fieldValues`). The editor just overlays values onto the mapping and
   lets the user tweak/save. The forms are **image-based PDFs** with an overlay coordinate
@@ -208,17 +208,17 @@ bootstraps the form templates. The template PDF blobs are fetched separately at
 
 ---
 
-## Gotchas worth knowing
+## Common pitfalls
 
-- **The big commented block in FillPdf is dead code.** Don't wire it back in; the
-  mapping/values come from the API.
-- **Two revision counters.** `revision` guards the field-value document; a separate
-  `generated_pdf_revision` guards the exported PDF. Both can `409`.
-- **Coordinates are overlay coordinates.** The export flips `y` with
-  `pageHeight - y - height/scale`; get this wrong and fields land in the wrong place.
-- **A form must have a folder** before it can be created, and only
-  `production_ready` + `mapping_ready` forms are offered.
-- **Switching forms is a navigation**, not a state swap — it re-loads via the URL.
-- **Province drives the catalog**, and province comes from the matter context, so a
-  matter with no province shows no forms.
-</content>
+- **The large commented block in FillPdf is unused code.** Do not reconnect it; the
+  mappings and values come from the API.
+- **There are two revision counters.** `revision` protects the field-value document; a
+  separate `generated_pdf_revision` protects the exported PDF. Either can return a `409`.
+- **Coordinates are overlay coordinates.** The export flips `y` using
+  `pageHeight - y - height/scale`. Get this wrong and the fields land in the wrong place.
+- **A form must have a folder** before it can be created, and only forms that are both
+  `production_ready` and `mapping_ready` are offered.
+- **Switching forms is a navigation**, not a state change: the form reloads through the
+  URL.
+- **The province determines the catalogue**, and the province comes from the matter
+  context, so a matter with no province shows no forms.
