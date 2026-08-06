@@ -77,9 +77,9 @@ def print_excel_summary(inp: TaxInput, label: str = ""):
         negative=(r["canada_workers_benefit"] > 0))
     row("Canada Child Benefit",                    r["canada_child_benefit"])
     row("GST/HST Benefit",                         r["gst_hst_benefit"])
-    row("Ontario Child Benefit",                   r["ontario_child_benefit"])
+    row("Provincial Child Benefit",                r["provincial_child_benefit"])
     row("Climate Action Incentive",                r["climate_action_incentive"])
-    row("Ontario Sales Tax Credit",                r["ontario_sales_tax_credit"])
+    row("Provincial Sales Tax Credit",             r["provincial_sales_tax_credit"])
 
     print("  " + "-" * 56)
     row("Total Benefits",                          r["total_benefits"])
