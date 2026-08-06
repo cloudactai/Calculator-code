@@ -50,6 +50,16 @@ describe("FormsArray province routing", () => {
     expect(axios.get).toHaveBeenCalledWith("/forms?province=BC&production_ready=true&mapping_ready=true");
   });
 
+  it("normalizes abbreviations the shared province table knows", async () => {
+    axios.get.mockResolvedValue({ status: 200, data: { data: bcForms } });
+
+    await FormsArray("B.C.", true, true);
+    expect(axios.get).toHaveBeenCalledWith("/forms?province=BC&production_ready=true&mapping_ready=true");
+
+    await FormsArray("Ont.", true, true);
+    expect(axios.get).toHaveBeenCalledWith("/forms?province=ON&production_ready=true&mapping_ready=true");
+  });
+
   it("keeps an Ontario matter on the Ontario set", async () => {
     axios.get.mockResolvedValue({ status: 200, data: { data: onForms } });
 

@@ -9,11 +9,14 @@ import { ExpenseData } from '../../utils/Apis/matters/CustomHook/ExpenseData'
 import { expenseDetails, expenseDetailsBC, financialYear, specialExpenses } from '../../utils/matterData/categoryData'
 import NumberFormat from 'react-number-format'
 import { getCurrentUserFromCookies } from '../../utils/helpers'
+import { matterProvinceCode } from '../../utils/matterProvince'
 import { formatDollars } from '../../utils/helpers/Formatting'
 
 const ExpensesSimple = ({ matterId, onUpdateFormData, matterData, activeTab, setActiveTab }) => {
+  // The matter's province, not the signed-in user's: a BC matter shows the BC
+  // expense types whoever opens it.
   const getExpenseList = () => {
-        return getCurrentUserFromCookies().province === 'ON' ? expenseDetails : getCurrentUserFromCookies().province === 'BC' ? expenseDetailsBC : expenseDetails;
+        return matterProvinceCode(matterData, getCurrentUserFromCookies()?.province) === 'BC' ? expenseDetailsBC : expenseDetails;
   }
 
   const [loading, setLoading] = useState(true)

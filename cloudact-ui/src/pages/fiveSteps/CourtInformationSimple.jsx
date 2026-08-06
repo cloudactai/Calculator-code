@@ -6,8 +6,9 @@ import CourtNameSelect from "../../components/Matters/Form/CourtNameSelect";
 import { CourtData } from '../../utils/Apis/matters/CustomHook/CourtData';
 import Loader from '../../components/Loader'
 import { getCurrentUserFromCookies } from '../../utils/helpers';
+import { matterProvinceCode } from '../../utils/matterProvince';
 
-const CourtInformationSimple = ({ matterId, onUpdateFormData }) => {
+const CourtInformationSimple = ({ matterId, onUpdateFormData, matterData }) => {
 
     const [loading, setLoading] = useState(true)
     const { selectCourt, selectCourtLoading } = CourtData(matterId)
@@ -69,7 +70,7 @@ const CourtInformationSimple = ({ matterId, onUpdateFormData }) => {
                                 <label className="form-label">Name*</label>
                                 <CourtNameSelect
                                     value={formData.name}
-                                    province={getCurrentUserFromCookies()?.province}
+                                    province={matterProvinceCode(matterData, getCurrentUserFromCookies()?.province)}
                                     onChange={handleCourtSelect}
                                 />
                             </div>

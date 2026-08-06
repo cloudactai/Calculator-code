@@ -1,7 +1,13 @@
 import {
+  buildFormOptionLists,
   buildStoredMatterContextMessage,
   normalizeStoredIntakeData,
 } from "./matterIntakeContext";
+import {
+  expenseDetails,
+  expenseDetailsBC,
+  incomeDetailsON,
+} from "../../utils/matterData/categoryData";
 
 const savedMatter = {
   matter_number: "CA-2026-00007",
@@ -145,4 +151,49 @@ test("context marks saved values as authoritative and corrections as patches", (
   expect(message).toContain("Commissions, tips and bonuses");
   expect(message).toContain('"monthlyAmount": "4000"');
   expect(message).not.toContain('"dateOfBirth": ""');
+});
+
+test("option lists are the intake form's own dropdowns, per province", () => {
+  const ontario = buildFormOptionLists("ON");
+
+  // The whole expense dropdown travels with the primer — the agent's menu can
+  // only be complete if every value is there.
+  expect(ontario.expense).toEqual(expenseDetails.map((o) => o.value));
+  expect(ontario.income).toEqual(incomeDetailsON.map((o) => o.value));
+  expect(ontario.specialChildExpense).toContain("Extraordinary education expenses");
+  expect(ontario.province).toContain("Ontario");
+  expect(ontario.province).toContain("British Columbia");
+
+  // Courts travel with their addresses so the agent can fill both.
+  expect(ontario.court.length).toBeGreaterThan(50);
+  expect(ontario.court[0]).toEqual(
+    expect.objectContaining({ name: expect.any(String), address: expect.any(String) })
+  );
+
+  const bc = buildFormOptionLists("BC");
+  expect(bc.expense).toEqual(expenseDetailsBC.map((o) => o.value));
+  expect(bc.income).toContain("Workers compensation benefits");
+  // A province with no courts on file gets none — never Ontario's by accident.
+  expect(bc.court).toEqual([]);
+
+  // An unknown or missing province falls back to the Ontario lists, exactly as
+  // the manual forms do.
+  expect(buildFormOptionLists(undefined).expense).toEqual(ontario.expense);
+});
+
+test("the primer carries the address book and the option lists", () => {
+  const message = buildStoredMatterContextMessage(savedMatter, {
+    province: "ON",
+    lawyers: [
+      { id: 3, name: "Dana Okafor", municipality: "Waterloo", phone: "" },
+      { id: 4, name: "", municipality: "Toronto" },
+    ],
+  });
+
+  expect(message).toContain("numbered menu");
+  expect(message).toContain("Dana Okafor");
+  expect(message).toContain("Meals outside the home");
+  // A nameless row can't be offered as a choice, and blanks are dropped.
+  expect(message).not.toContain("Toronto");
+  expect(message).not.toContain('"phone": ""');
 });

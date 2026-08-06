@@ -1,3 +1,15 @@
+import {
+  benefitsDetails,
+  debtsDetails,
+  expenseDetails,
+  expenseDetailsBC,
+  incomeDetailsBC,
+  incomeDetailsON,
+  specialExpenses,
+} from "../../utils/matterData/categoryData";
+import { PROVINCE_LIST } from "../../utils/canadianProvinces";
+import allCourts from "../../utils/matterData/courtDirectory";
+
 /** Human labels for the PascalCase section keys the intake agents use. */
 export const SECTION_LABELS = {
   Background: "Background",
@@ -192,30 +204,82 @@ export function normalizeStoredIntakeData(matterData = {}) {
   return sections;
 }
 
+const optionValues = (list) =>
+  rows(list)
+    .map((option) => option?.value ?? option?.name)
+    .filter((value) => !isBlank(value));
+
+/**
+ * The intake form's own dropdown values, so the agent's menus are complete and
+ * every type it saves is one the form can actually render. Province-split
+ * exactly the way ExpensesSimple / IncomeAndBenefitsSimple split them, so the
+ * chat and the manual form can never offer different lists.
+ */
+export function buildFormOptionLists(provinceCode) {
+  const isBC = String(provinceCode || "").toUpperCase() === "BC";
+  return {
+    province: optionValues(PROVINCE_LIST),
+    income: optionValues(isBC ? incomeDetailsBC : incomeDetailsON),
+    benefit: optionValues(benefitsDetails),
+    expense: optionValues(isBC ? expenseDetailsBC : expenseDetails),
+    specialChildExpense: optionValues(specialExpenses),
+    debt: optionValues(debtsDetails),
+    // Too long to show as a menu — the agent narrows it by what the user says
+    // and offers the matches, which is also how the manual form's court picker
+    // fills the address. Filtered strictly: a province with no courts on file
+    // gets an empty list, never another province's courthouses.
+    court: rows(allCourts)
+      .filter((court) => court?.province === (isBC ? "BC" : "ON"))
+      .map(({ name, address }) => ({ name, address })),
+  };
+}
+
+/** Address-book lawyers, trimmed to the fields the agent copies onto a party. */
+const lawyerRoster = (lawyers) =>
+  rows(lawyers)
+    .filter((lawyer) => !isBlank(lawyer?.name))
+    .map((lawyer) =>
+      compactStoredValue({
+        name: lawyer.name,
+        address: lawyer.address,
+        municipality: lawyer.municipality,
+        province: lawyer.province,
+        postalCode: lawyer.postalCode,
+        phone: lawyer.phone,
+        email: lawyer.email,
+        memberOfFirm: lawyer.memberOfFirm === false ? "No" : "Yes",
+      })
+    );
+
 const matterIdentityOf = (matterData) =>
   compactStoredValue({
     matterNumber: matterData.matter_number,
     clientName: matterData.client_id,
   });
 
-export function buildStoredMatterContextMessage(matterData) {
+export function buildStoredMatterContextMessage(
+  matterData,
+  { province, lawyers } = {}
+) {
   if (!matterData) return null;
 
   const savedSections = normalizeStoredIntakeData(matterData);
   const matterIdentity = matterIdentityOf(matterData);
-
-  if (!matterIdentity && Object.keys(savedSections).length === 0) return null;
 
   return [
     "Continue this matter intake using the authoritative database snapshot below.",
     "Do not ask for a value that is already populated. Do not save unchanged database values again.",
     "Ask only for genuinely missing information. If I explicitly provide a different value, treat it as a correction and save only that correction plus the record identity needed to match it.",
     "Never interpret an omitted value as a request to clear saved information.",
+    "formOptionLists holds the intake form's own dropdown values: show each menu complete and numbered, and save only values copied from these lists.",
+    "lawyerAddressBook holds the lawyers already saved in my address book: offer them as a numbered menu instead of asking me to type a lawyer's details.",
     "",
     JSON.stringify(
       {
         matter: matterIdentity,
         savedSections,
+        formOptionLists: buildFormOptionLists(province),
+        lawyerAddressBook: lawyerRoster(lawyers),
       },
       null,
       2
@@ -228,7 +292,7 @@ export function buildStoredMatterContextMessage(matterData) {
  * always produced, because an empty file is still something the agent has to be
  * told about before it asks its first question.
  */
-export function buildUpdateContextMessage(matterData) {
+export function buildUpdateContextMessage(matterData, { province } = {}) {
   if (!matterData) return null;
 
   return [
@@ -236,11 +300,13 @@ export function buildUpdateContextMessage(matterData) {
     "The authoritative database snapshot follows. Values that are not listed are not stored.",
     "Ask me what I want to change. Do not run an intake, do not work through the sections in order, and do not ask me for anything I have not asked to change.",
     "When I name a change, save only that change and tell me the old value and the new value.",
+    "formOptionLists holds the intake form's own dropdown values: a replacement value for one of those fields must be copied from these lists.",
     "",
     JSON.stringify(
       {
         matter: matterIdentityOf(matterData),
         savedSections: normalizeStoredIntakeData(matterData),
+        formOptionLists: buildFormOptionLists(province),
       },
       null,
       2

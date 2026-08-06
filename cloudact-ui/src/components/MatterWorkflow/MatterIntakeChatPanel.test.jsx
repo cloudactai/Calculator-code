@@ -11,9 +11,24 @@ jest.mock("../../config", () => ({ CALCULATOR_API: "https://intake.test" }));
 jest.mock("../../utils/Apis/matters/saveMatterInformation/saveMattersActions", () => ({
   patchMatterIntake: (payload) => ({ type: "PATCH_MATTER_INTAKE", payload }),
 }));
+jest.mock("../../utils/Apis/lawyers/useLawyerAddressBook", () => ({
+  __esModule: true,
+  default: () => ({
+    lawyers: [
+      {
+        id: 7,
+        name: "Dana Okafor",
+        municipality: "Waterloo",
+        email: "dana@example.com",
+      },
+    ],
+    loading: false,
+    error: "",
+  }),
+}));
 jest.mock("../../utils/helpers", () => ({
   getAllUserInfo: () => ({}),
-  getCurrentUserFromCookies: () => ({}),
+  getCurrentUserFromCookies: () => ({ province: "ON" }),
   getCompanyInfo: () => ({}),
   getUserProvince: () => "Ontario",
 }));
@@ -204,6 +219,13 @@ test("starts with all manually saved database values and does not expose the pri
   expect(primer).toContain("168 Westcourt Pl");
   expect(primer).toContain('"monthlyAmount": "4000"');
   expect(primer).toContain("Do not ask for a value that is already populated");
+  // The form's own dropdowns and the address book travel with the primer, so the
+  // agent can show complete menus and offer the firm's lawyers by number.
+  expect(primer).toContain("formOptionLists");
+  expect(primer).toContain("Meals outside the home");
+  expect(primer).toContain("Extraordinary extracurricular expenses");
+  expect(primer).toContain("British Columbia");
+  expect(primer).toContain("Dana Okafor");
 
   expect(screen.queryByText(/168 Westcourt Pl/)).not.toBeInTheDocument();
   expect(screen.getByText(/Saved: Background · Income & benefits/i)).toBeInTheDocument();

@@ -3,6 +3,9 @@ import { useDispatch } from "react-redux";
 import { CALCULATOR_API } from "../../config";
 import { patchMatterIntake } from "../../utils/Apis/matters/saveMatterInformation/saveMattersActions";
 import refreshIcon from "../../assets/images/refresh-icon.png";
+import useLawyerAddressBook from "../../utils/Apis/lawyers/useLawyerAddressBook";
+import { getCurrentUserFromCookies } from "../../utils/helpers";
+import { matterProvinceCode } from "../../utils/matterProvince";
 import {
   SECTION_LABELS,
   buildStoredMatterContextMessage,
@@ -43,6 +46,9 @@ export default function MatterIntakeChatPanel({
   onSaved,
 }) {
   const dispatch = useDispatch();
+  // The agent offers these as a numbered menu instead of interviewing the user
+  // for a lawyer's name, address, phone and email one field at a time.
+  const { lawyers, loading: lawyersLoading } = useLawyerAddressBook();
 
   const [bubbles, setBubbles] = useState([]);
   const [messages, setMessages] = useState([]);
@@ -69,22 +75,27 @@ export default function MatterIntakeChatPanel({
     if (inputRef.current) inputRef.current.focus();
   }, []);
 
+  // Wait for the address book: the primer carries it, and a chat that opened
+  // without it would go back to asking for lawyer details field by field.
   useEffect(() => {
-    if (!contextSent && matterData) {
+    if (!contextSent && matterData && !lawyersLoading) {
       const storedSections = normalizeStoredIntakeData(matterData);
       Object.keys(storedSections).forEach((section) => {
         capturedSectionsRef.current[section] = true;
       });
       setSavedSections(Object.keys(capturedSectionsRef.current));
 
-      const ctx = buildStoredMatterContextMessage(matterData);
+      const ctx = buildStoredMatterContextMessage(matterData, {
+        province: matterProvinceCode(matterData, getCurrentUserFromCookies()?.province),
+        lawyers,
+      });
       if (ctx) {
         setContextSent(true);
         send(ctx, { hideUserBubble: true });
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [matterData, contextSent]);
+  }, [matterData, contextSent, lawyersLoading]);
 
   // Persist only the changes returned in this response. The AI route applies these
   // as non-destructive patches; the manual forms retain full-section save semantics.

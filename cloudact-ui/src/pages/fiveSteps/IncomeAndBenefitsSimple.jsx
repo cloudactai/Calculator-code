@@ -4,15 +4,18 @@ import Dropdown from "../../components/Matters/Form/Dropdown";
 import InputCustom from "../../components/InputCustom";
 import Loader from '../../components/Loader'
 import { IncomeBenefits } from '../../utils/Apis/matters/CustomHook/DocumentViewDataUpdate';
-import { financialYear, incomeDetails, incomeDetailsON, incomeDetailsBC } from '../../utils/matterData/categoryData';
+import { financialYear, incomeDetailsON, incomeDetailsBC } from '../../utils/matterData/categoryData';
 import { getCurrentUserFromCookies } from '../../utils/helpers';
+import { matterProvinceCode } from '../../utils/matterProvince';
 import { formatDollars } from '../../utils/helpers/Formatting';
 
 const IncomeAndBenefitsSimple = ({ matterId, onUpdateFormData, matterData, activeTab, setActiveTab }) => {
     // const [loading, setLoading] = useState(true)
     const { selectIncomeData, selectIncomeDataLoading, selectIncomeDataError } = IncomeBenefits(matterId)
-     const getIncomeDetails = () => {
-        return getCurrentUserFromCookies().province === 'ON' ? incomeDetailsON : getCurrentUserFromCookies().province === 'BC' ? incomeDetailsBC : incomeDetails;
+    // The matter's province, not the signed-in user's: a BC matter shows the BC
+    // income types whoever opens it.
+    const getIncomeDetails = () => {
+        return matterProvinceCode(matterData, getCurrentUserFromCookies()?.province) === 'BC' ? incomeDetailsBC : incomeDetailsON;
     }
     useEffect(() => {
         if (selectIncomeData && !selectIncomeDataLoading) {

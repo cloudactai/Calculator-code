@@ -3,6 +3,8 @@ import { useDispatch } from "react-redux";
 import { CALCULATOR_API } from "../../config";
 import { patchMatterIntake } from "../../utils/Apis/matters/saveMatterInformation/saveMattersActions";
 import refreshIcon from "../../assets/images/refresh-icon.png";
+import { getCurrentUserFromCookies } from "../../utils/helpers";
+import { matterProvinceCode } from "../../utils/matterProvince";
 import {
   buildUpdateContextMessage,
   normalizeStoredIntakeData,
@@ -130,7 +132,10 @@ export default function UpdateInformationChatPanel({
   }, [matterData, contextSent, nothingOnFile]);
 
   function startConversation() {
-    const primer = buildUpdateContextMessage(snapshotRef.current || matterData);
+    const snapshot = snapshotRef.current || matterData;
+    const primer = buildUpdateContextMessage(snapshot, {
+      province: matterProvinceCode(snapshot, getCurrentUserFromCookies()?.province),
+    });
     if (!primer) return;
     setContextSent(true);
     send(primer, { hideUserBubble: true });

@@ -7,6 +7,7 @@ import {
   getCompanyInfo,
   getUserProvince,
 } from "../../utils/helpers";
+import { matterProvinceCode } from "../../utils/matterProvince";
 import { normalizeStoredIntakeData, SECTION_LABELS } from "./matterIntakeContext";
 import "./MatterWorkflow.css";
 import refreshIcon from "../../assets/images/refresh-icon.png";
@@ -190,7 +191,8 @@ function buildContextMessage(matterData) {
   const userInfo = getAllUserInfo();
   const currentRole = getCurrentUserFromCookies();
   const companyInfo = getCompanyInfo();
-  const province = getUserProvince();
+  // The matter's province decides which tables apply, not the firm's.
+  const province = matterProvinceCode(matterData, getUserProvince());
 
   if (companyInfo?.company_name) aiOnly.push(`Law firm: ${companyInfo.company_name}`);
   if (currentRole?.short_firmname) aiOnly.push(`Firm ID: ${currentRole.short_firmname}`);

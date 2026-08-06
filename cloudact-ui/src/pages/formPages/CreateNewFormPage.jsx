@@ -228,8 +228,19 @@ const CreateNewFormPage = ({ currentUserRole }) => {
                           <>
                             <p>
                               Selected Matter Province:{" "}
-                              <strong>{matterData.province}</strong>
+                              <strong>{matterData.province || "Not set"}</strong>
                             </p>
+                            {/* The forms catalogue is chosen by the matter's
+                                province — with none set there is nothing to
+                                list, so say why instead of showing an empty
+                                picker. */}
+                            {!matterData.province && (
+                              <p className="text-danger" role="alert">
+                                This matter has no province set, so there are no
+                                forms to choose from. Set the matter's province
+                                to see the forms for that court.
+                              </p>
+                            )}
                             <p>
                               Client Name:{" "}
                               <strong>{matterData.client_id}</strong>
@@ -336,7 +347,7 @@ const CreateNewFormPage = ({ currentUserRole }) => {
               action=""
               // handleContinue={(state) => handleContinue(state)}
               handleContinue={() => handleContinueAddForm()}
-              heading={`Please select forms from - ${matterData?.province}`}
+              heading={`Please select forms from - ${matterData?.province || "this matter's province (not set)"}`}
               size="sm"
               dialogClassName={"newFormModal"}
               actions={[

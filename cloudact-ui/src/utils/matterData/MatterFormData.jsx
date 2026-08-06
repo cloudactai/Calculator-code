@@ -1,13 +1,13 @@
 import add_folder_linear from "../../assets/images/add_folder_linear.svg";
 import axios from "../../utils/axios";
+import { provinceCodeOf } from "../canadianProvinces";
 
 export async function FormsArray(province, production_ready, mapping_ready) {
     try {
-        const normalizedProvince = {
-            ontario: "ON",
-            alberta: "AB",
-            "british columbia": "BC",
-        }[String(province || "").trim().toLowerCase()] || String(province || "").trim().toUpperCase();
+        // The catalogue is keyed by code. Anything the shared table doesn't
+        // recognise is still passed through, so an unlisted code keeps working.
+        const normalizedProvince =
+            provinceCodeOf(province) || String(province || "").trim().toUpperCase();
         let api_url = `/forms?province=${normalizedProvince}`;
         if(production_ready){
             api_url = api_url + `&production_ready=${production_ready}`;
