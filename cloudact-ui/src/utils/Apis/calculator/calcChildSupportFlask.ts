@@ -56,6 +56,7 @@ const calcChildSupportFlask = async (
   payload: ChildSupportFlaskPayload
 ): Promise<ChildSupportFlaskResult | null> => {
   try {
+    console.log(`[calcChildSupportFlask] province: party1=${payload.party1_province}, party2=${payload.party2_province}`);
     const res = await fetch(`${CALCULATOR_API}/calculate`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
