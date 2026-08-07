@@ -3617,6 +3617,8 @@ console.log('getProvinceOfParty1()',getProvinceOfParty2());
           party2_income: p2Income,
           party1_name: "Party 1",
           party2_name: "Party 2",
+          party1_province: getProvinceOfParty1(),
+          party2_province: getProvinceOfParty2(),
           children: childrenList.map((c: any) => ({
             name: c.name ?? "",
             csg_table: c.CSGTable ?? "No",
