@@ -137,6 +137,55 @@
     "A19_CAI_COMMENT": "A19. Climate Action Incentive — Ontario amounts. Source: Excel calculator.",
     "CAI_INDIVIDUAL": 604.00,
     "CAI_FIRST_CHILD_SINGLE_PARENT": 302.00,
-    "CAI_PER_ADDITIONAL_CHILD": 151.00
+    "CAI_PER_ADDITIONAL_CHILD": 151.00,
+
+    "A19b_BC_CWB_COMMENT": "A19b. Canada Workers Benefit — BC-specific amounts (same federal program, different indexed values). Source: BC Schedule 6 / Tax calculator spreadsheet.",
+    "BC_CWB_SINGLE_MAX": 1633.00,
+    "BC_CWB_FAMILY_MAX": 2813.00,
+    "BC_CWB_SINGLE_THRESHOLD": 26855.00,
+    "BC_CWB_FAMILY_THRESHOLD": 30639.00,
+    "BC_CWB_SUPPLEMENT_BASE_THRESHOLD": 910.00,
+    "BC_CWB_SUPPLEMENT_RATE": 0.26,
+    "BC_CWB_SUPPLEMENT_CAP": 821.00,
+    "BC_CWB_SUPPLEMENT_RED_THRESHOLD_SINGLE": 36832.00,
+    "BC_CWB_SUPPLEMENT_RED_THRESHOLD_FAMILY": 48915.00,
+    "BC_CWB_SUPPLEMENT_RED_RATE": 0.15,
+
+    "A20_BC_BRACKETS_COMMENT": "A20. BC provincial tax brackets 2025. Source: BC428 / Tax variables masterfile.",
+    "BC_BRACKETS": [
+      {"From":       0, "To":   49279, "Income_over":      0, "Rate": 0.0506, "Basic":       0.0000},
+      {"From":   49279, "To":   98560, "Income_over":  49279, "Rate": 0.0770, "Basic":    2493.5174},
+      {"From":   98560, "To":  113158, "Income_over":  98560, "Rate": 0.1050, "Basic":    6288.1544},
+      {"From":  113158, "To": 9999999, "Income_over": 113158, "Rate": 0.1229, "Basic":    7820.9400}
+    ],
+
+    "A21_BC_CREDITS_COMMENT": "A21. BC provincial credit amounts 2025. Source: Tax variables masterfile.",
+    "BASIC_PERSONAL_AMOUNT_BC": 12932.00,
+    "AMOUNT_FOR_ELIGIBLE_DEPENDENT_BC": 11073.00,
+    "DISABILITY_AMOUNT_BC": 9820.00,
+    "BC_AGE_AMOUNT_BASE": 5915.00,
+    "BC_AGE_AMOUNT_THRESHOLD": 43709.00,
+
+    "A22_BC_TAX_REDUCTION_COMMENT": "A22. BC tax reduction 2025. Source: Tax variables masterfile.",
+    "BC_TAX_REDUCTION_BASE": 562.00,
+    "BC_TAX_REDUCTION_THRESHOLD_CALC": 25020.00,
+    "BC_TAX_REDUCTION_THRESHOLD_ELIGIBILITY": 40807.00,
+
+    "A23_BC_CHILD_BENEFIT_COMMENT": "A23. BC Childhood Opportunity Benefit 2025. Source: Tax variables masterfile.",
+    "BC_CHILD_BENEFIT_BASE_1": 1750.00,
+    "BC_CHILD_BENEFIT_BASE_2": 1100.00,
+    "BC_CHILD_BENEFIT_BASE_ADDL": 900.00,
+    "BC_CHILD_BENEFIT_THRESHOLD_1": 775.00,
+    "BC_CHILD_BENEFIT_THRESHOLD_2": 750.00,
+    "BC_CHILD_BENEFIT_THRESHOLD_ADDL": 725.00,
+    "BC_CHILD_BENEFIT_LOWER_THRESHOLD": 29526.00,
+    "BC_CHILD_BENEFIT_SUPPLEMENT": 500.00,
+
+    "A24_BC_CLIMATE_ACTION_COMMENT": "A24. BC Climate Action Tax Credit 2025. Source: Tax variables masterfile.",
+    "BC_CLIMATE_ACTION_BASIC": 504.00,
+    "BC_CLIMATE_ACTION_FIRST_CHILD": 252.00,
+    "BC_CLIMATE_ACTION_ADDL_CHILD": 126.00,
+    "BC_CLIMATE_ACTION_SINGLE_THRESHOLD": 41071.00,
+    "BC_CLIMATE_ACTION_FAMILY_THRESHOLD": 57288.00
   }
 }

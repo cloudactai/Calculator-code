@@ -1,7 +1,7 @@
 """
 test_tax.py
 -----------
-Validates the calculator against known values (e.g. from the Excel sheet).
+Validates the calculator against known values from the Excel sheet.
 
 HOW TO USE
 ----------
@@ -9,17 +9,14 @@ HOW TO USE
 2. Fill in the INPUTS section below to match.
 3. Fill in the EXPECTED section with the values Excel produced.
 4. Run:  python3 test_tax.py
-5. Every line shows ✓ (match) or ✗ (mismatch with diff).
-
-The script prints which JSON file and which year's constants are loaded,
-so you always know the values being used.
+5. Every line shows MATCH or DIFF with the difference.
 """
 
 import json
 import os
 from tax import calculate_taxes, get_year_constants, TaxInput, ChildInfo
 
-TOLERANCE = 0.10   # dollars — ✓ if diff < this
+TOLERANCE = 1.0   # dollars
 
 
 # ===========================================================================
@@ -28,132 +25,166 @@ TOLERANCE = 0.10   # dollars — ✓ if diff < this
 
 YEAR = 2025
 
-inp = TaxInput(
-    party_num=2,
-    province="ON",
-    age=38,                          # Party 1's actual age — not specified in table
+inp_p1 = TaxInput(
+    party_num=1,
+    province="BC",
+    age=40,
     eligible_for_disability="No",
 
-    employed_income=20000,           # ✓
-    self_employed_income=0,          # ✓
-    other_income=0,                  # ✓
+    employed_income=60000,
+    self_employed_income=0,
+    other_income=0,
 
-    support_received=841,              # ✓ Party 1 is the payor
-    deductible_support_paid=0,       # ✓ child support is not deductible in Canada
+    support_received=0,
+    deductible_support_paid=2115.2447632496915,
 
-    child_care_expenses=0,           # ✓
-    other_deductions=0,              # ✓
+    child_care_expenses=0,
+    other_deductions=0,
 
     children=[
         ChildInfo(
-            date_of_birth="2025-06-01",    # fix: age 1 at June 2026 separation
-            custody_arrangement="Party 2",  # ✓
-            child_has_disability="No",      # ✓
+            date_of_birth="2025-06-01",
+            custody_arrangement="Party 2",
+            child_has_disability="No",
         ),
     ],
 
-    type_of_splitting="SEPARATED",          # ✓
-    child_counts={"party1": 0, "party2": 1, "shared": 0},  # ✓
-    child_support_amounts={"party1": 841, "party2": 0},     # ✓
-    both_incomes={"party1": 90000, "party2": 20000},        # ✓
+    type_of_splitting="SEPARATED",
+    child_counts={"party1": 0, "party2": 1, "shared": 0},
+    child_support_amounts={"party1": 578.4, "party2": 0},
+    both_incomes={"party1": 60000, "party2": 20000},
+    year=YEAR,
+)
+
+inp_p2 = TaxInput(
+    party_num=2,
+    province="BC",
+    age=40,
+    eligible_for_disability="No",
+
+    employed_income=20000,
+    self_employed_income=0,
+    other_income=0,
+
+    support_received=2115.2447632496915,
+    deductible_support_paid=0,
+
+    child_care_expenses=0,
+    other_deductions=0,
+
+    children=[
+        ChildInfo(
+            date_of_birth="2025-06-01",
+            custody_arrangement="Party 2",
+            child_has_disability="No",
+        ),
+    ],
+
+    type_of_splitting="SEPARATED",
+    child_counts={"party1": 0, "party2": 1, "shared": 0},
+    child_support_amounts={"party1": 578.4, "party2": 0},
+    both_incomes={"party1": 60000, "party2": 20000},
     year=YEAR,
 )
 
 # ===========================================================================
-# TEST RUNNER — nothing to edit below here
+# EXPECTED VALUES from spreadsheet (Party 1 and Party 2)
 # ===========================================================================
 
-def run_test(inp: TaxInput, tolerance: float = TOLERANCE):
-    constants_path = os.path.join(os.path.dirname(__file__), "tax_constants.json")
+expected_p1 = {
+    "gross_income":                  60000.00,
+    "taxable_income":                57319.76,
+    "basic_personal_amount_fed":     16129.00,
+    "age_amount_fed":                0.00,
+    "eligible_dependent_credit_fed": 0.00,
+    "cpp_base":                      2796.75,
+    "ei":                            984.00,
+    "canada_employment_credit":      1471.00,
+    "total_federal_credits":         21380.75,
+    "basic_personal_amount_prov":    12932.00,
+    "eligible_dependent_credit_prov": 0.00,
+    "total_provincial_credits":      16712.75,
+    "federal_tax":                   5211.16,
+    "provincial_tax":                2266.99,
+    "cpp_ei_deductions":             4345.75,
+    "canada_workers_benefit":        0.00,
+    "canada_child_benefit":          0.00,
+    "gst_hst_benefit":               0.00,
+    "provincial_child_benefit":      0.00,
+    "climate_action_incentive":      0.00,
+    "total_benefits":                0.00,
+    "total_taxes":                   11823.90,
+}
+
+expected_p2 = {
+    "gross_income":                  20000.00,
+    "taxable_income":                21950.24,
+    "basic_personal_amount_fed":     16129.00,
+    "age_amount_fed":                0.00,
+    "eligible_dependent_credit_fed": 16129.00,
+    "cpp_base":                      816.75,
+    "ei":                            328.00,
+    "canada_employment_credit":      1471.00,
+    "total_federal_credits":         34873.75,
+    "basic_personal_amount_prov":    12932.00,
+    "eligible_dependent_credit_prov": 11073.00,
+    "total_provincial_credits":      25149.75,
+    "federal_tax":                   0.00,
+    "provincial_tax":                0.00,
+    "cpp_ei_deductions":             1309.75,
+    "canada_workers_benefit":        3634.00,
+    "canada_child_benefit":          7997.00,
+    "gst_hst_benefit":               882.00,
+    "provincial_child_benefit":      2250.00,
+    "provincial_sales_tax_credit":   0.00,
+    "climate_action_incentive":      0.00,
+    "total_benefits":                11129.00,
+    "total_taxes":                   -2324.25,
+}
+
+
+# ===========================================================================
+# TEST RUNNER
+# ===========================================================================
+
+def run_test(label: str, inp: TaxInput, expected: dict, tolerance: float = TOLERANCE):
     c = get_year_constants(inp.year)
+    constants_path = os.path.join(os.path.dirname(__file__), "tax_constants.json")
 
-    print("\n" + "=" * 68)
-    print(f"  Tax Calculator Test — Year {inp.year}")
-    print(f"  Constants file : {constants_path}")
-    print(f"  Year loaded    : {inp.year}  "
-          f"(ON BPA: {c['BASIC_PERSONAL_AMOUNT_ON']:,.2f}  |  "
-          f"Fed rate: {c['FEDERAL_CREDIT_RATE']:.1%})")
-    print("=" * 68)
-
-    print(f"\n  Inputs")
-    print(f"    party_num              : {inp.party_num}")
-    print(f"    age                    : {inp.age}")
-    print(f"    disability             : {inp.eligible_for_disability}")
-    print(f"    employed_income        : {inp.employed_income:>12,.2f}")
-    print(f"    self_employed_income   : {inp.self_employed_income:>12,.2f}")
-    print(f"    other_income           : {inp.other_income:>12,.2f}")
-    print(f"    support_received       : {inp.support_received:>12,.2f}")
-    print(f"    deductible_support_paid: {inp.deductible_support_paid:>12,.2f}")
-    print(f"    child_care_expenses    : {inp.child_care_expenses:>12,.2f}")
-    print(f"    other_deductions       : {inp.other_deductions:>12,.2f}")
-    print(f"    children               : {len(inp.children)}")
-    for ch in inp.children:
-        print(f"      dob={ch.date_of_birth}  custody={ch.custody_arrangement}  "
-              f"disability={ch.child_has_disability}")
-    print(f"    child_counts           : {inp.child_counts}")
+    print("\n" + "=" * 72)
+    print(f"  {label} — Year {inp.year}, Province {inp.province}")
+    print(f"  Constants file: {constants_path}")
+    print("=" * 72)
 
     r = calculate_taxes(inp)
 
-    sections = [
-        ("Income", ["gross_income", "taxable_income"]),
-        ("Federal credits", [
-            "basic_personal_amount_fed",
-            "cpp_ei_credit",
-            "canada_employment_credit",
-            "eligible_dependent_credit_fed",
-            "age_amount_fed",
-            "disability_credit_fed",
-            "total_federal_credits",
-        ]),
-        ("Provincial credits", [
-            "basic_personal_amount_prov",
-            "eligible_dependent_credit_prov",
-            "age_amount_prov",
-            "disability_credit_prov",
-            "total_provincial_credits",
-        ]),
-        ("Tax", [
-            "federal_tax_before_credits",
-            "provincial_tax_before_credits",
-            "federal_tax",
-            "provincial_tax",
-            "ontario_health_premium",
-            "ontario_surtax",
-            "ontario_tax_reduction",
-            "ontario_lift_credit",
-        ]),
-        ("CPP / EI", [
-            "cpp_base",
-            "cpp_enhanced",
-            "cpp2",
-            "ei",
-            "cpp_ei_deductions",
-        ]),
-        ("Benefits", [
-            "canada_workers_benefit",
-            "canada_child_benefit",
-            "gst_hst_benefit",
-            "ontario_child_benefit",
-            "ontario_sales_tax_credit",
-            "climate_action_incentive",
-            "total_benefits",
-        ]),
-        ("Summary", [
-            "total_taxes",
-            "net_income_after_tax",
-        ]),
-    ]
+    all_match = True
+    for k, exp in expected.items():
+        got = r.get(k, None)
+        if got is None:
+            print(f"    {k:<40} MISSING in output")
+            all_match = False
+            continue
+        diff = got - exp
+        if abs(diff) < tolerance:
+            status = "MATCH"
+        else:
+            status = f"DIFF ({diff:+,.2f})"
+            all_match = False
+        print(f"    {k:<40} got={got:>12,.2f}  exp={exp:>12,.2f}  {status}")
 
     print()
-    for section_title, keys in sections:
-        print(f"  ── {section_title} ──")
-        for k in keys:
-            if k not in r:
-                continue
-            val = r[k]
-            print(f"    {k:<40} {val:>12,.2f}")
-        print()
+    if all_match:
+        print(f"    >>> ALL {len(expected)} VALUES MATCH <<<")
+    else:
+        mismatches = sum(
+            1 for k, exp in expected.items()
+            if k in r and abs(r[k] - exp) >= tolerance
+        )
+        print(f"    >>> {mismatches} MISMATCH(ES) <<<")
+    print()
 
 
 if __name__ == "__main__":
-    run_test(inp)
+    run_test("BC Scenario 1 — Party 1", inp_p1, expected_p1)
+    run_test("BC Scenario 1 — Party 2", inp_p2, expected_p2)
