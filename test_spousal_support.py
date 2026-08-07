@@ -142,8 +142,8 @@ class TestQuantum:
         r = calculate_spousal_support(
             party1_name="Husband",
             party2_name="Wife",
-            party1_net_income=65_000,
-            party2_net_income=30_000,
+            party1_gross_income=65_000,
+            party2_gross_income=30_000,
             years=25,
             recipient_age=45,
         )
@@ -165,8 +165,8 @@ class TestQuantum:
         r = calculate_spousal_support(
             party1_name="Alice",
             party2_name="Bob",
-            party1_net_income=40_000,
-            party2_net_income=100_000,
+            party1_gross_income=40_000,
+            party2_gross_income=100_000,
             years=10,
             recipient_age=40,
         )
@@ -179,8 +179,8 @@ class TestQuantum:
         r = calculate_spousal_support(
             party1_name="A",
             party2_name="B",
-            party1_net_income=80_000,
-            party2_net_income=80_000,
+            party1_gross_income=80_000,
+            party2_gross_income=80_000,
             years=12,
             recipient_age=40,
         )
@@ -197,8 +197,8 @@ class TestQuantum:
         r = calculate_spousal_support(
             party1_name="Earner",
             party2_name="NonEarner",
-            party1_net_income=120_000,
-            party2_net_income=0,
+            party1_gross_income=120_000,
+            party2_gross_income=0,
             years=10,
             recipient_age=40,
         )
@@ -212,8 +212,8 @@ class TestQuantum:
         r = calculate_spousal_support(
             party1_name="X",
             party2_name="Y",
-            party1_net_income=100_000,
-            party2_net_income=60_000,
+            party1_gross_income=100_000,
+            party2_gross_income=60_000,
             years=35,
             recipient_age=50,
         )
@@ -228,8 +228,8 @@ class TestQuantum:
         r = calculate_spousal_support(
             party1_name="P",
             party2_name="Q",
-            party1_net_income=90_000,
-            party2_net_income=50_000,
+            party1_gross_income=90_000,
+            party2_gross_income=50_000,
             years=8,
             recipient_age=38,
         )
@@ -248,7 +248,7 @@ class TestDurationIntegration:
         """age 55 + 10 years = 65 → Indefinite."""
         r = calculate_spousal_support(
             party1_name="A", party2_name="B",
-            party1_net_income=80_000, party2_net_income=40_000,
+            party1_gross_income=80_000, party2_gross_income=40_000,
             years=10, recipient_age=55,
         )
         assert r.duration_low  == INDEFINITE_SENTINEL
@@ -259,7 +259,7 @@ class TestDurationIntegration:
         """20-year marriage → Indefinite regardless of age."""
         r = calculate_spousal_support(
             party1_name="A", party2_name="B",
-            party1_net_income=80_000, party2_net_income=40_000,
+            party1_gross_income=80_000, party2_gross_income=40_000,
             years=20, recipient_age=35,
         )
         assert r.duration_low  == INDEFINITE_SENTINEL
@@ -269,7 +269,7 @@ class TestDurationIntegration:
         """10-year marriage, age 40 → 5–10 year range."""
         r = calculate_spousal_support(
             party1_name="A", party2_name="B",
-            party1_net_income=80_000, party2_net_income=40_000,
+            party1_gross_income=80_000, party2_gross_income=40_000,
             years=10, recipient_age=40,
         )
         assert approx(r.duration_low,  5.0)
@@ -280,7 +280,7 @@ class TestDurationIntegration:
         """3-year marriage → 1.5–3.0 year range."""
         r = calculate_spousal_support(
             party1_name="A", party2_name="B",
-            party1_net_income=80_000, party2_net_income=40_000,
+            party1_gross_income=80_000, party2_gross_income=40_000,
             years=3, recipient_age=30,
         )
         assert approx(r.duration_low,  1.5)

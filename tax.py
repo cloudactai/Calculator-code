@@ -648,7 +648,7 @@ def calculate_bc_child_benefit(
     is_shared: bool,
     c: dict,
 ) -> float:
-    """BC Childhood Opportunity Benefit (annual)."""
+    """BC Childhood Opportunity Benefit (annual) + supplement."""
     if num_children <= 0:
         return 0.0
     base = _bc_child_base(num_children, is_shared, c)
@@ -657,7 +657,9 @@ def calculate_bc_child_benefit(
         0.0,
     )
     threshold = _bc_child_threshold(num_children, is_shared, c)
-    return max(base - deductions, threshold)
+    benefit = max(base - deductions, threshold)
+    supplement = c.get("BC_CHILD_BENEFIT_SUPPLEMENT", 0.0)
+    return benefit + supplement
 
 
 def calculate_bc_climate_action(
@@ -892,6 +894,29 @@ def _on_care_credit(taxable_income: float, child_care_capped: float, year: int, 
 
 
 # ===========================================================================
+# BC CWB SUPPLEMENT
+# ===========================================================================
+
+def _bc_cwb_supplement(
+    total_income: float,
+    taxable_income: float,
+    num_children_with_party: int,
+    c: dict,
+) -> float:
+    """BC CWB supplement — applied unconditionally (matches spreadsheet)."""
+    base = min(
+        (total_income - c["BC_CWB_SUPPLEMENT_BASE_THRESHOLD"]) * c["BC_CWB_SUPPLEMENT_RATE"],
+        c["BC_CWB_SUPPLEMENT_CAP"],
+    )
+    if num_children_with_party > 0:
+        red_threshold = c["BC_CWB_SUPPLEMENT_RED_THRESHOLD_FAMILY"]
+    else:
+        red_threshold = c["BC_CWB_SUPPLEMENT_RED_THRESHOLD_SINGLE"]
+    reduction = max((taxable_income - red_threshold) * c["BC_CWB_SUPPLEMENT_RED_RATE"], 0.0)
+    return max(base - reduction, 0.0)
+
+
+# ===========================================================================
 # MAIN CALCULATION
 # ===========================================================================
 
@@ -1016,13 +1041,28 @@ def calculate_taxes(inp: TaxInput) -> dict:
 
     # ── 8. Canada Workers Benefit ────────────────────────────────────────────
     num_children_with = inp.child_counts.get(f"party{inp.party_num}", 0)
-    cwb = calculate_cwb(
-        total_income            = total_income,
-        taxable_income          = taxable_income,
-        num_children_with_party = num_children_with,
-        has_disability          = has_disability,
-        c                       = c,
-    )
+    if province == "BC":
+        bc_cwb_c = dict(c)
+        bc_cwb_c["CWB_SINGLE_MAX"]   = c["BC_CWB_SINGLE_MAX"]
+        bc_cwb_c["CWB_FAMILY_MAX"]   = c["BC_CWB_FAMILY_MAX"]
+        bc_cwb_c["CWB_SINGLE_THRESHOLD"] = c["BC_CWB_SINGLE_THRESHOLD"]
+        bc_cwb_c["CWB_FAMILY_THRESHOLD"] = c["BC_CWB_FAMILY_THRESHOLD"]
+        cwb = calculate_cwb(
+            total_income            = total_income,
+            taxable_income          = taxable_income,
+            num_children_with_party = num_children_with,
+            has_disability          = has_disability,
+            c                       = bc_cwb_c,
+        )
+        cwb += _bc_cwb_supplement(total_income, taxable_income, num_children_with, c)
+    else:
+        cwb = calculate_cwb(
+            total_income            = total_income,
+            taxable_income          = taxable_income,
+            num_children_with_party = num_children_with,
+            has_disability          = has_disability,
+            c                       = c,
+        )
 
     # ── 9. Provincial child-care credit adjustment ────────────────────────────
     capped_child_care = _child_care_deduction(inp.employed_income, inp.child_care_expenses)
@@ -1086,9 +1126,7 @@ def calculate_taxes(inp: TaxInput) -> dict:
             taxable_income, num_children_for_benefit, is_shared, c,
         )
         prov_sales_tax_credit = 0.0
-        cai = calculate_bc_climate_action(
-            taxable_income, num_children_for_benefit, c,
-        )
+        cai = 0.0
     else:
         prov_child_benefit    = calculate_ocb(taxable_income, party_children, inp.year, c)
         prov_sales_tax_credit = calculate_ostc(taxable_income, party_children, inp.year, c)
