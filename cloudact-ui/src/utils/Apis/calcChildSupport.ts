@@ -19,6 +19,7 @@ type childSupportResponse = {
 
 const childSupportDetails = async (data: childSupportParams) => {
   try {
+    console.log(`[childSupportDetails] province=${data.province}, income=${data.incomeOver}, children=${data.numChildren}`);
     const res = await axios.get<childSupportResponse>(
       `/calc-ref/${data.incomeOver}/${data.numChildren}/${data.province}`
     );

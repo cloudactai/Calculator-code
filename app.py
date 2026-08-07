@@ -123,6 +123,7 @@ def calculate():
         p2_province = data.get("party2_province") or "ON"
         if "party1_province" not in data or "party2_province" not in data:
             app.logger.warning("Province missing from /calculate request — defaulting to ON")
+        print(f"[/calculate] province received: party1={p1_province}, party2={p2_province}")
 
         if not children:
             return jsonify({"error": "At least one child is required."})
@@ -145,6 +146,10 @@ def calculate():
         type_of_splitting = determine_type_of_splitting(child_counts, minor_total)
 
         # Run calculator
+        print(f"[/calculate] calling calculate_child_support("
+              f"party1_income={p1_income}, party2_income={p2_income}, "
+              f"party1_province={p1_province!r}, party2_province={p2_province!r}, "
+              f"type_of_splitting={type_of_splitting!r}, children={len(children)})")
         result = calculate_child_support(
             children=children,
             party1_guideline_income=p1_income,
@@ -453,6 +458,10 @@ def run_calc_tool(tool_input):
     province = tool_input.get("province") or "ON"
     if "province" not in tool_input:
         app.logger.warning("Province missing from chat tool call — defaulting to ON")
+    print(f"[chat tool] province received: {province!r}")
+    print(f"[chat tool] calling calculate_child_support("
+          f"party1_income={tool_input['party1_income']}, party2_income={tool_input['party2_income']}, "
+          f"province={province!r}, type_of_splitting={type_of_splitting!r}, children={len(children)})")
     result = calculate_child_support(
         children=children,
         party1_guideline_income=float(tool_input["party1_income"]),
@@ -1655,6 +1664,7 @@ def spousal_calculate():
         province          = data.get("province") or "ON"
         if "province" not in data:
             app.logger.warning("Province missing from /spousal-calculate request — defaulting to ON")
+        print(f"[/spousal-calculate] province received: {province!r}")
         year              = int(data.get("year", 2025))
         youngest_child_age = float(data.get("youngest_child_age", 0.0))
 
@@ -1721,6 +1731,13 @@ def spousal_calculate():
             })
 
         # --- Run iterative calculation (computes CS internally if -1) ---
+        print(f"[/spousal-calculate] calling calculate_spousal_support_iterative("
+              f"payor_gross={payor_gross}, recipient_gross={recipient_gross}, "
+              f"payor_age={payor_age}, recipient_age={recipient_age}, "
+              f"years={years}, children={len(tax_children)}, "
+              f"monthly_cs_paid={monthly_cs_paid}, monthly_notional_cs={monthly_notional}, "
+              f"youngest_child_age={youngest_child_age}, province={province!r}, "
+              f"year={year}, payor_is_party1={party1_gross >= party2_gross})")
         result = calculate_spousal_support_iterative(
             payor_gross          = payor_gross,
             recipient_gross      = recipient_gross,
@@ -2044,6 +2061,9 @@ def run_tax_calc_tool(tool_input: dict) -> dict:
     tax_province = tool_input.get("province") or "ON"
     if "province" not in tool_input:
         app.logger.warning("Province missing from tax calculator tool — defaulting to ON")
+    print(f"[tax tool] province received: {tax_province!r}")
+    print(f"[tax tool] calling calculate_taxes(province={tax_province!r}, age={tool_input['age']}, "
+          f"employed_income={tool_input.get('employed_income', 0)})")
     inp = TaxInput(
         party_num=1,
         province=tax_province,
