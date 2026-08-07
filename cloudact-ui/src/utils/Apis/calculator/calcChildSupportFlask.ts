@@ -20,8 +20,8 @@ type ChildSupportFlaskPayload = {
   party2_income: number;
   party1_name: string;
   party2_name: string;
-  party1_province?: string;
-  party2_province?: string;
+  party1_province: string;
+  party2_province: string;
   children: ChildPayload[];
 };
 
