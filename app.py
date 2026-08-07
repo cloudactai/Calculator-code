@@ -119,8 +119,10 @@ def calculate():
         p1_income = float(data["party1_income"])
         p2_income = float(data["party2_income"])
         children  = data.get("children", [])
-        p1_province = data.get("party1_province", "ON")
-        p2_province = data.get("party2_province", "ON")
+        p1_province = data.get("party1_province") or "ON"
+        p2_province = data.get("party2_province") or "ON"
+        if "party1_province" not in data or "party2_province" not in data:
+            app.logger.warning("Province missing from /calculate request — defaulting to ON")
 
         if not children:
             return jsonify({"error": "At least one child is required."})
@@ -215,8 +217,10 @@ by asking the user questions one at a time, then pass everything to the
 calculator tool. Do not do any math yourself — the calculator handles all of that.
 
 Currently supported provinces: Ontario (ON) and British Columbia (BC).
-If the user does not specify a province, default to Ontario (ON).
-When calling the tool, set the "province" field to "ON" or "BC" accordingly.
+You MUST ask the user which province the calculation is for before proceeding.
+Do NOT default to Ontario — the province affects child support table amounts,
+provincial taxes, and benefits. Always set the "province" field to "ON" or "BC"
+based on the user's answer.
 
 ═══════════════════════════════════════════════
 PRE-FILLED MATTER DATA
@@ -446,7 +450,9 @@ def run_calc_tool(tool_input):
     type_of_splitting = determine_type_of_splitting(child_counts, minor_total)
 
     # Step 3: call the calculator and return the result
-    province = tool_input.get("province", "ON")
+    province = tool_input.get("province") or "ON"
+    if "province" not in tool_input:
+        app.logger.warning("Province missing from chat tool call — defaulting to ON")
     result = calculate_child_support(
         children=children,
         party1_guideline_income=float(tool_input["party1_income"]),
@@ -1646,7 +1652,9 @@ def spousal_calculate():
         party1_age        = int(data.get("party1_age", 35))
         recipient_age     = int(data["recipient_age"])
         years             = float(data["years"])
-        province          = data.get("province", "ON")
+        province          = data.get("province") or "ON"
+        if "province" not in data:
+            app.logger.warning("Province missing from /spousal-calculate request — defaulting to ON")
         year              = int(data.get("year", 2025))
         youngest_child_age = float(data.get("youngest_child_age", 0.0))
 
@@ -2033,9 +2041,12 @@ def run_tax_calc_tool(tool_input: dict) -> dict:
         + float(tool_input.get("other_income", 0))
     )
 
+    tax_province = tool_input.get("province") or "ON"
+    if "province" not in tool_input:
+        app.logger.warning("Province missing from tax calculator tool — defaulting to ON")
     inp = TaxInput(
         party_num=1,
-        province="ON",
+        province=tax_province,
         age=int(tool_input["age"]),
         eligible_for_disability=tool_input.get("eligible_for_disability", "No"),
         employed_income=float(tool_input.get("employed_income", 0)),

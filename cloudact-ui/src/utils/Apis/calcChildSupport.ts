@@ -37,10 +37,10 @@ const childSupportDetails = async (data: childSupportParams) => {
       Basic: 0,
       From: 0,
       Income_over: 0,
-      Province: "ON",
+      Province: data.province,
       Rate: 0,
       To: 0,
-      Year: 2021,
+      Year: 2025,
       id: 0,
     };
   }

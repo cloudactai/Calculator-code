@@ -26,11 +26,14 @@ import pytest
 
 from spousal_support import (
     calculate_spousal_support,
+    calculate_spousal_support_iterative,
     _applicable_percentages,
     _duration,
     INDEFINITE_SENTINEL,
     SpousalSupportResult,
+    IterativeResult,
 )
+from tax import ChildInfo as TaxChildInfo
 
 TOLERANCE = 0.01   # dollars
 
@@ -333,6 +336,76 @@ class TestReturnType:
 
 
 # ---------------------------------------------------------------------------
+# With-children formula (iterative, BC Scenario 1)
+# ---------------------------------------------------------------------------
+
+class TestWithChildren:
+    """
+    BC Scenario 1 from the frontend app:
+      Party 1: 45 yrs, BC, employed income $60,000
+      Party 2: 45 yrs, BC, employed income $20,000
+      1 child age 3, lives with Party 2
+      25-year relationship
+    Expected: spousal support $0 (low/mid), $146 (high), indefinite duration.
+    """
+
+    @pytest.fixture()
+    def bc_scenario_1(self):
+        children = [
+            TaxChildInfo(
+                date_of_birth="2022-01-01",
+                custody_arrangement="Party 2",
+                child_has_disability="No",
+            )
+        ]
+        child_counts = {
+            "party1": 0, "party2": 1, "shared": 0,
+            "party1WithAdultChild": 0, "party2WithAdultChild": 0,
+        }
+        return calculate_spousal_support_iterative(
+            payor_gross=60_000,
+            recipient_gross=20_000,
+            payor_age=45,
+            recipient_age=45,
+            years=25,
+            children=children,
+            child_counts=child_counts,
+            youngest_child_age=3,
+            province="BC",
+            year=2025,
+            payor_is_party1=True,
+        )
+
+    def test_monthly_low_zero(self, bc_scenario_1):
+        assert bc_scenario_1.monthly_low == 0
+
+    def test_monthly_mid_zero(self, bc_scenario_1):
+        assert bc_scenario_1.monthly_mid == 0
+
+    def test_monthly_high(self, bc_scenario_1):
+        assert approx(bc_scenario_1.monthly_high, 146.09)
+
+    def test_annual_high(self, bc_scenario_1):
+        assert approx(bc_scenario_1.annual_high, 1753.08)
+
+    def test_duration_indefinite(self, bc_scenario_1):
+        assert bc_scenario_1.duration_low == INDEFINITE_SENTINEL
+        assert bc_scenario_1.duration_high == INDEFINITE_SENTINEL
+
+    def test_child_support_amount(self, bc_scenario_1):
+        assert bc_scenario_1.monthly_cs_paid == 563
+
+    def test_payor_indi_high(self, bc_scenario_1):
+        assert approx(bc_scenario_1.payor_indi_high, 41321.26)
+
+    def test_recipient_indi_high(self, bc_scenario_1):
+        assert approx(bc_scenario_1.recipient_indi_high, 31953.25)
+
+    def test_converges_quickly(self, bc_scenario_1):
+        assert bc_scenario_1.iterations_high <= 10
+
+
+# ---------------------------------------------------------------------------
 # Standalone runner (no pytest required)
 # ---------------------------------------------------------------------------
 
@@ -346,6 +419,7 @@ if __name__ == "__main__":
         TestDurationIntegration,
         TestValidation,
         TestReturnType,
+        TestWithChildren,
     ]
 
     passed = failed = 0
