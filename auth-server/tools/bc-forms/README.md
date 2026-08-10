@@ -34,7 +34,8 @@ The Supreme forms are XFA; pdf-lib cannot fill them and react-pdf shows Adobe's
 "Please wait" placeholder. They are flattened headlessly — no Adobe:
 
 ```
-cd xfa && python3 -m http.server 8899 &          # render.html loads pdf.js from here
+cd xfa && sh fetch_pdfjs.sh                      # vendor pdf.js build; not committed
+python3 -m http.server 8899 &                    # render.html loads pdf.js from here
 node print_xfa.mjs ./sc_out BCSC_F8::srcs/BCSC_F8.pdf [...]
 ```
 

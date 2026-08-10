@@ -1,0 +1,1041 @@
+{
+ "staticFields": [
+  {
+   "id": 1750273336001,
+   "type": "TextField",
+   "x": 437.88,
+   "y": 48.0,
+   "width": 213.3,
+   "height": 28.62,
+   "value": "",
+   "fontSize": 9,
+   "color": [
+    0,
+    0,
+    0
+   ],
+   "background": "none",
+   "border": "none",
+   "page": 1,
+   "bind": "court_info.courtFileNumber"
+  },
+  {
+   "id": 1750273336002,
+   "type": "TextField",
+   "x": 143.76,
+   "y": 79.72,
+   "width": 404.64,
+   "height": 26.46,
+   "value": "",
+   "fontSize": 9,
+   "color": [
+    0,
+    0,
+    0
+   ],
+   "background": "none",
+   "border": "none",
+   "page": 1,
+   "bind": "court_info.courtOfficeAddress"
+  },
+  {
+   "id": 1750273336003,
+   "type": "TextArea",
+   "x": 50.52,
+   "y": 188.64,
+   "width": 385.38,
+   "height": 62.82,
+   "value": "",
+   "fontSize": 9,
+   "color": [
+    0,
+    0,
+    0
+   ],
+   "background": "none",
+   "border": "none",
+   "page": 1,
+   "bind": "applicant.fullLegalName,applicant.address,applicant.municipality,applicant.phoneAndFax,applicant.email"
+  },
+  {
+   "id": 1750273336004,
+   "type": "TextArea",
+   "x": 322.8,
+   "y": 188.64,
+   "width": 385.2,
+   "height": 62.82,
+   "value": "",
+   "fontSize": 9,
+   "color": [
+    0,
+    0,
+    0
+   ],
+   "background": "none",
+   "border": "none",
+   "page": 1,
+   "bind": "applicantsLawyer.fullLegalName,applicantsLawyer.address,applicantsLawyer.municipality,applicantsLawyer.phoneAndFax,applicantsLawyer.email"
+  },
+  {
+   "id": 1750273336005,
+   "type": "TextArea",
+   "x": 50.52,
+   "y": 285.48,
+   "width": 385.38,
+   "height": 63.0,
+   "value": "",
+   "fontSize": 9,
+   "color": [
+    0,
+    0,
+    0
+   ],
+   "background": "none",
+   "border": "none",
+   "page": 1,
+   "bind": "respondent.fullLegalName,respondent.address,respondent.municipality,respondent.phoneAndFax,respondent.email"
+  },
+  {
+   "id": 1750273336006,
+   "type": "TextArea",
+   "x": 322.8,
+   "y": 285.48,
+   "width": 385.2,
+   "height": 63.0,
+   "value": "",
+   "fontSize": 9,
+   "color": [
+    0,
+    0,
+    0
+   ],
+   "background": "none",
+   "border": "none",
+   "page": 1,
+   "bind": "respondentsLawyer.fullLegalName,respondentsLawyer.address,respondentsLawyer.municipality,respondentsLawyer.phoneAndFax,respondentsLawyer.email"
+  },
+  {
+   "id": 1750273336007,
+   "type": "TextArea",
+   "x": 50.52,
+   "y": 372.12,
+   "width": 793.62,
+   "height": 62.82,
+   "value": "",
+   "fontSize": 9,
+   "color": [
+    0,
+    0,
+    0
+   ],
+   "background": "none",
+   "border": "none",
+   "page": 1
+  },
+  {
+   "id": 1750273336008,
+   "type": "TextField",
+   "x": 215.76,
+   "y": 479.92,
+   "width": 279.72,
+   "height": 26.46,
+   "value": "",
+   "fontSize": 9,
+   "color": [
+    0,
+    0,
+    0
+   ],
+   "background": "none",
+   "border": "none",
+   "page": 1
+  },
+  {
+   "id": 1750273336009,
+   "type": "TextField",
+   "x": 424.08,
+   "y": 479.92,
+   "width": 94.86,
+   "height": 26.46,
+   "value": "",
+   "fontSize": 9,
+   "color": [
+    0,
+    0,
+    0
+   ],
+   "background": "none",
+   "border": "none",
+   "page": 1
+  },
+  {
+   "id": 1750273336010,
+   "type": "CheckBox",
+   "x": 152.4,
+   "y": 695.16,
+   "width": 14.94,
+   "height": 14.94,
+   "value": "",
+   "fontSize": 9,
+   "color": [
+    0,
+    0,
+    0
+   ],
+   "background": "none",
+   "border": "none",
+   "page": 1
+  },
+  {
+   "id": 1750273336011,
+   "type": "TextField",
+   "x": 143.69,
+   "y": 44.76,
+   "width": 403.56,
+   "height": 34.59,
+   "value": "",
+   "fontSize": 9,
+   "color": [
+    0,
+    0,
+    0
+   ],
+   "background": "none",
+   "border": "none",
+   "page": 1,
+   "bind": "court_info.courtName"
+  },
+  {
+   "id": 1750273336012,
+   "type": "CheckBox",
+   "x": 489.6,
+   "y": 483.69,
+   "width": 18.2,
+   "height": 18.2,
+   "value": "",
+   "fontSize": 9,
+   "color": [
+    0,
+    0,
+    0
+   ],
+   "background": "none",
+   "border": "none",
+   "page": 1
+  },
+  {
+   "id": 1750273336013,
+   "type": "CheckBox",
+   "x": 538.09,
+   "y": 483.69,
+   "width": 18.2,
+   "height": 18.2,
+   "value": "",
+   "fontSize": 9,
+   "color": [
+    0,
+    0,
+    0
+   ],
+   "background": "none",
+   "border": "none",
+   "page": 1
+  },
+  {
+   "id": 1750273336014,
+   "type": "TextArea",
+   "x": 51.44,
+   "y": 516.21,
+   "width": 791.17,
+   "height": 55.88,
+   "value": "",
+   "fontSize": 9,
+   "color": [
+    0,
+    0,
+    0
+   ],
+   "background": "none",
+   "border": "none",
+   "page": 1
+  },
+  {
+   "id": 1750273336015,
+   "type": "TextField",
+   "x": 49.08,
+   "y": 301.8,
+   "width": 365.4,
+   "height": 43.2,
+   "value": "",
+   "fontSize": 9,
+   "color": [
+    0,
+    0,
+    0
+   ],
+   "background": "none",
+   "border": "none",
+   "page": 2
+  },
+  {
+   "id": 1750273336016,
+   "type": "TextField",
+   "x": 437.88,
+   "y": 37.68,
+   "width": 213.3,
+   "height": 36.6,
+   "value": "",
+   "fontSize": 9,
+   "color": [
+    0,
+    0,
+    0
+   ],
+   "background": "none",
+   "border": "none",
+   "page": 2,
+   "bind": "court_info.courtFileNumber"
+  },
+  {
+   "id": 1750273336017,
+   "type": "TextField",
+   "x": 49.92,
+   "y": 145.56,
+   "width": 167.04,
+   "height": 25.92,
+   "value": "",
+   "fontSize": 9,
+   "color": [
+    0,
+    0,
+    0
+   ],
+   "background": "none",
+   "border": "none",
+   "page": 3
+  },
+  {
+   "id": 1750273336018,
+   "type": "TextField",
+   "x": 162.84,
+   "y": 145.56,
+   "width": 78.66,
+   "height": 25.92,
+   "value": "",
+   "fontSize": 9,
+   "color": [
+    0,
+    0,
+    0
+   ],
+   "background": "none",
+   "border": "none",
+   "page": 3
+  },
+  {
+   "id": 1750273336019,
+   "type": "TextField",
+   "x": 216.84,
+   "y": 145.56,
+   "width": 48.24,
+   "height": 25.92,
+   "value": "",
+   "fontSize": 9,
+   "color": [
+    0,
+    0,
+    0
+   ],
+   "background": "none",
+   "border": "none",
+   "page": 3
+  },
+  {
+   "id": 1750273336020,
+   "type": "TextField",
+   "x": 250.56,
+   "y": 145.56,
+   "width": 36.18,
+   "height": 25.92,
+   "value": "",
+   "fontSize": 9,
+   "color": [
+    0,
+    0,
+    0
+   ],
+   "background": "none",
+   "border": "none",
+   "page": 3
+  },
+  {
+   "id": 1750273336021,
+   "type": "TextField",
+   "x": 276.24,
+   "y": 145.56,
+   "width": 119.88,
+   "height": 25.92,
+   "value": "",
+   "fontSize": 9,
+   "color": [
+    0,
+    0,
+    0
+   ],
+   "background": "none",
+   "border": "none",
+   "page": 3
+  },
+  {
+   "id": 1750273336022,
+   "type": "TextField",
+   "x": 357.72,
+   "y": 145.56,
+   "width": 119.88,
+   "height": 25.92,
+   "value": "",
+   "fontSize": 9,
+   "color": [
+    0,
+    0,
+    0
+   ],
+   "background": "none",
+   "border": "none",
+   "page": 3
+  },
+  {
+   "id": 1750273336023,
+   "type": "TextField",
+   "x": 439.2,
+   "y": 145.56,
+   "width": 73.8,
+   "height": 25.92,
+   "value": "",
+   "fontSize": 9,
+   "color": [
+    0,
+    0,
+    0
+   ],
+   "background": "none",
+   "border": "none",
+   "page": 3
+  },
+  {
+   "id": 1750273336024,
+   "type": "TextField",
+   "x": 489.96,
+   "y": 145.56,
+   "width": 136.8,
+   "height": 25.92,
+   "value": "",
+   "fontSize": 9,
+   "color": [
+    0,
+    0,
+    0
+   ],
+   "background": "none",
+   "border": "none",
+   "page": 3
+  },
+  {
+   "id": 1750273336025,
+   "type": "TextField",
+   "x": 108.72,
+   "y": 188.44,
+   "width": 394.38,
+   "height": 26.1,
+   "value": "",
+   "fontSize": 9,
+   "color": [
+    0,
+    0,
+    0
+   ],
+   "background": "none",
+   "border": "none",
+   "page": 3
+  },
+  {
+   "id": 1750273336026,
+   "type": "TextField",
+   "x": 284.64,
+   "y": 170.08,
+   "width": 446.4,
+   "height": 26.64,
+   "value": "",
+   "fontSize": 9,
+   "color": [
+    0,
+    0,
+    0
+   ],
+   "background": "none",
+   "border": "none",
+   "page": 3
+  },
+  {
+   "id": 1750273336027,
+   "type": "TextField",
+   "x": 359.76,
+   "y": 206.68,
+   "width": 333.72,
+   "height": 26.64,
+   "value": "",
+   "fontSize": 9,
+   "color": [
+    0,
+    0,
+    0
+   ],
+   "background": "none",
+   "border": "none",
+   "page": 3
+  },
+  {
+   "id": 1750273336028,
+   "type": "CheckBox",
+   "x": 75.6,
+   "y": 212.64,
+   "width": 14.94,
+   "height": 14.94,
+   "value": "",
+   "fontSize": 9,
+   "color": [
+    0,
+    0,
+    0
+   ],
+   "background": "none",
+   "border": "none",
+   "page": 3
+  },
+  {
+   "id": 1750273336029,
+   "type": "CheckBox",
+   "x": 75.6,
+   "y": 248.64,
+   "width": 14.94,
+   "height": 14.94,
+   "value": "",
+   "fontSize": 9,
+   "color": [
+    0,
+    0,
+    0
+   ],
+   "background": "none",
+   "border": "none",
+   "page": 3
+  },
+  {
+   "id": 1750273336030,
+   "type": "CheckBox",
+   "x": 75.6,
+   "y": 332.16,
+   "width": 14.94,
+   "height": 14.94,
+   "value": "",
+   "fontSize": 9,
+   "color": [
+    0,
+    0,
+    0
+   ],
+   "background": "none",
+   "border": "none",
+   "page": 3
+  },
+  {
+   "id": 1750273336031,
+   "type": "CheckBox",
+   "x": 75.6,
+   "y": 364.08,
+   "width": 14.94,
+   "height": 14.94,
+   "value": "",
+   "fontSize": 9,
+   "color": [
+    0,
+    0,
+    0
+   ],
+   "background": "none",
+   "border": "none",
+   "page": 3
+  },
+  {
+   "id": 1750273336032,
+   "type": "CheckBox",
+   "x": 75.6,
+   "y": 429.36,
+   "width": 14.94,
+   "height": 14.94,
+   "value": "",
+   "fontSize": 9,
+   "color": [
+    0,
+    0,
+    0
+   ],
+   "background": "none",
+   "border": "none",
+   "page": 3
+  },
+  {
+   "id": 1750273336033,
+   "type": "CheckBox",
+   "x": 75.6,
+   "y": 551.52,
+   "width": 14.94,
+   "height": 14.94,
+   "value": "",
+   "fontSize": 9,
+   "color": [
+    0,
+    0,
+    0
+   ],
+   "background": "none",
+   "border": "none",
+   "page": 3
+  },
+  {
+   "id": 1750273336034,
+   "type": "CheckBox",
+   "x": 75.6,
+   "y": 632.52,
+   "width": 14.94,
+   "height": 14.94,
+   "value": "",
+   "fontSize": 9,
+   "color": [
+    0,
+    0,
+    0
+   ],
+   "background": "none",
+   "border": "none",
+   "page": 3
+  },
+  {
+   "id": 1750273336035,
+   "type": "CheckBox",
+   "x": 75.6,
+   "y": 668.52,
+   "width": 14.94,
+   "height": 14.94,
+   "value": "",
+   "fontSize": 9,
+   "color": [
+    0,
+    0,
+    0
+   ],
+   "background": "none",
+   "border": "none",
+   "page": 3
+  },
+  {
+   "id": 1750273336036,
+   "type": "CheckBox",
+   "x": 75.6,
+   "y": 685.92,
+   "width": 14.94,
+   "height": 14.94,
+   "value": "",
+   "fontSize": 9,
+   "color": [
+    0,
+    0,
+    0
+   ],
+   "background": "none",
+   "border": "none",
+   "page": 3
+  },
+  {
+   "id": 1750273336037,
+   "type": "TextField",
+   "x": 305.76,
+   "y": 242.68,
+   "width": 414.72,
+   "height": 26.64,
+   "value": "",
+   "fontSize": 9,
+   "color": [
+    0,
+    0,
+    0
+   ],
+   "background": "none",
+   "border": "none",
+   "page": 3
+  },
+  {
+   "id": 1750273336038,
+   "type": "TextField",
+   "x": 92.68,
+   "y": 278.08,
+   "width": 732.68,
+   "height": 26.64,
+   "value": "",
+   "fontSize": 9,
+   "color": [
+    0,
+    0,
+    0
+   ],
+   "background": "none",
+   "border": "none",
+   "page": 3
+  },
+  {
+   "id": 1750273336039,
+   "type": "TextField",
+   "x": 160.44,
+   "y": 296.44,
+   "width": 152.82,
+   "height": 23.4,
+   "value": "",
+   "fontSize": 9,
+   "color": [
+    0,
+    0,
+    0
+   ],
+   "background": "none",
+   "border": "none",
+   "page": 3
+  },
+  {
+   "id": 1750273336040,
+   "type": "TextField",
+   "x": 187.92,
+   "y": 425.77,
+   "width": 405.72,
+   "height": 23.09,
+   "value": "",
+   "fontSize": 9,
+   "color": [
+    0,
+    0,
+    0
+   ],
+   "background": "none",
+   "border": "none",
+   "page": 3
+  },
+  {
+   "id": 1750273336041,
+   "type": "TextField",
+   "x": 91.56,
+   "y": 458.92,
+   "width": 416.7,
+   "height": 26.64,
+   "value": "",
+   "fontSize": 9,
+   "color": [
+    0,
+    0,
+    0
+   ],
+   "background": "none",
+   "border": "none",
+   "page": 3
+  },
+  {
+   "id": 1750273336042,
+   "type": "TextField",
+   "x": 279.72,
+   "y": 626.56,
+   "width": 296.46,
+   "height": 26.64,
+   "value": "",
+   "fontSize": 9,
+   "color": [
+    0,
+    0,
+    0
+   ],
+   "background": "none",
+   "border": "none",
+   "page": 3
+  },
+  {
+   "id": 1750273336043,
+   "type": "TextField",
+   "x": 438.88,
+   "y": 38.27,
+   "width": 213.3,
+   "height": 35.71,
+   "value": "",
+   "fontSize": 9,
+   "color": [
+    0,
+    0,
+    0
+   ],
+   "background": "none",
+   "border": "none",
+   "page": 3,
+   "bind": "court_info.courtFileNumber"
+  },
+  {
+   "id": 1750273336044,
+   "type": "TextField",
+   "x": 91.65,
+   "y": 342.0,
+   "width": 737.06,
+   "height": 25.72,
+   "value": "",
+   "fontSize": 9,
+   "color": [
+    0,
+    0,
+    0
+   ],
+   "background": "none",
+   "border": "none",
+   "page": 3
+  },
+  {
+   "id": 1750273336045,
+   "type": "TextArea",
+   "x": 93.43,
+   "y": 376.07,
+   "width": 732.63,
+   "height": 71.84,
+   "value": "",
+   "fontSize": 9,
+   "color": [
+    0,
+    0,
+    0
+   ],
+   "background": "none",
+   "border": "none",
+   "page": 3
+  },
+  {
+   "id": 1750273336046,
+   "type": "TextArea",
+   "x": 91.06,
+   "y": 480.73,
+   "width": 735.29,
+   "height": 102.89,
+   "value": "",
+   "fontSize": 9,
+   "color": [
+    0,
+    0,
+    0
+   ],
+   "background": "none",
+   "border": "none",
+   "page": 3
+  },
+  {
+   "id": 1750273336047,
+   "type": "TextArea",
+   "x": 94.02,
+   "y": 580.07,
+   "width": 732.63,
+   "height": 67.41,
+   "value": "",
+   "fontSize": 9,
+   "color": [
+    0,
+    0,
+    0
+   ],
+   "background": "none",
+   "border": "none",
+   "page": 3
+  },
+  {
+   "id": 1750273336048,
+   "type": "TextField",
+   "x": 91.65,
+   "y": 646.89,
+   "width": 736.17,
+   "height": 22.17,
+   "value": "",
+   "fontSize": 9,
+   "color": [
+    0,
+    0,
+    0
+   ],
+   "background": "none",
+   "border": "none",
+   "page": 3
+  },
+  {
+   "id": 1750273336049,
+   "type": "TextArea",
+   "x": 94.02,
+   "y": 699.51,
+   "width": 732.63,
+   "height": 84.26,
+   "value": "",
+   "fontSize": 9,
+   "color": [
+    0,
+    0,
+    0
+   ],
+   "background": "none",
+   "border": "none",
+   "page": 3
+  },
+  {
+   "id": 1750273336050,
+   "type": "TextField",
+   "x": 49.08,
+   "y": 664.08,
+   "width": 365.04,
+   "height": 43.2,
+   "value": "",
+   "fontSize": 9,
+   "color": [
+    0,
+    0,
+    0
+   ],
+   "background": "none",
+   "border": "none",
+   "page": 4
+  },
+  {
+   "id": 1750273336051,
+   "type": "TextField",
+   "x": 338.28,
+   "y": 664.08,
+   "width": 365.58,
+   "height": 43.2,
+   "value": "",
+   "fontSize": 9,
+   "color": [
+    0,
+    0,
+    0
+   ],
+   "background": "none",
+   "border": "none",
+   "page": 4
+  },
+  {
+   "id": 1750273336052,
+   "type": "TextField",
+   "x": 437.88,
+   "y": 36.5,
+   "width": 215.07,
+   "height": 38.38,
+   "value": "",
+   "fontSize": 9,
+   "color": [
+    0,
+    0,
+    0
+   ],
+   "background": "none",
+   "border": "none",
+   "page": 4,
+   "bind": "court_info.courtFileNumber"
+  },
+  {
+   "id": 1750273336053,
+   "type": "TextArea",
+   "x": 74.5,
+   "y": 114.12,
+   "width": 761.01,
+   "height": 314.87,
+   "value": "",
+   "fontSize": 9,
+   "color": [
+    0,
+    0,
+    0
+   ],
+   "background": "none",
+   "border": "none",
+   "page": 4
+  },
+  {
+   "id": 1750273336054,
+   "type": "TextArea",
+   "x": 74.5,
+   "y": 366.02,
+   "width": 761.89,
+   "height": 338.82,
+   "value": "",
+   "fontSize": 9,
+   "color": [
+    0,
+    0,
+    0
+   ],
+   "background": "none",
+   "border": "none",
+   "page": 4
+  },
+  {
+   "id": 1750273336055,
+   "type": "TextField",
+   "x": 49.67,
+   "y": 616.73,
+   "width": 364.54,
+   "height": 42.57,
+   "value": "",
+   "fontSize": 9,
+   "color": [
+    0,
+    0,
+    0
+   ],
+   "background": "none",
+   "border": "none",
+   "page": 4
+  },
+  {
+   "id": 1750273336056,
+   "type": "TextArea",
+   "x": 50.52,
+   "y": 123.6,
+   "width": 795.06,
+   "height": 899.53,
+   "value": "",
+   "fontSize": 9,
+   "color": [
+    0,
+    0,
+    0
+   ],
+   "background": "none",
+   "border": "none",
+   "page": 5
+  },
+  {
+   "id": 1750273336057,
+   "type": "TextField",
+   "x": 437.88,
+   "y": 35.9,
+   "width": 216.85,
+   "height": 39.26,
+   "value": "",
+   "fontSize": 9,
+   "color": [
+    0,
+    0,
+    0
+   ],
+   "background": "none",
+   "border": "none",
+   "page": 5,
+   "bind": "court_info.courtFileNumber"
+  }
+ ]
+}

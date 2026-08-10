@@ -50,17 +50,23 @@ def signature_captions(page):
     return out
 
 
-def is_signature_box(rect, widget_name, captions):
+def is_signature_box(rect, widget_name, captions, max_height=SIG_MAX_HEIGHT):
     """A short box sitting directly above a printed 'Signature...' caption.
 
     Deliberately geometric only. BC names the *print name* boxes beside a signature
     line things like "name of signature 1", so a name-based rule would strip the
     very fields a lawyer has to type into.
+
+    `max_height` is the "short box" cutoff. Ontario's XFA forms allocate a taller
+    panel over the same single signature rule, so that path raises it.
     """
-    if rect.height >= SIG_MAX_HEIGHT:
+    if rect.height >= max_height:
         return False
     for caption in captions:
-        below = 0 <= caption.y0 - rect.y1 <= 24  # caption printed under the box
+        # Caption printed under the box. The small negative tolerance is for a box
+        # whose bottom edge lands a fraction of a point *inside* the caption's own
+        # line box (Ontario's XFA panels sit exactly on the rule they are captioned by).
+        below = -2 <= caption.y0 - rect.y1 <= 24
         overlapping_x = rect.x1 > caption.x0 - 12 and rect.x0 < caption.x1 + 12
         if below and overlapping_x:
             return True
@@ -74,9 +80,14 @@ def new_id(doc_id, index):
 
 
 def extract(source_path, doc_id):
-    """Return (overlay fields, per-form audit) for an AcroForm source PDF."""
+    """Return (overlay fields, per-form audit) for an AcroForm source PDF.
+
+    The audit carries `widgetNames`, positionally aligned with `fields`, so a
+    caller can bind by the government's own field name without re-walking the
+    widgets under a slightly different set of filters (see tools/on-forms).
+    """
     doc = fitz.open(source_path)
-    fields, skipped_signatures = [], []
+    fields, skipped_signatures, widget_names = [], [], []
     index = 0
     for page_number, page in enumerate(doc, start=1):
         captions = signature_captions(page)
@@ -93,6 +104,7 @@ def extract(source_path, doc_id):
                 skipped_signatures.append({"page": page_number, "name": name, "why": "signature"})
                 continue
             index += 1
+            widget_names.append(name)
             fields.append({
                 "id": new_id(doc_id, index),
                 "type": kind,
@@ -115,6 +127,7 @@ def extract(source_path, doc_id):
         "textAreas": sum(1 for f in fields if f["type"] == "TextArea"),
         "signaturesSkipped": len(skipped_signatures),
         "signatureDetail": skipped_signatures,
+        "widgetNames": widget_names,
         "pageSizes": [[round(p.rect.width, 1), round(p.rect.height, 1)] for p in doc],
     }
     doc.close()

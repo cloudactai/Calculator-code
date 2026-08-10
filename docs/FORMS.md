@@ -175,7 +175,9 @@ This is the most likely source of confusion for anyone new to the file:
   lets the user tweak/save. The forms are **image-based PDFs** with an overlay coordinate
   convention; the mapping is produced by a server-side extract-from-AcroForm / vector
   pipeline. (See the project's forms-migration and prefill-plan notes for the full
-  mapping pipeline and per-form status — all 45 forms have been migrated.)
+  mapping pipeline and per-form status — 135 of Ontario's 140 published forms are
+  catalogued, plus the BC set; the Ontario build tooling is in
+  `auth-server/tools/on-forms/`.)
 
 If you're adding a form or fixing a field position, the fix almost always belongs in the
 **template/mapping on the backend**, not in this React code.

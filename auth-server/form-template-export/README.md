@@ -1,9 +1,15 @@
-# Ontario Forms template export
+# Forms template export
 
-This folder was generated from `cloud-act-api-master` and
-`cloudact-frontend-main`. It contains the 25 catalogued Ontario templates for
-which both a PDF and JSON field map exist. The importer intentionally excludes
-forms without a PDF; see `audit.json` for the full list.
+Every shipped court-form template: a background PDF plus the JSON field map the
+editor overlays on it. `catalog.json` is the picker's index and `audit.json` the
+per-template field count.
+
+The first 25 Ontario templates came from `cloud-act-api-master` and
+`cloudact-frontend-main`; everything since is built from the government sites by
+the pipelines in `auth-server/tools/` — `on-forms/` for Ontario (135 of the 140
+published family-law forms), `bc-forms/` for British Columbia (43). Both write
+their staging to gitignored `_incoming*/` directories; only the promoted
+templates live here.
 
 Validate without a database:
 
