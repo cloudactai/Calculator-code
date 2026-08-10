@@ -32,7 +32,7 @@ Gates, all green:
 
 ```
 python3 refit_on_fields.py       # 0 changes — the pass is a fixed point
-python3 check_seating.py         # 16 findings, all reviewed (see §4)
+python3 check_seating.py         # 15 findings, all reviewed (see §3)
 python3 verify_on_forms.py       # all checks passed
 python3 audit_on_forms.py --all  # 0 of 135 flagged
 npm run forms:validate-export && npm test
@@ -40,9 +40,9 @@ npm run forms:validate-export && npm test
 
 ## 2. What the refit did
 
-`refit_on_fields.py`, over the 90 docIds in `on_scope.NEW_DOCIDS` only.
-**2993 fields re-seated, 41 strays dropped.** 2925 of the 3041 TextFields now sit
-at exactly the approved 13.3 pt (was 0).
+`refit_on_fields.py`, over the 90 docIds in `on_scope.NEW_DOCIDS` only, after
+`place_open_blanks.py`. **About 3000 fields re-seated and 46 strays dropped**, and
+2924 of the 3041 TextFields now sit at exactly the approved 13.3 pt (was 0).
 
 ### Defect 1 — boxes far taller than the line, text floats
 
@@ -92,7 +92,37 @@ truth, with three constraints that each came out of a render:
 
 A box with no rule, no cell, no shading and no ink near it is dropped: that is the
 Word export's padding, not a blank. A box that would land on a signature line is
-dropped (guide §5).
+dropped (guide §5), and so is one seated on a heavy section divider — though only
+when it is a single line, since a table's closing border is heavy too and Form 13C's
+totals row sits on exactly that.
+
+### The blanks with no rule at all — `place_open_blanks.py`
+
+Some answer areas are not a rule and not a cell. The page prints a question ending in
+a colon and then leaves paper, so there is nothing to measure against and the golden
+rule left them with **no box at all** — including Form 43's "Provide a brief summary
+of why you believe a binding judicial dispute resolution hearing would be an
+effective way to resolve the issues". A lawyer could not type in any of them.
+
+`place_open_blanks.py` places **27** of these, using the anchors the placement guide
+§6 already names: the top is the last line of the caption (including a bracketed hint
+that may wrap over two lines), the bottom is whatever prints next, and the column
+comes from a box the form already has, so the new area lines up with the page. It
+adds fields, so it is deliberately a separate tool from the refit, which asserts the
+field set never changes — a tool guarding that cannot be the one that changes it
+(guide §7.8). **Run it before the refit.**
+
+Three things it must not mistake for a question, each found by looking at what it
+produced:
+
+- **A numbered sub-clause is not a hint.** "(b) that this form may be filed with the
+  court…" opens with a bracket like a hint but closes it immediately and runs on as
+  prose; treating it as one swallowed two clauses of Form 33D under a box.
+- **A margin label is not a caption.** Form 33D sets "WE AGREE:" in the margin
+  against the clauses it introduces — what it labels is beside it, not beneath it.
+  A bracketed hint to the right is fine, which is the same distinction again.
+- **A table label is not a question.** "TOTAL 5:" ends in a colon; a real question is
+  a sentence, and its answer area has no column separator running through it.
 
 ## 3. What is left — review
 
@@ -132,31 +162,30 @@ also be the one that changes it (guide §7.8).
   Specify.)" have no box for the specify.
 - **Form 33B.1** p3 item 8 and **Form 43B** p3 item 8 — the child table has boxes in
   only one of its columns.
-- **Numbered questions on the Word-sourced forms whose answer is bare white space
-  have no box at all.** This is the largest gap by count and it is systematic, not
-  accidental: Form 43 items 3 and 6; Form 43A items 4 and 5; Form 43B items 9, 10,
-  11, 12, 16, 18, 20, 22 and 25; Form 43C items 5 to 9; Form 34H p2 item 4 and p3
-  items 5 to 7; Form 34G.1 p3 twice. The government page prints a caption, then
-  empty paper — no rule, no shading, no cell — so the golden rule ("never guess")
-  left them empty, and `README.md` records that as a decision. It is worth
-  revisiting, because a lawyer cannot type in any of them. The anchor the placement
-  guide §6 suggests is available on every one: a caption ending in `:` with an empty
-  band under it, closed at the bottom by whatever prints next.
 
-### The 63 open `check_seating.py` findings
+### The 15 open `check_seating.py` findings
 
-- **`mixed-column` ×48** — a column of three or more stacked table cells that is
-  not all one shape, so one cell in the table draws differently from the rest
-  (placement guide §8). It follows the government's own multiline flags, so it may
-  well be intentional — "Court location" as one line beside "Court orders made" as
-  a block is reasonable. Reported rather than normalised, because the guide says
-  normalise *per table* to the local majority, and that is a judgement call on each
-  table rather than something to apply across 48 columns unseen. Heaviest:
-  Form 35.1 (5), Form 25D (3), Form 25B, Form 32C (2 each).
-- **`no-anchor` ×15** — a government widget sitting in open white space with no
-  rule, cell or caption on its own line. Spot-checked several (Form 8C p2, Form 43B
-  p4–5) and they are correctly placed; reported so a person confirms rather than
-  assumes.
+All 15 are **`no-anchor`**: a government widget sitting in open white space with no
+rule, cell or caption on its own line. Spot-checked several (Form 8C p2, Form 43B
+p4–5) and they are correctly placed; they are reported so a person confirms rather
+than assumes.
+
+### Table columns that mix shapes
+
+A column of table cells is now one shape throughout. Only **two** columns in the
+whole batch genuinely mixed `TextField` and `TextArea` (Form 33E and Form 33F, one
+odd cell each), and both are normalised to the column's majority — the placement
+guide's §8 rule, applied per table rather than globally.
+
+An earlier count of "48 mixed columns" was wrong, and worth remembering why: it
+grouped cells by their left edge alone, which lumps a party panel together with the
+"RE:" line beneath it. A column of table cells shares its left edge **and** its
+width, and its members follow each other down the page without a real gap.
+`page_geom.column_runs()` is that definition, and `check_seating.py` uses it.
+
+Where a table's *rows* mix shapes — "Court location" as a line beside "Court orders
+made" as a block, on Form 35.1 — that is the government's own multiline flag saying
+the two columns hold different things, and it is left alone.
 
 ### One inconsistency to settle
 
@@ -234,6 +263,7 @@ aborts if any approved file changed.
 cd auth-server/tools/on-forms
 python3 build_on_forms.py            # dry; --promote writes into form-template-export/
 python3 merge_on_catalog.py          # dry; --promote rewrites catalog.json + audit.json
+python3 place_open_blanks.py --apply # box the answer areas that have no rule
 python3 refit_on_fields.py --apply   # seat the boxes on the printed page
 python3 check_seating.py
 python3 verify_on_forms.py

@@ -171,10 +171,41 @@ def refit_form(doc_id, export, notes, data=None, pages=None):
             f["height"] = round((G.box(f)[3] - cap - 1.0) * SCALE, 2)
             f["y"] = round(cap + 1.0, 2)
 
-        rule = G.seat_rule(f, pg["rules"], below=SEAT_BELOW,
+        # A heavy rule that divides the form into sections is not something to sit a
+        # box on, so it is not a candidate at all. Ontario's writing lines are 0.5 pt;
+        # a divider is a solid bar or a 2.25 pt stroke. Only the inferred sources ever
+        # put a box on one — an AcroForm form's widgets are the government's own — and
+        # excluding it here is what lets a writing area closed by a divider stay a
+        # writing area (Form 43B item 28) while a one-line stray on the same bar still
+        # falls through to the stray rule below (Form 43A, 34H).
+        candidates = pg["rules"]
+        if inferred:
+            candidates = [r for r in candidates if not G.on_dark_bar(r, pg["bars"])]
+        rule = G.seat_rule(f, candidates, below=SEAT_BELOW,
                            prefer="leftmost" if inferred else "overlap")
         cell = G.enclosing_cell(f, pg["rules"], pg["vlines"])
         anchors[id(f)] = (pg, rule, cell)
+
+    # --- one column of a table is one shape ------------------------------------
+    # The app draws TextField and TextArea differently, so a single odd cell in a
+    # column reads as a mistake even when the government's flag put it there
+    # (placement guide §8: normalise per table, to whichever the majority already
+    # is — not globally, since a column of dates is legitimately single-line).
+    # Only a lone dissenter is overruled; a column that is genuinely split is left
+    # alone and reported.
+    forced = {}
+    for run in G.column_runs(fields):
+        kinds = collections.Counter(f["type"] for f in run)
+        if len(kinds) != 2:
+            continue
+        (major, _n), (minor, m) = kinds.most_common()
+        if m != 1:
+            continue
+        for f in run:
+            if f["type"] == minor:
+                forced[id(f)] = major
+                notes.append((doc_id, f["page"],
+                              f"one {minor} in a column of {major}; normalised"))
 
     # --- flat sources: share a rule fairly rather than each taking all of it ---
     share, keep_width = {}, set()
@@ -213,11 +244,6 @@ def refit_form(doc_id, export, notes, data=None, pages=None):
         # and Form 13C's totals row sits on exactly that — so the test is not the
         # rule alone: a real blank has its caption, its `$`, or *something* printed
         # on its own line. A divider has an empty band above it.
-        if (inferred and rule and G.on_dark_bar(rule, pg["bars"])
-                and not _line_has_ink(f, pg)):
-            dropped += 1
-            continue
-
         # A signature line never gets a box (placement guide §5). Only the inferred
         # sources can put one there — an AcroForm form's widgets are the government's.
         # Test where the field will *land*, not where it currently sprawls: a flat
@@ -233,6 +259,11 @@ def refit_form(doc_id, export, notes, data=None, pages=None):
 
         # A field's shape: the government's multiline flag where we have it (that is
         # what produced TextArea at build time), otherwise the size of the drawn cell.
+        want = forced.get(id(f))
+        if want:
+            # A lone dissenter in a table column takes the column's shape, and the
+            # geometry follows from that below.
+            f["type"] = want
         if acro:
             # The government's own multiline flag produced TextArea at build time, so
             # it is ground truth for shape — but only where the rectangle agrees with
@@ -246,6 +277,8 @@ def refit_form(doc_id, export, notes, data=None, pages=None):
             # rule — a ruled block is still a block, and squashing those to one line
             # would destroy 553 genuine writing areas.
             block = (y1 - y0) >= BLOCK_MIN and (f["type"] == "TextArea" or not rule)
+            if want:
+                block = want == "TextArea"
             if f["type"] == "TextArea" and not block:
                 f["type"] = "TextField"
             elif f["type"] == "TextField" and block:
@@ -267,9 +300,19 @@ def refit_form(doc_id, export, notes, data=None, pages=None):
                 cell = (cell[0], write_top, cell[2], cell[3])
             # Require room for a block *after* the 1 pt inset the fill leaves, so the
             # box this produces still reads as a block to `check_seating.py`.
-            block = bool(cell) and (cell[3] - cell[1]) >= BLOCK_MIN + 2.0
+            in_cell = bool(cell) and (cell[3] - cell[1]) >= BLOCK_MIN + 2.0
+            # A tall box over open paper with no rule under it is a writing area, not
+            # a line — that is what `place_open_blanks.py` puts under a caption, and
+            # calling it a TextField here would flatten every one of them.
+            open_block = not rule and not cell and (y1 - y0) >= BLOCK_MIN
+            block = in_cell or open_block
+            if want:
+                block = want == "TextArea"
             f["type"] = "TextArea" if block else "TextField"
-            if cell and not block:
+            if open_block:
+                kept.append(f)
+                continue
+            if cell and not block and not open_block:
                 # A single line in a cell sits on the cell's own bottom border, and
                 # starts past the caption printed at the head of the cell — Form 13C
                 # sets "Full legal name:", "Address:", "Email:" inside the cell they
@@ -332,8 +375,12 @@ def refit_form(doc_id, export, notes, data=None, pages=None):
             f["height"] = round(STD * SCALE, 2)
             _clear_ink_above(f, pg, doc_id, notes)
         else:
-            # Nothing printed to place it against.
-            if inferred and not _has_context(f, pg):
+            # Nothing printed to place it against. Drop it only if it is a single
+            # line: that is what the Word export's en-space padding produces. A tall
+            # box over open paper is a writing area — either one `place_open_blanks.py`
+            # put under a caption, or a genuine block — and deleting those would undo
+            # that tool every time this one ran.
+            if inferred and (y1 - y0) < BLOCK_MIN and not _has_context(f, pg):
                 dropped += 1
                 continue
             notes.append((doc_id, f["page"],

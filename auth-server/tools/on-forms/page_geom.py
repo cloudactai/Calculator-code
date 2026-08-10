@@ -382,6 +382,38 @@ def enclosing_cell(field, rules, vlines, pad=1.5):
             min(right, key=lambda v: v[0])[0], bot)
 
 
+def column_runs(fields, min_len=3, max_gap=40.0):
+    """Runs of stacked cells that really are one column of one table.
+
+    Sharing a left edge is not enough — a party panel and the "RE:" line below it
+    start at the same x without being a table at all, and grouping on x alone
+    reported 48 "mixed" columns where only two exist. A column of table cells shares
+    its left edge *and* its width, and its members follow each other down the page
+    without a real gap.
+    """
+    buckets = {}
+    for f in fields:
+        if f["type"] not in ("TextField", "TextArea"):
+            continue
+        key = (f["page"], round(f["x"] / 2), round(f["width"] / 6))
+        buckets.setdefault(key, []).append(f)
+    runs = []
+    for members in buckets.values():
+        members.sort(key=lambda f: f["y"])
+        run = [members[0]]
+        for a, b in zip(members, members[1:]):
+            gap = b["y"] - (a["y"] + a["height"] / SCALE)
+            if -2.0 <= gap <= max_gap:
+                run.append(b)
+            else:
+                if len(run) >= min_len:
+                    runs.append(run)
+                run = [b]
+        if len(run) >= min_len:
+            runs.append(run)
+    return runs
+
+
 def load_pages(pdf_path):
     """Per-page geometry, 1-indexed to match `field['page']`."""
     doc = fitz.open(pdf_path)
