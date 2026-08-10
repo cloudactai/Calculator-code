@@ -34,27 +34,54 @@ An overlay box takes its height from the government's AcroForm widget, which is
 routinely 2–3× a printed text line. The editor top-aligns the input, so typed
 text sits well above the printed rule instead of on it.
 
-Measured against a ~13pt line, text fields taller than 1.6 lines:
+### THE RULE, from the user
 
-| set | affected |
+> If it sits on **an underline, it gets the standard-size box.** Otherwise —
+> open white space, a block, several lines — it should be a **text area.**
+
+Both halves matter. Not every box should shrink: a writing block genuinely needs
+to be tall. What is wrong is a *single-line* field on a printed rule being given
+a two- or three-line box.
+
+### The standard size is 13.3 pt — measured, not invented
+
+Taken from the 45 Ontario templates the user reviewed and approved:
+
+| | |
 | --- | --- |
-| the 90 new templates | 1114 of 3837 (29%) |
-| the 45 ON templates shipped before this work | 424 of 3254 (13%) |
-| BC | 389 of 1839 (21%) |
+| fields at exactly 13.3 pt | 2393 of 3254 |
+| `TextField` height | p25 = median = p75 = **13.3 pt** |
+| `TextArea` height | median 40.7 pt (p25 24.5, p75 61.0) |
 
-Worst: Form26C 96%, Form00 90%, Form35_1A 89%, Form29J 88%, Form34E 85%,
-Form22A 78%, Form28 76%, BCSC_F20 76%.
+So the approved set already follows the rule exactly: single line on a rule =
+13.3 pt `TextField`; open block = `TextArea` sized to the space. Match it.
+(13.3 pt is the on-page height; the JSON stores height × 1.5, i.e. 20.0.)
 
-**This is not confined to the new batch.** Any fix reaches templates that were
-shipped long before, and BC as well, which is exactly the situation the placement
-guide's change discipline warns about. Decide deliberately whether to:
+### Scope — the 90 new templates ONLY
 
-- normalise single-line text fields to one line height, seated on the printed
-  rule (a data fix, per template, reviewable); or
-- change vertical alignment in the editor (`PDFViewer.jsx`), which fixes every
-  province at once but changes rendering for every already-approved form.
+**Do not touch the 45 Ontario templates shipped before this work, or the 43 BC
+ones. The user has reviewed those and is happy with them.** An earlier draft of
+this document suggested changing vertical alignment in `PDFViewer.jsx` to fix
+every province at once — **that is ruled out**, because it would change how the
+approved forms render.
 
-Either way it needs the user to see a render and agree before it goes wide.
+Work to do, new templates only:
+
+| | count |
+| --- | --- |
+| `TextField` already at the standard | 959 |
+| `TextField` off the standard, to re-seat on its rule | **2151** |
+| `TextArea` — judge individually against the rule above | 727 |
+
+Heaviest: Form26 (192), Form33B_1 (130), Form33B_2 (91), Form26A (80),
+Form23C (77), Form15D (76), Form25D (76), Form26C (66), Form35_1A (65),
+Form28 (63). Only 5 of the 90 need no height work.
+
+Re-seating is not just resizing: a single-line box must end up **sitting on its
+printed rule**, so the height change and the vertical position change together.
+Show the user one render and get agreement before applying it broadly — that is
+the placement guide's change discipline, and skipping it is how this batch went
+out wrong.
 
 ## 3. Confirmed defect 2 — Form 25C, and the flat-form placement generally
 
@@ -100,11 +127,16 @@ Checks worth adding before any refit:
 
 1. **Seated on the rule.** For every text field, find the printed rule it belongs
    to and assert the box's left/right edges match it within a couple of points,
-   and that its baseline sits on the rule. Flag any field with no rule *and* no
+   and that its bottom sits on the rule. Flag any field with no rule *and* no
    shading *and* no cell — that finds strays like 25C's bottom box.
-2. **Height sanity.** Assert a single-line field is within ~1.3 lines of the
-   page's own font size, or is explicitly a multi-line writing area.
-3. **Render every page.** Non-negotiable — see below.
+2. **The right shape for the blank.** A field on a printed underline must be a
+   `TextField` at the standard 13.3 pt. A field over open white space may be a
+   `TextArea` and may be tall. Assert the pairing, not just the height — a check
+   that only shrinks things would wreck the genuine writing blocks.
+3. **Scope guard.** Assert that nothing outside the 90 new docIds changed. The
+   approved 45 ON and 43 BC templates must come through byte-identical; diff them
+   before and after any geometry pass and confirm zero changes.
+4. **Render every page.** Non-negotiable — see below.
 
 ## 5. Every page must be reviewed individually
 
@@ -129,9 +161,11 @@ and check the render against the government's own PDF, not just for tidiness.
 2. **The other nine flat-sourced forms** — 13C, 26D, 34G.1, 34H, 34K, 43, 43A,
    43B, 43C. Same rule-snapping fix applies; these carry inference, not
    government geometry.
-3. **Defect 1 across all 178 templates** — decide data-fix vs editor-alignment
-   first, get agreement on one render, then apply.
+3. **Defect 1 across the 90 new templates** (2151 fields) — one render agreed
+   first, then applied. Never outside those 90.
 4. **The 78 AcroForm forms, page by page.**
+
+Throughout: the 45 approved Ontario templates and the 43 BC ones are off limits.
 
 ## 7. Decisions already made — do not relitigate
 
