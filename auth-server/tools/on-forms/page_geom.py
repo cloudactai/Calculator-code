@@ -406,6 +406,25 @@ def on_signature_line(field, ink, reach=26.0):
     return False
 
 
+def under_name_instruction(field, glyphs, reach=30.0):
+    """Is this box in the space an instruction pointed at?
+
+    Ontario's jurat prints "(Type or print name below if signature is illegible.)"
+    and then leaves the paper blank. A box placed in that space has no rule, no cell
+    and nothing on its own line, so every check reads it as a stray — this is the
+    signal that says otherwise, and it is the same one that justified placing it.
+    """
+    x0, y0, x1, _ = box(field)
+    rows = {}
+    for gx0, gy0, gx1, gy1, ch in glyphs:
+        if y0 - reach <= gy1 <= y0 + 1 and _overlap(x0, x1, gx0, gx1) > -60:
+            rows.setdefault(round(gy1, 1), []).append((gx0, ch))
+    for parts in rows.values():
+        if "namebelow" in "".join(c for _x, c in sorted(parts)).lower():
+            return True
+    return False
+
+
 def on_role_line(field, ink, reach=26.0):
     """Is this box on a line captioned with a bare role — "Justice", "Clerk"?
 

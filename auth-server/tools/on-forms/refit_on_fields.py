@@ -426,6 +426,8 @@ def _has_context(f, pg, reach=20.0):
     for sx0, sy0, sx1, sy1 in pg["shaded"]:
         if sx0 < x1 and sx1 > x0 and sy0 < y1 + 2 and sy1 > y0 - 2:
             return True
+    if G.under_name_instruction(f, pg["glyphs"]):
+        return True
     for wx0, wy0, wx1, wy1, _t in pg["ink"]:
         if wx1 > x0 - reach and wx0 < x1 + reach and wy1 > y0 - reach and wy0 < y1 + reach:
             # Ink on the box's own line means it is a blank in running text.

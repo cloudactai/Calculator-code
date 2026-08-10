@@ -183,6 +183,45 @@ def find_missing(doc_id, export):
                 "w": round(cx1 - cx0 - 2.0, 2), "h": round(space[1] - space[0], 2),
                 "type": "TextField", "why": "empty drawn cell"})
 
+        # --- 3. an instruction that says the name goes below it -----------------
+        # Ontario's jurat prints "(Type or print name below if signature is
+        # illegible.)" under the commissioner's signature line, and then leaves the
+        # paper blank. The instruction is the anchor and it is explicit about where:
+        # below itself, in the column of the line it is talking about.
+        rows = collections.defaultdict(list)
+        for g in pg["glyphs"]:
+            rows[round(g[3], 1)].append(g)
+        for key in sorted(rows):
+            line = sorted(rows[key], key=lambda g: g[0])
+            text = "".join(g[4] for g in line).lower()
+            if "namebelow" not in text:
+                continue
+            lx0, lx1, ly1 = line[0][0], line[-1][2], key
+            # The instruction may wrap; take the bottom of its last line.
+            for k2 in sorted(rows):
+                if key < k2 < key + 26 and rows[k2][0][0] > lx0 - 60:
+                    ly1 = max(ly1, k2)
+            above = [r for r in pg["rules"]
+                     if r[0] < key - 8 and min(lx1, r[2]) - max(lx0, r[1]) > 0]
+            if not above:
+                continue
+            col = max(above, key=lambda r: r[0])
+            below = min([g[1] for g in pg["glyphs"] if g[1] > ly1 + 2]
+                        + [r[0] for r in pg["rules"] if r[0] > ly1 + 2]
+                        + [pg["rect"].height - 30.0])
+            if below - ly1 < STD + 6:
+                continue
+            top = ly1 + 3.0
+            if any(f["page"] == page_no
+                   and min(col[2], G.box(f)[2]) - max(col[1], G.box(f)[0]) > 2
+                   and min(top + STD, G.box(f)[3]) - max(top, G.box(f)[1]) > 2
+                   for f in fields):
+                continue
+            added.append({"page": page_no, "x": round(col[1] + 0.25, 2),
+                          "y": round(top, 2), "w": round(col[2] - col[1] - 0.5, 2),
+                          "h": STD, "type": "TextField",
+                          "why": "an instruction saying the name goes below it"})
+
     # The Court File Number cell is both a bare rule beside a filled one and an empty
     # drawn cell, so it is found twice; keep the first and drop anything overlapping.
     unique = []
