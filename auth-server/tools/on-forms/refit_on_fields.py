@@ -276,7 +276,20 @@ def refit_form(doc_id, export, notes, data=None, pages=None):
             # A flagged writing block stays one even though its foot is a printed
             # rule — a ruled block is still a block, and squashing those to one line
             # would destroy 553 genuine writing areas.
-            block = (y1 - y0) >= BLOCK_MIN and (f["type"] == "TextArea" or not rule)
+            # "If it sits on an underline, it gets the standard-size box" — and an
+            # underline outranks the government's multiline flag. Form 34H.1's Court
+            # office address is a single ruled blank with its caption beneath it, and
+            # the flag made it a text area floating over the line. A genuine ruled
+            # *block* is a different thing: it has writing lines printed inside it,
+            # not just one under it.
+            on_underline = bool(rule) and not (cell and abs(cell[3] - rule[0]) < 2.0)
+            ruled_inside = any(y0 + 2 < ry < y1 - 2
+                               and min(x1, rx1) - max(x0, rx0) > 0.5 * (x1 - x0)
+                               for ry, rx0, rx1 in pg["rules"])
+            if on_underline and not ruled_inside:
+                block = False
+            else:
+                block = (y1 - y0) >= BLOCK_MIN and (f["type"] == "TextArea" or not rule)
             if want:
                 block = want == "TextArea"
             if f["type"] == "TextArea" and not block:
