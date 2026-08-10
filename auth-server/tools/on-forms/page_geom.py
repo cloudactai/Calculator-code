@@ -232,6 +232,44 @@ def ink_below_top(x0, y0, x1, y1, glyphs, top_frac=0.55, cover=0.6):
     return edge
 
 
+def cell_writing_box(cell, glyphs, max_h=21.5, min_h=8.0, pad=1.0):
+    """Where a single-line box goes inside a drawn cell: (top, bottom), or None.
+
+    A cell's bottom border is not an underline to perch a 13.3 pt line on — it is a
+    box to fill. The approved templates say so: their Court File Number boxes are a
+    median 17.2 pt tall and end 16.3 pt below the caption, taking the whole of the
+    cell's writing space. Cutting them to 13.3 and sitting them on the border leaves
+    the typed text jammed against the printed line and reading as clipped; and in the
+    other direction, 536 boxes in this batch sit in cells with less than 13.3 pt of
+    room, so the standard height overflowed the cell entirely.
+
+    The writing space is whatever is under the caption Ontario prints inside the cell.
+    It is capped at `max_h` so a single-line field in a tall cell stays a single line
+    rather than silently turning into a writing block, and in that case it sits at the
+    bottom of the space, on its border.
+
+    Both `refit_on_fields.py` and `check_seating.py` call this. They have to agree on
+    the answer, and the only way to guarantee that is for there to be one answer.
+    """
+    cap = ink_below_top(cell[0], cell[1], cell[2], cell[3], glyphs)
+    top = (max(cell[1], cap) if cap is not None else cell[1]) + pad
+    bottom = cell[3] - pad
+    if bottom - top < min_h:
+        return None
+    top = max(top, bottom - max_h)
+    # Only fill a cell whose writing space is actually clear. Where a caption sits
+    # anywhere but the top — Ontario prints "municipality" and "province, state or
+    # country" *under* the line they label, inside the same drawn box — growing the
+    # field to fill the cell swallows the words. There the cell is not the anchor at
+    # all, and returning None leaves the box on its rule at the standard height.
+    for gx0, gy0, gx1, gy1, _c in glyphs:
+        if min(cell[2], gx1) - max(cell[0], gx0) <= 0.5 * (gx1 - gx0):
+            continue
+        if min(bottom, gy1) - max(top, gy0) > 0.3 * (gy1 - gy0):
+            return None
+    return (top, bottom)
+
+
 def column_bounds(span, anchor_x, cy, vlines):
     """Narrow a span to the drawn column that `anchor_x` sits in.
 

@@ -317,15 +317,17 @@ def refit_form(doc_id, export, notes, data=None, pages=None):
                 # starts past the caption printed at the head of the cell — Form 13C
                 # sets "Full legal name:", "Address:", "Email:" inside the cell they
                 # label (guide §3).
+                space = G.cell_writing_box(cell, pg["glyphs"])
+                top, bottom = space if space else (cell[3] - SEAT_GAP - STD,
+                                                   cell[3] - SEAT_GAP)
                 lx0, lx1 = cell[0] + 1.0, cell[2] - 1.0
-                edge = G.ink_right_edge(lx0, lx1, cell[3] - SEAT_GAP - STD,
-                                        cell[3] - SEAT_GAP, pg["glyphs"])
+                edge = G.ink_right_edge(lx0, lx1, top, bottom, pg["glyphs"])
                 if edge is not None and edge + 1.5 < lx1 - 4:
                     lx0 = edge + 1.5
                 f["x"] = round(lx0, 2)
                 f["width"] = round((lx1 - lx0) * SCALE, 2)
-                f["y"] = round(cell[3] - SEAT_GAP - STD, 2)
-                f["height"] = round(STD * SCALE, 2)
+                f["y"] = round(top, 2)
+                f["height"] = round((bottom - top) * SCALE, 2)
                 if geometry_of(f) != before:
                     changed += 1
                 kept.append(f)
@@ -341,6 +343,12 @@ def refit_form(doc_id, export, notes, data=None, pages=None):
                 f["y"] = round(cell[1] + 1.0, 2)
                 f["width"] = round((cell[2] - cell[0] - 2.0) * SCALE, 2)
                 f["height"] = round((cell[3] - cell[1] - 2.0) * SCALE, 2)
+        elif cell and rule and abs(cell[3] - rule[0]) < 2.0 and (
+                (space := G.cell_writing_box(cell, pg["glyphs"])) is not None):
+            # This box's rule is its own cell's bottom border, so it fills the cell's
+            # writing space rather than perching a standard line on the border.
+            f["y"] = round(space[0], 2)
+            f["height"] = round((space[1] - space[0]) * SCALE, 2)
         elif rule:
             ry, rx0, rx1 = rule
             if inferred and id(f) not in keep_width:

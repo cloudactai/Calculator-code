@@ -72,7 +72,18 @@ def check_form(doc_id, export):
         h = y1 - y0
         block = h >= BLOCK_MIN
 
-        if rule and not block:
+        in_cell = bool(cell) and bool(rule) and abs(cell[3] - rule[0]) < 2.0
+        space = G.cell_writing_box(cell, pg["glyphs"]) if in_cell else None
+        if space and not block:
+            # A cell's bottom border is not an underline, so what is asserted here is
+            # the fit to the cell's writing space, not the 13.3 pt line height.
+            if abs(y0 - space[0]) > 1.5 or abs(y1 - space[1]) > 1.5:
+                add("cell-misfit", f,
+                    f"box {y0:.1f}..{y1:.1f} but its cell's writing space is "
+                    f"{space[0]:.1f}..{space[1]:.1f}")
+            if f["type"] == "TextArea":
+                add("wrong-shape", f, "TextArea in a single-line cell")
+        elif rule and not block:
             # 1 + 2: single line on a rule -> standard box, sitting on the rule.
             if abs(h - STD) > 0.2:
                 # Short is legitimate where the form sets its text closer to the
