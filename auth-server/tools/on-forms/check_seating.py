@@ -67,8 +67,8 @@ def check_form(doc_id, export):
         if f["type"] not in TEXT_TYPES:
             continue
 
-        rule = G.seat_rule(f, pg["rules"], below=14.0)
         cell = G.enclosing_cell(f, pg["rules"], pg["vlines"])
+        rule = G.seat_rule(f, pg["rules"], below=14.0, cell=cell)
         h = y1 - y0
         block = h >= BLOCK_MIN
 

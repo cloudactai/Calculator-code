@@ -286,7 +286,8 @@ def seat_candidates(field, rules, above=4.0, below=9.0, min_frac=0.45):
 SEAT_GAP = 1.26   # measured on the approved 45: box bottom sits this far above its rule
 
 
-def seat_rule(field, rules, above=4.0, below=9.0, min_frac=0.45, prefer="overlap"):
+def seat_rule(field, rules, above=4.0, below=9.0, min_frac=0.45, prefer="overlap",
+              cell=None):
     """The printed rule this field sits on, or None.
 
     `prefer="overlap"` suits an AcroForm source, whose widget rectangle is the
@@ -300,18 +301,34 @@ def seat_rule(field, rules, above=4.0, below=9.0, min_frac=0.45, prefer="overlap
     cands = seat_candidates(field, rules, above, below, min_frac)
     if not cands:
         return None
-    y1 = box(field)[3]
-    # A field already seated on one of these rules keeps it. The search window is
-    # asymmetric — a little above the box, further below — so re-seating walks the
-    # box down, which can bring the *next* rule into range and move it again on the
-    # following run. Treating "already seated" as decisive makes the pass a fixed
-    # point, which the placement guide (§7.9) requires.
-    for rule, _ov in cands:
-        if abs(rule[0] - (y1 + SEAT_GAP)) < 0.05:
-            return rule
+    x0, _, x1, y1 = box(field)
     if prefer == "leftmost":
         return cands[0][0]
-    return max(cands, key=lambda c: (c[1], -abs(c[0][0] - y1)))[0]
+
+    # A box inside a drawn cell belongs to that cell's bottom border, full stop.
+    # Neither of the alternatives is safe on its own: nearest-rule put Form 8D.2's
+    # Court File Number on the full-width rule ruling off the whole header block,
+    # 1.3 pt below the box, in preference to its own cell border 2.1 pt above it;
+    # and best-span-match put Form 13C's table cells on the rule of the row *below*,
+    # 14 pt away, because that rule happened to be exactly as wide as the box.
+    if cell is not None:
+        # The *closest* candidate to the border, not merely one within tolerance:
+        # Form 13C's Word export double-strokes every table border 1 pt apart, so two
+        # candidates sit either side of the cell edge and taking the first found put
+        # every one of its cells a point low.
+        near = [c for c in cands if abs(c[0][0] - cell[3]) < 2.0]
+        if near:
+            return min(near, key=lambda c: abs(c[0][0] - cell[3]))[0]
+
+    def rank(cand):
+        (ry, rx0, rx1), ov = cand
+        # With no cell to go on, take the nearest rule below the box, and let how
+        # closely the two spans match break a tie between rules at the same height.
+        union = max(x1, rx1) - min(x0, rx0)
+        fit = ov / union if union > 0 else 0.0
+        return (-round(abs(ry - (y1 + SEAT_GAP)) / 2.0), fit)
+
+    return max(cands, key=rank)[0]
 
 
 SIGNATURE_STOP = ("signature", "signed")

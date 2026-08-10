@@ -181,9 +181,9 @@ def refit_form(doc_id, export, notes, data=None, pages=None):
         candidates = pg["rules"]
         if inferred:
             candidates = [r for r in candidates if not G.on_dark_bar(r, pg["bars"])]
-        rule = G.seat_rule(f, candidates, below=SEAT_BELOW,
-                           prefer="leftmost" if inferred else "overlap")
         cell = G.enclosing_cell(f, pg["rules"], pg["vlines"])
+        rule = G.seat_rule(f, candidates, below=SEAT_BELOW,
+                           prefer="leftmost" if inferred else "overlap", cell=cell)
         anchors[id(f)] = (pg, rule, cell)
 
     # --- one column of a table is one shape ------------------------------------
