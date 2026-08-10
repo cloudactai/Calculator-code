@@ -21,6 +21,8 @@ stalls, a PDF that fails to generate, or a "Save to Matter" that does not persis
 | Piece | File |
 | --- | --- |
 | All endpoints & AI agent loops | [app.py](../app.py) |
+| PDF report generator | [report_pdf.py](../report_pdf.py) |
+| Generated reports directory | `generated_reports/` (created at import time) |
 | Child support math engine | [child_support.py](../child_support.py) |
 | Spousal support math engine | [spousal_support.py](../spousal_support.py) |
 | Tax engine (ON + BC) | [tax.py](../tax.py) |
@@ -312,6 +314,67 @@ present and context has not been sent, `buildContextMessage` is called and the r
 is passed to `send(ctx.ai, ctx.display)`. This means the AI receives the full matter
 snapshot immediately when the panel opens, and the user sees only the relevant matter
 data (or nothing if there is only session metadata).
+
+---
+
+## PDF report generation
+
+Both the child support and spousal support workflows produce downloadable PDF reports.
+All generation logic lives in [report_pdf.py](../report_pdf.py), which exposes two
+functions: `generate_child_support_report()` and `generate_spousal_support_report()`.
+Reports are written to a `generated_reports/` directory (created at import time) and
+served to the browser via the `GET /download-report/:filename` endpoint.
+
+### How reports are triggered
+
+Reports are generated automatically in two contexts. In the **form workflows**
+(`/calculate` and `/spousal-calculate`), the backend calls the generator immediately
+after the calculation completes and includes both a `download_url` (e.g.
+`/download-report/child_support_report_a1b2c3d4e5f6.pdf`) and a `pdf_base64` payload
+in the JSON response. In the **AI chat workflows** (`/chat` and `/spousal-chat`), the
+same generation happens inside `run_calc_tool()` / `run_spousal_calc_tool()` after the
+AI invokes the calculation tool — the tool result returned to Claude includes the
+download URL so it can present the link to the user. Both workflows also expose
+standalone report tools (`generate_report` and `generate_spousal_report`) that Claude
+can call separately if it needs to regenerate a report with different parameters.
+
+### Child support report (ReportLab)
+
+The child support report uses ReportLab's `SimpleDocTemplate` to build a structured
+PDF with US Letter page size. The layout includes a branded title ("CLOUDACT FAMILY
+LAW TOOLS"), a calculation input section showing both parties' guideline incomes and
+the custody scenario, a children table listing each child's name, age, custody
+arrangement, and adult status, and a result section showing the net payer, monthly and
+annual child support amounts, and per-party obligations for offset scenarios. The
+report uses a consistent colour scheme (dark blue text, light blue headers, green
+result background) with Helvetica typography. Each report filename includes a random
+UUID segment for uniqueness.
+
+### Spousal support report (xhtml2pdf)
+
+The spousal support report uses xhtml2pdf to render an HTML template that matches the
+`CalculationReport.tsx` React component's layout exactly, ensuring the PDF and the
+in-browser preview look identical. The HTML template includes party information (names,
+incomes, ages, provinces), important dates (marriage, separation, relationship
+duration, recipient age at separation), a children table with custody and CSG table
+status, a child support section (if applicable), and the spousal support results
+showing low/mid/high monthly and annual amounts with duration ranges.
+
+When the with-children SSAG formula is used, the report additionally includes a
+detailed INDI (Individual Net Disposable Income) breakdown for each scenario
+(low/mid/high), showing gross income, taxes, government benefits, child support
+adjustments, spousal support flows, and the resulting disposable income for both
+parties. This allows the lawyer to verify the iterative tax-converging calculation at
+every step.
+
+### Delivery to the frontend
+
+The frontend receives each PDF in two forms. The `download_url` path
+(`/download-report/:filename`) allows immediate download via a **Download PDF Report**
+button. The `pdf_base64` field contains the raw PDF bytes as a base64 string, which the
+**Save to Matter** button sends to the auth-server database as an attachment on the
+matter record, so the report is permanently associated with the matter and retrievable
+later without regeneration.
 
 ---
 
