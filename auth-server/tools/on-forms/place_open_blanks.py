@@ -126,17 +126,29 @@ def _absorb_hint(lines, idx, y1, lx0, reach=16.0):
 
 
 def _column(fields, page_no, pg):
-    """The left/right edges the rest of this page's writing boxes use."""
+    """The left/right edges of this page's text column.
+
+    A writing area should be as wide as the page's own type, not as wide as whatever
+    single-line blank happens to be the biggest box on the page — Form 34G.1's
+    stopped 140 pt short of the margin because it copied the width of a "name of
+    person(s)" field. So the column is measured from the printed text, and an
+    existing wide box can only widen it further.
+
+    The footer ("FLR 34G.1 (March 1, 2018)    Page 3 of 3") is set to the full sheet
+    width and would stretch the column past the margin, so it is left out.
+    """
+    body_bottom = pg["rect"].height - FOOTER_GAP
+    ink = [g for g in pg["glyphs"] if g[3] < body_bottom]
+    if not ink:
+        return None
+    left, right = min(g[0] for g in ink), max(g[2] for g in ink)
     wide = [f for f in fields
             if f["page"] == page_no and f["type"] in ("TextField", "TextArea")
             and f["width"] / SCALE > 200]
     if wide:
-        return (min(f["x"] for f in wide),
-                max(f["x"] + f["width"] / SCALE for f in wide))
-    ink = [g for g in pg["glyphs"]]
-    if not ink:
-        return None
-    return (min(g[0] for g in ink), max(g[2] for g in ink))
+        left = min(left, min(f["x"] for f in wide))
+        right = max(right, max(f["x"] + f["width"] / SCALE for f in wide))
+    return (left, right)
 
 
 def _covered(x0, y0, x1, y1, fields, page_no):
@@ -154,7 +166,7 @@ def find_blanks(doc_id, export):
     with open(os.path.join(export, doc_id + ".json")) as fh:
         fields = json.load(fh)["staticFields"]
     pages = G.load_pages(os.path.join(export, doc_id + ".pdf"))
-    found = []
+    found, widened = [], []
 
     for page_no, pg in pages.items():
         lines = _lines(pg)
@@ -206,6 +218,18 @@ def find_blanks(doc_id, export):
             # Indent the box to the caption's own left edge where that is further in
             # than the page column — a sub-question keeps its indent.
             x0 = max(col_x0, min(lx0, col_x1 - 120))
+            here = [f for f in fields if f["page"] == page_no
+                    and f["type"] == "TextArea"
+                    and min(col_x1, G.box(f)[2]) - max(x0, G.box(f)[0]) > 0
+                    and min(band_bottom, G.box(f)[3]) - max(band_top, G.box(f)[1]) > 2]
+            if len(here) == 1 and here[0]["width"] / SCALE < (col_x1 - x0) - 8:
+                # An area this tool placed on an earlier run, before the column was
+                # measured from the page's own type. Widen it in place rather than
+                # skipping the band and leaving it short.
+                here[0]["x"] = round(x0, 2)
+                here[0]["width"] = round((col_x1 - x0) * SCALE, 2)
+                widened.append({"page": page_no, "caption": _strip_hint(text)[:60]})
+                continue
             if _covered(x0, band_top, col_x1, band_bottom, fields, page_no):
                 continue
             # Not inside a table: a column separator running through the band means
@@ -219,7 +243,7 @@ def find_blanks(doc_id, export):
                 "w": round(col_x1 - x0, 2), "h": round(height, 2),
                 "caption": _strip_hint(text)[:70],
             })
-    return fields, found
+    return fields, found, widened
 
 
 def _template(fields, page_no):
@@ -240,9 +264,9 @@ def _template(fields, page_no):
 
 
 def add_blanks(doc_id, export, apply_changes):
-    fields, found = find_blanks(doc_id, export)
-    if not found:
-        return 0, []
+    fields, found, widened = find_blanks(doc_id, export)
+    if not found and not widened:
+        return 0, [], widened
     next_id = max((f["id"] for f in fields), default=1750000000000) + 1
     for b in found:
         rec = {"id": next_id, "type": "TextArea", "x": b["x"], "y": b["y"],
@@ -255,7 +279,7 @@ def add_blanks(doc_id, export, apply_changes):
         path = os.path.join(export, doc_id + ".json")
         with open(path, "w") as fh:
             json.dump({"staticFields": fields}, fh, indent=1)
-    return len(found), found
+    return len(found), found, widened
 
 
 def main():
@@ -273,18 +297,24 @@ def main():
         sys.exit(f"refusing: {outside} are outside the 90 new Ontario templates")
 
     before = on_scope.snapshot(args.export)
-    total = 0
+    total = wide = 0
     for doc_id in targets:
-        n, found = add_blanks(doc_id, args.export, args.apply)
-        if not n:
+        n, found, widened = add_blanks(doc_id, args.export, args.apply)
+        if not n and not widened:
             continue
         total += n
-        print(f"  {doc_id:12s} {n} writing area(s)")
+        wide += len(widened)
+        bits = []
+        if n:
+            bits.append(f"{n} writing area(s)")
+        if widened:
+            bits.append(f"{len(widened)} widened to the text column")
+        print(f"  {doc_id:12s} " + ", ".join(bits))
         if args.verbose:
             for b in found:
                 print(f"      p{b['page']} {b['w']:.0f}x{b['h']:.0f} at "
                       f"({b['x']:.0f},{b['y']:.0f})  after {b['caption']!r}")
-    print(f"\n{total} writing areas placed"
+    print(f"\n{total} writing areas placed, {wide} widened"
           f"{'' if args.apply else '  (dry run — pass --apply)'}")
     if args.apply:
         bad = on_scope.check_scope(before, args.export)
