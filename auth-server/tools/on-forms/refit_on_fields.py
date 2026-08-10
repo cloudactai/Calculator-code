@@ -96,6 +96,51 @@ def _partition(rule, members, vlines):
     return list(zip(members, zip(edges, edges[1:])))
 
 
+MIN_LINE = 8.0    # below this a box is too shallow to type in; report it instead
+
+
+def _line_has_ink(f, pg, reach=90.0):
+    """Is anything printed on this box's own line, in or just beside it?"""
+    x0, y0, x1, y1 = G.box(f)
+    # Share a band with the box, not merely sit near it: Form 43A prints "this __ day
+    # of __, 20" on the line *above* its divider stray, and a loose vertical reach
+    # counted that as the stray's own caption and kept it.
+    return any(min(y1, g[3]) - max(y0, g[1]) > 0
+               and g[2] > x0 - reach and g[0] < x1 + reach
+               for g in pg["glyphs"])
+
+
+def _clear_ink_above(f, pg, doc_id, notes):
+    """Pull a seated box's top down so it does not cover the line printed above it.
+
+    Occasionally a form sets its text closer to its writing line than the standard
+    box is tall — Form 43B p3 leaves 10 pt between "… namely:" and its rule, so a
+    13.3 pt box seated there reaches up through the words. The bottom has to stay on
+    the rule, so the top is what gives way (guide §3: a box must not sit on printed
+    content). Rare: two fields in the whole batch.
+    """
+    x0, y0, x1, y1 = G.box(f)
+    top = y0
+    for gx0, gy0, gx1, gy1, _c in pg["glyphs"]:
+        if min(x1, gx1) - max(x0, gx0) < 0.5 * (gx1 - gx0):
+            continue
+        # Require a real bite out of the glyph, not a descender grazing the top
+        # edge — without this the clamp fired on 173 perfectly good boxes.
+        if min(y1, gy1) - max(y0, gy0) <= 0.3 * (gy1 - gy0):
+            continue
+        if gy1 - y0 > 0.7 * (y1 - y0):
+            continue          # ink through the middle of the box is a different fault
+        top = max(top, gy1 + 0.5)
+    if top <= y0:
+        return
+    if y1 - top >= MIN_LINE:
+        f["y"] = round(top, 2)
+        f["height"] = round((y1 - top) * SCALE, 2)
+    else:
+        notes.append((doc_id, f["page"],
+                      f"only {y1 - top:.1f} pt clear above the rule at y={y1 + SEAT_GAP:.0f}"))
+
+
 def refit_form(doc_id, export, notes, data=None, pages=None):
     """Return (data, changed_count, dropped). `notes` collects what a human must place."""
     if data is None:
@@ -162,6 +207,16 @@ def refit_form(doc_id, export, notes, data=None, pages=None):
         pg, rule, cell = a
         before = original[id(f)]
         x0, y0, x1, y1 = G.box(f)
+
+        # A heavy rule that divides the form into sections is not a writing line, and
+        # a box seated on one is a stray. But a table's closing border is heavy too,
+        # and Form 13C's totals row sits on exactly that — so the test is not the
+        # rule alone: a real blank has its caption, its `$`, or *something* printed
+        # on its own line. A divider has an empty band above it.
+        if (inferred and rule and G.on_dark_bar(rule, pg["bars"])
+                and not _line_has_ink(f, pg)):
+            dropped += 1
+            continue
 
         # A signature line never gets a box (placement guide §5). Only the inferred
         # sources can put one there — an AcroForm form's widgets are the government's.
@@ -259,15 +314,23 @@ def refit_form(doc_id, export, notes, data=None, pages=None):
                                         pg["glyphs"])
                 if edge is not None and edge + 1.5 < sx1 - 4:
                     sx0 = edge + 1.5
+                # ...and stop it before the tail of the sentence, where Word drew the
+                # underline the full width of the line and set words over its end.
+                tail = G.ink_left_edge(sx0, sx1, ry - SEAT_GAP - STD, ry - SEAT_GAP,
+                                       pg["glyphs"])
+                if tail is not None and tail - 1.5 > sx0 + 4:
+                    sx1 = tail - 1.5
                 if sx1 - sx0 >= 4:
                     f["x"] = round(sx0 + EDGE_INSET, 2)
                     f["width"] = round((sx1 - sx0 - 2 * EDGE_INSET) * SCALE, 2)
             f["y"] = round(ry - SEAT_GAP - STD, 2)
             f["height"] = round(STD * SCALE, 2)
+            _clear_ink_above(f, pg, doc_id, notes)
         elif cell and (cell[3] - cell[1]) < BLOCK_MIN:
             # A short cell with no rule of its own: sit on the cell's bottom border.
             f["y"] = round(cell[3] - SEAT_GAP - STD, 2)
             f["height"] = round(STD * SCALE, 2)
+            _clear_ink_above(f, pg, doc_id, notes)
         else:
             # Nothing printed to place it against.
             if inferred and not _has_context(f, pg):

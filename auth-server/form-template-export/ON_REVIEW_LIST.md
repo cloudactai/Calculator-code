@@ -42,7 +42,7 @@ printed page, so their widths moved too — review those first.
 | ☐ | Form 26 | Form 26 - Statement of Money Owed | Enforcement | AcroForm | 6 | 214 (193T/5A/16C) | no-anchor p[6] |
 | ☐ | Form 26A | Form 26A - Affidavit of Enforcement Expenses | Enforcement | AcroForm | 2 | 97 (80T/6A/11C) |  |
 | ☐ | Form 26C | Form 26C - Notice of Transfer of Enforcement | Enforcement | AcroForm | 2 | 79 (66T/7A/6C) |  |
-| ☐ | Form 26D | Form 26D - Affidavit for Filing Family Arbitration Award for Support with Court | Enforcement | Word | 2 | 38 (31T/4A/3C) |  |
+| ☐ | Form 26D | Form 26D - Affidavit for Filing Family Arbitration Award for Support with Court | Enforcement | Word | 2 | 37 (30T/4A/3C) |  |
 | ☐ | Form 27 | Form 27 - Request for Financial Statement | Financial Disclosure | AcroForm | 1 | 10 (5T/5A/0C) |  |
 | ☐ | Form 27B | Form 27B - Statement of Income from Income Source | Financial Disclosure | AcroForm | 1 | 45 (20T/8A/17C) |  |
 | ☐ | Form 27C | Form 27C - Appointment for Financial Examination | Financial Disclosure | AcroForm | 2 | 20 (11T/6A/3C) |  |
@@ -85,8 +85,8 @@ printed page, so their widths moved too — review those first.
 | ☐ | Form 34E | Form 34E - Director’s consent to adoption | Adoption | AcroForm | 1 | 13 (11T/2A/0C) |  |
 | ☐ | Form 34F | Form 34F - Parent’s or custodian’s consent to adoption | Adoption | AcroForm | 2 | 36 (22T/0A/14C) |  |
 | ☐ | Form 34G | Form 34G - Affidavit of adoption licensee or society employee | Adoption | AcroForm | 3 | 48 (23T/8A/17C) | no-anchor p[3] |
-| ☐ | Form 34G.1 | Form 34G.1 - Affidavit of society employee for adoption of a child in extended society care | Adoption | Word | 3 | 75 (50T/4A/21C) | covers-text p[3] |
-| ☐ | Form 34H | Form 34H - Affidavit of Applicant to a Family Adoption | Adoption | Word | 4 | 60 (29T/4A/27C) |  |
+| ☐ | Form 34G.1 | Form 34G.1 - Affidavit of society employee for adoption of a child in extended society care | Adoption | Word | 3 | 75 (50T/4A/21C) |  |
+| ☐ | Form 34H | Form 34H - Affidavit of Applicant to a Family Adoption | Adoption | Word | 4 | 59 (28T/4A/27C) |  |
 | ☐ | Form 34H.1 | Form 34H.1 - Affidavit of Person over 18 Living with Applicant to a Family Adoption | Adoption | AcroForm | 2 | 46 (33T/5A/8C) | no-anchor p[2] |
 | ☐ | Form 34I | Form 34I - Parent’s consent to adoption by spouse | Adoption | AcroForm | 2 | 38 (20T/4A/14C) |  |
 | ☐ | Form 34J | Form 34J - Affidavit of Execution and Independent Legal Advice (Children’s Lawyer) | Adoption | AcroForm | 1 | 17 (12T/0A/5C) |  |
@@ -99,11 +99,11 @@ printed page, so their widths moved too — review those first.
 | ☐ | Form 35.1A | Form 35.1A - Affidavit (child protection information) | Child Protection | AcroForm | 2 | 70 (66T/4A/0C) |  |
 | ☐ | Form 38 | Form 38 - Notice of Appeal | Appeals | AcroForm | 2 | 29 (12T/11A/6C) |  |
 | ☐ | Form 39 | Form 39 - Notice of Approaching Dismissal | Case Management | AcroForm | 1 | 8 (4T/4A/0C) |  |
-| ☐ | Form 43 | Form 43 - Binding Judicial Dispute Resolution Hearing Request and Consent | Dispute Resolution | Word | 4 | 58 (33T/4A/21C) |  |
-| ☐ | Form 43A | Form 43A - Binding Judicial Dispute Resolution Hearing Request and Consent – Office of the Children’s Lawyer | Dispute Resolution | Word | 3 | 32 (19T/4A/9C) |  |
-| ☐ | Form 43B | Form 43B - Affidavit for Binding Judicial Dispute Resolution Hearing | Dispute Resolution | Word | 6 | 82 (47T/4A/31C) | no-anchor p[4, 5] |
+| ☐ | Form 43 | Form 43 - Binding Judicial Dispute Resolution Hearing Request and Consent | Dispute Resolution | Word | 4 | 57 (32T/4A/21C) |  |
+| ☐ | Form 43A | Form 43A - Binding Judicial Dispute Resolution Hearing Request and Consent – Office of the Children’s Lawyer | Dispute Resolution | Word | 3 | 31 (18T/4A/9C) |  |
+| ☐ | Form 43B | Form 43B - Affidavit for Binding Judicial Dispute Resolution Hearing | Dispute Resolution | Word | 6 | 81 (46T/4A/31C) | no-anchor p[4, 5] |
 | ☐ | Form 43C | Form 43C - Confirmation of Binding Judicial Dispute Resolution Hearing | Dispute Resolution | Word | 2 | 23 (9T/5A/9C) |  |
 
 **90 forms, 230 pages.** Fields are counted TextField/TextArea/CheckBox.
 
-Flags still open across the batch: no-anchor x15, covers-text x1.
+Flags still open across the batch: no-anchor x15.

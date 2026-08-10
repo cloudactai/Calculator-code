@@ -99,6 +99,46 @@ def shaded(page, lo=0.55, hi=0.99):
     return out
 
 
+def dark_bars(page, level=0.35, min_h=1.5, min_w=60.0, thick=1.5):
+    """The heavy rules that divide a form into sections — never a writing line.
+
+    Two shapes of the same thing, and a box seated on either is a stray:
+
+    * a **solid dark rectangle**, drawn as a filled block *plus* a stroked line along
+      its top edge — and that stroke reads as a printed rule like any other. Form 43A
+      ended up with a full-width box on the divider above "To be completed by the
+      Court", where the page has no blank at all.
+    * a **thick stroked line**. Form 34H rules its jurat off with a 2.25 pt stroke.
+      Ontario's actual writing lines are 0.5 pt, and its heaviest table border is
+      0.75, so anything at 1.5 pt or above is structural.
+    """
+    out = []
+    for d in page.get_drawings():
+        r = d["rect"]
+        fill = d.get("fill")
+        if fill and sum(fill[:3]) / 3.0 <= level and r.height >= min_h and r.width >= min_w:
+            out.append((r.x0, r.y0, r.x1, r.y1))
+            continue
+        if d.get("color") is not None and (d.get("width") or 0) >= thick:
+            for it in d["items"]:
+                if it[0] != "l":
+                    continue
+                p1, p2 = it[1], it[2]
+                if abs(p1.y - p2.y) <= 0.6 and abs(p1.x - p2.x) >= min_w:
+                    y = (p1.y + p2.y) / 2
+                    out.append((min(p1.x, p2.x), y - 0.8, max(p1.x, p2.x), y + 0.8))
+    return out
+
+
+def on_dark_bar(rule, bars, tol=1.5):
+    """Is this 'rule' just the edge of a solid divider bar?"""
+    ry, rx0, rx1 = rule
+    for bx0, by0, bx1, by1 in bars:
+        if by0 - tol <= ry <= by1 + tol and _overlap(rx0, rx1, bx0, bx1) > 0.5 * (rx1 - rx0):
+            return True
+    return False
+
+
 def words(page):
     """Printed words as (x0, y0, x1, y1, text), blank-only tokens dropped.
 
@@ -129,6 +169,27 @@ def chars(page):
                     x0, y0, x1, y1 = ch["bbox"]
                     out.append((x0, y0, x1, y1, ch["c"]))
     return out
+
+
+def ink_left_edge(x0, x1, y0, y1, glyphs, right_frac=0.45):
+    """Left edge of anything printed in the right part of a box's own line.
+
+    A Word export sometimes draws the underline the full width of the line and then
+    sets the sentence's tail over its end — Form 34G.1 p3 prints ", and was" on the
+    last 45 pt of the rule its date box snaps to. Symmetric to `ink_right_edge`:
+    where that stops a box starting on a `$`, this stops it running past its blank.
+    Returns None when the band is clear.
+    """
+    cy = (y0 + y1) / 2
+    start = x0 + right_frac * (x1 - x0)
+    edge = None
+    for gx0, gy0, gx1, gy1, _c in glyphs:
+        if not (gy0 - 1 <= cy <= gy1 + 1):
+            continue
+        if gx0 <= start or gx0 >= x1 + 0.5:
+            continue
+        edge = gx0 if edge is None else min(edge, gx0)
+    return edge
 
 
 def ink_right_edge(x0, x1, y0, y1, glyphs, left_frac=0.6):
@@ -333,6 +394,7 @@ def load_pages(pdf_path):
             "shaded": shaded(page),
             "ink": words(page),
             "glyphs": chars(page),
+            "bars": dark_bars(page),
         }
     doc.close()
     return pages

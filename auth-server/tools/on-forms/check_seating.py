@@ -75,7 +75,14 @@ def check_form(doc_id, export):
         if rule and not block:
             # 1 + 2: single line on a rule -> standard box, sitting on the rule.
             if abs(h - STD) > 0.2:
-                add("wrong-height", f, f"on a rule but {h:.1f} pt, not {STD}")
+                # Short is legitimate where the form sets its text closer to the
+                # writing line than the standard box is tall: the box is clamped so
+                # it does not cover the words (see `_clear_ink_above`). Tall is not.
+                pinched = h < STD and any(
+                    min(x1, g[2]) - max(x0, g[0]) > 0.5 * (g[2] - g[0])
+                    and y0 - 1.5 <= g[3] <= y0 + 0.5 for g in pg["glyphs"])
+                if not pinched:
+                    add("wrong-height", f, f"on a rule but {h:.1f} pt, not {STD}")
             if abs(rule[0] - (y1 + SEAT_GAP)) > SEAT_TOL:
                 add("not-seated", f,
                     f"bottom {y1:.1f} but its rule is at {rule[0]:.1f}")
@@ -109,10 +116,13 @@ def check_form(doc_id, export):
         # words: a money cell flattens to a `$` followed by the en-space padding its
         # value used to occupy, so the word rect spans the whole cell and a box that
         # correctly starts after the `$` would read as covering it.
+        # A third of a line of type inside the box is already a box printed over
+        # words: Form 43B p3 overlapped its caption by 38% and a 50% threshold let it
+        # through.
         covered = [g for g in pg["glyphs"]
                    if min(x1, g[2]) - max(x0, g[0]) > 0.5 * (g[2] - g[0])
-                   and min(y1, g[3]) - max(y0, g[1]) > 0.5 * (g[3] - g[1])]
-        if len(covered) >= 2:
+                   and min(y1, g[3]) - max(y0, g[1]) > 0.3 * (g[3] - g[1])]
+        if len(covered) >= 3:
             add("covers-text", f,
                 "covers printed " + repr("".join(g[4] for g in covered[:24])))
 
