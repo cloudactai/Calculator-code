@@ -49,6 +49,16 @@ BLOCK_MIN = 22.0
 MIN_RULE = 24.0        # a rule shorter than this is a tick or a leader, not a blank
 ROW_TOL = 1.5          # rules this close in y are the same printed line
 
+# Form 13C's page 4 is held back. Its grid is read two different ways depending on
+# where you start — `cell_grid` walks outward from a pair of vertical lines and
+# `enclosing_cell` works from a field's own centre — and on that page they disagree by
+# a factor of three. Boxing its empty cells leaves `refit_on_fields.py` flipping five
+# fields between a 21.5 pt line and a 76 pt block on every run, so the pass never
+# settles. The fix belongs in `enclosing_cell` (anchoring on the box's bottom edge,
+# which is where a box is really pinned, rather than its centre) and wants its own
+# change with its own renders.
+HELD_BACK = {"Form13C"}
+
 
 def _boxes_on(rule, fields, page_no):
     """Fields sitting on this rule."""
@@ -137,6 +147,42 @@ def find_missing(doc_id, export):
                               "type": "TextField",
                               "why": f"bare rule beside a filled one at y={model[0]:.0f}"})
 
+        # --- 2. an empty drawn cell --------------------------------------------
+        # A cell with four borders, nothing in it and nothing printed inside it is a
+        # blank by construction — Form 25C's adoption table shares one box across five
+        # columns, and Form 34H's charge tables carry boxes in the middle column only.
+        for cx0, cy0, cx1, cy1 in G.cell_grid(pg["rules"], pg["vlines"]):
+            if cx1 - cx0 < MIN_RULE or cy1 - cy0 < 10:
+                continue
+            if any(f["page"] == page_no
+                   and min(cx1, G.box(f)[2]) - max(cx0, G.box(f)[0]) > 2
+                   and min(cy1, G.box(f)[3]) - max(cy0, G.box(f)[1]) > 2
+                   for f in fields):
+                continue
+            # The same function the refit uses to size a box inside a cell. It
+            # returns None when the cell has printing of its own, which is what keeps
+            # this off header rows and label cells.
+            space = G.cell_writing_box((cx0, cy0, cx1, cy1), pg["glyphs"])
+            if space is None:
+                continue
+            probe = {"x": cx0, "y": space[0], "width": (cx1 - cx0) * SCALE,
+                     "height": (space[1] - space[0]) * SCALE,
+                     "type": "TextField", "page": page_no}
+            if G.on_signature_line(probe, pg["ink"]) or G.on_role_line(probe, pg["ink"]):
+                continue
+            # Only place where the grid walk and `enclosing_cell` agree on the cell.
+            # The two read a grid differently — one outward from a pair of vertical
+            # lines, the other from a field's own centre — and on Form 13C p4 they
+            # disagreed by a factor of three, so the refit kept re-deciding how tall
+            # the new box should be and the pass never settled.
+            back = G.enclosing_cell(probe, pg["rules"], pg["vlines"])
+            if not back or abs(back[1] - cy0) > 2.0 or abs(back[3] - cy1) > 2.0:
+                continue
+            added.append({
+                "page": page_no, "x": round(cx0 + 1.0, 2), "y": round(space[0], 2),
+                "w": round(cx1 - cx0 - 2.0, 2), "h": round(space[1] - space[0], 2),
+                "type": "TextField", "why": "empty drawn cell"})
+
     # The Court File Number cell is both a bare rule beside a filled one and an empty
     # drawn cell, so it is found twice; keep the first and drop anything overlapping.
     unique = []
@@ -195,7 +241,7 @@ def main():
     ap.add_argument("--export", default=on_scope.EXPORT)
     args = ap.parse_args()
 
-    targets = args.only or on_scope.NEW_DOCIDS
+    targets = [d for d in (args.only or on_scope.NEW_DOCIDS) if d not in HELD_BACK]
     outside = [d for d in targets if d not in on_scope.NEW_DOCIDS]
     if outside:
         sys.exit(f"refusing: {outside} are outside the 90 new Ontario templates")
@@ -203,7 +249,20 @@ def main():
     before = on_scope.snapshot(args.export)
     tot_add, tot_split = 0, 0
     for doc_id in targets:
-        n, m, added, splits = apply_changes(doc_id, args.export, args.apply)
+        # Run to a fixed point. Boxing a bare rule turns it into a *filled* rule, so
+        # its own bare siblings become candidates on the next pass — Form 13C's
+        # tables settle two passes in. Left to the caller this would need re-running
+        # by hand, and the tool has to be idempotent (placement guide §7.9).
+        n = m = 0
+        added, splits = [], []
+        for _ in range(6):
+            dn, dm, dadded, dsplits = apply_changes(doc_id, args.export, args.apply)
+            n += dn
+            m += dm
+            added += dadded
+            splits += dsplits
+            if not args.apply or (not dn and not dm):
+                break
         if not n and not m:
             continue
         tot_add += n

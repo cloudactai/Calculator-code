@@ -15,8 +15,8 @@ printed page, so their widths moved too — review those first.
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | ☐ | Form 6C | Form 6C - Lawyer or Paralegal's Certificate of Service | Service | AcroForm | 3 | 81 (38T/10A/33C) |  |
 | ☐ | Form 8.01 | Form 8.01 - Automatic Order | Orders | AcroForm | 3 | 11 (7T/4A/0C) |  |
-| ☐ | Form 8B.1 | Form 8B.1 - Application (status review for child in extended society care and child formerly in extended society care) | Child Protection | AcroForm | 5 | 57 (32T/13A/12C) |  |
-| ☐ | Form 8B.2 | Form 8B.2 - Application (general) (Child, Youth and Family Services Act, 2017 cases other than child protection and status review) | Child Protection | AcroForm | 4 | 68 (48T/12A/8C) |  |
+| ☐ | Form 8B.1 | Form 8B.1 - Application (status review for child in extended society care and child formerly in extended society care) | Child Protection | AcroForm | 5 | 61 (36T/13A/12C) |  |
+| ☐ | Form 8B.2 | Form 8B.2 - Application (general) (Child, Youth and Family Services Act, 2017 cases other than child protection and status review) | Child Protection | AcroForm | 4 | 72 (52T/12A/8C) |  |
 | ☐ | Form 8C | Form 8C - Application (secure treatment) | Child Protection | AcroForm | 2 | 47 (13T/6A/28C) | no-anchor p[2] |
 | ☐ | Form 8D | Form 8D - Application (adoption) | Adoption | AcroForm | 1 | 25 (13T/4A/8C) |  |
 | ☐ | Form 8D.1 | Form 8D.1 - Application (Dispense with Parent’s Consent to Adoption before Placement) | Adoption | AcroForm | 2 | 21 (13T/5A/3C) |  |
@@ -24,7 +24,7 @@ printed page, so their widths moved too — review those first.
 | ☐ | Form 8D.3 | Form 8D.3 - Notice of intention to place First Nations, Inuk or Métis child for adoption | Adoption | AcroForm | 1 | 12 (10T/0A/2C) |  |
 | ☐ | Form 13C | Form 13C - Comparison of Net Family Property Statements | Financial Disclosure | Word | 5 | 404 (401T/0A/3C) |  |
 | ☐ | Form 15D | Form 15D - Consent Motion to Change Child Support | Motion to Change | AcroForm | 4 | 126 (99T/3A/24C) |  |
-| ☐ | Form 17B | Form 17B - Case conference brief for protection application or status review | Conferences | AcroForm | 5 | 133 (47T/30A/56C) |  |
+| ☐ | Form 17B | Form 17B - Case conference brief for protection application or status review | Conferences | AcroForm | 5 | 136 (50T/30A/56C) |  |
 | ☐ | Form 17D | Form 17D - Settlement conference brief for protection application or status review | Conferences | AcroForm | 5 | 124 (50T/30A/44C) |  |
 | ☐ | Form 17F | Form 17F - Confirmation of Conference | Conferences | AcroForm | 2 | 49 (24T/9A/16C) |  |
 | ☐ | Form 17G | Form 17G - Certificate of Dispute Resolution | Conferences | AcroForm | 1 | 29 (22T/0A/7C) |  |
@@ -36,10 +36,10 @@ printed page, so their widths moved too — review those first.
 | ☐ | Form 23C | Form 23C - Affidavit for Uncontested Trial | Evidence & Discovery | AcroForm | 6 | 135 (80T/16A/39C) | no-anchor p[4, 5] |
 | ☐ | Form A-25A | Form A-25A - Divorce Order (one page) | Divorce | AcroForm | 1 | 22 (12T/10A/0C) |  |
 | ☐ | Form 25B | Form 25B - Secure treatment order | Orders | AcroForm | 2 | 35 (24T/5A/6C) |  |
-| ☐ | Form 25C | Form 25C - Adoption order | Adoption | Word | 1 | 24 (13T/3A/8C) |  |
+| ☐ | Form 25C | Form 25C - Adoption order | Adoption | Word | 1 | 28 (13T/7A/8C) |  |
 | ☐ | Form 25D | Form 25D - Order (Uncontested Trial) | Orders | AcroForm | 4 | 140 (81T/12A/47C) |  |
 | ☐ | Form 25E | Form 25E - Notice Disputing Approval of Order | Orders | AcroForm | 1 | 18 (8T/10A/0C) | no-anchor p[1] |
-| ☐ | Form 26 | Form 26 - Statement of Money Owed | Enforcement | AcroForm | 6 | 215 (194T/5A/16C) | no-anchor p[6] |
+| ☐ | Form 26 | Form 26 - Statement of Money Owed | Enforcement | AcroForm | 6 | 232 (211T/5A/16C) | no-anchor p[6] |
 | ☐ | Form 26A | Form 26A - Affidavit of Enforcement Expenses | Enforcement | AcroForm | 2 | 97 (80T/6A/11C) |  |
 | ☐ | Form 26C | Form 26C - Notice of Transfer of Enforcement | Enforcement | AcroForm | 2 | 79 (66T/7A/6C) |  |
 | ☐ | Form 26D | Form 26D - Affidavit for Filing Family Arbitration Award for Support with Court | Enforcement | Word | 2 | 38 (30T/5A/3C) |  |
@@ -67,15 +67,15 @@ printed page, so their widths moved too — review those first.
 | ☐ | Form 32B | Form 32B - Warrant for Arrest | Enforcement | AcroForm | 2 | 45 (34T/0A/11C) |  |
 | ☐ | Form 32C | Form 32C - Affidavit for Warrant of Committal | Enforcement | AcroForm | 2 | 52 (21T/12A/19C) |  |
 | ☐ | Form 32D | Form 32D - Warrant of Committal | Enforcement | AcroForm | 2 | 48 (36T/1A/11C) |  |
-| ☐ | Form 32.1A | Form 32.1A - Dispute of Request for Enforcement | Enforcement | AcroForm | 1 | 24 (12T/10A/2C) |  |
+| ☐ | Form 32.1A | Form 32.1A - Dispute of Request for Enforcement | Enforcement | AcroForm | 1 | 26 (14T/10A/2C) |  |
 | ☐ | Form 33 | Form 33 - Information for warrant to bring a child to a place of safety | Child Protection | AcroForm | 1 | 18 (14T/2A/2C) |  |
 | ☐ | Form 33A | Form 33A - Warrant to bring a child to a place of safety | Child Protection | AcroForm | 2 | 29 (28T/0A/1C) |  |
 | ☐ | Form 33B | Form 33B - Plan of care for child(ren) (Children’s Aid Society) | Child Protection | AcroForm | 4 | 58 (36T/14A/8C) |  |
-| ☐ | Form 33B.1 | Form 33B.1 - Answer and plan of care (parties other than Children’s Aid Society) | Child Protection | AcroForm | 7 | 174 (136T/15A/23C) |  |
-| ☐ | Form 33B.2 | Form 33B.2 - Answer (Child, Youth and Family Services Act, 2017 cases other than child protection and status review) | Child Protection | AcroForm | 5 | 106 (91T/11A/4C) |  |
+| ☐ | Form 33B.1 | Form 33B.1 - Answer and plan of care (parties other than Children’s Aid Society) | Child Protection | AcroForm | 7 | 178 (140T/15A/23C) |  |
+| ☐ | Form 33B.2 | Form 33B.2 - Answer (Child, Youth and Family Services Act, 2017 cases other than child protection and status review) | Child Protection | AcroForm | 5 | 110 (95T/11A/4C) |  |
 | ☐ | Form 33C | Form 33C - Statement of agreed facts (child protection) | Child Protection | AcroForm | 3 | 48 (38T/10A/0C) |  |
 | ☐ | Form 33D | Form 33D - Statement of agreed facts (status review) | Child Protection | AcroForm | 3 | 55 (47T/8A/0C) |  |
-| ☐ | Form 33E | Form 33E - Child’s Consent to Secure Treatment | Child Protection | AcroForm | 2 | 34 (21T/2A/11C) |  |
+| ☐ | Form 33E | Form 33E - Child’s Consent to Secure Treatment | Child Protection | AcroForm | 2 | 35 (22T/2A/11C) |  |
 | ☐ | Form 33F | Form 33F - Consent to Secure Treatment (Person Other than Child) | Child Protection | AcroForm | 1 | 27 (11T/3A/13C) |  |
 | ☐ | Form 34 | Form 34 - Child's Consent to Adoption | Adoption | AcroForm | 2 | 29 (16T/4A/9C) |  |
 | ☐ | Form 34A | Form 34A - Affidavit of parentage | Adoption | AcroForm | 3 | 90 (53T/5A/32C) | no-anchor p[1] |
@@ -86,22 +86,22 @@ printed page, so their widths moved too — review those first.
 | ☐ | Form 34F | Form 34F - Parent’s or custodian’s consent to adoption | Adoption | AcroForm | 2 | 36 (22T/0A/14C) |  |
 | ☐ | Form 34G | Form 34G - Affidavit of adoption licensee or society employee | Adoption | AcroForm | 3 | 48 (23T/8A/17C) | no-anchor p[3] |
 | ☐ | Form 34G.1 | Form 34G.1 - Affidavit of society employee for adoption of a child in extended society care | Adoption | Word | 3 | 80 (53T/6A/21C) |  |
-| ☐ | Form 34H | Form 34H - Affidavit of Applicant to a Family Adoption | Adoption | Word | 4 | 66 (31T/8A/27C) |  |
+| ☐ | Form 34H | Form 34H - Affidavit of Applicant to a Family Adoption | Adoption | Word | 4 | 78 (43T/8A/27C) |  |
 | ☐ | Form 34H.1 | Form 34H.1 - Affidavit of Person over 18 Living with Applicant to a Family Adoption | Adoption | AcroForm | 2 | 46 (34T/4A/8C) | no-anchor p[2] |
 | ☐ | Form 34I | Form 34I - Parent’s consent to adoption by spouse | Adoption | AcroForm | 2 | 38 (20T/4A/14C) |  |
 | ☐ | Form 34J | Form 34J - Affidavit of Execution and Independent Legal Advice (Children’s Lawyer) | Adoption | AcroForm | 1 | 17 (12T/0A/5C) |  |
 | ☐ | Form 34K | Form 34K - Certificate of clerk (adoption) | Adoption | Word | 8 | 179 (9T/4A/166C) |  |
 | ☐ | Form 34L | Form 34L - Application for openness order | Adoption | AcroForm | 3 | 35 (20T/11A/4C) |  |
-| ☐ | Form 34M | Form 34M - Consent to openness order under s. 194 of the Child, Youth and Family Services Act, 2017 | Adoption | AcroForm | 3 | 29 (20T/9A/0C) | no-anchor p[2] |
+| ☐ | Form 34M | Form 34M - Consent to openness order under s. 194 of the Child, Youth and Family Services Act, 2017 | Adoption | AcroForm | 3 | 32 (23T/9A/0C) | no-anchor p[2] |
 | ☐ | Form 34M.1 | Form 34M.1 - Consent to openness order under s. 196 or 197 of the Child, Youth and Family Services Act, 2017 | Adoption | AcroForm | 3 | 30 (18T/12A/0C) |  |
-| ☐ | Form 34N | Form 34N - Application to change or terminate openness order | Adoption | AcroForm | 5 | 49 (29T/13A/7C) |  |
-| ☐ | Form 35.1 | Form 35.1 - Affidavit (decision-making responsibility, parenting time, contact) | Affidavits | AcroForm | 8 | 243 (116T/90A/37C) | no-anchor p[1] |
+| ☐ | Form 34N | Form 34N - Application to change or terminate openness order | Adoption | AcroForm | 5 | 53 (33T/13A/7C) |  |
+| ☐ | Form 35.1 | Form 35.1 - Affidavit (decision-making responsibility, parenting time, contact) | Affidavits | AcroForm | 8 | 250 (123T/90A/37C) | no-anchor p[1] |
 | ☐ | Form 35.1A | Form 35.1A - Affidavit (child protection information) | Child Protection | AcroForm | 2 | 70 (66T/4A/0C) |  |
 | ☐ | Form 38 | Form 38 - Notice of Appeal | Appeals | AcroForm | 2 | 29 (12T/11A/6C) |  |
 | ☐ | Form 39 | Form 39 - Notice of Approaching Dismissal | Case Management | AcroForm | 1 | 8 (4T/4A/0C) |  |
 | ☐ | Form 43 | Form 43 - Binding Judicial Dispute Resolution Hearing Request and Consent | Dispute Resolution | Word | 4 | 59 (32T/6A/21C) |  |
 | ☐ | Form 43A | Form 43A - Binding Judicial Dispute Resolution Hearing Request and Consent – Office of the Children’s Lawyer | Dispute Resolution | Word | 3 | 33 (18T/6A/9C) |  |
-| ☐ | Form 43B | Form 43B - Affidavit for Binding Judicial Dispute Resolution Hearing | Dispute Resolution | Word | 6 | 93 (48T/14A/31C) | no-anchor p[4, 5] |
+| ☐ | Form 43B | Form 43B - Affidavit for Binding Judicial Dispute Resolution Hearing | Dispute Resolution | Word | 6 | 108 (63T/14A/31C) | no-anchor p[4, 5] |
 | ☐ | Form 43C | Form 43C - Confirmation of Binding Judicial Dispute Resolution Hearing | Dispute Resolution | Word | 2 | 27 (10T/8A/9C) |  |
 
 **90 forms, 230 pages.** Fields are counted TextField/TextArea/CheckBox.

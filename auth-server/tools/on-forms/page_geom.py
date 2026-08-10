@@ -472,6 +472,36 @@ def enclosing_cell(field, rules, vlines, pad=1.5):
             min(right, key=lambda v: v[0])[0], bot)
 
 
+def cell_grid(rules, vlines, tol=1.5):
+    """Every cell a drawn grid encloses, as (x0, y0, x1, y1).
+
+    `enclosing_cell` answers "which cell is this field in", which by construction
+    cannot find a cell that holds no field — and an empty cell is exactly what a
+    missing box looks like. This walks the grid instead: for each pair of vertical
+    lines that are neighbours across a band, the horizontal rules crossing that band
+    cut it into cells.
+    """
+    out = []
+    for vx, vy0, vy1 in vlines:
+        for wx, wy0, wy1 in vlines:
+            if wx <= vx + 4:
+                continue
+            top, bot = max(vy0, wy0), min(vy1, wy1)
+            if bot - top < 8:
+                continue
+            # Neighbours: nothing else running the full height between them.
+            if any(vx + 2 < ux < wx - 2 and uy0 <= top + tol and uy1 >= bot - tol
+                   for ux, uy0, uy1 in vlines):
+                continue
+            crossing = sorted({r[0] for r in rules
+                               if r[1] <= vx + tol and r[2] >= wx - tol
+                               and top - tol <= r[0] <= bot + tol})
+            for y0, y1 in zip(crossing, crossing[1:]):
+                if y1 - y0 >= 8:
+                    out.append((vx, y0, wx, y1))
+    return out
+
+
 def column_runs(fields, min_len=3, max_gap=40.0):
     """Runs of stacked cells that really are one column of one table.
 
