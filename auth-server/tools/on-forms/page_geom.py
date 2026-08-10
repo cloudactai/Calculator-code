@@ -256,7 +256,8 @@ def cell_writing_box(cell, glyphs, max_h=21.5, min_h=8.0, pad=1.0):
     bottom = cell[3] - pad
     if bottom - top < min_h:
         return None
-    top = max(top, bottom - max_h)
+    if max_h is not None:
+        top = max(top, bottom - max_h)
     # Only fill a cell whose writing space is actually clear. Where a caption sits
     # anywhere but the top — Ontario prints "municipality" and "province, state or
     # country" *under* the line they label, inside the same drawn box — growing the
@@ -472,9 +473,17 @@ def enclosing_cell(field, rules, vlines, pad=1.5):
 
     Requires all four borders: a rule above and below, and a vertical line on each
     side that spans the gap between them.
+
+    The vertical anchor is the box's **bottom edge**, not its centre. A box is pinned
+    at the bottom — that is the edge that sits on a rule — while its centre moves
+    every time the box is resized. Anchoring on the centre meant that filling a box
+    to its cell could put the centre in a *different* cell, so the next run sized it
+    against that one instead: Form 13C p4 flipped five fields between a 21.5 pt line
+    and a 76 pt block for ever. The bottom edge does not move when the top does, so
+    the answer is stable under the very change the refit makes.
     """
     x0, y0, x1, y1 = box(field)
-    cx, cy = (x0 + x1) / 2, (y0 + y1) / 2
+    cx, cy = (x0 + x1) / 2, y1 - pad
     below = [r for r in rules if r[0] >= cy - pad and r[1] <= cx <= r[2]]
     above = [r for r in rules if r[0] <= cy + pad and r[1] <= cx <= r[2]]
     if not below or not above:

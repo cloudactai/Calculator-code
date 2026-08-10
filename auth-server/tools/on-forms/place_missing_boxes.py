@@ -49,14 +49,11 @@ BLOCK_MIN = 22.0
 MIN_RULE = 24.0        # a rule shorter than this is a tick or a leader, not a blank
 ROW_TOL = 1.5          # rules this close in y are the same printed line
 
-# Form 13C's page 4 is held back. Its grid is read two different ways depending on
-# where you start — `cell_grid` walks outward from a pair of vertical lines and
-# `enclosing_cell` works from a field's own centre — and on that page they disagree by
-# a factor of three. Boxing its empty cells leaves `refit_on_fields.py` flipping five
-# fields between a 21.5 pt line and a 76 pt block on every run, so the pass never
-# settles. The fix belongs in `enclosing_cell` (anchoring on the box's bottom edge,
-# which is where a box is really pinned, rather than its centre) and wants its own
-# change with its own renders.
+# Form 13C page 4 is held back. Its grid reads differently depending on where you
+# start, and boxing its empty cells leaves `refit_on_fields.py` flipping fields
+# between a line and a block on every run. Anchoring `enclosing_cell` on a box's
+# bottom edge rather than its centre was expected to cure this and did not, so the
+# real cause is still unidentified; the page needs reading by hand.
 HELD_BACK = {"Form13C"}
 
 
