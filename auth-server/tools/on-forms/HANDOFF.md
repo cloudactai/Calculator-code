@@ -100,14 +100,20 @@ dropped (guide §5).
 every page yet.** Coverage of this pass, counted honestly:
 
 - 90 templates, **230 pages**.
-- Pages read as a render during this work: **20**, across 12 forms — including
-  every source class (AcroForm, Word, XFA) and both before and after.
-- Forms with every page checked: **3** (25C, 26D, 35.1A).
+- Pages read as a render during this work: **~82**, across **26 forms**.
+- **All 11 inferred-geometry forms are fully reviewed** — the ten Word-sourced
+  (13C, 25C, 26D, 34G.1, 34H, 34K, 43, 43A, 43B, 43C) and the XFA one (20). Those
+  are the ones whose box *widths* moved, so they carried the risk.
+- Of the 79 AcroForm forms, 15 are fully reviewed and 64 are unread.
 
-Work through `ON_REVIEW_LIST.md`. Take the **Word** and **XFA** rows first: those
-14 boxes were inferred from the printed page, so their widths moved as well as
-their heights. The 78 AcroForm rows kept the government's own rectangle
-horizontally and only moved vertically, so they carry much less risk.
+Three faults were found by looking, after the gates had gone quiet — a box seated
+on a section divider, a box running past its blank into the tail of a sentence,
+and a box reaching up through the line of type above it. All three are fixed and
+each now has a check. That is the pattern the last handoff recorded, and it held.
+
+Work through `ON_REVIEW_LIST.md`. The remaining risk is concentrated in the
+**AcroForm** rows, which kept the government's own rectangle horizontally and only
+moved vertically — much less risk per form, but 64 forms of it.
 
 Render with `contact_sheet.py`, and check against the government's own PDF in
 `_incoming_on/`, not just for tidiness.
@@ -124,18 +130,43 @@ also be the one that changes it (guide §7.8).
   name / Date of birth / Sex / Birth registration number) has a box.
 - **Form 34K** p2: "(k) Other joint application (Specify.)" and "(l) (Other.
   Specify.)" have no box for the specify.
-- **Form 43** item 3, **Form 43B** item 5 — writing areas that are bare white space
-  on the government page. Per the golden rule they were deliberately left without a
-  box; worth revisiting, since a lawyer cannot type there.
+- **Form 33B.1** p3 item 8 and **Form 43B** p3 item 8 — the child table has boxes in
+  only one of its columns.
+- **Numbered questions on the Word-sourced forms whose answer is bare white space
+  have no box at all.** This is the largest gap by count and it is systematic, not
+  accidental: Form 43 items 3 and 6; Form 43A items 4 and 5; Form 43B items 9, 10,
+  11, 12, 16, 18, 20, 22 and 25; Form 43C items 5 to 9; Form 34H p2 item 4 and p3
+  items 5 to 7; Form 34G.1 p3 twice. The government page prints a caption, then
+  empty paper — no rule, no shading, no cell — so the golden rule ("never guess")
+  left them empty, and `README.md` records that as a decision. It is worth
+  revisiting, because a lawyer cannot type in any of them. The anchor the placement
+  guide §6 suggests is available on every one: a caption ending in `:` with an empty
+  band under it, closed at the bottom by whatever prints next.
 
-### The 16 open `check_seating.py` findings
+### The 63 open `check_seating.py` findings
 
+- **`mixed-column` ×48** — a column of three or more stacked table cells that is
+  not all one shape, so one cell in the table draws differently from the rest
+  (placement guide §8). It follows the government's own multiline flags, so it may
+  well be intentional — "Court location" as one line beside "Court orders made" as
+  a block is reasonable. Reported rather than normalised, because the guide says
+  normalise *per table* to the local majority, and that is a judgement call on each
+  table rather than something to apply across 48 columns unseen. Heaviest:
+  Form 35.1 (5), Form 25D (3), Form 25B, Form 32C (2 each).
 - **`no-anchor` ×15** — a government widget sitting in open white space with no
-  rule, cell or caption on its own line. These are the government's own boxes and
-  are almost certainly right; they are reported so a person confirms rather than
+  rule, cell or caption on its own line. Spot-checked several (Form 8C p2, Form 43B
+  p4–5) and they are correctly placed; reported so a person confirms rather than
   assumes.
-- **`covers-text` ×1** — Form 34G.1 p3, a flat-sourced box that runs past its blank
-  onto ", and was".
+
+### One inconsistency to settle
+
+A header cell drawn as a box roughly 45 pt tall — "Judge (print or type name)",
+"Date of order", "Court office address" — becomes a `TextArea` filling the box when
+the page has no rule under it (Form A.25A, Form 8.0.1) but a single 13.3 pt line
+when it does (Form 25C, Form 25D). Both follow the stated rule; they just look
+different side by side. If you want these always single-line, it is a small change
+to `refit_on_fields.py`, but it argues with "open white space gets a text area", so
+it needs your call rather than mine.
 
 ### Still outstanding from the catalogue (unchanged)
 

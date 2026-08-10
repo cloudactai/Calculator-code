@@ -133,6 +133,25 @@ def check_form(doc_id, export):
             if crossed:
                 add("crosses-column", f,
                     f"runs across {len(crossed)} drawn column separator(s)")
+    # 5: a column of table cells that is not all one shape. The app draws TextField
+    # and TextArea differently, so a column with both reads as one cell that does not
+    # match the rest of its table (placement guide §8). It is reported rather than
+    # normalised: the split comes from the government's own multiline flags, and the
+    # guide says normalise *per table* to the local majority — a judgement call on
+    # each table, not something to apply across 48 columns unseen.
+    columns = collections.defaultdict(list)
+    for f in fields:
+        if f["type"] in ("TextField", "TextArea"):
+            columns[(f["page"], round(f["x"] / 3))].append(f)
+    for (page, _bucket), members in sorted(columns.items()):
+        if len(members) < 3:
+            continue
+        kinds = collections.Counter(m["type"] for m in members)
+        if len(kinds) > 1:
+            top = members[0]
+            out.append(("mixed-column", page,
+                        f"x≈{top['x']:.0f}: {len(members)} stacked cells, "
+                        + " + ".join(f"{n} {k}" for k, n in kinds.most_common())))
     return out
 
 
