@@ -107,3 +107,72 @@ unboxed by design. QA-rendered every page, bounds-checked, resolver-verified.
 
 ## ALL 45 MIGRATED — catalog sortOrder 1–45 contiguous, audit excluded=0, dry-run passes.
 
+---
+
+## STATUS — 2026-08-06: the rest of the rule set (125 of 140)
+
+The "45" above was a master list someone had drawn up, not the actual Ontario
+family-law rule set. The government index publishes **140** forms; 95 of them
+had never been catalogued. 80 are now migrated, bringing Ontario to **125**.
+
+Pipeline and tooling live in `auth-server/tools/on-forms/` (see its README) —
+the fetch is driven off the index page itself, so the source list no longer has
+to be maintained by hand. 78 of the new forms came straight from their
+government AcroForm widget rectangles; Form 20 needed the headless XFA flatten
+the BC Supreme batch uses; Form 8.01 has no party panel and only heading binds.
+
+**Then the Word-only set, same day:** the fifteen `.docx`-only forms were
+converted with LibreOffice (`tools/on-forms/convert_docx.sh`) and ten of them
+built through `place_flat_fields.py`, which reads boxes off the printed page —
+shading, ☐ glyphs, stroked squares, ruled cells, panel interiors and writing
+lines — since a Word export carries no AcroForm layer. Ontario is now at **135**.
+
+Added: **13C, 25C, 26D, 34G.1, 34H, 34K, 43, 43A, 43B, 43C** (940 fields).
+
+**Still outstanding (6):**
+
+- **37A–37E:** excluded by decision. They are the registry's own generation
+  templates — they print `[[Jurisdiction]]`-style merge placeholders and are
+  issued by the court, not completed by a party. The pipeline builds them
+  cleanly; drop them from `COURT_ISSUED` in `build_on_forms.py` to include them.
+- **Form 29G:** its XFA flatten indents the Payor and Garnishee panels off the
+  right edge of the sheet. The background itself is wrong, so it is held back
+  rather than shipped with a truncated panel.
+
+**Carried limitation:** the ten Word-sourced forms and the two XFA ones have no
+prefill binds — a flat page has no field names to match, and nothing is bound
+rather than guessed. Same position as the XFA-named forms from the July batch;
+heading prefill for all of them stays on the `PREFILL_PLAN.md` track.
+
+**Known wart carried forward:** Form 37 (Notice of Hearing) is catalogued under
+Child Protection. It belongs with the interjurisdictional-support set (37A–37E),
+which is where those forms are filed. Left alone here because it is already
+shipped; worth correcting when 37A–37E land.
+
+---
+
+## STATUS — 2026-08-10: the 90 new templates' geometry refit
+
+The 90 forms added above shipped with field boxes that were catalogued correctly
+but placed wrongly — the geometry itself, not the import. Both defects are fixed:
+
+- **Boxes 2–3× the height of a printed line.** They took their height from the
+  government's AcroForm widget, and the editor top-aligns its input, so typed text
+  floated above the rule. 2993 fields re-seated; 2925 of 3041 TextFields now sit at
+  exactly the 13.3 pt the approved 45 use (was 0).
+- **The ten Word-sourced forms overshot their rules.** Their boxes started mid-line
+  and ran past the end of the blank. They now snap to the government's own printed
+  rule, stay inside their column, and start past whatever is printed at the head of
+  the cell. 41 strays dropped.
+
+Tooling: `tools/on-forms/refit_on_fields.py` (the pass), `check_seating.py` (the
+gate that asks whether a box sits on its line — the older gates never did),
+`contact_sheet.py` (renders), `review_list.py`, `page_geom.py`, `on_scope.py`.
+
+**The 45 approved Ontario templates and the 43 BC ones were not touched**, and a
+sha256 scope check in `on_scope.py` proves it on every run.
+
+What remains is review, not repair: see `ON_REVIEW_LIST.md` for the per-form
+checklist and `tools/on-forms/HANDOFF.md` §3 for the handful of gaps that need a
+field added or split rather than moved.
+

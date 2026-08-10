@@ -1,0 +1,263 @@
+{
+ "staticFields": [
+  {
+   "id": 1750341144001,
+   "type": "TextField",
+   "x": 424.2,
+   "y": 52.97,
+   "width": 234.18,
+   "height": 19.95,
+   "value": "",
+   "fontSize": 9,
+   "color": [
+    0,
+    0,
+    0
+   ],
+   "background": "none",
+   "border": "none",
+   "page": 1,
+   "bind": "court_info.courtFileNumber"
+  },
+  {
+   "id": 1750341144002,
+   "type": "TextField",
+   "x": 48.48,
+   "y": 52.72,
+   "width": 547.83,
+   "height": 19.95,
+   "value": "",
+   "fontSize": 9,
+   "color": [
+    0,
+    0,
+    0
+   ],
+   "background": "none",
+   "border": "none",
+   "page": 1,
+   "bind": "court_info.courtName"
+  },
+  {
+   "id": 1750341144003,
+   "type": "TextField",
+   "x": 66.0,
+   "y": 82.22,
+   "width": 520.56,
+   "height": 19.95,
+   "value": "",
+   "fontSize": 9,
+   "color": [
+    0,
+    0,
+    0
+   ],
+   "background": "none",
+   "border": "none",
+   "page": 1,
+   "bind": "court_info.courtOfficeAddress"
+  },
+  {
+   "id": 1750341144004,
+   "type": "TextArea",
+   "x": 49.92,
+   "y": 154.32,
+   "width": 383.04,
+   "height": 57.42,
+   "value": "",
+   "fontSize": 9,
+   "color": [
+    0,
+    0,
+    0
+   ],
+   "background": "none",
+   "border": "none",
+   "page": 1,
+   "bind": "applicant.fullLegalName,applicant.address,applicant.municipality,applicant.phoneAndFax,applicant.email"
+  },
+  {
+   "id": 1750341144005,
+   "type": "TextArea",
+   "x": 323.28,
+   "y": 154.32,
+   "width": 384.84,
+   "height": 57.42,
+   "value": "",
+   "fontSize": 9,
+   "color": [
+    0,
+    0,
+    0
+   ],
+   "background": "none",
+   "border": "none",
+   "page": 1,
+   "bind": "applicantsLawyer.fullLegalName,applicantsLawyer.address,applicantsLawyer.municipality,applicantsLawyer.phoneAndFax,applicantsLawyer.email"
+  },
+  {
+   "id": 1750341144006,
+   "type": "TextArea",
+   "x": 49.92,
+   "y": 237.36,
+   "width": 383.04,
+   "height": 57.24,
+   "value": "",
+   "fontSize": 9,
+   "color": [
+    0,
+    0,
+    0
+   ],
+   "background": "none",
+   "border": "none",
+   "page": 1,
+   "bind": "respondent.fullLegalName,respondent.address,respondent.municipality,respondent.phoneAndFax,respondent.email"
+  },
+  {
+   "id": 1750341144007,
+   "type": "TextArea",
+   "x": 323.28,
+   "y": 237.36,
+   "width": 384.84,
+   "height": 57.24,
+   "value": "",
+   "fontSize": 9,
+   "color": [
+    0,
+    0,
+    0
+   ],
+   "background": "none",
+   "border": "none",
+   "page": 1,
+   "bind": "respondentsLawyer.fullLegalName,respondentsLawyer.address,respondentsLawyer.municipality,respondentsLawyer.phoneAndFax,respondentsLawyer.email"
+  },
+  {
+   "id": 1750341144008,
+   "type": "TextArea",
+   "x": 49.92,
+   "y": 320.4,
+   "width": 794.88,
+   "height": 57.24,
+   "value": "",
+   "fontSize": 9,
+   "color": [
+    0,
+    0,
+    0
+   ],
+   "background": "none",
+   "border": "none",
+   "page": 1
+  },
+  {
+   "id": 1750341144009,
+   "type": "TextField",
+   "x": 190.8,
+   "y": 374.31,
+   "width": 575.28,
+   "height": 19.95,
+   "value": "",
+   "fontSize": 9,
+   "color": [
+    0,
+    0,
+    0
+   ],
+   "background": "none",
+   "border": "none",
+   "page": 1
+  },
+  {
+   "id": 1750341144010,
+   "type": "TextField",
+   "x": 204.84,
+   "y": 398.31,
+   "width": 554.22,
+   "height": 19.95,
+   "value": "",
+   "fontSize": 9,
+   "color": [
+    0,
+    0,
+    0
+   ],
+   "background": "none",
+   "border": "none",
+   "page": 1
+  },
+  {
+   "id": 1750341144011,
+   "type": "CheckBox",
+   "x": 71.61,
+   "y": 443.44,
+   "width": 15.37,
+   "height": 15.48,
+   "value": "",
+   "fontSize": 9,
+   "color": [
+    0,
+    0,
+    0
+   ],
+   "background": "none",
+   "border": "none",
+   "page": 1
+  },
+  {
+   "id": 1750341144012,
+   "type": "TextField",
+   "x": 310.08,
+   "y": 439.84,
+   "width": 406.98,
+   "height": 19.95,
+   "value": "",
+   "fontSize": 9,
+   "color": [
+    0,
+    0,
+    0
+   ],
+   "background": "none",
+   "border": "none",
+   "page": 1
+  },
+  {
+   "id": 1750341144013,
+   "type": "CheckBox",
+   "x": 71.61,
+   "y": 461.07,
+   "width": 15.37,
+   "height": 15.49,
+   "value": "",
+   "fontSize": 9,
+   "color": [
+    0,
+    0,
+    0
+   ],
+   "background": "none",
+   "border": "none",
+   "page": 1
+  },
+  {
+   "id": 1750341144014,
+   "type": "TextField",
+   "x": 47.33,
+   "y": 621.89,
+   "width": 391.68,
+   "height": 19.95,
+   "value": "",
+   "fontSize": 9,
+   "color": [
+    0,
+    0,
+    0
+   ],
+   "background": "none",
+   "border": "none",
+   "page": 1
+  }
+ ]
+}
