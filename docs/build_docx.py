@@ -24,7 +24,7 @@ from docx.oxml.ns import qn
 from docx.shared import Inches, Pt, RGBColor
 
 DOCS = Path(__file__).resolve().parent
-DEFAULT_SOURCES = ["ARCHITECTURE.md", "AUTHENTICATION.md", "MATTERS.md", "FORMS.md"]
+DEFAULT_SOURCES = ["ARCHITECTURE.md", "AUTHENTICATION.md", "MATTERS.md", "FORMS.md", "CALCULATORS.md", "SECURITY.md"]
 
 CODE_FONT = "Consolas"
 CODE_SIZE = Pt(9.5)          # sz 19, matches the existing exports
