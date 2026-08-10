@@ -371,6 +371,16 @@ def seat_rule(field, rules, above=4.0, below=9.0, min_frac=0.45, prefer="overlap
 
 SIGNATURE_STOP = ("signature", "signed")
 
+# A line captioned with a bare role is a signature line even though it never says so:
+# Form 43 rules off the judge's signature and labels it just "Justice", and Form 43A
+# does the same with "Children's Lawyer". Placing a box there breaks the placement
+# guide's §5 rule against boxing a signature.
+SIGNATURE_ROLE = ("justice", "judge", "clerk", "commissioner", "registrar",
+                  "witness", "deponent", "signature")
+# ...unless the caption asks for the name in writing, which is a real field — the
+# guide's own warning that "name of signature 1" must keep its box.
+SIGNATURE_ROLE_EXCEPT = ("name", "print", "type", "printed", "date")
+
 
 def on_signature_line(field, ink, reach=26.0):
     """Is this box sitting on a printed signature line? (placement guide §5)
@@ -391,6 +401,31 @@ def on_signature_line(field, ink, reach=26.0):
         prior = [w for w in ink
                  if abs(w[3] - wy1) < 3 and w[2] <= wx0 + 1 and wx0 - w[2] < 40]
         if any(w[4].lower().strip() in ("of", "date") for w in prior):
+            continue
+        return True
+    return False
+
+
+def on_role_line(field, ink, reach=26.0):
+    """Is this box on a line captioned with a bare role — "Justice", "Clerk"?
+
+    Those are signature lines that never use the word. The caption is read whole, so
+    "Judge (print or type name)" and "Date of signature" keep their boxes.
+    """
+    x0, _, x1, y1 = box(field)
+    rows = {}
+    for wx0, wy0, wx1, wy1, text in ink:
+        if y1 - 2 <= wy0 <= y1 + reach and _overlap(x0, x1, wx0, wx1) > 0:
+            rows.setdefault(round(wy1, 1), []).append((wx0, text))
+    for _key, parts in rows.items():
+        words = [t.lower().strip(":.,()") for _x, t in sorted(parts)]
+        # The role has to *lead* the caption. "Justice" and "Clerk of the court"
+        # label the line above them; "Certificate of Clerk (Adoption)" is the form's
+        # own title printed in the header, and matching it anywhere in the line cost
+        # Form 34K its Court File Number box.
+        if not words or words[0] not in SIGNATURE_ROLE:
+            continue
+        if any(w in SIGNATURE_ROLE_EXCEPT for w in words):
             continue
         return True
     return False
