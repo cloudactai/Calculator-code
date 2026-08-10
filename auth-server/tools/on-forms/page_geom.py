@@ -1,0 +1,338 @@
+"""Printed-page geometry: the rules, cells and ink a field is supposed to sit on.
+
+Everything here reads the *printed background* of a promoted template — the PDF in
+`form-template-export/` after the widget layer has been stripped. That page is the
+government's own artwork, so it is the ground truth the placement guide's golden rule
+points at ("never guess — read the government's own page").
+
+Coordinates are PDF points, y down, matching the overlay convention in `docs/FORMS.md`
+(`field.x`/`field.y` = box left/top in points, `width`/`height` = points x 1.5).
+"""
+
+import fitz
+
+SCALE = 1.5          # JSON stores width/height as points x 1.5
+STD_LINE = 13.3      # the approved single-line box height, in points
+
+
+# --------------------------------------------------------------------------- ink
+
+def _segments(page):
+    """Split every drawing into horizontal and vertical primitives."""
+    horiz, vert = [], []
+    for d in page.get_drawings():
+        for it in d["items"]:
+            kind = it[0]
+            if kind == "l":
+                p1, p2 = it[1], it[2]
+                if abs(p1.y - p2.y) <= 0.6 and abs(p1.x - p2.x) >= 3:
+                    horiz.append(((p1.y + p2.y) / 2, min(p1.x, p2.x), max(p1.x, p2.x)))
+                elif abs(p1.x - p2.x) <= 0.6 and abs(p1.y - p2.y) >= 3:
+                    vert.append(((p1.x + p2.x) / 2, min(p1.y, p2.y), max(p1.y, p2.y)))
+            elif kind == "re":
+                r = it[1]
+                # A thin filled rectangle is how some producers draw a rule.
+                if r.height <= 2.0 and r.width >= 3:
+                    horiz.append((r.y1, r.x0, r.x1))
+                elif r.width <= 2.0 and r.height >= 3:
+                    vert.append((r.x1, r.y0, r.y1))
+                elif d.get("fill") is not None and d.get("color") is None:
+                    pass          # a solid panel, not a border; handled by shaded()
+                else:
+                    # a stroked box contributes all four of its borders
+                    horiz.append((r.y0, r.x0, r.x1))
+                    horiz.append((r.y1, r.x0, r.x1))
+                    vert.append((r.x0, r.y0, r.y1))
+                    vert.append((r.x1, r.y0, r.y1))
+    return horiz, vert
+
+
+def _merge(segs, pos_tol=1.5, gap_tol=2.0):
+    """Merge collinear segments that touch or nearly touch.
+
+    `pos_tol` has to absorb a double-struck border: LibreOffice draws each table
+    border of Form 13C as two lines 1 pt apart, and left unmerged a field flips
+    between the pair from one run to the next.
+
+    The anchor stays put once a group is opened, so a chain of segments cannot creep
+    away from where it started, and the group reports the *lowest* line — the one the
+    eye reads as the bottom of the blank. Both make the merge order-independent, and
+    the tool has to be idempotent (placement guide §7.9).
+    """
+    out = []
+    for pos, a, b in sorted(segs):
+        for m in out:
+            if abs(m[0] - pos) <= pos_tol and a <= m[2] + gap_tol and b >= m[1] - gap_tol:
+                m[3] = max(m[3], pos)
+                m[1] = min(m[1], a)
+                m[2] = max(m[2], b)
+                break
+        else:
+            out.append([pos, a, b, pos])
+    return [(m[3], m[1], m[2]) for m in out]
+
+
+def hrules(page, min_len=12.0):
+    """Horizontal printed rules as (y, x0, x1), longest-lived first."""
+    horiz, _ = _segments(page)
+    return [r for r in _merge(horiz) if r[2] - r[1] >= min_len]
+
+
+def vrules(page, min_len=6.0):
+    """Vertical printed lines as (x, y0, y1)."""
+    _, vert = _segments(page)
+    return [r for r in _merge(vert) if r[2] - r[1] >= min_len]
+
+
+def shaded(page, lo=0.55, hi=0.99):
+    """Light-grey filled rectangles — the 'writing area' shading."""
+    out = []
+    for d in page.get_drawings():
+        fill = d.get("fill")
+        if not fill:
+            continue
+        if not all(lo <= c <= hi for c in fill[:3]):
+            continue
+        r = d["rect"]
+        if r.width >= 8 and r.height >= 6:
+            out.append((r.x0, r.y0, r.x1, r.y1))
+    return out
+
+
+def words(page):
+    """Printed words as (x0, y0, x1, y1, text), blank-only tokens dropped.
+
+    The flatten leaves runs of spaces where a widget's value used to be; those carry
+    a rectangle but no ink, and treating them as printed content makes a blank line
+    look occupied.
+    """
+    return [(w[0], w[1], w[2], w[3], w[4]) for w in page.get_text("words") if w[4].strip()]
+
+
+def chars(page):
+    """Printed characters as (x0, y0, x1, y1, ch), whitespace dropped.
+
+    Word rectangles are too coarse for two jobs the placement guide calls out. A
+    money cell flattens to the token `"$\\u2002\\u2002\\u2002\\u2002\\u2002"` — a `$`
+    glyph followed by the en-space padding where the widget's value used to be — so
+    the *word* rect spans the whole cell, and a box that correctly starts just after
+    the `$` reads as covering it. Same story for a caption printed inside a cell.
+    Read characters (guide §2: "find the glyph at character level, not word level").
+    """
+    out = []
+    for block in page.get_text("rawdict")["blocks"]:
+        for line in block.get("lines", ()):
+            for span in line.get("spans", ()):
+                for ch in span.get("chars", ()):
+                    if not ch["c"].strip():
+                        continue
+                    x0, y0, x1, y1 = ch["bbox"]
+                    out.append((x0, y0, x1, y1, ch["c"]))
+    return out
+
+
+def ink_right_edge(x0, x1, y0, y1, glyphs, left_frac=0.6):
+    """Right edge of anything printed in the left part of a box's own line.
+
+    The placement guide (§3, §4) wants a box's left edge to clear a printed `$` or a
+    caption shaded behind it, rather than sit on top. Returns None when the band is
+    clear.
+    """
+    cy = (y0 + y1) / 2
+    limit = x0 + left_frac * (x1 - x0)
+    edge = None
+    for gx0, gy0, gx1, gy1, _c in glyphs:
+        if not (gy0 - 1 <= cy <= gy1 + 1):
+            continue
+        if gx1 <= x0 - 0.5 or gx0 >= limit:
+            continue
+        edge = gx1 if edge is None else max(edge, gx1)
+    return edge
+
+
+def ink_below_top(x0, y0, x1, y1, glyphs, top_frac=0.55, cover=0.6):
+    """Bottom of the printed caption a box starts on top of, or None.
+
+    Ontario prints the caption *inside* the cell it labels — "Court File Number" sits
+    at the top of its own box — and the government widget covers the whole cell, so
+    the editor's input starts on the words. The placement guide (§3) says to nudge
+    the box below the hint rather than start on it. Only ink in the box's top band
+    counts, and only ink the box substantially covers, so a caption printed beside
+    the box does not drag its top down.
+    """
+    band = y0 + top_frac * (y1 - y0)
+    edge = None
+    for gx0, gy0, gx1, gy1, _c in glyphs:
+        if gy1 > band or gy0 < y0 - 0.5:
+            continue
+        if min(x1, gx1) - max(x0, gx0) < cover * (gx1 - gx0):
+            continue
+        edge = gy1 if edge is None else max(edge, gy1)
+    return edge
+
+
+def column_bounds(span, anchor_x, cy, vlines):
+    """Narrow a span to the drawn column that `anchor_x` sits in.
+
+    The rule under a table row runs the full width of the row, so snapping a cell's
+    box to that rule stretches it across every column separator on the row. The
+    anchor is where the box was before it moved, which is the column it belongs to.
+    """
+    lo, hi = span
+    for vx, vy0, vy1 in vlines:
+        if not (vy0 <= cy + 1 and vy1 >= cy - 1):
+            continue
+        if lo + 2 < vx < anchor_x:
+            lo = vx
+        elif anchor_x < vx < hi - 2:
+            hi = min(hi, vx)
+    return lo, hi
+
+
+# ------------------------------------------------------------------- field lookup
+
+def box(field):
+    """(x0, y0, x1, y1) of a stored field, in points."""
+    return (field["x"], field["y"],
+            field["x"] + field["width"] / SCALE,
+            field["y"] + field["height"] / SCALE)
+
+
+def _overlap(a0, a1, b0, b1):
+    return max(0.0, min(a1, b1) - max(a0, b0))
+
+
+def seat_candidates(field, rules, above=4.0, below=9.0, min_frac=0.45):
+    """Every printed rule running under this field's bottom edge, left to right.
+
+    A field is 'on' a rule when the rule runs under its bottom edge (a little above
+    it, if the widget overhung, or a little below) and the two share most of their
+    horizontal run.
+    """
+    x0, _, x1, y1 = box(field)
+    out = []
+    for ry, rx0, rx1 in rules:
+        if not (y1 - above <= ry <= y1 + below):
+            continue
+        ov = _overlap(x0, x1, rx0, rx1)
+        if ov <= 0 or ov < min_frac * min(x1 - x0, rx1 - rx0):
+            continue
+        out.append(((ry, rx0, rx1), ov))
+    out.sort(key=lambda c: c[0][1])
+    return out
+
+
+SEAT_GAP = 1.26   # measured on the approved 45: box bottom sits this far above its rule
+
+
+def seat_rule(field, rules, above=4.0, below=9.0, min_frac=0.45, prefer="overlap"):
+    """The printed rule this field sits on, or None.
+
+    `prefer="overlap"` suits an AcroForm source, whose widget rectangle is the
+    government's own and lines up with its rule already. `prefer="leftmost"` suits an
+    inferred source: `place_flat_fields.py` runs a box rightward until it hits the
+    next printed character, so one box routinely spans its own rule *and* the next
+    one along — and the blank it really belongs to is the one it starts on. Taking
+    the widest overlap there put Form 25C's "Date of signature" box on the judge's
+    signature line instead.
+    """
+    cands = seat_candidates(field, rules, above, below, min_frac)
+    if not cands:
+        return None
+    y1 = box(field)[3]
+    # A field already seated on one of these rules keeps it. The search window is
+    # asymmetric — a little above the box, further below — so re-seating walks the
+    # box down, which can bring the *next* rule into range and move it again on the
+    # following run. Treating "already seated" as decisive makes the pass a fixed
+    # point, which the placement guide (§7.9) requires.
+    for rule, _ov in cands:
+        if abs(rule[0] - (y1 + SEAT_GAP)) < 0.05:
+            return rule
+    if prefer == "leftmost":
+        return cands[0][0]
+    return max(cands, key=lambda c: (c[1], -abs(c[0][0] - y1)))[0]
+
+
+SIGNATURE_STOP = ("signature", "signed")
+
+
+def on_signature_line(field, ink, reach=26.0):
+    """Is this box sitting on a printed signature line? (placement guide §5)
+
+    'Date of signature' keeps its box; the signature itself never gets one. The
+    caption on these forms prints *below* its rule, so look down from the box.
+    """
+    x0, _, x1, y1 = box(field)
+    for wx0, wy0, wx1, wy1, text in ink:
+        if not (y1 - 2 <= wy0 <= y1 + reach):
+            continue
+        if _overlap(x0, x1, wx0, wx1) <= 0:
+            continue
+        low = text.lower().strip(":.,()")
+        if low not in SIGNATURE_STOP:
+            continue
+        # "Date of signature" is a real field — look left for the qualifier.
+        prior = [w for w in ink
+                 if abs(w[3] - wy1) < 3 and w[2] <= wx0 + 1 and wx0 - w[2] < 40]
+        if any(w[4].lower().strip() in ("of", "date") for w in prior):
+            continue
+        return True
+    return False
+
+
+def clearance_above(field, rules, ink, rule_y, cap=64.0):
+    """Vertical room between `rule_y` and the nearest printed thing above it.
+
+    Bounded by `cap` so a rule with nothing at all above it (the top row of a
+    borderless column) does not read as an unlimited writing block.
+    """
+    x0, _, x1, _ = box(field)
+    top = rule_y - cap
+    for ry, rx0, rx1 in rules:
+        if ry < rule_y - 1.5 and _overlap(x0, x1, rx0, rx1) > 0.25 * (x1 - x0):
+            top = max(top, ry)
+    for wx0, wy0, wx1, wy1, _t in ink:
+        if wy1 < rule_y - 1.5 and _overlap(x0, x1, wx0, wx1) > 0:
+            top = max(top, wy1)
+    return rule_y - top
+
+
+def enclosing_cell(field, rules, vlines, pad=1.5):
+    """The drawn cell containing this field, as (x0, y0, x1, y1), or None.
+
+    Requires all four borders: a rule above and below, and a vertical line on each
+    side that spans the gap between them.
+    """
+    x0, y0, x1, y1 = box(field)
+    cx, cy = (x0 + x1) / 2, (y0 + y1) / 2
+    below = [r for r in rules if r[0] >= cy - pad and r[1] <= cx <= r[2]]
+    above = [r for r in rules if r[0] <= cy + pad and r[1] <= cx <= r[2]]
+    if not below or not above:
+        return None
+    bot = min(below, key=lambda r: r[0])[0]
+    top = max(above, key=lambda r: r[0])[0]
+    if bot - top < 4:
+        return None
+    left = [v for v in vlines if v[0] <= cx and v[1] <= top + pad and v[2] >= bot - pad]
+    right = [v for v in vlines if v[0] >= cx and v[1] <= top + pad and v[2] >= bot - pad]
+    if not left or not right:
+        return None
+    return (max(left, key=lambda v: v[0])[0], top,
+            min(right, key=lambda v: v[0])[0], bot)
+
+
+def load_pages(pdf_path):
+    """Per-page geometry, 1-indexed to match `field['page']`."""
+    doc = fitz.open(pdf_path)
+    pages = {}
+    for i, page in enumerate(doc, start=1):
+        pages[i] = {
+            "rect": page.rect,
+            "rules": hrules(page),
+            "vlines": vrules(page),
+            "shaded": shaded(page),
+            "ink": words(page),
+            "glyphs": chars(page),
+        }
+    doc.close()
+    return pages

@@ -149,3 +149,30 @@ Child Protection. It belongs with the interjurisdictional-support set (37A–37E
 which is where those forms are filed. Left alone here because it is already
 shipped; worth correcting when 37A–37E land.
 
+---
+
+## STATUS — 2026-08-10: the 90 new templates' geometry refit
+
+The 90 forms added above shipped with field boxes that were catalogued correctly
+but placed wrongly — the geometry itself, not the import. Both defects are fixed:
+
+- **Boxes 2–3× the height of a printed line.** They took their height from the
+  government's AcroForm widget, and the editor top-aligns its input, so typed text
+  floated above the rule. 2993 fields re-seated; 2925 of 3041 TextFields now sit at
+  exactly the 13.3 pt the approved 45 use (was 0).
+- **The ten Word-sourced forms overshot their rules.** Their boxes started mid-line
+  and ran past the end of the blank. They now snap to the government's own printed
+  rule, stay inside their column, and start past whatever is printed at the head of
+  the cell. 41 strays dropped.
+
+Tooling: `tools/on-forms/refit_on_fields.py` (the pass), `check_seating.py` (the
+gate that asks whether a box sits on its line — the older gates never did),
+`contact_sheet.py` (renders), `review_list.py`, `page_geom.py`, `on_scope.py`.
+
+**The 45 approved Ontario templates and the 43 BC ones were not touched**, and a
+sha256 scope check in `on_scope.py` proves it on every run.
+
+What remains is review, not repair: see `ON_REVIEW_LIST.md` for the per-form
+checklist and `tools/on-forms/HANDOFF.md` §3 for the handful of gaps that need a
+field added or split rather than moved.
+

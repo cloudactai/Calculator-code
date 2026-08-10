@@ -59,14 +59,56 @@ expansion, amount sizing). Those exist to recover geometry XFA never emitted
 properly. Ontario's AcroForm rectangles are ground truth, so moving them can only
 make placement worse.
 
-## 5. Catalogue and verify
+## 5. Seat the boxes on the printed page
+
+```
+python3 refit_on_fields.py [--apply]
+```
+
+`build_on_forms.py` writes the government's raw widget rectangles, and those are
+routinely 2–3× a printed text line — the editor top-aligns its input, so typed text
+floats above the rule instead of sitting on it. This pass re-cuts every single-line
+field to the approved 13.3 pt and sits it on its rule, leaves writing blocks tall,
+and on the ten Word-sourced forms snaps the box's *width* to the printed rule too
+(their widths were inferred, not government geometry). **Run it after every build**
+or that defect comes straight back. See `HANDOFF.md` §2 for the full rule set and
+where its two constants were measured.
+
+It only ever touches the 90 docIds in `on_scope.py`, writes nothing but geometry
+and `type`, and runs itself to a fixed point — a second run must report zero
+changes.
+
+## 6. Catalogue and verify
 
 ```
 python3 merge_on_catalog.py [--promote]
+python3 check_seating.py
 python3 verify_on_forms.py
 python3 audit_on_forms.py --all
 npm run forms:validate-export     # from auth-server/
 ```
+
+`check_seating.py` asks the question the other three missed while the batch shipped
+visibly wrong: does each box actually sit on the printed rule it belongs to, and is
+it the right shape for the blank underneath it? It also finds strays, boxes over
+printed labels, and boxes running across a drawn column separator. `HANDOFF.md` §4
+explains why the older gates could not see any of that.
+
+## 7. Review
+
+```
+python3 contact_sheet.py [--grid 2x2] [--rules] [--only FormXX]
+python3 review_list.py > ../../form-template-export/ON_REVIEW_LIST.md
+```
+
+`contact_sheet.py` renders each page with its field boxes drawn on, into
+`_incoming_on/qa/`; colour tells you the field type, so a mis-shaped field shows up
+at a glance. Every defect in this batch was found by looking at one of these and
+none by the gates, so the renders are not optional. Note that **a render of the
+overlay is not a render of the app** — these draw the stored box, the viewer draws
+its own control inside it.
+
+`review_list.py` regenerates the per-form checklist a person works through.
 
 `merge_on_catalog.py` re-sequences the whole ON block into the order the
 government index lists the forms, so each category folder reads 8, 8.01, 8A,

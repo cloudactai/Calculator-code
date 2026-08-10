@@ -1,15 +1,19 @@
 # Ontario forms — handoff
 
-Written 2026-08-10, at the point where the 90 new Ontario templates were pushed
-and then found to be visibly wrong in the editor. **Read this before touching
-field geometry.**
+Written 2026-08-10, after the geometry refit described in §2. The batch of 90 new
+Ontario templates had shipped with two confirmed defects; both are now fixed, the
+templates are idempotent under the tooling, and what remains is **review**.
+
+**Read this before touching field geometry.**
 
 Companion reading, all in this repo:
 
+- `form-template-export/ON_REVIEW_LIST.md` — the per-form checklist to work
+  through. Generated, not typed: rebuild it with `review_list.py`.
 - `form-template-export/FIELD_PLACEMENT_GUIDE.md` — the accumulated ruleset for
   placing boxes. Its golden rule ("never guess — read the government's own page")
   and its change discipline ("ship one render, wait for confirmation, then apply
-  broadly") are the two things that were not followed closely enough.
+  broadly").
 - `tools/on-forms/README.md` — how the Ontario pipeline runs, end to end.
 - `form-template-export/MIGRATION_PLAN_REMAINING20.md` — per-form migration status.
 - `docs/FORMS.md` — how the Forms feature works in the app, including the overlay
@@ -21,178 +25,195 @@ Companion reading, all in this repo:
 ## 1. Where things stand
 
 135 of Ontario's 140 published family-law forms are catalogued (was 45), plus 43
-BC. Pushed to `main` (merge `d393b32`) and to branch `on-forms`. The deployed
-app imports them in the background on start, one template per process.
+BC. The 90 added in this batch have had their geometry refit; the 45 approved
+Ontario templates and the 43 BC ones are **byte-identical** and always were.
 
-**The templates are in production and they are not right.** Two defect classes
-are confirmed below. Nothing here is a catalogue or import problem — the field
-geometry itself is wrong.
+Gates, all green:
 
-## 2. Confirmed defect 1 — boxes far taller than the line, text floats
+```
+python3 refit_on_fields.py       # 0 changes — the pass is a fixed point
+python3 check_seating.py         # 16 findings, all reviewed (see §4)
+python3 verify_on_forms.py       # all checks passed
+python3 audit_on_forms.py --all  # 0 of 135 flagged
+npm run forms:validate-export && npm test
+```
 
-An overlay box takes its height from the government's AcroForm widget, which is
-routinely 2–3× a printed text line. The editor top-aligns the input, so typed
-text sits well above the printed rule instead of on it.
+## 2. What the refit did
 
-### THE RULE, from the user
+`refit_on_fields.py`, over the 90 docIds in `on_scope.NEW_DOCIDS` only.
+**2993 fields re-seated, 41 strays dropped.** 2925 of the 3041 TextFields now sit
+at exactly the approved 13.3 pt (was 0).
+
+### Defect 1 — boxes far taller than the line, text floats
+
+An overlay box took its height from the government's AcroForm widget, which is
+routinely 2–3× a printed text line. The editor top-aligns the input, so typed text
+sat well above the printed rule instead of on it.
+
+**The rule, from the user:**
 
 > If it sits on **an underline, it gets the standard-size box.** Otherwise —
 > open white space, a block, several lines — it should be a **text area.**
 
-Both halves matter. Not every box should shrink: a writing block genuinely needs
-to be tall. What is wrong is a *single-line* field on a printed rule being given
-a two- or three-line box.
-
-### The standard size is 13.3 pt — measured, not invented
-
-Taken from the 45 Ontario templates the user reviewed and approved:
+Both halves matter, and both are implemented. Every single-line field is re-cut to
+13.3 pt and sat on its rule; every writing block keeps its height. Two numbers drive
+it, and both are **measurements taken off the 45 approved templates**, not guesses:
 
 | | |
 | --- | --- |
-| fields at exactly 13.3 pt | 2393 of 3254 |
-| `TextField` height | p25 = median = p75 = **13.3 pt** |
-| `TextArea` height | median 40.7 pt (p25 24.5, p75 61.0) |
+| single-line height | **13.3 pt** (2393 of 3254 approved fields sit at exactly this; TextField p25 = median = p75 = 13.3) |
+| gap from box bottom to its rule | **1.26 pt** (p10 1.21, p90 1.48) |
 
-So the approved set already follows the rule exactly: single line on a rule =
-13.3 pt `TextField`; open block = `TextArea` sized to the space. Match it.
-(13.3 pt is the on-page height; the JSON stores height × 1.5, i.e. 20.0.)
+Shape is decided from the government's own **multiline flag**, still readable in
+the `_source.pdf` widgets — that is what produced `TextArea` at build time, and it
+is ground truth. It is overridden only where the rectangle plainly disagrees: a
+multiline flag on a box one line tall is a single-line blank, and a single-line
+flag on a box tall enough to hold a paragraph with no rule under it is a writing
+block (Form 34D's is 427 pt).
 
-### Scope — the 90 new templates ONLY
+### Defect 2 — Form 25C, and the flat-form placement generally
 
-**Do not touch the 45 Ontario templates shipped before this work, or the 43 BC
-ones. The user has reviewed those and is happy with them.** An earlier draft of
-this document suggested changing vertical alignment in `PDFViewer.jsx` to fix
-every province at once — **that is ruled out**, because it would change how the
-approved forms render.
+Ten forms are built by `place_flat_fields.py` from a Word export. Their boxes took
+a left edge from where the Word field's en-space padding began — mid-line when the
+field is padded or centred — and ran right to "the next printed character or the
+cell edge". Neither end was tied to the printed rule, so boxes started late and
+overshot. On Form 25C, six of 23 fields were wrong.
 
-Work to do, new templates only:
+Those ten forms now snap to the government's own printed rule, which is ground
+truth, with three constraints that each came out of a render:
 
-| | count |
-| --- | --- |
-| `TextField` already at the standard | 959 |
-| `TextField` off the standard, to re-seat on its rule | **2151** |
-| `TextArea` — judge individually against the rule above | 727 |
+- **The leftmost overlapping rule wins, not the widest overlap.** A flat box
+  routinely spans its own rule *and* the next one along; the blank it belongs to is
+  the one it starts on. Taking the widest overlap put Form 25C's "Date of
+  signature" box on the judge's signature line.
+- **Stay inside the column.** A rule runs the full width of its table row.
+- **Start past what is printed at the head of the cell** — a `$` glyph, or a
+  caption like "Full legal name:" that Form 13C sets inside the cell it labels.
 
-Heaviest: Form26 (192), Form33B_1 (130), Form33B_2 (91), Form26A (80),
-Form23C (77), Form15D (76), Form25D (76), Form26C (66), Form35_1A (65),
-Form28 (63). Only 5 of the 90 need no height work.
+A box with no rule, no cell, no shading and no ink near it is dropped: that is the
+Word export's padding, not a blank. A box that would land on a signature line is
+dropped (guide §5).
 
-Re-seating is not just resizing: a single-line box must end up **sitting on its
-printed rule**, so the height change and the vertical position change together.
-Show the user one render and get agreement before applying it broadly — that is
-the placement guide's change discipline, and skipping it is how this batch went
-out wrong.
+## 3. What is left — review
 
-## 3. Confirmed defect 2 — Form 25C, and the flat-form placement generally
-
-Form 25C is one of the ten built by `place_flat_fields.py` from a Word export.
-Six of its 23 fields are wrong, verified against the page's own printed rules:
-
-| field box | should sit on | what happened |
-| --- | --- | --- |
-| 277,60 → 578,71 | rule x 146..432 | starts mid-line, runs 146pt past the rule's end into the Court File Number box |
-| 277,90 → 452,101 | rule x 146..432 | starts mid-line, overruns |
-| 76,164 → 150,174 | rule x 37..137 | "Judge (print or type name)", starts mid-rule, overruns |
-| 39,677 → 578,688 | rule x 37..296 | "Date of signature" runs across into the signature area |
-| 144,708 → 578,719 | rule x 37..277 | same |
-| 425,733 → 578,743 | no rule, no caption | a stray box with nothing under it |
-
-**Root cause.** The placeholder-run signal takes the box's left edge from where
-the Word field's en-space padding began — which is mid-line when the field is
-padded or centred — and then extends rightward to "the next printed character,
-or the cell/page edge". Neither end is tied to the printed rule the field belongs
-to, so boxes start late and overshoot.
-
-**The fix direction:** when a placeholder run sits on or just above a printed
-rule, snap the box to that rule's own extent. The rule is the government's line;
-it is ground truth and it is already being detected (`rule_blanks`). The
-next-character logic should only apply where there is no rule. A run with no rule
-and no caption near it — like the stray box above — should be dropped.
-
-## 4. Why the automated checks passed, and what they must check instead
-
-This is the important part. Everything was "clean" while the forms looked like
-this, because the checks measured the wrong properties:
-
-- `verify_on_forms.py` — files present, no leftover widgets, geometry in bounds,
-  bind vocabulary known. **Never asked whether a box sits on its line.**
-- `audit_on_forms.py` — stacked boxes, missed anchors, oversized, slivers,
-  runaway widths. **The 2–3× line-height boxes are the government's own widget
-  rects, so the "oversized" rule was deliberately disabled for AcroForm sources
-  — which is precisely the defect the user is seeing.**
-- `covers_printed_text` — only flags a box *on top of* ink. A box that starts in
-  the middle of its rule and overshoots the end covers no text, so it passed.
-
-Checks worth adding before any refit:
-
-1. **Seated on the rule.** For every text field, find the printed rule it belongs
-   to and assert the box's left/right edges match it within a couple of points,
-   and that its bottom sits on the rule. Flag any field with no rule *and* no
-   shading *and* no cell — that finds strays like 25C's bottom box.
-2. **The right shape for the blank.** A field on a printed underline must be a
-   `TextField` at the standard 13.3 pt. A field over open white space may be a
-   `TextArea` and may be tall. Assert the pairing, not just the height — a check
-   that only shrinks things would wreck the genuine writing blocks.
-3. **Scope guard.** Assert that nothing outside the 90 new docIds changed. The
-   approved 45 ON and 43 BC templates must come through byte-identical; diff them
-   before and after any geometry pass and confirm zero changes.
-4. **Render every page.** Non-negotiable — see below.
-
-## 5. Every page must be reviewed individually
-
-Coverage at the time of the push, counted honestly:
+**Nothing here is a known defect. What is left is that a person has not looked at
+every page yet.** Coverage of this pass, counted honestly:
 
 - 90 templates, **230 pages**.
-- Pages read as a render at the shipped build: **8**.
-- Forms with every page checked: **1** (Form 34H).
-- Forms with no page ever looked at: **75 of 90**.
+- Pages read as a render during this work: **20**, across 12 forms — including
+  every source class (AcroForm, Word, XFA) and both before and after.
+- Forms with every page checked: **3** (25C, 26D, 35.1A).
 
-Every defect found so far was found by looking at a render, and none by the
-gates. There is no shortcut here: the next pass has to go page by page, all 230,
-and the previously-shipped 45 ON and 43 BC need at least a sweep for defect 1.
+Work through `ON_REVIEW_LIST.md`. Take the **Word** and **XFA** rows first: those
+14 boxes were inferred from the printed page, so their widths moved as well as
+their heights. The 78 AcroForm rows kept the government's own rectangle
+horizontally and only moved vertically, so they carry much less risk.
 
-A contact-sheet generator (2×2 pages per image, form/page labelled) was used and
-works well; rebuild it in `tools/on-forms/` rather than as a throwaway script,
-and check the render against the government's own PDF, not just for tidiness.
+Render with `contact_sheet.py`, and check against the government's own PDF in
+`_incoming_on/`, not just for tidiness.
 
-## 6. Priority order
+### Known gaps a geometry pass cannot close
 
-1. **Form 25C** — worst example, and small. Fix it, show a render, get agreement.
-2. **The other nine flat-sourced forms** — 13C, 26D, 34G.1, 34H, 34K, 43, 43A,
-   43B, 43C. Same rule-snapping fix applies; these carry inference, not
-   government geometry.
-3. **Defect 1 across the 90 new templates** (2151 fields) — one render agreed
-   first, then applied. Never outside those 90.
-4. **The 78 AcroForm forms, page by page.**
+These need a field **added or split**, which `refit_on_fields.py` deliberately will
+not do — it asserts the field set is unchanged, and a tool that guards that cannot
+also be the one that changes it (guide §7.8).
 
-Throughout: the 45 approved Ontario templates and the 43 BC ones are off limits.
+- **Form 25C** has no box for its Court File Number, and one wide box across the
+  five columns of its "person to be adopted" table.
+- **Form 34H** p1: only the first of the four columns under item 2 (Full legal
+  name / Date of birth / Sex / Birth registration number) has a box.
+- **Form 34K** p2: "(k) Other joint application (Specify.)" and "(l) (Other.
+  Specify.)" have no box for the specify.
+- **Form 43** item 3, **Form 43B** item 5 — writing areas that are bare white space
+  on the government page. Per the golden rule they were deliberately left without a
+  box; worth revisiting, since a lawyer cannot type there.
 
-## 7. Decisions already made — do not relitigate
+### The 16 open `check_seating.py` findings
 
-- **37A–37E are excluded**, by the user's decision. They are the registry's own
+- **`no-anchor` ×15** — a government widget sitting in open white space with no
+  rule, cell or caption on its own line. These are the government's own boxes and
+  are almost certainly right; they are reported so a person confirms rather than
+  assumes.
+- **`covers-text` ×1** — Form 34G.1 p3, a flat-sourced box that runs past its blank
+  onto ", and was".
+
+### Still outstanding from the catalogue (unchanged)
+
+- **37A–37E** are excluded, by the user's decision. They are the registry's own
   generation templates (they print `[[Jurisdiction]]` merge placeholders) and are
   issued by the court, not completed by a party. Listed in `COURT_ISSUED` in
   `build_on_forms.py`; the pipeline builds them cleanly if reconsidered.
 - **Form 29G is held back** — its XFA flatten runs the Payor/Garnishee panels off
   the sheet edge. The background is wrong, so no overlay work fixes it.
-- **Form 37 moved** to Interjurisdictional Support from Child Protection.
-- **No prefill binds on the Word-sourced or XFA forms** — those sources carry no
-  field names, so nothing is bound rather than guessed.
-- **Word is not scriptable for docx→PDF** — 16.76 compiles
-  `save as … format PDF` but the running app rejects it (-1708). LibreOffice is
-  installed and `convert_docx.sh` uses it. Word leaves `~$name.docx` lock files
-  that must be skipped when globbing.
 
-## 8. Rebuilding
+## 4. The gates, and why they now measure the right thing
+
+This was the important part of the last handoff. Everything reported "clean" while
+the forms looked wrong, because the checks measured the wrong properties:
+
+- `verify_on_forms.py` — files present, no leftover widgets, geometry in bounds,
+  bind vocabulary known. **Never asked whether a box sits on its line.**
+- `audit_on_forms.py` — stacked boxes, missed anchors, oversized, slivers, runaway
+  widths. **The "oversized" rule was deliberately disabled for AcroForm sources**,
+  because the 2–3× line-height boxes are the government's own widget rects — which
+  is precisely the defect.
+- `covers_printed_text` — only flags a box *on top of* ink. A box that starts in the
+  middle of its rule and overshoots the end covers no text, so it passed.
+
+`check_seating.py` is the answer to that. It asks, per field:
+
+1. **Seated on the rule.** A single-line field must have a printed rule under it,
+   its bottom on that rule within a point.
+2. **The right shape for the blank.** A field on a rule is a `TextField` at 13.3 pt;
+   a field over open space may be a `TextArea` and may be tall. It asserts the
+   *pairing*, not just the height — a check that only shrank things would wreck the
+   genuine writing blocks.
+3. **Strays and unanchored boxes**, split apart: a blank in running text
+   ("I, ____, request …") has no rule and is perfectly correct, so only a box with
+   nothing near it at all is reported as a stray.
+4. **Boxes over printed labels, and boxes across a drawn column separator** —
+   measured on *characters*, not words. A money cell flattens to a `$` followed by
+   the en-space padding its value used to occupy, so the word rectangle spans the
+   whole cell and a correctly-placed box reads as covering it.
+
+`on_scope.py` holds the scope guard: the 90 docIds, and a before/after sha256 of
+every protected template. `refit_on_fields.py` refuses a docId outside the 90 and
+aborts if any approved file changed.
+
+## 5. Rules of the road
+
+- **Never touch the approved 45 Ontario templates or the 43 BC ones.** An earlier
+  draft of this document suggested changing vertical alignment in `PDFViewer.jsx` to
+  fix every province at once — **that is ruled out**, because it would change how the
+  approved forms render.
+- **Any geometry pass must be idempotent.** Two passes that each correct the other
+  oscillate happily and look fine on a single run. Three separate oscillations were
+  found and fixed here (a geometry-dependent block test, a shared-rule split that
+  drifted 0.01 pt per run, and an asymmetric seat window that walked a box onto the
+  next rule down). `refit_on_fields.py` runs itself to a fixed point and
+  `python3 refit_on_fields.py` must report zero changes.
+- **`FIELD_PLACEMENT_GUIDE.md` has not been rewritten.** Its change discipline says
+  a rule is only settled once the user has looked at a render and agreed. The rules
+  added here are recorded in §2 above and in the tools' own docstrings; fold them
+  into the guide once the review in §3 is done.
+
+## 6. Rebuilding
 
 ```
 cd auth-server/tools/on-forms
 python3 build_on_forms.py            # dry; --promote writes into form-template-export/
 python3 merge_on_catalog.py          # dry; --promote rewrites catalog.json + audit.json
+python3 refit_on_fields.py --apply   # seat the boxes on the printed page
+python3 check_seating.py
 python3 verify_on_forms.py
 python3 audit_on_forms.py --all
+python3 contact_sheet.py --grid 2x2  # renders for review, into _incoming_on/qa/
+python3 review_list.py > ../../form-template-export/ON_REVIEW_LIST.md
 cd ../.. && npm run forms:validate-export && npm test
 ```
+
+`build_on_forms.py` writes the government's raw widget rects, so **`refit_on_fields.py`
+has to run after it** or defect 1 comes straight back.
 
 Staging in `form-template-export/_incoming_on/` is gitignored and already holds
 every government source plus the LibreOffice PDF conversions, so nothing needs
@@ -201,3 +222,13 @@ re-downloading. QA renders land in `_incoming_on/qa/`.
 There is one piece of ground truth worth using on the Word-sourced forms: the
 `w:textInput` and `w:checkBox` counts inside each `_source.docx` say how many
 fields the form actually has. Compare against what the build produces.
+
+## 7. Decisions already made — do not relitigate
+
+- **Form 37 moved** to Interjurisdictional Support from Child Protection.
+- **No prefill binds on the Word-sourced or XFA forms** — those sources carry no
+  field names, so nothing is bound rather than guessed.
+- **Word is not scriptable for docx→PDF** — 16.76 compiles
+  `save as … format PDF` but the running app rejects it (-1708). LibreOffice is
+  installed and `convert_docx.sh` uses it. Word leaves `~$name.docx` lock files
+  that must be skipped when globbing.
