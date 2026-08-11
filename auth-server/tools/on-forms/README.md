@@ -110,6 +110,13 @@ its own control inside it.
 
 `review_list.py` regenerates the per-form checklist a person works through.
 
+Read `FIELD_PLACEMENT_GUIDE.md` §9 before working through a review. It is the
+list of defects found by reading shipped templates in the app — boxes on the
+frame line instead of their dotted leader, a row of fields parked in a table's
+heading, answer areas parked at the foot of their blank, anchors with no field
+— with the detector for each, written because the obvious detector had already
+missed it.
+
 `merge_on_catalog.py` re-sequences the whole ON block into the order the
 government index lists the forms, so each category folder reads 8, 8.01, 8A,
 8B, 8B.1 … rather than appending 80 forms after the original 45. Only

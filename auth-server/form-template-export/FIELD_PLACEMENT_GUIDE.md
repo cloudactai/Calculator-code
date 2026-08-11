@@ -2,9 +2,11 @@
 
 This is the accumulated ruleset for placing `staticFields` (text fields, text
 areas, checkboxes) on a form template — text and checkbox alike — learned from
-building the 43 BC forms. Read this before touching field geometry on a new
-form, BC or otherwise. The build scripts are in `auth-server/tools/bc-forms/`;
-this file is the "why" and the "what to check," not the code itself.
+building the 43 BC forms, then from reading the shipped Ontario ones in the app
+(§9). Read this before touching field geometry on a new form, BC or otherwise.
+The build scripts are in `auth-server/tools/bc-forms/` and
+`auth-server/tools/on-forms/`; this file is the "why" and the "what to check,"
+not the code itself.
 
 **Golden rule: never guess.** Every rule below reads the government's own page
 — the printed shading, the printed glyph, the printed `$`, the printed line —
@@ -401,3 +403,199 @@ don't assume a general rule already covers them:
   rest (F45 p3, F5 p9). Normalise per table, to whichever the majority already
   is — not globally, since single-line cells like dates and hour counts are
   legitimately `TextField`.
+- A box seated on **a** rule is not the same as a box seated on **its** rule
+  (§9.1), and a table's heading cell is a favourite parking spot for a stray
+  row of boxes (§9.2).
+
+## 9. Defects found by reading the shipped Ontario templates in the app
+
+Everything in §1–§8 is about *building* a form. This section is what the user
+found afterwards, one screenshot at a time, on templates that had already
+passed every gate. Each entry says what the defect looks like, why the existing
+checks did not see it, and how to find the rest of its kind before shipping.
+
+The through-line: **every one of these was found by looking at a page, not by a
+measurement.** Where a detector is given below, it exists because the obvious
+detector had already failed on that defect.
+
+### 9.1 On a rule, but the wrong rule
+
+A blank's writing line is usually a **dotted leader**; the solid rules near it
+are the table frame and the row separators. A box that has drifted a few points
+down lands on the solid rule underneath and still looks seated — nearest-rule
+matching scores it as correct, because it *is* on a rule.
+
+- Form 33B.1 p7: "care and custody of" and "other (Specify.)" sat ~4.3pt low,
+  on the frame line instead of their dotted leaders.
+- Form 25D p3: "starting on (date)" sat 6.3pt low, on the frame line closing
+  the add-ons box.
+
+**Check it this way**: for each field, find the dotted leader whose x-range
+overlaps the box, and require the box's bottom to sit ~1.3pt above *that*
+line. Do not take the nearest rule of any kind. `get_drawings()` reports the
+leader with a `dashes` value (e.g. `[.48 .96] 0`) and the frame with `None`,
+so the two are distinguishable without guessing.
+
+### 9.2 A row of boxes parked in the table's heading
+
+Six forms carried a full row of fields sitting inside the column-heading cell,
+over "Birthdate / Age / Sex / Full Legal Name(s) of Parent(s)" or the like:
+33B.1 p2, 33B.2 p2, 8B.1 p3, 8B.2 p3, 17B p2, 35.1 p4 and p5.
+
+The heading cell is tall, so these boxes are sized to it (32.25 in the stored
+units, against ~24 for a data row) and clip the heading text by only a point or
+two — which is why "field overlaps printed bold type" both missed them and
+drowned in false positives (every `$` in Form 13C).
+
+**Check it this way**: group fields into columns by x and width, sort each
+column by y, and flag the topmost field whose height differs from that column's
+modal height. That is what a heading stray looks like and a data row does not.
+Confirm against the page before deleting — on BCSC F5 p9 the same signal is a
+genuinely taller first data row.
+
+### 9.3 A box on a cell the form has already filled in
+
+Form 13C names some of its own rows — "Matrimonial Home", "Household goods &
+furniture", "Cars, boats, vehicles", "Jewellery, art, electronics…", "Other
+special items", "Assets", "Debts and other liabilities". Each had a field
+covering the printed label. The blank rows *below* those labels legitimately
+have one.
+
+This is §3's "printed content inside the field's own box" seen at row level:
+the test is whether the printed text is the row's own name (drop the box) or an
+instruction the writing area sits under (keep it, moved clear).
+
+### 9.4 Multi-line rows, and rows that only look multi-line
+
+Two variants, and telling them apart matters more than either fix:
+
+- **A double-height row whose cells fill only its first line.** Form 13C (b)'s
+  "Jewellery, art, electronics, tools, sports & hobby, equipment" row is two
+  label lines tall; its Description / Comments / Document Number boxes covered
+  the top half. Grow them to the row.
+- **A row that is not there at all.** Form 13C (e)'s first row is also two lines
+  tall, but its grey shading covers only the first line, so the white strip
+  underneath reads exactly like an empty row with no fields. It is not one, and
+  a row of fields was added there before the page settled the question.
+
+**Count the anchors before deciding.** The form prints one `$` per money row
+(13C (e): three `$` at y 120.1 / 144.3 / 158.0, against three rows) and every
+other table on the page runs one shaded band per row. Shading alone is not
+enough — it can cover part of a row. Match `$` count, band count and field rows
+to each other, and if they disagree, read the page.
+
+### 9.5 The answer space parked at the foot of the blank
+
+Narrative items ("The important facts supporting… are as follows:") should get
+a text area filling the blank **under the instructions**. Several instead had a
+thin full-width `TextField` at the very bottom of the blank, overlapping the
+next section's banner or the page footer: 43B items 12, 25, 27 and 43C item 5.
+It reads as a stray line rather than an answer space.
+
+- Take the top edge from the last line of the instructions, the bottom from
+  whatever closes the blank — the next banner's rect, the footer, or the page's
+  bottom margin.
+- Where the item is the last thing on the page, that blank is usually the whole
+  rest of the sheet (33C and 33D item 5). A printed "Put a line through any
+  space left on this page" caption sitting inside it is expected; the caption
+  refers to that very space.
+- `type` matters: these are `TextArea`, not `TextField`, or the app gives one
+  line inside a four-line box.
+
+### 9.6 Blanks with a printed anchor and no field at all
+
+Not every missing field is on a page you were told about. When one turns up,
+**search the whole set for its anchor phrase** — it is usually systematic:
+
+- "Print or type full legal name" — the left cell of the signature block had no
+  field on 33C and 33D while its right-hand twin ("Relationship to child…") had
+  one. Sweeping the phrase across all 178 templates found exactly those two.
+- Narrative items with no field: 43B 18 and 19, 43C 9.
+- An option with a checkbox and nowhere to write: Form 20's "(Other; specify.)".
+- A second ruled line for the same answer: Form 33E's program name/address has
+  rules at y 412.6 **and** 430.5. The box was on the lower one, so the upper one
+  looked unfillable. A scan window that stopped at 425 reported one rule and one
+  problem; the band was two lines all along. Take the band, not the first hit.
+
+A **gap in the id sequence** is a hint of the same thing — 33C's and 33D's
+missing name fields were ids `…009`, `…012`, `…015`, absent between fields that
+were present. Worth scanning for.
+
+Build a new field by **copying its twin** and changing only the geometry that
+must change (the row's y and height come from the twin; the x and width come
+from the cell). That keeps `fontSize`, `color`, `page` and the rest consistent
+with the form around it.
+
+### 9.7 Inline blanks are not full-width lines
+
+Form 43B item 8, "There is/are *(number)* ____ of child(ren) from our
+relationship", had a full-width 8pt sliver under the sentence. The blank is the
+gap **between the two printed phrases** — from the end of "(number)" to the
+start of "of child(ren)" — at the standard box height. Sized as a line under
+the sentence it reads as an answer area, and the count no longer visibly
+belongs to the table it introduces.
+
+### 9.8 Signature blocks and jurats
+
+§5's rule (never a box on a signature line) holds, and two more from the
+Ontario jurats:
+
+- **The print-name box goes below the caption, not on the rule.** Form 20A p2
+  had it on the commissioner's signature rule. It belongs under "(Type or print
+  name below if signature is illegible.)", which is where 26, 28B, 29D, 29E, 34,
+  34A and the rest of the set put theirs.
+- **The blank before "before me at" is not a field.** That is where the
+  commissioner writes "Sworn" or "Affirmed" by hand.
+- Where the jurat sits at the very foot of the page there may be no room below
+  the caption at all (20A p2 has ~3pt before the footer). Cramped jurats in this
+  set — 32.1A, 32C, 30B, 34F, 34I — simply have no print-name box. Either is
+  defensible; do not squeeze a box into the footer without saying so.
+- When placing a signature-block field, pair it against the **name row's** twin,
+  never the signature row's, so the geometry can't be copied onto a signature
+  line by accident.
+
+### 9.9 Sideways backers (`VerticalTextField`)
+
+Warrant backers print their block rotated (Forms 32B, 32D). The type exists for
+this: footprint tall and narrow, `rotation: 270`, edited through a horizontal
+pop-up. Getting it right:
+
+- The footprint is the box **as it sits on the page** — width = the standard
+  thickness across the rule, height = the run along it. A wide, flat box here is
+  the defect, not the layout.
+- Seat it on the **left** of the vertical rule; that is "above the line" once
+  the page is turned.
+- A plain `TextField` on one of these rules (32D's two) prints horizontally
+  across a vertical line. Convert rather than nudge.
+- `savePdf` burns these with an `MK /R` rotation using the same footprint, so a
+  correct box in the viewer is a correct box in the export.
+
+### 9.10 Two units in one record — the mistake to expect
+
+`x`/`y` are **points**; `width`/`height` are **points × 1.5** (§ "Overlay
+convention", and `PDFViewer.jsx` positions with `x * scale` while sizing with
+`width` as-is). Compute a box's geometry in points and write the sizes straight
+in and it comes out two-thirds the intended size — which happened to 32B and
+32D's vertical fields and had to be corrected in the following commit. Convert
+sizes on the way in, and sanity-check by rendering with `width / 1.5`.
+
+### 9.11 Artwork the placer mistook for a field
+
+Form 32.1A's accessibility footer prints two wheelchair icons, and both had a
+text field on them. Any small footer image is a candidate: sweep for fields
+covering >40% of an image bbox. This was the only one across 178 templates, so
+it is a check, not a class.
+
+### 9.12 Judging the fix
+
+- **The app serves templates from the database**, not from these JSON files
+  (`/form-templates/:docId/versions/:version/pdf`, imported by
+  `auth-server/scripts/import-form-templates.js`). A fix pushed here does not
+  appear in the viewer until the templates are re-imported and deployed, so a
+  screenshot that still shows a defect is not evidence the fix failed.
+- **Preserve the file's formatting.** These maps are written with 1-space
+  indent; `json.dump(..., indent=2)` reformats all 400 records and buries the
+  one-line change. Write with `indent=1` and a trailing newline.
+- Render the page with the boxes drawn on and read it before committing. Every
+  fix in this section was confirmed that way, and two were wrong on the first
+  attempt in a way only the render showed.
