@@ -403,12 +403,15 @@ const CreateNewFormPage = ({ currentUserRole }) => {
                       ? forms.map((form, index) => (
                           <div className="forms" key={index}>
                             {form.forms
-                              .filter((form) =>
-                                form.title
-                                  .toLowerCase()
-                                  .includes(search.toLowerCase())
+                              .map((item, index_form) => ({ item, index_form }))
+                              .filter(
+                                ({ item }) =>
+                                  item.status === "active" &&
+                                  item.title
+                                    .toLowerCase()
+                                    .includes(search.toLowerCase())
                               )
-                              .map((form, index_form) => (
+                              .map(({ item: form, index_form }) => (
                                 <div
                                   className="form-checkbox"
                                   key={`${index}-${index_form}`}
