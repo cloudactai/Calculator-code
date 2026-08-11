@@ -211,6 +211,30 @@ def ink_right_edge(x0, x1, y0, y1, glyphs, left_frac=0.6):
     return edge
 
 
+def field_shade(field, shaded, slack=1.5):
+    """The Word form-field rectangle this box sits in, or None.
+
+    LibreOffice paints every `w:textInput` light grey, and where an export carries
+    that marking the shade is the government's own field rectangle — the same
+    authority an AcroForm widget carries, and the refit does not trim those either.
+    It matters because a field the government pre-filled has its *value* printed
+    inside that rectangle, flush with the left edge, and the caption rules would
+    otherwise start the box after the government's own answer.
+
+    Containment is horizontal, with the vertical only required to overlap. The refit
+    re-cuts a single line to the standard height and seats it on its rule, which
+    lifts the box's top clear of a 12.6 pt shade — so a test that wanted the whole
+    box inside stopped matching after the first pass, and the box lost the very
+    protection that had kept its width, on the second.
+    """
+    x0, y0, x1, y1 = box(field)
+    for sx0, sy0, sx1, sy1 in shaded:
+        if (sx0 - slack <= x0 and x1 <= sx1 + slack
+                and min(y1, sy1) - max(y0, sy0) > 0.4 * (y1 - y0)):
+            return (sx0, sy0, sx1, sy1)
+    return None
+
+
 def ink_below_top(x0, y0, x1, y1, glyphs, top_frac=0.55, cover=0.6):
     """Bottom of the printed caption a box starts on top of, or None.
 

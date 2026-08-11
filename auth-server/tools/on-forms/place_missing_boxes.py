@@ -144,6 +144,18 @@ def find_missing(doc_id, export):
                 if G.on_signature_line(probe, pg["ink"]) or \
                         G.on_role_line(probe, pg["ink"]):
                     continue
+                # Where the export marks its fields, the sibling evidence is beside
+                # the point: the marking already says which rules are blanks. Form
+                # 13C sets "Jewellery, art, electronics, tools, sports & hobby,
+                # equipment" over two lines, so its row is twice as tall as its
+                # neighbours and closes on a rule they do not share — and reading
+                # that rule as a row of siblings boxed the lower half of six cells
+                # that already had their box on the line above.
+                if marked and not any(
+                        min(rx1, sx1) - max(rx0, sx0) > 0.5 * (rx1 - rx0)
+                        and sy0 - 2 <= probe["y"] and probe["y"] + STD <= sy1 + 2
+                        for sx0, sy0, sx1, sy1 in pg["shaded"]):
+                    continue
                 # Never lay a box over the government's own words. Rules at the same
                 # height are not always siblings: the party panel's interior dividers
                 # line up with the Judge line beside them, and the panel's caption is
@@ -254,6 +266,51 @@ def find_missing(doc_id, export):
                           "y": round(top, 2), "w": round(col[2] - col[1] - 0.5, 2),
                           "h": STD, "type": "TextField",
                           "why": "an instruction saying the name goes below it"})
+
+        # --- 4. a field the government filled in for you ------------------------
+        # A Word form field with a `<w:default>` renders that text instead of the
+        # en-space padding an empty one leaves behind, so `place_flat_fields.py`
+        # reads it as printed page furniture and it gets no box at all. The grey
+        # marking is still there, and it is still the field's own rectangle.
+        #
+        # Form 13C has exactly seven, and two independent sources name the same
+        # seven: the shades no box touches, and the seven `w:textInput` elements in
+        # `Form13C_source.docx` carrying a default — "Matrimonial Home", "Household
+        # goods & furniture", "Cars, boats, vehicles", "Jewellery, art, electronics,
+        # tools, sports & hobby, equipment", "Other special items", "Assets" and
+        # "Debts and other liabilities". Each is the category cell of a row whose
+        # every other column is fillable.
+        #
+        # The government's suggestion stays printed on the flattened background, so
+        # overtyping one leaves both readable. That is the cost of a default value
+        # that no longer knows how to get out of the way; the alternative is a row a
+        # lawyer cannot edit at all.
+        if not marked:
+            continue
+        seen = set()
+        for sx0, sy0, sx1, sy1 in pg["shaded"]:
+            key = tuple(round(v, 1) for v in (sx0, sy0, sx1, sy1))
+            if key in seen:
+                continue        # `shaded()` reports each rect twice: fill, then stroke
+            seen.add(key)
+            if sx1 - sx0 < MIN_RULE or sy1 - sy0 < 8:
+                continue
+            # Touching at all, not covering: a money box correctly starts after the
+            # `$` its cell prints, so it is narrower than the shade it sits in.
+            if any(f["page"] == page_no
+                   and min(sx1, G.box(f)[2]) - max(sx0, G.box(f)[0]) > 1
+                   and min(sy1, G.box(f)[3]) - max(sy0, G.box(f)[1]) > 1
+                   for f in fields):
+                continue
+            probe = {"x": sx0, "y": sy0, "width": (sx1 - sx0) * SCALE,
+                     "height": (sy1 - sy0) * SCALE, "type": "TextField",
+                     "page": page_no}
+            if G.on_signature_line(probe, pg["ink"]) or G.on_role_line(probe, pg["ink"]):
+                continue
+            added.append({"page": page_no, "x": round(sx0 + 0.5, 2),
+                          "y": round(sy0 + 0.5, 2), "w": round(sx1 - sx0 - 1.0, 2),
+                          "h": round(sy1 - sy0 - 1.0, 2), "type": "TextField",
+                          "why": "a Word field the government filled in"})
 
     # The Court File Number cell is both a bare rule beside a filled one and an empty
     # drawn cell, so it is found twice; keep the first and drop anything overlapping.

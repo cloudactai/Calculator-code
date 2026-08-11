@@ -47,6 +47,9 @@ def check_form(doc_id, export):
     with open(os.path.join(export, doc_id + ".json")) as fh:
         fields = json.load(fh)["staticFields"]
     pages = G.load_pages(os.path.join(export, doc_id + ".pdf"))
+    # Only a Word export marks its own fields with LibreOffice's grey; an AcroForm
+    # form's grey panels are its design.
+    acro = on_scope.is_acroform(doc_id)
     out = []
 
     def add(kind, f, detail):
@@ -132,10 +135,16 @@ def check_form(doc_id, export):
         # A third of a line of type inside the box is already a box printed over
         # words: Form 43B p3 overlapped its caption by 38% and a 50% threshold let it
         # through.
+        # Text inside the government's own field rectangle is the field's *value*,
+        # not a label the box has to keep off — Form 13C's category cells arrive
+        # pre-filled with "Household goods & furniture" and the like, and the box
+        # covering that is the point of it. The same fact `refit_on_fields.py` reads;
+        # both have to read it from one place or they drift (HANDOFF.md §4).
+        own_value = bool(G.field_shade(f, pg["shaded"])) if not acro else False
         covered = [g for g in pg["glyphs"]
                    if min(x1, g[2]) - max(x0, g[0]) > 0.5 * (g[2] - g[0])
                    and min(y1, g[3]) - max(y0, g[1]) > 0.3 * (g[3] - g[1])]
-        if len(covered) >= 3:
+        if len(covered) >= 3 and not own_value:
             add("covers-text", f,
                 "covers printed " + repr("".join(g[4] for g in covered[:24])))
 
@@ -153,7 +162,16 @@ def check_form(doc_id, export):
     # guide says normalise *per table* to the local majority — a judgement call on
     # each table, not something to apply across 48 columns unseen.
     for run in G.column_runs(fields, pages):
-        kinds = collections.Counter(m["type"] for m in run)
+        # A cell the government marked taller than its column-mates holds more lines
+        # than they do, and the odd shape is the form, not a mistake. Form 13C marks
+        # "Jewellery, art, electronics, tools, sports & hobby, equipment" at 25 pt in
+        # a column marked 12.6. The refit declines to normalise these for the same
+        # reason.
+        members = [m for m in run
+                   if not (not acro
+                           and (sh := G.field_shade(m, pages[m["page"]]["shaded"]))
+                           and sh[3] - sh[1] >= BLOCK_MIN)]
+        kinds = collections.Counter(m["type"] for m in members)
         if len(kinds) > 1:
             top = run[0]
             out.append(("mixed-column", top["page"],

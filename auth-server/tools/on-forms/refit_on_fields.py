@@ -186,6 +186,21 @@ def refit_form(doc_id, export, notes, data=None, pages=None):
                            prefer="leftmost" if inferred else "overlap", cell=cell)
         anchors[id(f)] = (pg, rule, cell)
 
+    # --- the government's own field rectangle, where the export marks it --------
+    # A box cut to a Word form-field shade already carries the government's own
+    # rectangle, and the refit no more trims that than it trims an AcroForm widget.
+    # It matters where the government pre-filled the field: its answer is printed
+    # inside its own box, flush with the left edge, so the caption rules would start
+    # the box after it and leave a lawyer typing in whatever is left over to the
+    # right of "Household goods & furniture".
+    on_shade = {}
+    if inferred:
+        for f in fields:
+            pg = pages.get(f["page"])
+            shade = G.field_shade(f, pg["shaded"]) if pg is not None else None
+            if shade:
+                on_shade[id(f)] = shade
+
     # --- one column of a table is one shape ------------------------------------
     # The app draws TextField and TextArea differently, so a single odd cell in a
     # column reads as a mistake even when the government's flag put it there
@@ -202,14 +217,25 @@ def refit_form(doc_id, export, notes, data=None, pages=None):
         if m != 1:
             continue
         for f in run:
-            if f["type"] == minor:
-                forced[id(f)] = major
-                notes.append((doc_id, f["page"],
-                              f"one {minor} in a column of {major}; normalised"))
+            if f["type"] != minor:
+                continue
+            # ...unless the government's own rectangle says the cell is different.
+            # Form 13C's "Jewellery, art, electronics, tools, sports & hobby,
+            # equipment" is set over two lines and marked 25 pt where the rest of
+            # its column is marked 12.6, so the column is not uniform because its
+            # contents are not. Overruling that made the shape flip on every pass:
+            # the column forced it to a line, the rectangle made it a block again.
+            shade = on_shade.get(id(f))
+            if shade and (shade[3] - shade[1]) >= BLOCK_MIN:
+                continue
+            forced[id(f)] = major
+            notes.append((doc_id, f["page"],
+                          f"one {minor} in a column of {major}; normalised"))
 
     # --- flat sources: share a rule fairly rather than each taking all of it ---
     share, keep_width = {}, set()
     if inferred:
+        keep_width |= set(on_shade)
         by_rule = collections.defaultdict(list)
         for f in fields:
             a = anchors.get(id(f))
@@ -318,11 +344,26 @@ def refit_form(doc_id, export, notes, data=None, pages=None):
             # a line — that is what `place_open_blanks.py` puts under a caption, and
             # calling it a TextField here would flatten every one of them.
             open_block = not rule and not cell and (y1 - y0) >= BLOCK_MIN
-            block = in_cell or open_block
+            # The government's own field rectangle knows how many lines it holds:
+            # Form 13C sets "Jewellery, art, electronics, tools, sports & hobby,
+            # equipment" over two, and its marked rectangle is 25 pt where its
+            # neighbours' are 12.6.
+            shade = on_shade.get(id(f))
+            shade_block = bool(shade) and (shade[3] - shade[1]) >= BLOCK_MIN
+            block = in_cell or open_block or shade_block
             if want:
                 block = want == "TextArea"
             f["type"] = "TextArea" if block else "TextField"
             if open_block:
+                kept.append(f)
+                continue
+            if shade_block:
+                f["x"] = round(shade[0] + 0.5, 2)
+                f["y"] = round(shade[1] + 0.5, 2)
+                f["width"] = round((shade[2] - shade[0] - 1.0) * SCALE, 2)
+                f["height"] = round((shade[3] - shade[1] - 1.0) * SCALE, 2)
+                if geometry_of(f) != before:
+                    changed += 1
                 kept.append(f)
                 continue
             if cell and not block and not open_block:
@@ -333,10 +374,16 @@ def refit_form(doc_id, export, notes, data=None, pages=None):
                 space = G.cell_writing_box(cell, pg["glyphs"])
                 top, bottom = space if space else (cell[3] - SEAT_GAP - STD,
                                                    cell[3] - SEAT_GAP)
-                lx0, lx1 = cell[0] + 1.0, cell[2] - 1.0
-                edge = G.ink_right_edge(lx0, lx1, top, bottom, pg["glyphs"])
-                if edge is not None and edge + 1.5 < lx1 - 4:
-                    lx0 = edge + 1.5
+                if id(f) in on_shade:
+                    # Cut to the government's own field rectangle already: the width
+                    # is not this pass's to re-derive, and the ink inside it is the
+                    # field's value, not a caption to start after.
+                    lx0, lx1 = x0, x1
+                else:
+                    lx0, lx1 = cell[0] + 1.0, cell[2] - 1.0
+                    edge = G.ink_right_edge(lx0, lx1, top, bottom, pg["glyphs"])
+                    if edge is not None and edge + 1.5 < lx1 - 4:
+                        lx0 = edge + 1.5
                 f["x"] = round(lx0, 2)
                 f["width"] = round((lx1 - lx0) * SCALE, 2)
                 f["y"] = round(top, 2)
