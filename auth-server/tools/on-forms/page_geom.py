@@ -450,6 +450,29 @@ def under_name_instruction(field, glyphs, reach=30.0):
     return False
 
 
+def under_specify_instruction(field, glyphs, reach=22.0):
+    """Is this box the answer to a printed "(Specify.)"?
+
+    Ontario's checklists set "(k) Other joint application (Specify.)" and leave the
+    next line blank for the answer — no rule, no cell, no shading and nothing at all
+    printed on the blank's own line. Every other test therefore reads the box as the
+    Word export's padding and drops it, and Form 34K lost all five of its "specify"
+    blanks that way while its `_source.docx` says they are `w:textInput` fields.
+
+    Same signal as `under_name_instruction` and the same justification: the page
+    prints an instruction that says an answer goes here.
+    """
+    x0, y0, x1, _ = box(field)
+    rows = {}
+    for gx0, gy0, gx1, gy1, ch in glyphs:
+        if y0 - reach <= gy1 <= y0 + 1 and _overlap(x0, x1, gx0, gx1) > -60:
+            rows.setdefault(round(gy1, 1), []).append((gx0, ch))
+    for parts in rows.values():
+        if "specify" in "".join(c for _x, c in sorted(parts)).lower():
+            return True
+    return False
+
+
 def on_role_line(field, ink, reach=26.0):
     """Is this box on a line captioned with a bare role — "Justice", "Clerk"?
 

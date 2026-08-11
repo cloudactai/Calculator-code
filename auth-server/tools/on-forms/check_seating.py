@@ -121,7 +121,8 @@ def check_form(doc_id, export):
                              for sx0, sy0, sx1, sy1 in pg["shaded"])
             near = any(w[2] > x0 - 20 and w[0] < x1 + 20 and w[3] > y0 - 20 and w[1] < y1 + 20
                        for w in pg["ink"])
-            if G.under_name_instruction(f, pg["glyphs"]):
+            if G.under_name_instruction(f, pg["glyphs"]) or \
+                    G.under_specify_instruction(f, pg["glyphs"]):
                 pass          # the instruction above it is the anchor
             elif not shaded_hit and not near:
                 add("stray", f, "no rule, cell, shading or ink anywhere near it")
