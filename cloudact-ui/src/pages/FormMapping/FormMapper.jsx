@@ -587,6 +587,7 @@ const FormMapper = () => {
                                     }}
                                   >
                                     {(field.type === "TextField" ||
+                                      field.type === "VerticalTextField" ||
                                       field.type === "TextArea") && (
                                       <textarea
                                         value={field.bind || ""}

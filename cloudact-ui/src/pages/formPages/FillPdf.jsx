@@ -13,6 +13,11 @@ import 'react-resizable/css/styles.css';
 import ModernToolbar from "../../components/FormPages/forms/newComponents/ModernToolbar";
 import CalculationManager from "../../components/FormPages/forms/newComponents/CalculationManager";
 import PDFViewer from "./PDFViewer";
+import {
+  VERTICAL_TEXT_FIELD_TYPE,
+  getFieldMaxLength,
+  normalizeVerticalRotation,
+} from "./verticalTextField";
 import Loader from "../../components/Loader";
 import axios from "../../utils/axios";
 import { formsService } from "../../services/formsService";
@@ -1714,7 +1719,9 @@ const FillPdf = ({ currentUserRole }) => {
           borderWidth: 0
         };
 
-        if (field.type === 'TextField' || field.type === 'Number' || field.type === 'TextArea') {
+        if (field.type === 'TextField' || field.type === 'Number' || field.type === 'TextArea'
+          || field.type === VERTICAL_TEXT_FIELD_TYPE) {
+          const isVertical = field.type === VERTICAL_TEXT_FIELD_TYPE;
           const textField = form.createTextField(field.id.toString());
           textField.addToPage(page, fieldProperties);
 
@@ -1724,7 +1731,20 @@ const FillPdf = ({ currentUserRole }) => {
             dict.delete(PDFName.of('BS'));
             dict.delete(PDFName.of('MK'));
             dict.delete(PDFName.of('BG'));
+            // The value has to print along the sideways line it belongs to. MK
+            // was just cleared, so the rotation is set after, not via addToPage.
+            if (isVertical) {
+              dict.set(
+                PDFName.of('MK'),
+                pdfDoc.context.obj({ R: normalizeVerticalRotation(field.rotation) })
+              );
+            }
           });
+
+          const maxLength = getFieldMaxLength(field);
+          if (maxLength) {
+            textField.setMaxLength(maxLength);
+          }
 
           if (field.type === 'TextArea') {
             textField.enableMultiline();

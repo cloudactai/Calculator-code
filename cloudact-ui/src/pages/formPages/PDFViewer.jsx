@@ -1,7 +1,23 @@
-import React from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Document, Page } from 'react-pdf';
 import { Rnd } from 'react-rnd';
 import CurrencyFormat from 'react-currency-format';
+import {
+  VERTICAL_TEXT_FIELD_TYPE,
+  getFieldMaxLength,
+  getVerticalInputStyle,
+} from './verticalTextField';
+
+const PDF_HORIZONTAL_GUTTER = 16;
+
+export const getPageFitRatio = (availableWidth, renderedPageWidth) => {
+  if (!Number.isFinite(availableWidth) || !Number.isFinite(renderedPageWidth)
+    || availableWidth <= 0 || renderedPageWidth <= 0) {
+    return 1;
+  }
+
+  return Math.min(1, Math.max(0, (availableWidth - PDF_HORIZONTAL_GUTTER) / renderedPageWidth));
+};
 
 const PDFViewer = ({
   pdfUrl,
@@ -20,64 +36,223 @@ const PDFViewer = ({
   getFieldHighlight,
   isEditable = false  // Add this new prop with default value false
 }) => {
+  const viewerRef = useRef(null);
+  const [availableWidth, setAvailableWidth] = useState(0);
+  const [renderedPageSize, setRenderedPageSize] = useState(null);
+  const [verticalEditorId, setVerticalEditorId] = useState(null);
+
+  const openVerticalEditor = useCallback((field) => setVerticalEditorId(field.id), []);
+  const closeVerticalEditor = useCallback(() => setVerticalEditorId(null), []);
+
+  useEffect(() => {
+    const viewer = viewerRef.current;
+    if (!viewer) return undefined;
+
+    const updateWidth = () => setAvailableWidth(viewer.clientWidth);
+    updateWidth();
+
+    if (typeof ResizeObserver === 'undefined') {
+      window.addEventListener('resize', updateWidth);
+      return () => window.removeEventListener('resize', updateWidth);
+    }
+
+    const observer = new ResizeObserver(updateWidth);
+    observer.observe(viewer);
+    return () => observer.disconnect();
+  }, []);
+
+  const currentPageKey = `${pdfUrl}:${currentPage}:${scale}`;
+  const handlePageLoadSuccess = useCallback((page) => {
+    const viewport = page.getViewport({ scale });
+    setRenderedPageSize({
+      key: currentPageKey,
+      width: viewport.width,
+      height: viewport.height,
+    });
+  }, [currentPageKey, scale]);
+
   if (!fields) return null;
 
+  const activePageSize = renderedPageSize?.key === currentPageKey ? renderedPageSize : null;
+  const fitRatio = activePageSize
+    ? getPageFitRatio(availableWidth, activePageSize.width)
+    : 1;
+  const fittedFrameStyle = activePageSize ? {
+    width: Math.floor(activePageSize.width * fitRatio),
+    height: Math.floor(activePageSize.height * fitRatio),
+  } : undefined;
+  const verticalEditorField = verticalEditorId != null
+    ? fields.find(field => field.id === verticalEditorId)
+    : null;
+  const fittedContentStyle = activePageSize ? {
+    position: 'absolute',
+    left: 0,
+    top: 0,
+    width: activePageSize.width,
+    height: activePageSize.height,
+    transform: `scale(${fitRatio})`,
+    transformOrigin: 'top left',
+  } : undefined;
+  return (
+    <div ref={viewerRef} className="pdf-fit-viewer">
+      <Document file={pdfUrl} onLoadSuccess={onLoadSuccess}>
+        <div className="pdf-page-fit-frame" style={fittedFrameStyle}>
+          <div className="pdf-page-fit-content" style={fittedContentStyle}>
+            <Page
+              className="pdf-canvas"
+              pageNumber={currentPage}
+              scale={scale}
+              onLoadSuccess={handlePageLoadSuccess}
+              renderTextLayer={false}
+              renderAnnotationLayer={false}
+            >
+              {fields.map(field => (
+                field.page === currentPage && (
+                  <Rnd
+                    key={field.id}
+                    size={{ width: field.width, height: field.height }}
+                    position={{ x: field.x * scale, y: field.y * scale }}
+                    bounds="parent"
+                    disableDragging={!isEditable}
+                    enableResizing={isEditable}
+                    style={{
+                      border: field.border,
+                      display: 'flex',
+                      justifyContent: 'center',
+                      alignItems: 'center',
+                      background: 'none',
+                    }}
+                    onClick={(event) => handleFieldSelection(event, field)}
+                  >
+                    <div
+                      style={{
+                        position: 'relative',
+                        width: '100%',
+                        height: '100%',
+                        fontSize: field.fontSize,
+                        padding: '0',
+                        backgroundColor: getFieldHighlight(field),
+                      }}
+                    >
+                      {/* Field Type Rendering */}
+                      {renderField(field, handleEditField, handleSort, handleCellEdit, formatDate, setFields, openVerticalEditor)}
+                    </div>
+                  </Rnd>
+                )
+              ))}
+            </Page>
+          </div>
+        </div>
+      </Document>
+      {verticalEditorField && (
+        <VerticalTextEditor
+          field={verticalEditorField}
+          onSave={(value) => {
+            handleEditField(verticalEditorField.id, value);
+            closeVerticalEditor();
+          }}
+          onCancel={closeVerticalEditor}
+        />
+      )}
+    </div>
+  );
+};
 
+// Typing sideways is unreadable, so the box on the page is only a view of the
+// value: clicking it dims the form and opens the same field lying flat.
+const VerticalTextEditor = ({ field, onSave, onCancel }) => {
+  const [draft, setDraft] = useState(field.value ?? '');
+  const inputRef = useRef(null);
 
+  useEffect(() => {
+    inputRef.current?.focus();
+    inputRef.current?.select();
+  }, []);
+
+  useEffect(() => {
+    const onKeyDown = (event) => {
+      if (event.key === 'Escape') onCancel();
+    };
+    document.addEventListener('keydown', onKeyDown);
+    return () => document.removeEventListener('keydown', onKeyDown);
+  }, [onCancel]);
+
+  const label = field.label || 'Field';
+  const maxLength = getFieldMaxLength(field);
 
   return (
-    <Document file={pdfUrl} onLoadSuccess={onLoadSuccess}>
-      <Page
-        className="pdf-canvas"
-        pageNumber={currentPage}
-        scale={scale}
-        renderTextLayer={false}
-        renderAnnotationLayer={false}
+    <div
+      className="vertical-field-backdrop"
+      role="presentation"
+      onMouseDown={(event) => {
+        if (event.target === event.currentTarget) onCancel();
+      }}
+    >
+      <div
+        className="vertical-field-dialog"
+        role="dialog"
+        aria-modal="true"
+        aria-label={`Edit ${label}`}
       >
-        {fields.map(field => (
-          field.page === currentPage && (
-            <Rnd
-              key={field.id}
-              size={{ width: field.width, height: field.height }}
-              position={{ x: field.x * scale, y: field.y * scale }}
-              bounds="parent"
-              disableDragging={!isEditable}
-              enableResizing={isEditable}
-              style={{
-                border: field.border,
-                display: 'flex',
-                justifyContent: 'center',
-                alignItems: 'center',
-                background: 'none',
-              }}
-              onClick={(event) => handleFieldSelection(event, field)}
-            >
-              <div
-                style={{
-                  position: 'relative',
-                  width: '100%',
-                  height: '100%',
-                  fontSize: field.fontSize,
-                  padding: '0',
-                  backgroundColor: getFieldHighlight(field),
-                }}
-              >
-                {/* Field Type Rendering */}
-                {renderField(field, handleEditField, handleSort, handleCellEdit, formatDate, setFields)}
-              </div>
-            </Rnd>
-          )
-        ))}
-      </Page>
-    </Document>
+        <label className="vertical-field-dialog__label" htmlFor={`vertical-editor-${field.id}`}>
+          {label}
+        </label>
+        <input
+          id={`vertical-editor-${field.id}`}
+          ref={inputRef}
+          type="text"
+          value={draft}
+          maxLength={maxLength}
+          onChange={(e) => setDraft(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') {
+              e.preventDefault();
+              onSave(draft);
+            }
+          }}
+          className="vertical-field-dialog__input"
+        />
+        {maxLength && (
+          <p className="vertical-field-dialog__count">{`${draft.length} / ${maxLength}`}</p>
+        )}
+        <div className="vertical-field-dialog__actions">
+          <button type="button" className="vertical-field-dialog__cancel" onClick={onCancel}>
+            Cancel
+          </button>
+          <button type="button" className="vertical-field-dialog__save" onClick={() => onSave(draft)}>
+            Save
+          </button>
+        </div>
+      </div>
+    </div>
   );
 };
 
 
 // Helper function to render different field types
-const renderField = (field, handleEditField, handleSort, handleCellEdit, formatDate, setFields) => {
+const renderField = (field, handleEditField, handleSort, handleCellEdit, formatDate, setFields, openVerticalEditor) => {
 
   switch (field.type) {
+    case VERTICAL_TEXT_FIELD_TYPE:
+      return (
+        <input
+          id={field.id}
+          aria-label={field.label || field.id}
+          type="text"
+          value={field.value}
+          readOnly
+          maxLength={getFieldMaxLength(field)}
+          title="Click to edit this sideways field"
+          onFocus={() => openVerticalEditor?.(field)}
+          onClick={() => openVerticalEditor?.(field)}
+          style={{
+            ...getFieldStyle(field),
+            ...getVerticalInputStyle(field),
+            textAlign: 'left',
+            cursor: 'pointer',
+          }}
+        />
+      );
     case 'TextField':
       return (
         <input
@@ -85,6 +260,7 @@ const renderField = (field, handleEditField, handleSort, handleCellEdit, formatD
           aria-label={field.label || field.id}
           type="text"
           value={field.value}
+          maxLength={getFieldMaxLength(field)}
           onChange={(e) => handleEditField(field.id, e.target.value)}
           style={getFieldStyle(field)}
         // style={{

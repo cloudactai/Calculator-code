@@ -40,6 +40,11 @@ STD = G.STD_LINE
 SEAT_GAP = G.SEAT_GAP
 BLOCK_MIN = 22.0
 SEAT_TOL = 1.0
+RULE_MIN = 45.0     # a shorter rule is a tick, a leader or a table edge
+# Ontario prints a blank's caption directly under its rule: measured at 0.4-0.7 pt
+# on Form 26, Form 29C and Form 34A. The heading of the next section under a header
+# separator is 7.8 pt or further away, so 4 pt sits in the gap with room either side.
+CAPTION_GAP = 4.0
 TEXT_TYPES = ("TextField", "TextArea", "Number", "Date")
 
 
@@ -47,6 +52,9 @@ def check_form(doc_id, export):
     with open(os.path.join(export, doc_id + ".json")) as fh:
         fields = json.load(fh)["staticFields"]
     pages = G.load_pages(os.path.join(export, doc_id + ".pdf"))
+    # Only a Word export marks its own fields with LibreOffice's grey; an AcroForm
+    # form's grey panels are its design.
+    acro = on_scope.is_acroform(doc_id)
     out = []
 
     def add(kind, f, detail):
@@ -67,12 +75,23 @@ def check_form(doc_id, export):
         if f["type"] not in TEXT_TYPES:
             continue
 
-        rule = G.seat_rule(f, pg["rules"], below=14.0)
         cell = G.enclosing_cell(f, pg["rules"], pg["vlines"])
+        rule = G.seat_rule(f, pg["rules"], below=14.0, cell=cell)
         h = y1 - y0
         block = h >= BLOCK_MIN
 
-        if rule and not block:
+        in_cell = bool(cell) and bool(rule) and abs(cell[3] - rule[0]) < 2.0
+        space = G.cell_writing_box(cell, pg["glyphs"]) if in_cell else None
+        if space and not block:
+            # A cell's bottom border is not an underline, so what is asserted here is
+            # the fit to the cell's writing space, not the 13.3 pt line height.
+            if abs(y0 - space[0]) > 1.5 or abs(y1 - space[1]) > 1.5:
+                add("cell-misfit", f,
+                    f"box {y0:.1f}..{y1:.1f} but its cell's writing space is "
+                    f"{space[0]:.1f}..{space[1]:.1f}")
+            if f["type"] == "TextArea":
+                add("wrong-shape", f, "TextArea in a single-line cell")
+        elif rule and not block:
             # 1 + 2: single line on a rule -> standard box, sitting on the rule.
             if abs(h - STD) > 0.2:
                 # Short is legitimate where the form sets its text closer to the
@@ -107,7 +126,10 @@ def check_form(doc_id, export):
                              for sx0, sy0, sx1, sy1 in pg["shaded"])
             near = any(w[2] > x0 - 20 and w[0] < x1 + 20 and w[3] > y0 - 20 and w[1] < y1 + 20
                        for w in pg["ink"])
-            if not shaded_hit and not near:
+            if G.under_name_instruction(f, pg["glyphs"]) or \
+                    G.under_specify_instruction(f, pg["glyphs"]):
+                pass          # the instruction above it is the anchor
+            elif not shaded_hit and not near:
                 add("stray", f, "no rule, cell, shading or ink anywhere near it")
             elif not caption and not shaded_hit:
                 add("no-anchor", f, "no rule, cell or caption on its line")
@@ -119,10 +141,16 @@ def check_form(doc_id, export):
         # A third of a line of type inside the box is already a box printed over
         # words: Form 43B p3 overlapped its caption by 38% and a 50% threshold let it
         # through.
+        # Text inside the government's own field rectangle is the field's *value*,
+        # not a label the box has to keep off — Form 13C's category cells arrive
+        # pre-filled with "Household goods & furniture" and the like, and the box
+        # covering that is the point of it. The same fact `refit_on_fields.py` reads;
+        # both have to read it from one place or they drift (HANDOFF.md §4).
+        own_value = bool(G.field_shade(f, pg["shaded"])) if not acro else False
         covered = [g for g in pg["glyphs"]
                    if min(x1, g[2]) - max(x0, g[0]) > 0.5 * (g[2] - g[0])
                    and min(y1, g[3]) - max(y0, g[1]) > 0.3 * (g[3] - g[1])]
-        if len(covered) >= 3:
+        if len(covered) >= 3 and not own_value:
             add("covers-text", f,
                 "covers printed " + repr("".join(g[4] for g in covered[:24])))
 
@@ -139,13 +167,71 @@ def check_form(doc_id, export):
     # normalised: the split comes from the government's own multiline flags, and the
     # guide says normalise *per table* to the local majority — a judgement call on
     # each table, not something to apply across 48 columns unseen.
-    for run in G.column_runs(fields):
-        kinds = collections.Counter(m["type"] for m in run)
+    for run in G.column_runs(fields, pages):
+        # A cell the government marked taller than its column-mates holds more lines
+        # than they do, and the odd shape is the form, not a mistake. Form 13C marks
+        # "Jewellery, art, electronics, tools, sports & hobby, equipment" at 25 pt in
+        # a column marked 12.6. The refit declines to normalise these for the same
+        # reason.
+        members = [m for m in run
+                   if not (not acro
+                           and (sh := G.field_shade(m, pages[m["page"]]["shaded"]))
+                           and sh[3] - sh[1] >= BLOCK_MIN)]
+        kinds = collections.Counter(m["type"] for m in members)
         if len(kinds) > 1:
             top = run[0]
             out.append(("mixed-column", top["page"],
                         f"x≈{top['x']:.0f}: {len(run)} stacked cells, "
                         + " + ".join(f"{n} {k}" for k, n in kinds.most_common())))
+
+    # 6: a printed blank with no box on it — the other direction. Everything above
+    # asks whether a *box* sits where the page says; this asks whether every place
+    # the page offers has one, which is the fault a lawyer meets first: a line they
+    # cannot type on. It is how Form 34K's five "(Specify.)" blanks would have been
+    # caught, and it is the shape of every "missing text box" report in this batch.
+    #
+    # A blank is a rule Ontario has labelled with a caption set directly under it —
+    # "(Name of court)", "(Court office address)". Directly is the point: a genuine
+    # caption sits 0.4 to 0.7 pt below its rule, while the heading of the next
+    # section under a header separator is 7.8 pt or more away.
+    for page_no, pg in pages.items():
+        here = [f for f in fields if f["page"] == page_no]
+        width = pg["rect"].width
+        for ry, rx0, rx1 in pg["rules"]:
+            if rx1 - rx0 < RULE_MIN or rx1 - rx0 > 0.72 * width:
+                continue
+            if G.on_dark_bar((ry, rx0, rx1), pg["bars"]):
+                continue
+            if any(min(rx1, G.box(f)[2]) - max(rx0, G.box(f)[0]) > 0.3 * (rx1 - rx0)
+                   and ry - 26 < G.box(f)[3] <= ry + 9 for f in here):
+                continue
+            # A cell's top border is not a writing line: the party panel's caption
+            # cell is drawn, and its caption is printed inside it.
+            if len([v for v in pg["vlines"]
+                    if v[2] > ry + 6 and v[1] <= ry + 1.5 and rx0 - 2 <= v[0] <= rx1 + 2]) >= 2:
+                continue
+            probe = {"x": rx0, "y": ry - SEAT_GAP - STD, "page": page_no,
+                     "width": (rx1 - rx0) * G.SCALE, "height": STD * G.SCALE,
+                     "type": "TextField"}
+            if G.on_signature_line(probe, pg["ink"]) or G.on_role_line(probe, pg["ink"]):
+                continue
+            if G.enclosing_cell(probe, pg["rules"], pg["vlines"]) is not None:
+                continue
+            if G.clearance_above(probe, pg["rules"], pg["ink"], ry) < STD - 4:
+                continue
+            if len([g for g in pg["glyphs"]
+                    if min(rx1, g[2]) - max(rx0, g[0]) > 0
+                    and ry - STD - 1 < g[3] <= ry + 1]) > 4:
+                continue
+            caption = [w for w in pg["ink"]
+                       if ry + 0.2 < w[1] < ry + CAPTION_GAP
+                       and min(rx1, w[2]) - max(rx0, w[0]) > 0]
+            if not caption:
+                continue
+            text = " ".join(w[4] for w in sorted(caption, key=lambda w: w[0]))
+            out.append(("unfilled-rule", page_no,
+                        f"[{rx0:.0f},{ry:.0f} {rx1:.0f}] no box on the blank captioned "
+                        + repr(text[:40])))
     return out
 
 

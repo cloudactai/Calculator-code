@@ -49,6 +49,12 @@ TEXT_TYPES = ("TextField", "TextArea", "Number", "Date")
 # A blank taller than this is a writing block, not a line. Sits between the approved
 # TextField height (13.3) and the approved TextArea p25 (24.5).
 BLOCK_MIN = 22.0
+# No printed underline offers this much writing space, so above it the government's
+# multiline flag stands whatever is drawn beneath the box. Measured: the tallest
+# single-line field in the 45 approved templates is 43.9 pt (p99 = 22.0), and in
+# this batch the boxes an underline demoted run 26.6 to 36.1 and then jump to
+# 101.7 — a 65 pt hole to sit in rather than a cutoff to land on.
+MAX_LINE = 48.0
 # How far below a box bottom a rule may be and still be *that box's* rule. Ontario's
 # table rows are ~33 pt, so this stays well inside one row.
 SEAT_BELOW = 14.0
@@ -181,10 +187,25 @@ def refit_form(doc_id, export, notes, data=None, pages=None):
         candidates = pg["rules"]
         if inferred:
             candidates = [r for r in candidates if not G.on_dark_bar(r, pg["bars"])]
-        rule = G.seat_rule(f, candidates, below=SEAT_BELOW,
-                           prefer="leftmost" if inferred else "overlap")
         cell = G.enclosing_cell(f, pg["rules"], pg["vlines"])
+        rule = G.seat_rule(f, candidates, below=SEAT_BELOW,
+                           prefer="leftmost" if inferred else "overlap", cell=cell)
         anchors[id(f)] = (pg, rule, cell)
+
+    # --- the government's own field rectangle, where the export marks it --------
+    # A box cut to a Word form-field shade already carries the government's own
+    # rectangle, and the refit no more trims that than it trims an AcroForm widget.
+    # It matters where the government pre-filled the field: its answer is printed
+    # inside its own box, flush with the left edge, so the caption rules would start
+    # the box after it and leave a lawyer typing in whatever is left over to the
+    # right of "Household goods & furniture".
+    on_shade = {}
+    if inferred:
+        for f in fields:
+            pg = pages.get(f["page"])
+            shade = G.field_shade(f, pg["shaded"]) if pg is not None else None
+            if shade:
+                on_shade[id(f)] = shade
 
     # --- one column of a table is one shape ------------------------------------
     # The app draws TextField and TextArea differently, so a single odd cell in a
@@ -194,7 +215,7 @@ def refit_form(doc_id, export, notes, data=None, pages=None):
     # Only a lone dissenter is overruled; a column that is genuinely split is left
     # alone and reported.
     forced = {}
-    for run in G.column_runs(fields):
+    for run in G.column_runs(fields, pages):
         kinds = collections.Counter(f["type"] for f in run)
         if len(kinds) != 2:
             continue
@@ -202,14 +223,25 @@ def refit_form(doc_id, export, notes, data=None, pages=None):
         if m != 1:
             continue
         for f in run:
-            if f["type"] == minor:
-                forced[id(f)] = major
-                notes.append((doc_id, f["page"],
-                              f"one {minor} in a column of {major}; normalised"))
+            if f["type"] != minor:
+                continue
+            # ...unless the government's own rectangle says the cell is different.
+            # Form 13C's "Jewellery, art, electronics, tools, sports & hobby,
+            # equipment" is set over two lines and marked 25 pt where the rest of
+            # its column is marked 12.6, so the column is not uniform because its
+            # contents are not. Overruling that made the shape flip on every pass:
+            # the column forced it to a line, the rectangle made it a block again.
+            shade = on_shade.get(id(f))
+            if shade and (shade[3] - shade[1]) >= BLOCK_MIN:
+                continue
+            forced[id(f)] = major
+            notes.append((doc_id, f["page"],
+                          f"one {minor} in a column of {major}; normalised"))
 
     # --- flat sources: share a rule fairly rather than each taking all of it ---
     share, keep_width = {}, set()
     if inferred:
+        keep_width |= set(on_shade)
         by_rule = collections.defaultdict(list)
         for f in fields:
             a = anchors.get(id(f))
@@ -249,6 +281,16 @@ def refit_form(doc_id, export, notes, data=None, pages=None):
         # Test where the field will *land*, not where it currently sprawls: a flat
         # box that spans its own rule and the signature rule beside it is about to be
         # pulled back onto the first of the two, and is not a signature field at all.
+        # The placement guide §5 is unconditional — "Signature lines — never place
+        # a box" — and 82 of the 90 forms already do that. The eight that did not
+        # are the government's own AcroForm widgets, and this pass was applying the
+        # rule only to the inferred sources on the grounds that a government widget
+        # is ground truth. It is ground truth about *geometry*; whether a wet
+        # signature should be typeable is a decision this project has made.
+        if (y1 - y0) < BLOCK_MIN and G.signature_caption(f, pg["ink"], cell=cell):
+            dropped += 1
+            continue
+
         if inferred and (y1 - y0) < BLOCK_MIN and rule:
             sx0, sx1 = share.get(id(f), (rule[1], rule[2]))
             landing = dict(f, x=sx0, y=rule[0] - SEAT_GAP - STD,
@@ -276,7 +318,27 @@ def refit_form(doc_id, export, notes, data=None, pages=None):
             # A flagged writing block stays one even though its foot is a printed
             # rule — a ruled block is still a block, and squashing those to one line
             # would destroy 553 genuine writing areas.
-            block = (y1 - y0) >= BLOCK_MIN and (f["type"] == "TextArea" or not rule)
+            # "If it sits on an underline, it gets the standard-size box" — and an
+            # underline outranks the government's multiline flag. Form 34H.1's Court
+            # office address is a single ruled blank with its caption beneath it, and
+            # the flag made it a text area floating over the line. A genuine ruled
+            # *block* is a different thing: it has writing lines printed inside it,
+            # not just one under it.
+            on_underline = bool(rule) and not (cell and abs(cell[3] - rule[0]) < 2.0)
+            ruled_inside = any(y0 + 2 < ry < y1 - 2
+                               and min(x1, rx1) - max(x0, rx0) > 0.5 * (x1 - x0)
+                               for ry, rx0, rx1 in pg["rules"])
+            # ...but a rule under a box that is taller than any printed blank cannot
+            # be that box's underline. Form 29E page 2 is a whole blank continuation
+            # page — the government's widget covers all 367 pt of it — and the rule
+            # the refit seated it on is the separator above "Put a line through any
+            # blank space left on this page", leaving one line at the foot of an
+            # otherwise dead page. Form 23C does the same three times, on the divider
+            # above the next section heading.
+            if on_underline and not ruled_inside and (y1 - y0) <= MAX_LINE:
+                block = False
+            else:
+                block = (y1 - y0) >= BLOCK_MIN and (f["type"] == "TextArea" or not rule)
             if want:
                 block = want == "TextArea"
             if f["type"] == "TextArea" and not block:
@@ -305,11 +367,26 @@ def refit_form(doc_id, export, notes, data=None, pages=None):
             # a line — that is what `place_open_blanks.py` puts under a caption, and
             # calling it a TextField here would flatten every one of them.
             open_block = not rule and not cell and (y1 - y0) >= BLOCK_MIN
-            block = in_cell or open_block
+            # The government's own field rectangle knows how many lines it holds:
+            # Form 13C sets "Jewellery, art, electronics, tools, sports & hobby,
+            # equipment" over two, and its marked rectangle is 25 pt where its
+            # neighbours' are 12.6.
+            shade = on_shade.get(id(f))
+            shade_block = bool(shade) and (shade[3] - shade[1]) >= BLOCK_MIN
+            block = in_cell or open_block or shade_block
             if want:
                 block = want == "TextArea"
             f["type"] = "TextArea" if block else "TextField"
             if open_block:
+                kept.append(f)
+                continue
+            if shade_block:
+                f["x"] = round(shade[0] + 0.5, 2)
+                f["y"] = round(shade[1] + 0.5, 2)
+                f["width"] = round((shade[2] - shade[0] - 1.0) * SCALE, 2)
+                f["height"] = round((shade[3] - shade[1] - 1.0) * SCALE, 2)
+                if geometry_of(f) != before:
+                    changed += 1
                 kept.append(f)
                 continue
             if cell and not block and not open_block:
@@ -317,15 +394,23 @@ def refit_form(doc_id, export, notes, data=None, pages=None):
                 # starts past the caption printed at the head of the cell — Form 13C
                 # sets "Full legal name:", "Address:", "Email:" inside the cell they
                 # label (guide §3).
-                lx0, lx1 = cell[0] + 1.0, cell[2] - 1.0
-                edge = G.ink_right_edge(lx0, lx1, cell[3] - SEAT_GAP - STD,
-                                        cell[3] - SEAT_GAP, pg["glyphs"])
-                if edge is not None and edge + 1.5 < lx1 - 4:
-                    lx0 = edge + 1.5
+                space = G.cell_writing_box(cell, pg["glyphs"])
+                top, bottom = space if space else (cell[3] - SEAT_GAP - STD,
+                                                   cell[3] - SEAT_GAP)
+                if id(f) in on_shade:
+                    # Cut to the government's own field rectangle already: the width
+                    # is not this pass's to re-derive, and the ink inside it is the
+                    # field's value, not a caption to start after.
+                    lx0, lx1 = x0, x1
+                else:
+                    lx0, lx1 = cell[0] + 1.0, cell[2] - 1.0
+                    edge = G.ink_right_edge(lx0, lx1, top, bottom, pg["glyphs"])
+                    if edge is not None and edge + 1.5 < lx1 - 4:
+                        lx0 = edge + 1.5
                 f["x"] = round(lx0, 2)
                 f["width"] = round((lx1 - lx0) * SCALE, 2)
-                f["y"] = round(cell[3] - SEAT_GAP - STD, 2)
-                f["height"] = round(STD * SCALE, 2)
+                f["y"] = round(top, 2)
+                f["height"] = round((bottom - top) * SCALE, 2)
                 if geometry_of(f) != before:
                     changed += 1
                 kept.append(f)
@@ -341,6 +426,12 @@ def refit_form(doc_id, export, notes, data=None, pages=None):
                 f["y"] = round(cell[1] + 1.0, 2)
                 f["width"] = round((cell[2] - cell[0] - 2.0) * SCALE, 2)
                 f["height"] = round((cell[3] - cell[1] - 2.0) * SCALE, 2)
+        elif cell and rule and abs(cell[3] - rule[0]) < 2.0 and (
+                (space := G.cell_writing_box(cell, pg["glyphs"])) is not None):
+            # This box's rule is its own cell's bottom border, so it fills the cell's
+            # writing space rather than perching a standard line on the border.
+            f["y"] = round(space[0], 2)
+            f["height"] = round((space[1] - space[0]) * SCALE, 2)
         elif rule:
             ry, rx0, rx1 = rule
             if inferred and id(f) not in keep_width:
@@ -405,6 +496,10 @@ def _has_context(f, pg, reach=20.0):
     for sx0, sy0, sx1, sy1 in pg["shaded"]:
         if sx0 < x1 and sx1 > x0 and sy0 < y1 + 2 and sy1 > y0 - 2:
             return True
+    if G.under_name_instruction(f, pg["glyphs"]):
+        return True
+    if G.under_specify_instruction(f, pg["glyphs"]):
+        return True
     for wx0, wy0, wx1, wy1, _t in pg["ink"]:
         if wx1 > x0 - reach and wx0 < x1 + reach and wy1 > y0 - reach and wy0 < y1 + reach:
             # Ink on the box's own line means it is a blank in running text.

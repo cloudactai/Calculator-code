@@ -254,8 +254,107 @@ flex: 1 1 0%;
 position: relative;
 display: flex;
 justify-content: center;
-overflow: hidden;
+overflow-x: auto;
+overflow-y: visible;
 height: 100%;
+}
+
+.pdf-fit-viewer {
+width: 100%;
+min-width: 0;
+display: flex;
+justify-content: center;
+}
+
+.pdf-fit-viewer > .react-pdf__Document {
+width: 100%;
+display: flex;
+justify-content: center;
+}
+
+.pdf-page-fit-frame {
+position: relative;
+flex: 0 0 auto;
+}
+
+/* Sideways fields (VerticalTextField) are typed in a flat pop-up, so the page
+   behind it dims while the editor is open. */
+.vertical-field-backdrop {
+position: fixed;
+inset: 0;
+z-index: 1050;
+display: flex;
+align-items: center;
+justify-content: center;
+background: rgba(20, 28, 38, 0.45);
+}
+
+.vertical-field-dialog {
+width: min(560px, calc(100vw - 48px));
+padding: 20px 22px;
+border-radius: 10px;
+background: #fff;
+box-shadow: 0 12px 34px rgba(0, 0, 0, 0.28);
+font-family: inherit;
+}
+
+.vertical-field-dialog__label {
+display: block;
+margin-bottom: 8px;
+font-size: 14px;
+font-weight: 600;
+color: #33475b;
+}
+
+.vertical-field-dialog__input {
+width: 100%;
+box-sizing: border-box;
+padding: 10px 12px;
+font-size: 15px;
+color: #000;
+border: 1px solid rgba(255, 144, 0, 0.5);
+border-radius: 6px;
+background-color: rgba(255, 144, 0, 0.2);
+}
+
+.vertical-field-dialog__input:focus {
+outline: none;
+border-color: rgba(255, 144, 0, 0.9);
+}
+
+.vertical-field-dialog__count {
+margin: 6px 0 0;
+font-size: 12px;
+color: #6b7a8c;
+text-align: right;
+}
+
+.vertical-field-dialog__actions {
+display: flex;
+justify-content: flex-end;
+gap: 10px;
+margin-top: 16px;
+}
+
+.vertical-field-dialog__cancel,
+.vertical-field-dialog__save {
+padding: 8px 18px;
+font-size: 14px;
+font-weight: 600;
+border-radius: 22px;
+cursor: pointer;
+}
+
+.vertical-field-dialog__cancel {
+border: 1px solid #c7d0d9;
+background: #fff;
+color: #33475b;
+}
+
+.vertical-field-dialog__save {
+border: none;
+background: #f0c05a;
+color: #33475b;
 }
 
 #pdfViewer {
