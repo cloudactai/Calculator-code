@@ -49,12 +49,33 @@ BLOCK_MIN = 22.0
 MIN_RULE = 24.0        # a rule shorter than this is a tick or a leader, not a blank
 ROW_TOL = 1.5          # rules this close in y are the same printed line
 
-# Form 13C page 4 is held back. Its grid reads differently depending on where you
-# start, and boxing its empty cells leaves `refit_on_fields.py` flipping fields
-# between a line and a block on every run. Anchoring `enclosing_cell` on a box's
-# bottom edge rather than its centre was expected to cure this and did not, so the
-# real cause is still unidentified; the page needs reading by hand.
-HELD_BACK = {"Form13C"}
+HELD_BACK = set()
+
+
+def _marks_its_fields(fields, pages):
+    """Does this export paint its form fields? (LibreOffice's grey `w:textInput`.)
+
+    LibreOffice renders a Word form field as a light grey box, which is signal 4 in
+    `place_flat_fields.py` — but only some exports carry it. The question has one
+    answer per document and a wide margin: **385 of Form 13C's 401 boxes sit on the
+    shading, against 0 of the 339 boxes across the other nine Word-sourced forms.**
+    So there is no cutoff to land on, and where the answer is yes the marking is
+    complete enough to trust as the government's own statement of what is fillable.
+    """
+    total = hit = 0
+    for f in fields:
+        if f["type"] not in ("TextField", "TextArea"):
+            continue
+        pg = pages.get(f["page"])
+        if pg is None:
+            continue
+        x0, y0, x1, y1 = G.box(f)
+        total += 1
+        if any(min(x1, sx1) - max(x0, sx0) > 0.5 * (x1 - x0)
+               and min(y1, sy1) - max(y0, sy0) > 0.5 * (y1 - y0)
+               for sx0, sy0, sx1, sy1 in pg["shaded"]):
+            hit += 1
+    return total > 0 and hit > 0.5 * total
 
 
 def _boxes_on(rule, fields, page_no):
@@ -96,6 +117,9 @@ def find_missing(doc_id, export):
         fields = json.load(fh)["staticFields"]
     pages = G.load_pages(os.path.join(export, doc_id + ".pdf"))
     added, splits = [], []
+    # Only a Word export can mark its own fields; an AcroForm form's grey panels are
+    # the form's design, and its fields are widgets rather than shading.
+    marked = not on_scope.is_acroform(doc_id) and _marks_its_fields(fields, pages)
 
     for page_no, pg in pages.items():
         rules = [r for r in pg["rules"] if r[2] - r[1] >= MIN_RULE
@@ -155,6 +179,18 @@ def find_missing(doc_id, export):
                    and min(cx1, G.box(f)[2]) - max(cx0, G.box(f)[0]) > 2
                    and min(cy1, G.box(f)[3]) - max(cy0, G.box(f)[1]) > 2
                    for f in fields):
+                continue
+            # Where the export marks its fields, an unmarked cell is not one. A drawn
+            # grid has more cells than blanks: Form 13C rules a spacer band between
+            # each pair of money rows, and this rule wanted to box 26 of them —
+            # which is what made the form non-idempotent and got it held back. Not
+            # one of the 26 is shaded, and the form's own source agrees: its .docx
+            # holds 404 `w:textInput` and 3 `w:checkBox`, and the template already
+            # carries 404 boxes.
+            if marked and not any(
+                    min(cx1, sx1) - max(cx0, sx0) > 0.5 * (cx1 - cx0)
+                    and min(cy1, sy1) - max(cy0, sy0) > 0.5 * (cy1 - cy0)
+                    for sx0, sy0, sx1, sy1 in pg["shaded"]):
                 continue
             # The same function the refit uses to size a box inside a cell. It
             # returns None when the cell has printing of its own, which is what keeps
