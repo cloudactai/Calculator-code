@@ -450,7 +450,7 @@ def under_name_instruction(field, glyphs, reach=30.0):
     return False
 
 
-def signature_caption(field, ink, reach=26.0):
+def signature_caption(field, ink, reach=26.0, cell=None):
     """Is the caption printed under this box a bare signature caption?
 
     The placement guide §5 is unconditional — "Signature lines — never place a box"
@@ -469,18 +469,38 @@ def signature_caption(field, ink, reach=26.0):
     "Type or print name of witness to …" or "Municipality where this warrant was
     signed".
     """
-    x0, _, x1, y1 = box(field)
+    x0, y0, x1, y1 = box(field)
+
+    def bare(line):
+        words = [t.lower().strip(":.,()'’") for _x, t in sorted(line)]
+        if not words or not words[-1].startswith("signature"):
+            return False
+        return not any(w in ("date", "print", "type", "name", "printed") for w in words)
+
     rows = {}
     for wx0, wy0, wx1, wy1, text in ink:
         if y1 - 2 <= wy0 <= y1 + reach and _overlap(x0, x1, wx0, wx1) > 0:
             rows.setdefault(round(wy1, 1), []).append((wx0, text))
-    if not rows:
+    if rows and bare(rows[min(rows)]):
+        return True
+
+    # Ontario also captions a signature cell from *inside*, at the top: Form 33C and
+    # Form 33D rule "THE PEOPLE SIGNING THIS AGREEMENT ARE" as a grid, and the cell
+    # labelled "Signature" got a box like its neighbours "Print or type full legal
+    # name" and "Date of signature", which are real. The caption has to be inside the
+    # box's own cell and the cell has to hold nothing else, or this catches the
+    # "Print or type name" box printed under a signature line on Forms 34L, 34N and
+    # 43, and the "Date of applicant's signature" box on Form 15D — all correct.
+    if cell is None:
         return False
-    line = [t for _x, t in sorted(rows[min(rows)])]
-    words = [t.lower().strip(":.,()'’") for t in line]
-    if not words or not words[-1].startswith("signature"):
+    above = {}
+    for wx0, wy0, wx1, wy1, text in ink:
+        if cell[1] - 1 <= wy1 <= y0 + 1 and _overlap(x0, x1, wx0, wx1) > 0:
+            above.setdefault(round(wy1, 1), []).append((wx0, text))
+    if not above or not bare(above[max(above)]):
         return False
-    return not any(w in ("date", "print", "type", "name", "printed") for w in words)
+    return not any(y1 + 0.5 < wy0 and wy1 < cell[3] - 0.5 and _overlap(x0, x1, wx0, wx1) > 0
+                   for wx0, wy0, wx1, wy1, _t in ink)
 
 
 def under_specify_instruction(field, glyphs, reach=22.0):

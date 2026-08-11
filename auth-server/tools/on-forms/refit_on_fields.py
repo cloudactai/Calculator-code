@@ -287,7 +287,7 @@ def refit_form(doc_id, export, notes, data=None, pages=None):
         # rule only to the inferred sources on the grounds that a government widget
         # is ground truth. It is ground truth about *geometry*; whether a wet
         # signature should be typeable is a decision this project has made.
-        if (y1 - y0) < BLOCK_MIN and G.signature_caption(f, pg["ink"]):
+        if (y1 - y0) < BLOCK_MIN and G.signature_caption(f, pg["ink"], cell=cell):
             dropped += 1
             continue
 

@@ -224,7 +224,12 @@ def find_missing(doc_id, export):
             probe = {"x": cx0, "y": space[0], "width": (cx1 - cx0) * SCALE,
                      "height": (space[1] - space[0]) * SCALE,
                      "type": "TextField", "page": page_no}
-            if G.on_signature_line(probe, pg["ink"]) or G.on_role_line(probe, pg["ink"]):
+            # A cell captioned "Signature" from inside is a signature line like any
+            # other (guide §5) — Forms 33C and 33D rule their signing block as a grid,
+            # so without this the refit drops the box and this rule puts it straight
+            # back, and the two tools never settle together.
+            if G.on_signature_line(probe, pg["ink"]) or G.on_role_line(probe, pg["ink"]) \
+                    or G.signature_caption(probe, pg["ink"], cell=(cx0, cy0, cx1, cy1)):
                 continue
             # Only place where the grid walk and `enclosing_cell` agree on the cell.
             # The two read a grid differently — one outward from a pair of vertical
