@@ -6,7 +6,7 @@ import { useHistory } from 'react-router-dom';
 // import { Margin, usePDF } from "react-to-pdf";
 import toast from "react-hot-toast";
 import GeneralModal from "../../components/Matters/Modals/GeneralModal";
-import { PDFDocument, PDFName, rgb, StandardFonts } from 'pdf-lib';
+import { PDFDocument, PDFName, degrees, rgb, StandardFonts } from 'pdf-lib';
 import { pdfjs } from 'react-pdf';
 import '../../components/FormPages/forms/App.css'; // Ensure this CSS file is included for styles
 import 'react-resizable/css/styles.css';
@@ -1725,9 +1725,43 @@ const FillPdf = ({ currentUserRole }) => {
           borderWidth: 0
         };
 
-        if (field.type === 'TextField' || field.type === 'Number' || field.type === 'TextArea'
-          || field.type === VERTICAL_TEXT_FIELD_TYPE) {
-          const isVertical = field.type === VERTICAL_TEXT_FIELD_TYPE;
+        if (field.type === VERTICAL_TEXT_FIELD_TYPE) {
+          // Draw vertical text directly on the page with rotation so it
+          // reliably appears rotated in every PDF viewer (the MK /R widget
+          // flag is not universally respected).
+          const value = field.value != null ? String(field.value) : '';
+          if (value) {
+            const rotation = normalizeVerticalRotation(field.rotation);
+            const fontSize = 8;
+            const pdfW = parseFloat(pdf.width) / scale;
+            const pdfH = parseFloat(pdf.height) / scale;
+            const pdfX = parseFloat(pdf.x) || 0;
+            const pdfY = page.getHeight() - parseFloat(pdf.y) - pdfH;
+
+            if (rotation === 270) {
+              // Bottom-to-top: origin at bottom-left of the box, rotate -90°
+              page.drawText(value, {
+                x: pdfX + pdfW / 2 + fontSize / 2,
+                y: pdfY,
+                size: fontSize,
+                font: helveticaFont,
+                color: rgb(0, 0, 0),
+                rotate: degrees(90),
+              });
+            } else {
+              // Top-to-bottom (rotation === 90): origin at top-right, rotate 90° CW
+              page.drawText(value, {
+                x: pdfX + pdfW / 2 - fontSize / 2,
+                y: pdfY + pdfH,
+                size: fontSize,
+                font: helveticaFont,
+                color: rgb(0, 0, 0),
+                rotate: degrees(-90),
+              });
+            }
+          }
+        }
+        else if (field.type === 'TextField' || field.type === 'Number' || field.type === 'TextArea') {
           const textField = form.createTextField(field.id.toString());
           textField.addToPage(page, fieldProperties);
 
@@ -1737,14 +1771,6 @@ const FillPdf = ({ currentUserRole }) => {
             dict.delete(PDFName.of('BS'));
             dict.delete(PDFName.of('MK'));
             dict.delete(PDFName.of('BG'));
-            // The value has to print along the sideways line it belongs to. MK
-            // was just cleared, so the rotation is set after, not via addToPage.
-            if (isVertical) {
-              dict.set(
-                PDFName.of('MK'),
-                pdfDoc.context.obj({ R: normalizeVerticalRotation(field.rotation) })
-              );
-            }
           });
 
           const maxLength = getFieldMaxLength(field);
