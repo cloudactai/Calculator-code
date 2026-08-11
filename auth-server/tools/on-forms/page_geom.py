@@ -481,14 +481,26 @@ def enclosing_cell(field, rules, vlines, pad=1.5):
     against that one instead: Form 13C p4 flipped five fields between a 21.5 pt line
     and a 76 pt block for ever. The bottom edge does not move when the top does, so
     the answer is stable under the very change the refit makes.
+
+    A cell's bottom border cannot also be its top. Anchoring on the bottom edge put
+    that border within `pad` of the probe, so a box grown to fill its cell found the
+    same rule twice, the cell collapsed to nothing and the field came back as having
+    no cell at all — which reads as a box on a bare underline. That is how Form 29C's
+    63 pt "typed or printed name … address for service" panel lost the government's
+    own TextArea and ended up a 21.5 pt line at its foot, five-sixths of the panel
+    dead. The top is therefore searched for *above the border that was found*, not
+    above the box.
     """
     x0, y0, x1, y1 = box(field)
     cx, cy = (x0 + x1) / 2, y1 - pad
     below = [r for r in rules if r[0] >= cy - pad and r[1] <= cx <= r[2]]
-    above = [r for r in rules if r[0] <= cy + pad and r[1] <= cx <= r[2]]
-    if not below or not above:
+    if not below:
         return None
     bot = min(below, key=lambda r: r[0])[0]
+    above = [r for r in rules
+             if r[0] <= cy + pad and r[0] < bot - 0.5 and r[1] <= cx <= r[2]]
+    if not above:
+        return None
     top = max(above, key=lambda r: r[0])[0]
     if bot - top < 4:
         return None
