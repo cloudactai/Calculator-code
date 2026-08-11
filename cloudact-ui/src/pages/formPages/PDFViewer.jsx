@@ -2,6 +2,11 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Document, Page } from 'react-pdf';
 import { Rnd } from 'react-rnd';
 import CurrencyFormat from 'react-currency-format';
+import {
+  VERTICAL_TEXT_FIELD_TYPE,
+  getFieldMaxLength,
+  getVerticalInputStyle,
+} from './verticalTextField';
 
 const PDF_HORIZONTAL_GUTTER = 16;
 
@@ -34,6 +39,10 @@ const PDFViewer = ({
   const viewerRef = useRef(null);
   const [availableWidth, setAvailableWidth] = useState(0);
   const [renderedPageSize, setRenderedPageSize] = useState(null);
+  const [verticalEditorId, setVerticalEditorId] = useState(null);
+
+  const openVerticalEditor = useCallback((field) => setVerticalEditorId(field.id), []);
+  const closeVerticalEditor = useCallback(() => setVerticalEditorId(null), []);
 
   useEffect(() => {
     const viewer = viewerRef.current;
@@ -72,6 +81,9 @@ const PDFViewer = ({
     width: Math.floor(activePageSize.width * fitRatio),
     height: Math.floor(activePageSize.height * fitRatio),
   } : undefined;
+  const verticalEditorField = verticalEditorId != null
+    ? fields.find(field => field.id === verticalEditorId)
+    : null;
   const fittedContentStyle = activePageSize ? {
     position: 'absolute',
     left: 0,
@@ -123,7 +135,7 @@ const PDFViewer = ({
                       }}
                     >
                       {/* Field Type Rendering */}
-                      {renderField(field, handleEditField, handleSort, handleCellEdit, formatDate, setFields)}
+                      {renderField(field, handleEditField, handleSort, handleCellEdit, formatDate, setFields, openVerticalEditor)}
                     </div>
                   </Rnd>
                 )
@@ -132,15 +144,115 @@ const PDFViewer = ({
           </div>
         </div>
       </Document>
+      {verticalEditorField && (
+        <VerticalTextEditor
+          field={verticalEditorField}
+          onSave={(value) => {
+            handleEditField(verticalEditorField.id, value);
+            closeVerticalEditor();
+          }}
+          onCancel={closeVerticalEditor}
+        />
+      )}
+    </div>
+  );
+};
+
+// Typing sideways is unreadable, so the box on the page is only a view of the
+// value: clicking it dims the form and opens the same field lying flat.
+const VerticalTextEditor = ({ field, onSave, onCancel }) => {
+  const [draft, setDraft] = useState(field.value ?? '');
+  const inputRef = useRef(null);
+
+  useEffect(() => {
+    inputRef.current?.focus();
+    inputRef.current?.select();
+  }, []);
+
+  useEffect(() => {
+    const onKeyDown = (event) => {
+      if (event.key === 'Escape') onCancel();
+    };
+    document.addEventListener('keydown', onKeyDown);
+    return () => document.removeEventListener('keydown', onKeyDown);
+  }, [onCancel]);
+
+  const label = field.label || 'Field';
+  const maxLength = getFieldMaxLength(field);
+
+  return (
+    <div
+      className="vertical-field-backdrop"
+      role="presentation"
+      onMouseDown={(event) => {
+        if (event.target === event.currentTarget) onCancel();
+      }}
+    >
+      <div
+        className="vertical-field-dialog"
+        role="dialog"
+        aria-modal="true"
+        aria-label={`Edit ${label}`}
+      >
+        <label className="vertical-field-dialog__label" htmlFor={`vertical-editor-${field.id}`}>
+          {label}
+        </label>
+        <input
+          id={`vertical-editor-${field.id}`}
+          ref={inputRef}
+          type="text"
+          value={draft}
+          maxLength={maxLength}
+          onChange={(e) => setDraft(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') {
+              e.preventDefault();
+              onSave(draft);
+            }
+          }}
+          className="vertical-field-dialog__input"
+        />
+        {maxLength && (
+          <p className="vertical-field-dialog__count">{`${draft.length} / ${maxLength}`}</p>
+        )}
+        <div className="vertical-field-dialog__actions">
+          <button type="button" className="vertical-field-dialog__cancel" onClick={onCancel}>
+            Cancel
+          </button>
+          <button type="button" className="vertical-field-dialog__save" onClick={() => onSave(draft)}>
+            Save
+          </button>
+        </div>
+      </div>
     </div>
   );
 };
 
 
 // Helper function to render different field types
-const renderField = (field, handleEditField, handleSort, handleCellEdit, formatDate, setFields) => {
+const renderField = (field, handleEditField, handleSort, handleCellEdit, formatDate, setFields, openVerticalEditor) => {
 
   switch (field.type) {
+    case VERTICAL_TEXT_FIELD_TYPE:
+      return (
+        <input
+          id={field.id}
+          aria-label={field.label || field.id}
+          type="text"
+          value={field.value}
+          readOnly
+          maxLength={getFieldMaxLength(field)}
+          title="Click to edit this sideways field"
+          onFocus={() => openVerticalEditor?.(field)}
+          onClick={() => openVerticalEditor?.(field)}
+          style={{
+            ...getFieldStyle(field),
+            ...getVerticalInputStyle(field),
+            textAlign: 'left',
+            cursor: 'pointer',
+          }}
+        />
+      );
     case 'TextField':
       return (
         <input
@@ -148,6 +260,7 @@ const renderField = (field, handleEditField, handleSort, handleCellEdit, formatD
           aria-label={field.label || field.id}
           type="text"
           value={field.value}
+          maxLength={getFieldMaxLength(field)}
           onChange={(e) => handleEditField(field.id, e.target.value)}
           style={getFieldStyle(field)}
         // style={{

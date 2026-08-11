@@ -743,7 +743,7 @@
   },
   {
    "id": 1750031815041,
-   "type": "TextField",
+   "type": "VerticalTextField",
    "x": 114.71,
    "y": 490.38,
    "width": 38.14,
@@ -758,11 +758,12 @@
    "background": "none",
    "border": "none",
    "page": 2,
-   "bind": "court_info.courtName"
+   "bind": "court_info.courtName",
+   "rotation": 270
   },
   {
    "id": 1750031815042,
-   "type": "TextField",
+   "type": "VerticalTextField",
    "x": 194.34,
    "y": 490.38,
    "width": 46.49,
@@ -777,11 +778,12 @@
    "background": "none",
    "border": "none",
    "page": 2,
-   "bind": "court_info.courtOfficeAddress"
+   "bind": "court_info.courtOfficeAddress",
+   "rotation": 270
   },
   {
    "id": 1750031815043,
-   "type": "TextField",
+   "type": "VerticalTextField",
    "x": 91.06,
    "y": 736.76,
    "width": 40.8,
@@ -795,11 +797,12 @@
    ],
    "background": "none",
    "border": "none",
-   "page": 2
+   "page": 2,
+   "rotation": 270
   },
   {
    "id": 1750031815044,
-   "type": "TextField",
+   "type": "VerticalTextField",
    "x": 219.96,
    "y": 736.76,
    "width": 40.8,
@@ -813,11 +816,12 @@
    ],
    "background": "none",
    "border": "none",
-   "page": 2
+   "page": 2,
+   "rotation": 270
   },
   {
    "id": 1750031815045,
-   "type": "TextField",
+   "type": "VerticalTextField",
    "x": 338.82,
    "y": 736.76,
    "width": 145.46,
@@ -831,7 +835,8 @@
    ],
    "background": "none",
    "border": "none",
-   "page": 2
+   "page": 2,
+   "rotation": 270
   }
  ]
 }
