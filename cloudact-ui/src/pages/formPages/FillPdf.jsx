@@ -16,6 +16,7 @@ import PDFViewer from "./PDFViewer";
 import {
   VERTICAL_TEXT_FIELD_TYPE,
   getFieldMaxLength,
+  getPdfOverrides,
   normalizeVerticalRotation,
 } from "./verticalTextField";
 import Loader from "../../components/Loader";
@@ -1710,11 +1711,16 @@ const FillPdf = ({ currentUserRole }) => {
 
         const page = pages[pageIndex];
 
+        // Use PDF-specific overrides when the field defines them (e.g.
+        // VerticalTextFields whose editing box is smaller than where the
+        // text should land on the printed form).
+        const pdf = getPdfOverrides(field);
+
         const fieldProperties = {
-          x: parseFloat(field.x) || 0,
-          y: page.getHeight() - parseFloat(field.y) - (parseFloat(field.height) / scale),
-          width: parseFloat(field.width) / scale,
-          height: parseFloat(field.height) / scale,
+          x: parseFloat(pdf.x) || 0,
+          y: page.getHeight() - parseFloat(pdf.y) - (parseFloat(pdf.height) / scale),
+          width: parseFloat(pdf.width) / scale,
+          height: parseFloat(pdf.height) / scale,
           textColor: rgb(0, 0, 0),
           borderWidth: 0
         };

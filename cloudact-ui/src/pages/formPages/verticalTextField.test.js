@@ -1,7 +1,9 @@
 import {
   VERTICAL_TEXT_FIELD_TYPE,
   getFieldMaxLength,
+  getPdfOverrides,
   getVerticalInputStyle,
+  hasPdfOverrides,
   isVerticalTextField,
   normalizeVerticalRotation,
 } from './verticalTextField';
@@ -35,6 +37,34 @@ describe('getFieldMaxLength', () => {
     expect(getFieldMaxLength({ maxLength: 0 })).toBeUndefined();
     expect(getFieldMaxLength({ maxLength: -5 })).toBeUndefined();
     expect(getFieldMaxLength({ maxLength: 'many' })).toBeUndefined();
+  });
+});
+
+describe('getPdfOverrides', () => {
+  test('returns regular coordinates when no overrides are set', () => {
+    const field = { x: 100, y: 200, width: 50, height: 30 };
+    expect(getPdfOverrides(field)).toEqual({ x: 100, y: 200, width: 50, height: 30 });
+  });
+
+  test('uses pdf-prefixed values when present', () => {
+    const field = { x: 100, y: 200, width: 50, height: 30, pdfY: 50, pdfHeight: 300 };
+    expect(getPdfOverrides(field)).toEqual({ x: 100, y: 50, width: 50, height: 300 });
+  });
+
+  test('allows overriding all four coordinates', () => {
+    const field = { x: 1, y: 2, width: 3, height: 4, pdfX: 10, pdfY: 20, pdfWidth: 30, pdfHeight: 40 };
+    expect(getPdfOverrides(field)).toEqual({ x: 10, y: 20, width: 30, height: 40 });
+  });
+});
+
+describe('hasPdfOverrides', () => {
+  test('false when no overrides exist', () => {
+    expect(hasPdfOverrides({ x: 1, y: 2 })).toBe(false);
+  });
+
+  test('true when any pdf coordinate is set', () => {
+    expect(hasPdfOverrides({ pdfHeight: 300 })).toBe(true);
+    expect(hasPdfOverrides({ pdfX: 0 })).toBe(true);
   });
 });
 
