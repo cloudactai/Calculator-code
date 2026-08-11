@@ -25,6 +25,23 @@ export const getFieldMaxLength = (field) => {
   return Math.floor(limit);
 };
 
+// Some fields are placed at a convenient spot for editing but need to sit at a
+// different position / size when burned into the final PDF.  The field JSON can
+// carry optional `pdfX`, `pdfY`, `pdfWidth`, `pdfHeight` overrides.  This
+// helper returns the set of coordinates that `savePdf` should use: the PDF
+// overrides when present, falling back to the regular values otherwise.
+export const getPdfOverrides = (field) => ({
+  x:      field.pdfX      != null ? field.pdfX      : field.x,
+  y:      field.pdfY      != null ? field.pdfY      : field.y,
+  width:  field.pdfWidth  != null ? field.pdfWidth  : field.width,
+  height: field.pdfHeight != null ? field.pdfHeight : field.height,
+});
+
+// Returns true when at least one PDF-override coordinate is set on the field.
+export const hasPdfOverrides = (field) =>
+  field.pdfX != null || field.pdfY != null ||
+  field.pdfWidth != null || field.pdfHeight != null;
+
 // The box keeps the field's own footprint on the page; the control inside it is
 // rotated, so it is laid out with the two axes swapped.
 export const getVerticalInputStyle = (field) => {
