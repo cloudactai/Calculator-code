@@ -254,8 +254,27 @@ flex: 1 1 0%;
 position: relative;
 display: flex;
 justify-content: center;
-overflow: hidden;
+overflow-x: auto;
+overflow-y: visible;
 height: 100%;
+}
+
+.pdf-fit-viewer {
+width: 100%;
+min-width: 0;
+display: flex;
+justify-content: center;
+}
+
+.pdf-fit-viewer > .react-pdf__Document {
+width: 100%;
+display: flex;
+justify-content: center;
+}
+
+.pdf-page-fit-frame {
+position: relative;
+flex: 0 0 auto;
 }
 
 #pdfViewer {

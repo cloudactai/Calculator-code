@@ -1,7 +1,18 @@
-import React from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Document, Page } from 'react-pdf';
 import { Rnd } from 'react-rnd';
 import CurrencyFormat from 'react-currency-format';
+
+const PDF_HORIZONTAL_GUTTER = 16;
+
+export const getPageFitRatio = (availableWidth, renderedPageWidth) => {
+  if (!Number.isFinite(availableWidth) || !Number.isFinite(renderedPageWidth)
+    || availableWidth <= 0 || renderedPageWidth <= 0) {
+    return 1;
+  }
+
+  return Math.min(1, Math.max(0, (availableWidth - PDF_HORIZONTAL_GUTTER) / renderedPageWidth));
+};
 
 const PDFViewer = ({
   pdfUrl,
@@ -20,56 +31,108 @@ const PDFViewer = ({
   getFieldHighlight,
   isEditable = false  // Add this new prop with default value false
 }) => {
+  const viewerRef = useRef(null);
+  const [availableWidth, setAvailableWidth] = useState(0);
+  const [renderedPageSize, setRenderedPageSize] = useState(null);
+
+  useEffect(() => {
+    const viewer = viewerRef.current;
+    if (!viewer) return undefined;
+
+    const updateWidth = () => setAvailableWidth(viewer.clientWidth);
+    updateWidth();
+
+    if (typeof ResizeObserver === 'undefined') {
+      window.addEventListener('resize', updateWidth);
+      return () => window.removeEventListener('resize', updateWidth);
+    }
+
+    const observer = new ResizeObserver(updateWidth);
+    observer.observe(viewer);
+    return () => observer.disconnect();
+  }, []);
+
+  const currentPageKey = `${pdfUrl}:${currentPage}:${scale}`;
+  const handlePageLoadSuccess = useCallback((page) => {
+    const viewport = page.getViewport({ scale });
+    setRenderedPageSize({
+      key: currentPageKey,
+      width: viewport.width,
+      height: viewport.height,
+    });
+  }, [currentPageKey, scale]);
+
   if (!fields) return null;
 
-
-
-
+  const activePageSize = renderedPageSize?.key === currentPageKey ? renderedPageSize : null;
+  const fitRatio = activePageSize
+    ? getPageFitRatio(availableWidth, activePageSize.width)
+    : 1;
+  const fittedFrameStyle = activePageSize ? {
+    width: Math.floor(activePageSize.width * fitRatio),
+    height: Math.floor(activePageSize.height * fitRatio),
+  } : undefined;
+  const fittedContentStyle = activePageSize ? {
+    position: 'absolute',
+    left: 0,
+    top: 0,
+    width: activePageSize.width,
+    height: activePageSize.height,
+    transform: `scale(${fitRatio})`,
+    transformOrigin: 'top left',
+  } : undefined;
   return (
-    <Document file={pdfUrl} onLoadSuccess={onLoadSuccess}>
-      <Page
-        className="pdf-canvas"
-        pageNumber={currentPage}
-        scale={scale}
-        renderTextLayer={false}
-        renderAnnotationLayer={false}
-      >
-        {fields.map(field => (
-          field.page === currentPage && (
-            <Rnd
-              key={field.id}
-              size={{ width: field.width, height: field.height }}
-              position={{ x: field.x * scale, y: field.y * scale }}
-              bounds="parent"
-              disableDragging={!isEditable}
-              enableResizing={isEditable}
-              style={{
-                border: field.border,
-                display: 'flex',
-                justifyContent: 'center',
-                alignItems: 'center',
-                background: 'none',
-              }}
-              onClick={(event) => handleFieldSelection(event, field)}
+    <div ref={viewerRef} className="pdf-fit-viewer">
+      <Document file={pdfUrl} onLoadSuccess={onLoadSuccess}>
+        <div className="pdf-page-fit-frame" style={fittedFrameStyle}>
+          <div className="pdf-page-fit-content" style={fittedContentStyle}>
+            <Page
+              className="pdf-canvas"
+              pageNumber={currentPage}
+              scale={scale}
+              onLoadSuccess={handlePageLoadSuccess}
+              renderTextLayer={false}
+              renderAnnotationLayer={false}
             >
-              <div
-                style={{
-                  position: 'relative',
-                  width: '100%',
-                  height: '100%',
-                  fontSize: field.fontSize,
-                  padding: '0',
-                  backgroundColor: getFieldHighlight(field),
-                }}
-              >
-                {/* Field Type Rendering */}
-                {renderField(field, handleEditField, handleSort, handleCellEdit, formatDate, setFields)}
-              </div>
-            </Rnd>
-          )
-        ))}
-      </Page>
-    </Document>
+              {fields.map(field => (
+                field.page === currentPage && (
+                  <Rnd
+                    key={field.id}
+                    size={{ width: field.width, height: field.height }}
+                    position={{ x: field.x * scale, y: field.y * scale }}
+                    bounds="parent"
+                    disableDragging={!isEditable}
+                    enableResizing={isEditable}
+                    style={{
+                      border: field.border,
+                      display: 'flex',
+                      justifyContent: 'center',
+                      alignItems: 'center',
+                      background: 'none',
+                    }}
+                    onClick={(event) => handleFieldSelection(event, field)}
+                  >
+                    <div
+                      style={{
+                        position: 'relative',
+                        width: '100%',
+                        height: '100%',
+                        fontSize: field.fontSize,
+                        padding: '0',
+                        backgroundColor: getFieldHighlight(field),
+                      }}
+                    >
+                      {/* Field Type Rendering */}
+                      {renderField(field, handleEditField, handleSort, handleCellEdit, formatDate, setFields)}
+                    </div>
+                  </Rnd>
+                )
+              ))}
+            </Page>
+          </div>
+        </div>
+      </Document>
+    </div>
   );
 };
 
