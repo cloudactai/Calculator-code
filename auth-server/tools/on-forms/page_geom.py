@@ -621,6 +621,12 @@ def column_runs(fields, pages, min_len=3, max_gap=40.0):
         ca, cb = cells.get(id(a)), cells.get(id(b))
         if ca and cb:
             return abs(cb[1] - ca[3]) <= 1.5
+        if ca or cb:
+            # One of them is a drawn cell and the other is not, so they are not two
+            # cells of one column whatever the gap says. Form 32A sets its party
+            # name on a bare rule above the panel it labels, at the same left edge
+            # and width, and that read as a column of six mixing two shapes.
+            return False
         gap = b["y"] - (a["y"] + a["height"] / SCALE)
         return -2.0 <= gap <= max_gap
 
