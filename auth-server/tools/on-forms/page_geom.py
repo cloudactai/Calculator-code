@@ -450,6 +450,39 @@ def under_name_instruction(field, glyphs, reach=30.0):
     return False
 
 
+def signature_caption(field, ink, reach=26.0):
+    """Is the caption printed under this box a bare signature caption?
+
+    The placement guide §5 is unconditional — "Signature lines — never place a box"
+    — and it is what 82 of the 90 forms already do. The eight that do not are the
+    government's own AcroForm widgets, and the refit was only applying the rule to
+    the inferred sources on the grounds that a government widget is ground truth.
+    It is ground truth about *geometry*; whether a wet signature should be typeable
+    is a decision this project has already made.
+
+    Read only the **first** caption line under the box, because Ontario's jurat
+    prints "Commissioner for taking affidavits" over "(Type or print name below if
+    signature is illegible.)" — that box is the signer's printed name and must keep
+    it. On the first line the two are cleanly apart: the eight read exactly
+    "Signature" or "Commissioner's signature", and every legitimate field reads
+    "Commissioner for taking affidavits", "Judge", "Date of applicant's signature",
+    "Type or print name of witness to …" or "Municipality where this warrant was
+    signed".
+    """
+    x0, _, x1, y1 = box(field)
+    rows = {}
+    for wx0, wy0, wx1, wy1, text in ink:
+        if y1 - 2 <= wy0 <= y1 + reach and _overlap(x0, x1, wx0, wx1) > 0:
+            rows.setdefault(round(wy1, 1), []).append((wx0, text))
+    if not rows:
+        return False
+    line = [t for _x, t in sorted(rows[min(rows)])]
+    words = [t.lower().strip(":.,()'’") for t in line]
+    if not words or not words[-1].startswith("signature"):
+        return False
+    return not any(w in ("date", "print", "type", "name", "printed") for w in words)
+
+
 def under_specify_instruction(field, glyphs, reach=22.0):
     """Is this box the answer to a printed "(Specify.)"?
 

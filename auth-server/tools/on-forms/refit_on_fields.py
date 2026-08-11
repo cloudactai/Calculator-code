@@ -275,6 +275,16 @@ def refit_form(doc_id, export, notes, data=None, pages=None):
         # Test where the field will *land*, not where it currently sprawls: a flat
         # box that spans its own rule and the signature rule beside it is about to be
         # pulled back onto the first of the two, and is not a signature field at all.
+        # The placement guide §5 is unconditional — "Signature lines — never place
+        # a box" — and 82 of the 90 forms already do that. The eight that did not
+        # are the government's own AcroForm widgets, and this pass was applying the
+        # rule only to the inferred sources on the grounds that a government widget
+        # is ground truth. It is ground truth about *geometry*; whether a wet
+        # signature should be typeable is a decision this project has made.
+        if (y1 - y0) < BLOCK_MIN and G.signature_caption(f, pg["ink"]):
+            dropped += 1
+            continue
+
         if inferred and (y1 - y0) < BLOCK_MIN and rule:
             sx0, sx1 = share.get(id(f), (rule[1], rule[2]))
             landing = dict(f, x=sx0, y=rule[0] - SEAT_GAP - STD,
