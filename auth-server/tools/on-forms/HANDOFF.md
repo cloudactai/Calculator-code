@@ -136,12 +136,18 @@ produced:
 every page yet.** Coverage of this pass, counted honestly:
 
 - 90 templates, **230 pages**.
-- Pages read as a render: **~112**, across **43 forms** (~82 in the first pass,
-  ~30 more in the pass described in §8).
+- **Pages 1 to 150 of the systematic sweep have been read** — sheets 1 to 25 of
+  `sheets.py`, in `on_scope.NEW_DOCIDS` order, ending part-way through Form 34.
+  Sheets 26 to 39 (Form 34 onward: 34A, 34B, 34C, 34D, 34E, 34F, 34G, 34G.1, 34H,
+  34H.1, 34I, 34J, 34K, 34L, 34M, 34M.1, 34N, 35.1, 35.1A, 38, 39, 43, 43A, 43B,
+  43C, A-25A) are **not yet read**, though the ten Word-sourced forms among them
+  were fully reviewed in the first pass.
 - **All 11 inferred-geometry forms are fully reviewed** — the ten Word-sourced
   (13C, 25C, 26D, 34G.1, 34H, 34K, 43, 43A, 43B, 43C) and the XFA one (20). Those
   are the ones whose box *widths* moved, so they carried the risk.
-- Of the 79 AcroForm forms, roughly 32 have been read and 47 are unread.
+
+Reading the pages is what found §8.7 to §8.10 — four defects that every gate had
+passed. Do not skip it.
 
 Three faults were found by looking, after the gates had gone quiet — a box seated
 on a section divider, a box running past its blank into the tail of a sentence,
@@ -467,3 +473,57 @@ all four.
 - **The government's own source counts are the cheapest check there is.** `w:textInput`
   found the five Form 34K blanks, ruled out 26 of Form 13C's 26 proposed boxes, and
   named its seven pre-filled ones. Use them before reasoning about geometry.
+
+### 8.7 A signature line never gets a box, whoever drew it
+
+Guide §5 is unconditional and 82 of the 90 forms already followed it. The refit
+was applying it only to the inferred sources, on the grounds that an AcroForm
+widget is the government's own — which it is, about *geometry*. Eight boxes sat
+on lines captioned "Signature": Form 20A p1/p2/p5, Form 22A p2, Form 29E p2,
+Form 32C p2, Form 32.1A p1, Form 33E p2.
+
+The test reads only the **first** caption line under the box. That is what
+separates a signature line from the jurat beside it, since Ontario prints
+"Commissioner for taking affidavits" over "(Type or print name below if signature
+is illegible.)" and that box is the signer's printed name.
+
+### 8.8 …including one captioned from inside its cell
+
+Forms 33C and 33D rule their signing block as a grid, so the caption sits at the
+top of the cell rather than under a rule, and three cells on each read
+"Signature". The same test now reads the caption inside the box's own cell, and
+requires the cell to hold nothing else — which keeps it off the "Print or type
+name" box printed under a signature line on Forms 34L, 34N and 43, and off Form
+15D's "Date of applicant's signature". `place_missing_boxes.py` reads it too, or
+the refit drops the box and the empty-cell rule puts it straight back.
+
+### 8.9 No printed underline offers 367 pt of writing space
+
+"An underline outranks the government's multiline flag" is right for Form 34H.1
+and wrong when the box is far too tall to be a line. Form 29E page 2 is a whole
+blank continuation page whose widget covers all 367 pt of it, seated on the
+separator above "Put a line through any blank space left on this page"; Form 23C
+does it on pages 4, 5 and 6 and Form 28C once.
+
+`MAX_LINE` is measured: the tallest single-line field in the approved 45 is
+43.9 pt (p99 = 22.0), and in this batch the demoted boxes run 26.6 to 36.1 and
+then jump to 101.7.
+
+### 8.10 A worked example is not a form to fill in
+
+Form 26 page 2 is its instructions, and prints two diagrams of a payment history
+with the government's own arithmetic in them. The empty-cell rule boxed 17 of
+those cells. The build produced one field for the whole page — the Court File
+Number in the header — and a page carrying no widget below its header is not a
+page anyone fills in. Same tell as §8.3, read off the widget layer instead of off
+LibreOffice's shading.
+
+### Still to do
+
+Work sheets 26 to 39. Regenerate them with the script in the scratchpad or with
+`contact_sheet.py --grid 2x2`; the packed version stamps each page with its docId
+and page number so a suspicious cell can be looked up at full size.
+
+Four of the four defects found by eye in this pass were invisible to every gate,
+and three of them were *created* by a placement rule rather than inherited from
+the government. That is the pattern to expect in the pages still unread.
