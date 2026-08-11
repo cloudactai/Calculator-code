@@ -1736,23 +1736,28 @@ const FillPdf = ({ currentUserRole }) => {
             const pdfW = parseFloat(pdf.width) / scale;
             const pdfH = parseFloat(pdf.height) / scale;
             const pdfX = parseFloat(pdf.x) || 0;
-            const pdfY = page.getHeight() - parseFloat(pdf.y) - pdfH;
+            const pdfYBottom = page.getHeight() - parseFloat(pdf.y) - pdfH;
+
+            // Measure text so we can center it within the column
+            const textWidth = helveticaFont.widthOfTextAtSize(value, fontSize);
 
             if (rotation === 270) {
-              // Bottom-to-top: origin at bottom-left of the box, rotate -90°
+              // Bottom-to-top (degrees(90) in pdf-lib = 90° CCW).
+              // After rotation the text height (~fontSize) runs horizontally
+              // and the text width runs vertically (upward).
               page.drawText(value, {
-                x: pdfX + pdfW / 2 + fontSize / 2,
-                y: pdfY,
+                x: pdfX + (pdfW + fontSize) / 2,          // centred in column
+                y: pdfYBottom + (pdfH - textWidth) / 2,   // centred along line
                 size: fontSize,
                 font: helveticaFont,
                 color: rgb(0, 0, 0),
                 rotate: degrees(90),
               });
             } else {
-              // Top-to-bottom (rotation === 90): origin at top-right, rotate 90° CW
+              // Top-to-bottom (rotation === 90)
               page.drawText(value, {
-                x: pdfX + pdfW / 2 - fontSize / 2,
-                y: pdfY + pdfH,
+                x: pdfX + (pdfW - fontSize) / 2,
+                y: pdfYBottom + pdfH - (pdfH - textWidth) / 2,
                 size: fontSize,
                 font: helveticaFont,
                 color: rgb(0, 0, 0),
