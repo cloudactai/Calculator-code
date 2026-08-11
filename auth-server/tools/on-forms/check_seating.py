@@ -40,6 +40,11 @@ STD = G.STD_LINE
 SEAT_GAP = G.SEAT_GAP
 BLOCK_MIN = 22.0
 SEAT_TOL = 1.0
+RULE_MIN = 45.0     # a shorter rule is a tick, a leader or a table edge
+# Ontario prints a blank's caption directly under its rule: measured at 0.4-0.7 pt
+# on Form 26, Form 29C and Form 34A. The heading of the next section under a header
+# separator is 7.8 pt or further away, so 4 pt sits in the gap with room either side.
+CAPTION_GAP = 4.0
 TEXT_TYPES = ("TextField", "TextArea", "Number", "Date")
 
 
@@ -178,6 +183,55 @@ def check_form(doc_id, export):
             out.append(("mixed-column", top["page"],
                         f"x≈{top['x']:.0f}: {len(run)} stacked cells, "
                         + " + ".join(f"{n} {k}" for k, n in kinds.most_common())))
+
+    # 6: a printed blank with no box on it — the other direction. Everything above
+    # asks whether a *box* sits where the page says; this asks whether every place
+    # the page offers has one, which is the fault a lawyer meets first: a line they
+    # cannot type on. It is how Form 34K's five "(Specify.)" blanks would have been
+    # caught, and it is the shape of every "missing text box" report in this batch.
+    #
+    # A blank is a rule Ontario has labelled with a caption set directly under it —
+    # "(Name of court)", "(Court office address)". Directly is the point: a genuine
+    # caption sits 0.4 to 0.7 pt below its rule, while the heading of the next
+    # section under a header separator is 7.8 pt or more away.
+    for page_no, pg in pages.items():
+        here = [f for f in fields if f["page"] == page_no]
+        width = pg["rect"].width
+        for ry, rx0, rx1 in pg["rules"]:
+            if rx1 - rx0 < RULE_MIN or rx1 - rx0 > 0.72 * width:
+                continue
+            if G.on_dark_bar((ry, rx0, rx1), pg["bars"]):
+                continue
+            if any(min(rx1, G.box(f)[2]) - max(rx0, G.box(f)[0]) > 0.3 * (rx1 - rx0)
+                   and ry - 26 < G.box(f)[3] <= ry + 9 for f in here):
+                continue
+            # A cell's top border is not a writing line: the party panel's caption
+            # cell is drawn, and its caption is printed inside it.
+            if len([v for v in pg["vlines"]
+                    if v[2] > ry + 6 and v[1] <= ry + 1.5 and rx0 - 2 <= v[0] <= rx1 + 2]) >= 2:
+                continue
+            probe = {"x": rx0, "y": ry - SEAT_GAP - STD, "page": page_no,
+                     "width": (rx1 - rx0) * G.SCALE, "height": STD * G.SCALE,
+                     "type": "TextField"}
+            if G.on_signature_line(probe, pg["ink"]) or G.on_role_line(probe, pg["ink"]):
+                continue
+            if G.enclosing_cell(probe, pg["rules"], pg["vlines"]) is not None:
+                continue
+            if G.clearance_above(probe, pg["rules"], pg["ink"], ry) < STD - 4:
+                continue
+            if len([g for g in pg["glyphs"]
+                    if min(rx1, g[2]) - max(rx0, g[0]) > 0
+                    and ry - STD - 1 < g[3] <= ry + 1]) > 4:
+                continue
+            caption = [w for w in pg["ink"]
+                       if ry + 0.2 < w[1] < ry + CAPTION_GAP
+                       and min(rx1, w[2]) - max(rx0, w[0]) > 0]
+            if not caption:
+                continue
+            text = " ".join(w[4] for w in sorted(caption, key=lambda w: w[0]))
+            out.append(("unfilled-rule", page_no,
+                        f"[{rx0:.0f},{ry:.0f} {rx1:.0f}] no box on the blank captioned "
+                        + repr(text[:40])))
     return out
 
 
