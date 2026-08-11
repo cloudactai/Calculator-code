@@ -49,6 +49,12 @@ TEXT_TYPES = ("TextField", "TextArea", "Number", "Date")
 # A blank taller than this is a writing block, not a line. Sits between the approved
 # TextField height (13.3) and the approved TextArea p25 (24.5).
 BLOCK_MIN = 22.0
+# No printed underline offers this much writing space, so above it the government's
+# multiline flag stands whatever is drawn beneath the box. Measured: the tallest
+# single-line field in the 45 approved templates is 43.9 pt (p99 = 22.0), and in
+# this batch the boxes an underline demoted run 26.6 to 36.1 and then jump to
+# 101.7 — a 65 pt hole to sit in rather than a cutoff to land on.
+MAX_LINE = 48.0
 # How far below a box bottom a rule may be and still be *that box's* rule. Ontario's
 # table rows are ~33 pt, so this stays well inside one row.
 SEAT_BELOW = 14.0
@@ -322,7 +328,14 @@ def refit_form(doc_id, export, notes, data=None, pages=None):
             ruled_inside = any(y0 + 2 < ry < y1 - 2
                                and min(x1, rx1) - max(x0, rx0) > 0.5 * (x1 - x0)
                                for ry, rx0, rx1 in pg["rules"])
-            if on_underline and not ruled_inside:
+            # ...but a rule under a box that is taller than any printed blank cannot
+            # be that box's underline. Form 29E page 2 is a whole blank continuation
+            # page — the government's widget covers all 367 pt of it — and the rule
+            # the refit seated it on is the separator above "Put a line through any
+            # blank space left on this page", leaving one line at the foot of an
+            # otherwise dead page. Form 23C does the same three times, on the divider
+            # above the next section heading.
+            if on_underline and not ruled_inside and (y1 - y0) <= MAX_LINE:
                 block = False
             else:
                 block = (y1 - y0) >= BLOCK_MIN and (f["type"] == "TextArea" or not rule)
