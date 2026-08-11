@@ -542,7 +542,7 @@ def cell_grid(rules, vlines, tol=1.5):
     return out
 
 
-def column_runs(fields, min_len=3, max_gap=40.0):
+def column_runs(fields, pages, min_len=3, max_gap=40.0):
     """Runs of stacked cells that really are one column of one table.
 
     Sharing a left edge is not enough — a party panel and the "RE:" line below it
@@ -550,7 +550,33 @@ def column_runs(fields, min_len=3, max_gap=40.0):
     reported 48 "mixed" columns where only two exist. A column of table cells shares
     its left edge *and* its width, and its members follow each other down the page
     without a real gap.
+
+    "Without a real gap" is measured on the **drawn cells**, not on the boxes.
+    Consecutive cells of one table share a border: the bottom of one is the top of
+    the next. A box floats inside its cell — its height is the shape the field ended
+    up with — so a gap between boxes says nothing about whether two tables are one.
+    Form 33E and Form 33F each set a party panel above an unrelated stack of ruled
+    blanks at the same left edge and the same width, with 20 pt of blank page between
+    the two grids; measured on the boxes those read as one column, and the panel
+    became a lone dissenter among single lines. The refit obligingly normalised a
+    51 pt writing block down to a line at the foot of its cell.
+
+    A member with no drawn cell falls back to the gap between the boxes, so a column
+    that is ruled but not boxed still groups.
     """
+    cells = {}
+    for f in fields:
+        pg = pages.get(f["page"])
+        if pg is not None:
+            cells[id(f)] = enclosing_cell(f, pg["rules"], pg["vlines"])
+
+    def joined(a, b):
+        ca, cb = cells.get(id(a)), cells.get(id(b))
+        if ca and cb:
+            return abs(cb[1] - ca[3]) <= 1.5
+        gap = b["y"] - (a["y"] + a["height"] / SCALE)
+        return -2.0 <= gap <= max_gap
+
     buckets = {}
     for f in fields:
         if f["type"] not in ("TextField", "TextArea"):
@@ -562,8 +588,7 @@ def column_runs(fields, min_len=3, max_gap=40.0):
         members.sort(key=lambda f: f["y"])
         run = [members[0]]
         for a, b in zip(members, members[1:]):
-            gap = b["y"] - (a["y"] + a["height"] / SCALE)
-            if -2.0 <= gap <= max_gap:
+            if joined(a, b):
                 run.append(b)
             else:
                 if len(run) >= min_len:

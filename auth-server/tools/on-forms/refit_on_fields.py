@@ -194,7 +194,7 @@ def refit_form(doc_id, export, notes, data=None, pages=None):
     # Only a lone dissenter is overruled; a column that is genuinely split is left
     # alone and reported.
     forced = {}
-    for run in G.column_runs(fields):
+    for run in G.column_runs(fields, pages):
         kinds = collections.Counter(f["type"] for f in run)
         if len(kinds) != 2:
             continue

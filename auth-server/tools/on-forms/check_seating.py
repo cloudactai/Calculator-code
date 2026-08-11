@@ -152,7 +152,7 @@ def check_form(doc_id, export):
     # normalised: the split comes from the government's own multiline flags, and the
     # guide says normalise *per table* to the local majority — a judgement call on
     # each table, not something to apply across 48 columns unseen.
-    for run in G.column_runs(fields):
+    for run in G.column_runs(fields, pages):
         kinds = collections.Counter(m["type"] for m in run)
         if len(kinds) > 1:
             top = run[0]
