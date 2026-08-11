@@ -48,6 +48,7 @@ SEAT_GAP = G.SEAT_GAP
 BLOCK_MIN = 22.0
 MIN_RULE = 24.0        # a rule shorter than this is a tick or a leader, not a blank
 ROW_TOL = 1.5          # rules this close in y are the same printed line
+HEADER_BAND = 100.0    # above this is the form's own title/Court File Number block
 
 HELD_BACK = set()
 
@@ -124,6 +125,14 @@ def find_missing(doc_id, export):
     for page_no, pg in pages.items():
         rules = [r for r in pg["rules"] if r[2] - r[1] >= MIN_RULE
                  and not G.on_dark_bar(r, pg["bars"])]
+        # A page the government put no field on, below its header, is not a page
+        # anyone fills in. Form 26 page 2 is "INSTRUCTIONS FOR COMPLETING FORM 26"
+        # and prints two worked examples of a payment history — proper grids, with
+        # empty cells, and arithmetic already in them ("4 Sept. 1998  $250.00 …").
+        # The empty-cell rule boxed 17 of those, over the government's own numbers.
+        # Its only widget on the page is the Court File Number in the header.
+        fillable_page = any(f["page"] == page_no and G.box(f)[1] > HEADER_BAND
+                            for f in fields)
 
         # --- 1. a bare rule beside a ruled blank that has a box -----------------
         rows = collections.defaultdict(list)
@@ -203,6 +212,8 @@ def find_missing(doc_id, export):
                     min(cx1, sx1) - max(cx0, sx0) > 0.5 * (cx1 - cx0)
                     and min(cy1, sy1) - max(cy0, sy0) > 0.5 * (cy1 - cy0)
                     for sx0, sy0, sx1, sy1 in pg["shaded"]):
+                continue
+            if not fillable_page:
                 continue
             # The same function the refit uses to size a box inside a cell. It
             # returns None when the cell has printing of its own, which is what keeps
