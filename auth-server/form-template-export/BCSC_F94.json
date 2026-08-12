@@ -1,0 +1,279 @@
+{
+ "staticFields": [
+  {
+   "id": 1750211764001,
+   "type": "TextArea",
+   "x": 394.61,
+   "y": 101.69,
+   "width": 218.09,
+   "height": 27.0,
+   "value": "",
+   "fontSize": 9,
+   "color": [
+    0,
+    0,
+    0
+   ],
+   "background": "none",
+   "border": "none",
+   "page": 1,
+   "bind": "court_info.courtFileNumber"
+  },
+  {
+   "id": 1750211764002,
+   "type": "TextField",
+   "x": 394.61,
+   "y": 119.69,
+   "width": 218.09,
+   "height": 27.0,
+   "value": "",
+   "fontSize": 9,
+   "color": [
+    0,
+    0,
+    0
+   ],
+   "background": "none",
+   "border": "none",
+   "page": 1
+  },
+  {
+   "id": 1750211764003,
+   "type": "TextArea",
+   "x": 151.19,
+   "y": 188.09,
+   "width": 572.44,
+   "height": 37.8,
+   "value": "",
+   "fontSize": 9,
+   "color": [
+    0,
+    0,
+    0
+   ],
+   "background": "none",
+   "border": "none",
+   "page": 1,
+   "bind": "applicant.fullLegalName"
+  },
+  {
+   "id": 1750211764004,
+   "type": "TextArea",
+   "x": 151.19,
+   "y": 224.09,
+   "width": 572.44,
+   "height": 37.8,
+   "value": "",
+   "fontSize": 9,
+   "color": [
+    0,
+    0,
+    0
+   ],
+   "background": "none",
+   "border": "none",
+   "page": 1,
+   "bind": "respondent.fullLegalName"
+  },
+  {
+   "id": 1750211764005,
+   "type": "TextField",
+   "x": 108.0,
+   "y": 331.84,
+   "width": 118.78,
+   "height": 27.0,
+   "value": "",
+   "fontSize": 9,
+   "color": [
+    0,
+    0,
+    0
+   ],
+   "background": "none",
+   "border": "none",
+   "page": 1
+  },
+  {
+   "id": 1750211764006,
+   "type": "TextField",
+   "x": 187.19,
+   "y": 331.84,
+   "width": 238.95,
+   "height": 27.0,
+   "value": "",
+   "fontSize": 9,
+   "color": [
+    0,
+    0,
+    0
+   ],
+   "background": "none",
+   "border": "none",
+   "page": 1
+  },
+  {
+   "id": 1750211764007,
+   "type": "TextField",
+   "x": 362.0,
+   "y": 319.05,
+   "width": 253.2,
+   "height": 24.59,
+   "value": "",
+   "fontSize": 9,
+   "color": [
+    0,
+    0,
+    0
+   ],
+   "background": "none",
+   "border": "none",
+   "page": 1
+  },
+  {
+   "id": 1750211764008,
+   "type": "TextArea",
+   "x": 176.0,
+   "y": 368.91,
+   "width": 536.25,
+   "height": 16.5,
+   "value": "",
+   "fontSize": 9,
+   "color": [
+    0,
+    0,
+    0
+   ],
+   "background": "none",
+   "border": "none",
+   "page": 1
+  },
+  {
+   "id": 1750211764009,
+   "type": "CheckBox",
+   "x": 75.03,
+   "y": 439.53,
+   "width": 14.76,
+   "height": 14.9,
+   "value": "",
+   "fontSize": 9,
+   "color": [
+    0,
+    0,
+    0
+   ],
+   "background": "none",
+   "border": "none",
+   "page": 1,
+   "shape": "square"
+  },
+  {
+   "id": 1750211764010,
+   "type": "TextField",
+   "x": 333.0,
+   "y": 438.5,
+   "width": 216.0,
+   "height": 21.59,
+   "value": "",
+   "fontSize": 9,
+   "color": [
+    0,
+    0,
+    0
+   ],
+   "background": "none",
+   "border": "none",
+   "page": 1
+  },
+  {
+   "id": 1750211764011,
+   "type": "CheckBox",
+   "x": 75.03,
+   "y": 471.53,
+   "width": 14.69,
+   "height": 14.9,
+   "value": "",
+   "fontSize": 9,
+   "color": [
+    0,
+    0,
+    0
+   ],
+   "background": "none",
+   "border": "none",
+   "page": 1,
+   "shape": "square"
+  },
+  {
+   "id": 1750211764012,
+   "type": "TextField",
+   "x": 88.55,
+   "y": 492.48,
+   "width": 216.0,
+   "height": 21.59,
+   "value": "",
+   "fontSize": 9,
+   "color": [
+    0,
+    0,
+    0
+   ],
+   "background": "none",
+   "border": "none",
+   "page": 1
+  },
+  {
+   "id": 1750211764013,
+   "type": "TextArea",
+   "x": 182.0,
+   "y": 535.09,
+   "width": 505.9,
+   "height": 16.5,
+   "value": "",
+   "fontSize": 9,
+   "color": [
+    0,
+    0,
+    0
+   ],
+   "background": "none",
+   "border": "none",
+   "page": 1
+  },
+  {
+   "id": 1750211764014,
+   "type": "TextArea",
+   "x": 194.95,
+   "y": 565.09,
+   "width": 505.9,
+   "height": 16.5,
+   "value": "",
+   "fontSize": 9,
+   "color": [
+    0,
+    0,
+    0
+   ],
+   "background": "none",
+   "border": "none",
+   "page": 1
+  },
+  {
+   "id": 1750211764015,
+   "type": "TextField",
+   "x": 200.72,
+   "y": 595.09,
+   "width": 253.2,
+   "height": 18.0,
+   "value": "",
+   "fontSize": 9,
+   "color": [
+    0,
+    0,
+    0
+   ],
+   "background": "none",
+   "border": "none",
+   "page": 1
+  }
+ ]
+}

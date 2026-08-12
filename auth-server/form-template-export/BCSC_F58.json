@@ -1,0 +1,133 @@
+{
+ "staticFields": [
+  {
+   "id": 1750858163001,
+   "type": "TextArea",
+   "x": 394.61,
+   "y": 136.8,
+   "width": 218.09,
+   "height": 27.0,
+   "value": "",
+   "fontSize": 9,
+   "color": [
+    0,
+    0,
+    0
+   ],
+   "background": "none",
+   "border": "none",
+   "page": 1,
+   "bind": "court_info.courtFileNumber"
+  },
+  {
+   "id": 1750858163002,
+   "type": "TextField",
+   "x": 394.61,
+   "y": 154.8,
+   "width": 218.09,
+   "height": 27.0,
+   "value": "",
+   "fontSize": 9,
+   "color": [
+    0,
+    0,
+    0
+   ],
+   "background": "none",
+   "border": "none",
+   "page": 1
+  },
+  {
+   "id": 1750858163003,
+   "type": "TextArea",
+   "x": 151.19,
+   "y": 223.19,
+   "width": 572.44,
+   "height": 37.8,
+   "value": "",
+   "fontSize": 9,
+   "color": [
+    0,
+    0,
+    0
+   ],
+   "background": "none",
+   "border": "none",
+   "page": 1,
+   "bind": "applicant.fullLegalName"
+  },
+  {
+   "id": 1750858163004,
+   "type": "TextArea",
+   "x": 151.19,
+   "y": 259.19,
+   "width": 572.44,
+   "height": 37.8,
+   "value": "",
+   "fontSize": 9,
+   "color": [
+    0,
+    0,
+    0
+   ],
+   "background": "none",
+   "border": "none",
+   "page": 1,
+   "bind": "respondent.fullLegalName"
+  },
+  {
+   "id": 1750858163005,
+   "type": "TextArea",
+   "x": 74.83,
+   "y": 392.98,
+   "width": 693.52,
+   "height": 28.52,
+   "value": "",
+   "fontSize": 9,
+   "color": [
+    0,
+    0,
+    0
+   ],
+   "background": "none",
+   "border": "none",
+   "page": 1
+  },
+  {
+   "id": 1750858163006,
+   "type": "TextArea",
+   "x": 74.0,
+   "y": 460.84,
+   "width": 682.5,
+   "height": 19.5,
+   "value": "",
+   "fontSize": 9,
+   "color": [
+    0,
+    0,
+    0
+   ],
+   "background": "none",
+   "border": "none",
+   "page": 1
+  },
+  {
+   "id": 1750858163007,
+   "type": "TextField",
+   "x": 101.0,
+   "y": 567.34,
+   "width": 253.2,
+   "height": 21.61,
+   "value": "",
+   "fontSize": 9,
+   "color": [
+    0,
+    0,
+    0
+   ],
+   "background": "none",
+   "border": "none",
+   "page": 1
+  }
+ ]
+}
