@@ -31,6 +31,12 @@ PARTS = [
 BLOCK = "%s.fullLegalName,%s.address,%s.municipality,%s.phoneAndFax,%s.email"
 PART_CAPTION_MAX = 30
 
+# A box asking for one *part* of a name is not a `fullLegalName` box. Form 36A's
+# "Applicant's last name" is the case in hand: the prefill vocabulary holds only
+# the whole name, so filling it would print "Dana R. Okonkwo" into a surname-only
+# cell. There is nothing correct to put there, so it is left blank and editable.
+NAME_PART = re.compile(r"\b(?:last|first|given|middle|maiden|sur)\s*name\b|\bsurname\b|\binitials?\b")
+
 COURT = [
     (re.compile(r"^court file (number|no)\b"), "court_info.courtFileNumber"),
     (re.compile(r"^name of court\b"), "court_info.courtName"),
@@ -50,6 +56,26 @@ XFA_LEAF = {
     "courtofficeaddress": "court_info.courtOfficeAddress",
 }
 
+# `nameOfCourt` is the one leaf above the XFA forms reuse for blanks that are not
+# the court's name at all: on Form 31 it is the "Applicant(s)/Recipient(s)"
+# strike-out term, on Form 30B the swear/affirm word in "and I ____ that the
+# following is true" and again in the page-2 jurat. All of those hang off a body
+# subform, so it alone is required to sit in a heading container — enough to keep
+# the court's name out of the middle of a sentence, while leaving the unambiguous
+# `courtFileNumber` leaf free to match on continuation pages (`Master[0].Page2…`).
+XFA_LEAF_HEADING_ONLY = {"nameofcourt"}
+XFA_HEADING = re.compile(r"courtdetails|header", re.I)
+
+# The XFA-authored forms name the general-heading party panel by its subform path
+# instead of by caption: `…applicants[0].appliant[0].textfield[0]` is the
+# applicant's own block, `…applicants[0].applicantLawyer[0].textfield[0]` the
+# lawyer's. The government's spelling is inconsistent across the rule set
+# ("appliant", "respondant", "laywer"), so every observed spelling is listed
+# rather than guessed at.
+XFA_ROLE = r"appliant|applicants?|respond[ae]nts?"
+XFA_PERSON = re.compile(r"^(?:%s)$" % XFA_ROLE, re.I)
+XFA_LAWYER = re.compile(r"^(?:%s)(?:la[wy]{2}er)s?$" % XFA_ROLE, re.I)
+
 
 def normalise(name):
     return re.sub(r"\s+", " ", (name or "").replace("’", "'")).strip().lower().rstrip(":.")
@@ -63,6 +89,40 @@ def xfa_leaf(name):
     return re.sub(r"\[\d+\]", "", leaf).strip().lower()
 
 
+def xfa_panel_bind(widget_name):
+    """Bind for an XFA-named general-heading party panel widget, or None.
+
+    Matches only `<role>[0].textfield[0]`, where `<role>` names the applicant, the
+    respondent or either one's lawyer. Two deliberate exclusions, both checked
+    against the printed page rather than the widget name:
+
+    * `textfield[1]` is the panel's *second* row — the second applicant or
+      respondent, whom a matter does not hold. It stays empty rather than
+      repeating the first party, matching the ordinal rule in `party_bind`.
+    * Forms 30A and 30B name their container `applicants[0]` but print
+      "Recipient(s)" and "Payor" over it, and the support recipient is not
+      necessarily the applicant. Their roles (`Recipient`, `Lawyer`, `Payor…`)
+      are absent from the tables above, so they resolve to None and stay blank.
+    """
+    if "[" not in (widget_name or ""):
+        return None
+    segments = widget_name.split(".")
+    if len(segments) < 2:
+        return None
+    leaf = re.match(r"^(.*?)\[(\d+)\]$", segments[-1].strip())
+    if not leaf or leaf.group(1).lower() != "textfield" or leaf.group(2) != "0":
+        return None
+    role = re.sub(r"\[\d+\]$", "", segments[-2].strip())
+    party = "applicant" if re.match(r"^appli", role, re.I) else "respondent"
+    if XFA_LAWYER.match(role):
+        prefix = "%ssLawyer" % party
+    elif XFA_PERSON.match(role):
+        prefix = party
+    else:
+        return None
+    return BLOCK % ((prefix,) * 5)
+
+
 def party_bind(name):
     """Bind for a party/lawyer panel widget, or None."""
     match = PARTY.match(name)
@@ -73,6 +133,8 @@ def party_bind(name):
     # numbered set can be prefilled; "Respondent 2" must stay empty rather than
     # repeat respondent 1's details.
     if ordinal and ordinal != "1":
+        return None
+    if NAME_PART.search(tail):
         return None
     lawyer = LAWYER.match(tail)
     if lawyer:
@@ -107,5 +169,6 @@ def bind_for(widget_name):
         return bind
     leaf = xfa_leaf(widget_name)
     if leaf in XFA_LEAF:
-        return XFA_LEAF[leaf]
-    return None
+        if leaf not in XFA_LEAF_HEADING_ONLY or XFA_HEADING.search(widget_name):
+            return XFA_LEAF[leaf]
+    return xfa_panel_bind(widget_name)

@@ -73,7 +73,8 @@
    ],
    "background": "none",
    "border": "none",
-   "page": 1
+   "page": 1,
+   "bind": "applicant.fullLegalName,applicant.address,applicant.municipality,applicant.phoneAndFax,applicant.email"
   },
   {
    "id": 1750024050005,
@@ -91,7 +92,8 @@
    ],
    "background": "none",
    "border": "none",
-   "page": 1
+   "page": 1,
+   "bind": "applicantsLawyer.fullLegalName,applicantsLawyer.address,applicantsLawyer.municipality,applicantsLawyer.phoneAndFax,applicantsLawyer.email"
   },
   {
    "id": 1750024050006,
@@ -109,7 +111,8 @@
    ],
    "background": "none",
    "border": "none",
-   "page": 1
+   "page": 1,
+   "bind": "respondent.fullLegalName,respondent.address,respondent.municipality,respondent.phoneAndFax,respondent.email"
   },
   {
    "id": 1750024050007,
@@ -127,7 +130,8 @@
    ],
    "background": "none",
    "border": "none",
-   "page": 1
+   "page": 1,
+   "bind": "respondentsLawyer.fullLegalName,respondentsLawyer.address,respondentsLawyer.municipality,respondentsLawyer.phoneAndFax,respondentsLawyer.email"
   },
   {
    "id": 1750024050008,

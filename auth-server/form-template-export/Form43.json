@@ -142,7 +142,8 @@
    ],
    "background": "none",
    "border": "none",
-   "page": 1
+   "page": 1,
+   "bind": "court_info.courtFileNumber"
   },
   {
    "id": 1750820427009,
@@ -160,7 +161,8 @@
    ],
    "background": "none",
    "border": "none",
-   "page": 1
+   "page": 1,
+   "bind": "court_info.courtOfficeAddress"
   },
   {
    "id": 1750820427010,
@@ -178,7 +180,8 @@
    ],
    "background": "none",
    "border": "none",
-   "page": 1
+   "page": 1,
+   "bind": "applicant.fullLegalName,applicant.address,applicant.municipality,applicant.phoneAndFax,applicant.email"
   },
   {
    "id": 1750820427011,
@@ -196,7 +199,8 @@
    ],
    "background": "none",
    "border": "none",
-   "page": 1
+   "page": 1,
+   "bind": "applicantsLawyer.fullLegalName,applicantsLawyer.address,applicantsLawyer.municipality,applicantsLawyer.phoneAndFax,applicantsLawyer.email"
   },
   {
    "id": 1750820427012,
@@ -214,7 +218,8 @@
    ],
    "background": "none",
    "border": "none",
-   "page": 1
+   "page": 1,
+   "bind": "respondent.fullLegalName,respondent.address,respondent.municipality,respondent.phoneAndFax,respondent.email"
   },
   {
    "id": 1750820427013,
@@ -232,7 +237,8 @@
    ],
    "background": "none",
    "border": "none",
-   "page": 1
+   "page": 1,
+   "bind": "respondentsLawyer.fullLegalName,respondentsLawyer.address,respondentsLawyer.municipality,respondentsLawyer.phoneAndFax,respondentsLawyer.email"
   },
   {
    "id": 1750820427014,
@@ -412,7 +418,8 @@
    ],
    "background": "none",
    "border": "none",
-   "page": 1
+   "page": 1,
+   "bind": "court_info.courtName"
   },
   {
    "id": 1750820427025,

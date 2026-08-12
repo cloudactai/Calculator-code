@@ -34,7 +34,8 @@
    ],
    "background": "none",
    "border": "none",
-   "page": 1
+   "page": 1,
+   "bind": "court_info.courtName"
   },
   {
    "id": 1731968800002,
@@ -52,7 +53,8 @@
    ],
    "background": "none",
    "border": "none",
-   "page": 1
+   "page": 1,
+   "bind": "court_info.courtOfficeAddress"
   },
   {
    "id": 1731968800003,
@@ -144,7 +146,8 @@
    ],
    "background": "none",
    "border": "none",
-   "page": 1
+   "page": 1,
+   "bind": "applicant.fullLegalName,applicant.address,applicant.municipality,applicant.phoneAndFax,applicant.email"
   },
   {
    "id": 1731968800008,
@@ -180,7 +183,8 @@
    ],
    "background": "none",
    "border": "none",
-   "page": 1
+   "page": 1,
+   "bind": "applicantsLawyer.fullLegalName,applicantsLawyer.address,applicantsLawyer.municipality,applicantsLawyer.phoneAndFax,applicantsLawyer.email"
   },
   {
    "id": 1731968800010,
@@ -216,7 +220,8 @@
    ],
    "background": "none",
    "border": "none",
-   "page": 1
+   "page": 1,
+   "bind": "respondent.fullLegalName,respondent.address,respondent.municipality,respondent.phoneAndFax,respondent.email"
   },
   {
    "id": 1731968800012,
@@ -252,7 +257,8 @@
    ],
    "background": "none",
    "border": "none",
-   "page": 1
+   "page": 1,
+   "bind": "respondentsLawyer.fullLegalName,respondentsLawyer.address,respondentsLawyer.municipality,respondentsLawyer.phoneAndFax,respondentsLawyer.email"
   },
   {
    "id": 1731968800014,

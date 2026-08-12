@@ -89,7 +89,8 @@
    ],
    "background": "none",
    "border": "none",
-   "page": 1
+   "page": 1,
+   "bind": "court_info.courtFileNumber"
   },
   {
    "id": 1750364756006,
@@ -125,7 +126,8 @@
    ],
    "background": "none",
    "border": "none",
-   "page": 1
+   "page": 1,
+   "bind": "applicant.fullLegalName"
   },
   {
    "id": 1750364756008,
@@ -143,7 +145,8 @@
    ],
    "background": "none",
    "border": "none",
-   "page": 1
+   "page": 1,
+   "bind": "respondent.fullLegalName"
   },
   {
    "id": 1750364756009,

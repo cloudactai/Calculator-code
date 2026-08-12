@@ -16,7 +16,8 @@
    ],
    "background": "none",
    "border": "none",
-   "page": 1
+   "page": 1,
+   "bind": "court_info.courtFileNumber"
   },
   {
    "id": 1737905600001,
@@ -34,7 +35,8 @@
    ],
    "background": "none",
    "border": "none",
-   "page": 1
+   "page": 1,
+   "bind": "court_info.courtName"
   },
   {
    "id": 1737905600002,
@@ -52,7 +54,8 @@
    ],
    "background": "none",
    "border": "none",
-   "page": 1
+   "page": 1,
+   "bind": "court_info.courtOfficeAddress"
   },
   {
    "id": 1737905600003,
@@ -290,7 +293,8 @@
    ],
    "background": "none",
    "border": "none",
-   "page": 2
+   "page": 2,
+   "bind": "court_info.courtFileNumber"
   },
   {
    "id": 1737905600016,

@@ -34,7 +34,8 @@
    ],
    "background": "none",
    "border": "none",
-   "page": 4
+   "page": 4,
+   "bind": "court_info.courtFileNumber"
   },
   {
    "id": 1750707410003,
@@ -70,7 +71,8 @@
    ],
    "background": "none",
    "border": "none",
-   "page": 4
+   "page": 4,
+   "bind": "applicant.fullLegalName"
   },
   {
    "id": 1750707410005,
@@ -88,7 +90,8 @@
    ],
    "background": "none",
    "border": "none",
-   "page": 4
+   "page": 4,
+   "bind": "applicant.dateOfBirth"
   },
   {
    "id": 1750707410006,
@@ -106,7 +109,8 @@
    ],
    "background": "none",
    "border": "none",
-   "page": 4
+   "page": 4,
+   "bind": "respondent.fullLegalName"
   },
   {
    "id": 1750707410007,
@@ -124,7 +128,8 @@
    ],
    "background": "none",
    "border": "none",
-   "page": 4
+   "page": 4,
+   "bind": "respondent.dateOfBirth"
   },
   {
    "id": 1750707410008,

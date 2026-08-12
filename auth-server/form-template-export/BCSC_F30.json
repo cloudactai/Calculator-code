@@ -71,7 +71,8 @@
    ],
    "background": "none",
    "border": "none",
-   "page": 1
+   "page": 1,
+   "bind": "court_info.courtFileNumber"
   },
   {
    "id": 1750698439005,
@@ -107,7 +108,8 @@
    ],
    "background": "none",
    "border": "none",
-   "page": 1
+   "page": 1,
+   "bind": "applicant.fullLegalName"
   },
   {
    "id": 1750698439007,

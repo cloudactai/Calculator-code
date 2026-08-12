@@ -178,7 +178,8 @@
    ],
    "background": "none",
    "border": "none",
-   "page": 1
+   "page": 1,
+   "bind": "court_info.courtFileNumber"
   },
   {
    "id": 1750795359011,
@@ -214,7 +215,8 @@
    ],
    "background": "none",
    "border": "none",
-   "page": 1
+   "page": 1,
+   "bind": "applicant.fullLegalName,applicant.address,applicant.municipality,applicant.phoneAndFax,applicant.email"
   },
   {
    "id": 1750795359013,
@@ -232,7 +234,8 @@
    ],
    "background": "none",
    "border": "none",
-   "page": 1
+   "page": 1,
+   "bind": "applicantsLawyer.fullLegalName,applicantsLawyer.address,applicantsLawyer.municipality,applicantsLawyer.phoneAndFax,applicantsLawyer.email"
   },
   {
    "id": 1750795359014,
@@ -250,7 +253,8 @@
    ],
    "background": "none",
    "border": "none",
-   "page": 1
+   "page": 1,
+   "bind": "respondent.fullLegalName,respondent.address,respondent.municipality,respondent.phoneAndFax,respondent.email"
   },
   {
    "id": 1750795359015,
@@ -268,7 +272,8 @@
    ],
    "background": "none",
    "border": "none",
-   "page": 1
+   "page": 1,
+   "bind": "respondentsLawyer.fullLegalName,respondentsLawyer.address,respondentsLawyer.municipality,respondentsLawyer.phoneAndFax,respondentsLawyer.email"
   },
   {
    "id": 1750795359016,
@@ -412,7 +417,8 @@
    ],
    "background": "none",
    "border": "none",
-   "page": 1
+   "page": 1,
+   "bind": "court_info.courtName"
   },
   {
    "id": 1750795359024,
@@ -430,7 +436,8 @@
    ],
    "background": "none",
    "border": "none",
-   "page": 1
+   "page": 1,
+   "bind": "court_info.courtOfficeAddress"
   },
   {
    "id": 1750795359025,
@@ -556,7 +563,8 @@
    ],
    "background": "none",
    "border": "none",
-   "page": 2
+   "page": 2,
+   "bind": "court_info.courtFileNumber"
   },
   {
    "id": 1750795359032,
@@ -898,7 +906,8 @@
    ],
    "background": "none",
    "border": "none",
-   "page": 3
+   "page": 3,
+   "bind": "court_info.courtFileNumber"
   },
   {
    "id": 1750795359055,
@@ -988,7 +997,8 @@
    ],
    "background": "none",
    "border": "none",
-   "page": 4
+   "page": 4,
+   "bind": "court_info.courtFileNumber"
   },
   {
    "id": 1750795359060,

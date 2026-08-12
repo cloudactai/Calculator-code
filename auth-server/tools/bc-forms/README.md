@@ -78,6 +78,34 @@ npm run forms:validate-export
 Rewrites the BC block of `catalog.json` (sortOrder from 101, ON's 1–45 untouched) and
 regenerates `audit.json`.
 
+## 5. Prefill binds
+
+```
+python3 rebind_bc_forms.py [--check]
+```
+
+Makes the BC forms fill themselves from the matter. It writes back only the `bind`
+key and asserts every other key is byte-identical first, so it is safe to run on
+templates whose geometry is already approved; a second run is a no-op. Run it after
+any rebuild, which drops the binds.
+
+The two families are read differently because only one has names to read.
+Provincial Court forms are AcroForm, so they bind by the government's widget name
+(`court file number`, `full name of party`, `full name of other party`, and the two
+dates of birth beside them) matched to a field by `id`. Supreme Court forms are XFA
+and their flatten emits every field with an empty name, so their captions are read
+off the printed page instead — `No.`/`Court File No.`/`[File] Number`, `Claimant`,
+`Petitioner`, `Respondent` — from the **left** of the box only, because "No." sits
+directly above the registry box and reading from above would fill the registry with
+the file number.
+
+The vocabulary is in `bc_binds.py`. BC's claimant is the party who starts the case,
+which is the matter's client, so it binds to `applicant` — the same assumption the
+Ontario templates already make. **The registry line is left blank on purpose**: it
+names the registry the case is filed in, and the matter has no such field, so it
+would have to be filled from the court's name. Numbered parties (`full name of
+party 1`) are skipped too — a numbered list does not say which one is the applicant.
+
 ## Overlay convention
 
 `field.x` = box left in points, `field.y` = box top in points (y down), `width`/`height`

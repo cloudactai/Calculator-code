@@ -70,7 +70,8 @@
    ],
    "background": "none",
    "border": "none",
-   "page": 1
+   "page": 1,
+   "bind": "court_info.courtName"
   },
   {
    "id": 1750893726005,
@@ -88,7 +89,8 @@
    ],
    "background": "none",
    "border": "none",
-   "page": 1
+   "page": 1,
+   "bind": "court_info.courtFileNumber"
   },
   {
    "id": 1750893726006,
@@ -106,7 +108,8 @@
    ],
    "background": "none",
    "border": "none",
-   "page": 1
+   "page": 1,
+   "bind": "court_info.courtOfficeAddress"
   },
   {
    "id": 1750893726007,
@@ -646,7 +649,8 @@
    ],
    "background": "none",
    "border": "none",
-   "page": 1
+   "page": 1,
+   "bind": "applicant.fullLegalName"
   },
   {
    "id": 1750893726037,
@@ -664,7 +668,8 @@
    ],
    "background": "none",
    "border": "none",
-   "page": 1
+   "page": 1,
+   "bind": "applicantsLawyer.fullLegalName"
   },
   {
    "id": 1750893726038,
@@ -682,7 +687,8 @@
    ],
    "background": "none",
    "border": "none",
-   "page": 1
+   "page": 1,
+   "bind": "applicant.address"
   },
   {
    "id": 1750893726039,
@@ -700,7 +706,8 @@
    ],
    "background": "none",
    "border": "none",
-   "page": 1
+   "page": 1,
+   "bind": "applicantsLawyer.address"
   },
   {
    "id": 1750893726040,
@@ -718,7 +725,8 @@
    ],
    "background": "none",
    "border": "none",
-   "page": 1
+   "page": 1,
+   "bind": "applicant.phoneAndFax"
   },
   {
    "id": 1750893726041,
@@ -736,7 +744,8 @@
    ],
    "background": "none",
    "border": "none",
-   "page": 1
+   "page": 1,
+   "bind": "applicantsLawyer.phoneAndFax"
   },
   {
    "id": 1750893726042,
@@ -754,7 +763,8 @@
    ],
    "background": "none",
    "border": "none",
-   "page": 1
+   "page": 1,
+   "bind": "applicant.email"
   },
   {
    "id": 1750893726043,
@@ -772,7 +782,8 @@
    ],
    "background": "none",
    "border": "none",
-   "page": 1
+   "page": 1,
+   "bind": "applicantsLawyer.email"
   },
   {
    "id": 1750893726044,
@@ -790,7 +801,8 @@
    ],
    "background": "none",
    "border": "none",
-   "page": 1
+   "page": 1,
+   "bind": "respondent.fullLegalName"
   },
   {
    "id": 1750893726045,
@@ -808,7 +820,8 @@
    ],
    "background": "none",
    "border": "none",
-   "page": 1
+   "page": 1,
+   "bind": "respondentsLawyer.fullLegalName"
   },
   {
    "id": 1750893726046,
@@ -826,7 +839,8 @@
    ],
    "background": "none",
    "border": "none",
-   "page": 1
+   "page": 1,
+   "bind": "respondent.address"
   },
   {
    "id": 1750893726047,
@@ -844,7 +858,8 @@
    ],
    "background": "none",
    "border": "none",
-   "page": 1
+   "page": 1,
+   "bind": "respondentsLawyer.address"
   },
   {
    "id": 1750893726048,
@@ -862,7 +877,8 @@
    ],
    "background": "none",
    "border": "none",
-   "page": 1
+   "page": 1,
+   "bind": "respondent.phoneAndFax"
   },
   {
    "id": 1750893726049,
@@ -880,7 +896,8 @@
    ],
    "background": "none",
    "border": "none",
-   "page": 1
+   "page": 1,
+   "bind": "respondentsLawyer.phoneAndFax"
   },
   {
    "id": 1750893726050,
@@ -898,7 +915,8 @@
    ],
    "background": "none",
    "border": "none",
-   "page": 1
+   "page": 1,
+   "bind": "respondent.email"
   },
   {
    "id": 1750893726051,
@@ -916,7 +934,8 @@
    ],
    "background": "none",
    "border": "none",
-   "page": 1
+   "page": 1,
+   "bind": "respondentsLawyer.email"
   },
   {
    "id": 1750893726052,

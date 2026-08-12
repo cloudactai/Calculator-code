@@ -131,6 +131,40 @@ Run it over `--all` after any placement change. For a Word-sourced form there is
 also a ground truth to check against — `w:textInput` and `w:checkBox` counts in
 the source `.docx` say how many fields the form actually has.
 
+## 8. Prefill binds, after the boxes are approved
+
+```
+python3 rebind_on_forms.py [--check]
+```
+
+Adds the binds that make a form fill itself from the matter, on templates whose
+geometry has already been reviewed — so it is not a rebuild and never touches a
+box. It writes back only the `bind` key, asserts every other key (id, type, x, y,
+width, height, page, value, fontSize, colour) is byte-identical first, and leaves
+any bind already present alone. `--check` prints what it would do and writes
+nothing; a second run is a no-op.
+
+Fields are matched to the government's widgets by `id` — `bc_pipeline.extract`
+numbers ids from the widget order and returns `widgetNames` positionally aligned,
+so the id *is* the widget's index. The 2026-07 batch staged `<docId>.fields.json`
+rather than source PDFs and is matched on geometry instead (x, width, type and
+page exact, nearest y).
+
+Forms with no widget names at all — the ten Word-only ones — are read by
+`caption_binds.py`, which takes the caption printed next to each box and hands it
+to the same `on_binds` vocabulary. Run against the 671 binds that do come from
+widget names, it reproduces 670, so widget names are used wherever they exist and
+captions only where they do not. Form 20 has neither and is mapped by hand, each
+id noted against the caption it sits under.
+
+Two rules worth knowing before extending the vocabulary, both learned from live
+defects: a widget's name can lie (Forms 30A/30B name their panel `applicants`
+while the page prints "Recipient(s)" and "Payor"; Form 31's `nameOfCourt` is the
+strike-out term, and Form 30B's is the swear/affirm word in "and I ____ that the
+following is true"), and a caption belongs to the box the rules print it against
+— "Court office address" sits *under* its box, which on Forms 15D and 17G leaves
+it a few points above the party panel. Check the printed page, not the name.
+
 ## Categories
 
 `on_catalog.py` maps each form number to its picker folder. It reuses the folders

@@ -41,7 +41,14 @@ asset to import; it is out of scope rather than pending.
   have no field widgets, so overlays need the Ontario line/box detection path.
 - **Gates I and K** (province-filter API against a live DB, deploy smoke) need a database
   and a deploy — not runnable here.
-- **§8 Phase 2** BC prefill binds, unchanged and still deferred.
+- **§8 Phase 2** BC prefill binds — **the heading and the parties are done**
+  (2026-08-11). `tools/bc-forms/rebind_bc_forms.py` added 104 binds across all 43
+  templates without moving a box: the court file number everywhere, and the
+  claimant (or petitioner) and respondent wherever the form names them.
+  Provincial Court forms bind by the government's widget name, Supreme Court
+  forms by the caption printed to the left of the box, their XFA flatten emitting
+  no names at all. The registry line is left blank on purpose — see
+  `PREFILL_PLAN.md`. Anything past the heading is still per-form work.
 
 ---
 
@@ -306,7 +313,8 @@ port-scan timeout; app stays up on the old version until the new one is healthy.
 4. **Supreme batches** (~10 each) — vector/text/table box placement + signature skip; gates A–H, J.
 5. **Federal registration form** — fetch real PDF from justice.gc.ca; handle individually.
 6. **Full regression + UI walkthrough** (gates I, K, L).
-7. **Phase 2** (later): BC prefill binds (§8).
+7. ~~**Phase 2** (later): BC prefill binds (§8).~~ Heading and parties done; run
+   `python3 rebind_bc_forms.py` after any rebuild to put them back.
 
 ---
 

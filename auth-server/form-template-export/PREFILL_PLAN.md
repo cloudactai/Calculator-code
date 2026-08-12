@@ -5,6 +5,39 @@ counts. Goal for every form: **auto-fill the standard client data on first
 generation, and make every remaining blank an editable text box** — the Form 8A /
 Form 13 page-1 standard._
 
+## Status — UPDATE 2026-08-11 (heading + parties bound everywhere they can be)
+
+Every template in both provinces has been swept for missing binds, without a box
+being moved: `tools/on-forms/rebind_on_forms.py` and `tools/bc-forms/rebind_bc_forms.py`
+write back only the `bind` key, and assert every other key is unchanged first.
+
+| | templates | heading + both parties + both lawyers | heading only | nothing |
+|---|---|---|---|---|
+| Ontario | 135 | 98 (18 of them also case data) | 36 | 1 |
+| BC | 43 | 28 | 15 | 0 |
+
+Where a bind comes from, most trusted first — a form only falls to the next
+source when the one above it yields nothing:
+
+1. **The government's own widget name** (`on_binds`, `bc_binds.WIDGET`), matched to
+   a template field by `id`, which is the widget's index.
+2. **The caption printed next to the box** (`caption_binds`, `bc_binds.CAPTION`), for
+   the ten Word-only Ontario forms and the BC Supreme forms — neither carries
+   widget names at all. Run against the 671 shipped widget-derived binds as a
+   check, the caption reader reproduces 670 of them.
+3. **A hand map**, for Form 20 alone, whose XFA flatten emits neither.
+
+Deliberately still blank, each for a reason a value would make worse:
+
+- **BC's registry line** — it asks which registry the case is filed in, and
+  `court_info` holds the court's name, file number and office address, no registry.
+- **Payor / Recipient panels** (Ontario Forms 26D, 30A, 30B, 31): the support payor
+  is not reliably the respondent, whatever the widget container is named.
+- **Second-party rows** on every panel — a matter holds one applicant and one
+  respondent, so row 2 stays empty rather than repeating row 1.
+- **Form 6A**, an advertisement carrying no general heading, and Form 36A's
+  "last name" cells, for which the vocabulary holds only whole names.
+
 ## Status — UPDATE (Phase 0 complete)
 
 **The backend compatibility adapter is DONE** — `formPrefillCompat.js`
