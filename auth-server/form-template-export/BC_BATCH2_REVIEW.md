@@ -530,10 +530,29 @@ below come from cell placement. Every box still sits inside its own cell.
 
 | | forms | pages |
 |---|---|---|
-| Read and settled | 41 | ~185 |
-| Not yet read | 104 | ~235 |
+| Read and settled | 46 | ~220 |
+| Not yet read | 99 | ~200 |
 | **Total** | **145** | **420** |
 
-Groups 1-5 complete. Groups 6-9 complete but for PFA914. Groups 10-15 about a third read
-(S-51, Form 5, F24, F19.3, F101 done; F84, F86, F97, Form 23, F22, F23, F26, F28, F47,
-F49, Forms 10/11/39, PFA893, PFA920, F44, F48, F100 outstanding). Groups 16-31 untouched.
+Groups 1-5 complete, 6-9 complete but for PFA914, 14 complete. Groups 10-13 partly read.
+Groups 16-31 untouched.
+
+### Case Management (group 13) — four of five forms read, all clean
+
+* **Form 11** *Application for case management order without notice or attendance* (13 pp)
+  — clean throughout. Cover and three instruction pages carry no fields; Schedules 1-5 are
+  complete, including Schedule 2's alternative-service block on p9 where every method
+  (posting, relative, registered/regular mail, email, text, instant message, last known
+  address, other) has its own boxes with the captions below them.
+* **Form 10** *Application for case management order* (8 pp) — clean. p5's twenty-option
+  case-management checkbox list is all on its marks; p7 is the appearance-information
+  insert with no fields, correctly.
+* **Form 39** *Request for scheduling* (6 pp) — clean, including p6's interim-order
+  options where each option's text sits on its own printed rule and the checkboxes stay
+  on their marks.
+* **PFA920** *Consent adjournment* (1 pp) — clean. The "Registry"/"JCM" pair are the two
+  `checkbox-no-mark` advisories: the form prints no `❑` glyph there, only the label, so the
+  control sits at the government's own widget position. Correct as placed.
+
+Still outstanding in 10-15: PFA914, F84, F86, F97, Form 23, F22, F23, F26, F28, F47, F49,
+PFA893, F44, F48, F100 — 15 forms, roughly 30 pages.
