@@ -49,12 +49,34 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import bc_pipeline as bp  # noqa: E402
 import bc_sources_batch2 as src2  # noqa: E402
 import verify_bc2 as V  # noqa: E402
+from trim_label_overlap import GAP, MIN_HEIGHT, MIN_WIDTH, ink_columns  # noqa: E402
 
 OUT = V.OUT
+STAGE = os.path.dirname(OUT)
+SC = os.path.join(os.path.dirname(os.path.abspath(__file__)), "xfa", "sc_out2")
 STD_LINE = 13.3     # the approved single-line box height
 SEAT_GAP = 1.26     # measured on the approved forms: box bottom sits this far above its rule
 MIN_RUN = 24.0      # narrower than this is a paragraph-number slot, not a blank
 AREA_PAD = 2.0
+
+
+# A page with more printed text than this is prose — a guidance page, not a form page.
+# `cell_targets` is the only target type restricted by it, and this is the signal that
+# actually separates the two cases, after two blunter ones failed:
+#
+#   * "the government gave this page no field" is true of BCPC_6 p3 (a guidance page,
+#     wrongly boxed) *and* of F37 p9 and F101 p3 (real form pages that needed boxes).
+#     Structurally the three are identical, so that test cannot tell them apart.
+#   * an empty ruled rectangle is weak evidence on its own — BCPC_6 p3's was a cell of
+#     the *instructions* table, "Schedules or forms for specific family law matters".
+#
+# Text density does separate them cleanly, by roughly an order of magnitude: the
+# instruction pages in this batch run 2,000-5,600 characters (BCPC_6 p3 is 4,361) and
+# the sparse form pages run 53-924 (F37 p9 is 533).
+#
+# The underscore-rule and answer-area targets are deliberately *not* restricted: a
+# printed `______`, or an instruction ending in a colon, is strong evidence on any page.
+PROSE_CHARS = 1500
 
 
 # Answer spaces that measure like a narrative item but are not one, with the reason.
@@ -115,14 +137,38 @@ def underscore_targets(page, boxes):
     return out
 
 
-def grid_cells(page, min_width=28.0, min_height=10.0):
-    """Rectangles fully enclosed by drawn rules — a table's cells.
+def grid_cells(page, min_width=28.0, min_height=10.0,
+               max_width=480.0, max_height=220.0):
+    """A table's cells: the cell-sized rectangles the form draws, plus any grid its
+    rules imply.
 
-    Built from the rules rather than from `get_drawings()` rectangles because these
-    forms draw a table as separate lines as often as as a rect. A candidate counts only
-    if all four of its sides are actually spanned by a rule, so the "cells" of a page
-    that merely has a rule above and below some text are not invented.
+    Reading the rules *first* was wrong. F37 p9 draws every cell as its own `re` and no
+    lines at all, so rebuilding a grid from edges only succeeded where the edges of the
+    per-cell rectangles happened to line up into a full grid — column 1 of each table
+    got boxes and columns 2 and 3 got none. A rectangle of cell size **is** a cell;
+    nothing has to be inferred. The line-derived grid stays as the fallback for forms
+    that genuinely draw a table as lines.
+
+    A rectangle that contains another candidate is a frame or a section band, not a
+    cell (this page's 467x599 outer frame and its 467x43 heading bands), so it is
+    dropped rather than boxed.
     """
+    drawn = []
+    for drawing in page.get_drawings():
+        for item in drawing["items"]:
+            if item[0] != "re":
+                continue
+            rect = +item[1]
+            if (min_width <= rect.width <= max_width
+                    and min_height <= rect.height <= max_height):
+                drawn.append(rect)
+    cells = []
+    for rect in drawn:
+        inner = [o for o in drawn
+                 if o is not rect and rect.contains(o) and o.get_area() < 0.9 * rect.get_area()]
+        if not inner:
+            cells.append(rect)
+
     horizontals, verticals = [], []
     for drawing in page.get_drawings():
         for item in drawing["items"]:
@@ -151,17 +197,37 @@ def grid_cells(page, min_width=28.0, min_height=10.0):
                    for xx, a, b in verticals)
 
     ys = sorted({round(y, 1) for y, _a, _b in horizontals})
-    xs = sorted({round(x, 1) for x, _a, _b in verticals})
-    cells = []
     for row in range(len(ys) - 1):
+        top, bottom = ys[row], ys[row + 1]
+        if bottom - top < min_height:
+            continue
+        # Columns are derived **per row band**, from only the verticals that actually
+        # span that band. Taking every x on the page splits a row at rules belonging to
+        # other tables: on F37 p9, table 2's verticals at x 360 and x 504.5 cut table 1's
+        # second and third columns short, and the span test then correctly rejected the
+        # truncated candidates — so those columns got no box at all.
+        xs = sorted({round(x, 1) for x, a, b in verticals
+                     if a - 1 <= top and b + 1 >= bottom})
         for col in range(len(xs) - 1):
-            top, bottom, left, right = ys[row], ys[row + 1], xs[col], xs[col + 1]
-            if bottom - top < min_height or right - left < min_width:
+            left, right = xs[col], xs[col + 1]
+            if right - left < min_width:
                 continue
-            if (spanned_h(top, left, right) and spanned_h(bottom, left, right)
+            if not (spanned_h(top, left, right) and spanned_h(bottom, left, right)
                     and spanned_v(left, top, bottom) and spanned_v(right, top, bottom)):
-                cells.append(fitz.Rect(left, top, right, bottom))
+                continue
+            candidate = fitz.Rect(left, top, right, bottom)
+            if any(abs(candidate.x0 - c.x0) < 2 and abs(candidate.y0 - c.y0) < 2
+                   and abs(candidate.x1 - c.x1) < 2 and abs(candidate.y1 - c.y1) < 2
+                   for c in cells):
+                continue
+            cells.append(candidate)
     return cells
+
+
+# A cell holding only these is still an empty cell: they are the form's own furniture,
+# not a label. `$` gets special handling below — §7.5 says the amount field goes beside
+# its `$`, so the box is inset past the glyph rather than skipped or laid over it.
+CELL_FURNITURE = set("$.,:;()-–— \t\xa0")
 
 
 def cell_targets(page, boxes):
@@ -169,20 +235,37 @@ def cell_targets(page, boxes):
 
     F101 and F37 are the handwriting-typeset variant of their document (see the module
     docstring), so their tables are drawn for a pen: ruled cells with no XFA field
-    behind them. 63 and 58 of them respectively, out of 156 across the batch.
+    behind them.
 
     A cell is only a target if it is **empty** — a cell holding printed text is a column
-    heading or a row label, and §9.3's rule is that a box never goes on one.
+    heading or a row label, and §9.3's rule is that a box never goes on one. But a cell
+    whose only content is a printed `$` *is* empty: F37 p9's whole Monthly Amount column
+    is that, and skipping it as "has printed content" left the column unfillable. Such a
+    cell gets a box inset past the `$`'s ink, never over it.
     """
     out = []
     for cell in grid_cells(page):
-        if page.get_text(clip=cell).strip():
+        text = page.get_text(clip=cell).strip()
+        if text and not set(text) <= CELL_FURNITURE:
             continue
         if any((cell & existing).get_area()
                > 0.25 * min(cell.get_area(), existing.get_area()) for existing in boxes):
             continue
         # Inset so the box sits inside the cell's rules rather than on them.
-        out.append(fitz.Rect(cell.x0 + 1.5, cell.y0 + 1.5, cell.x1 - 1.5, cell.y1 - 1.5))
+        left = cell.x0 + 1.5
+        if text:
+            # Measure the `$`'s ink *inside* the cell's borders. Measuring the whole
+            # cell rect reads its own drawn border as ink, so the right-hand extent came
+            # back as the cell's right edge and the inset collapsed the box to zero
+            # width — F37 p9's entire Monthly Amount column was dropped as "too small".
+            inner = fitz.Rect(cell.x0 + 2.0, cell.y0 + 2.0, cell.x1 - 2.0, cell.y1 - 2.0)
+            ink = ink_columns(page, inner)
+            if ink is not None:
+                left = max(left, ink[1] + GAP)
+        target = fitz.Rect(left, cell.y0 + 1.5, cell.x1 - 1.5, cell.y1 - 1.5)
+        if target.width < MIN_WIDTH or target.height < MIN_HEIGHT:
+            continue
+        out.append(target)
     return out
 
 
@@ -254,11 +337,12 @@ def main():
                 pending.append((page_number, "TextArea", rect))
             # Cells last: an answer area or a rule blank is the stronger anchor, and
             # placing those first means a cell already covered by one is skipped.
-            covered = list(boxes) + [r for _p, _k, r in pending if _p == page_number]
-            for rect in cell_targets(page, covered):
-                if bp.is_signature_box(rect, None, captions):
-                    continue
-                pending.append((page_number, "TextField", rect))
+            if len(page.get_text().strip()) < PROSE_CHARS:
+                covered = list(boxes) + [r for _p, _k, r in pending if _p == page_number]
+                for rect in cell_targets(page, covered):
+                    if bp.is_signature_box(rect, None, captions):
+                        continue
+                    pending.append((page_number, "TextField", rect))
         pdf.close()
 
         if not pending:

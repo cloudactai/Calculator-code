@@ -504,6 +504,76 @@ def check_answer_spaces(doc_id, pdf, fields, blocking, advisory):
                              % (gap, text[:44])))
 
 
+def rules_and_frames(page, min_len=45.0):
+    """Long thin horizontal rules, and the drawn boxes whose edges some of them are."""
+    rules, frames = [], []
+    for drawing in page.get_drawings():
+        for item in drawing["items"]:
+            if item[0] == "l":
+                start, end = item[1], item[2]
+                if abs(start.y - end.y) < 0.7 and abs(start.x - end.x) >= min_len:
+                    rules.append(fitz.Rect(min(start.x, end.x), start.y - 0.5,
+                                           max(start.x, end.x), start.y + 0.5))
+            elif item[0] == "re":
+                rect = item[1]
+                if rect.width >= min_len and rect.height <= 1.6:
+                    rules.append(fitz.Rect(rect.x0, rect.y0, rect.x1, rect.y1))
+                elif rect.width >= min_len and rect.height > 2.0:
+                    frames.append(+rect)
+    return rules, frames
+
+
+def check_unboxed_rules(doc_id, pdf, fields, blocking, advisory):
+    """§9.6 again, for a blank the form *drew* instead of typing as `______`.
+
+    `check_unfilled_blanks` only sees underscore characters, so a writing line drawn as
+    line art is invisible to it. F85 p1 is the case that showed it up: "THIS COURT ORDERS
+    that no fees are payable by" is followed by a drawn 252 pt rule with no field on it,
+    and every gate passed the form.
+
+    Two exclusions, both calibrated against BCPC_19 — a form confirmed clean by reading
+    all six of its pages, which the first version of this check reported 8 times:
+
+      * a rule that is the top or bottom **edge of a drawn box** is a panel border
+        (BCPC_19 p2's online-filing panel and its QR-code panel);
+      * a rule **doubled within about 2 pt** of another is a decorative double border.
+
+    With those, BCPC_19 goes to zero and F85's real one survives.
+    """
+    by_page = collections.defaultdict(list)
+    for field in fields:
+        by_page[field["page"]].append(box(field))
+    for page_number in range(1, pdf.page_count + 1):
+        page = pdf[page_number - 1]
+        boxes = by_page.get(page_number, [])
+        captions = bp.signature_captions(page)
+        rules, frames = rules_and_frames(page)
+        for index, rule in enumerate(rules):
+            if any(abs(rule.y0 - frame.y0) < 1.6 or abs(rule.y0 - frame.y1) < 1.6
+                   for frame in frames
+                   if frame.x0 - 2 <= rule.x0 and frame.x1 + 2 >= rule.x1):
+                continue
+            if any(other is not rule and abs(other.y0 - rule.y0) < 2.2
+                   and abs(other.x0 - rule.x0) < 3 and abs(other.x1 - rule.x1) < 3
+                   for other in rules):
+                continue
+            probe = fitz.Rect(rule.x0, rule.y0 - 14.0, rule.x1, rule.y1 + 1.5)
+            if any(not (probe & existing).is_empty
+                   and (probe & existing).get_area() > 0.2 * min(probe.get_area(),
+                                                                 existing.get_area())
+                   for existing in boxes):
+                continue
+            # §5: a signature rule is not a blank to be filled.
+            if bp.is_signature_box(fitz.Rect(rule.x0, rule.y0 - STD_LINE, rule.x1, rule.y0),
+                                   None, captions):
+                continue
+            if page.get_text(clip=probe).strip():
+                continue
+            advisory.append(("rule-no-field", doc_id, page_number,
+                             "a %.0fpt drawn rule at %.0f,%.0f has no field"
+                             % (rule.width, rule.x0, rule.y0)))
+
+
 def check_widgets(doc_id, pdf, fields, blocking, advisory):
     """The app draws its own overlay; a leftover AcroForm layer would double up."""
     left = sum(len(list(page.widgets())) for page in pdf)
@@ -516,7 +586,8 @@ CHECKS = [
     check_dollar_fields, check_signatures, check_printed_ink, check_edge_through_text,
     check_leader_seating,
     check_heading_strays, check_unit_sanity, check_artwork, check_blank_pages,
-    check_unfilled_blanks, check_answer_spaces, check_widgets,
+    check_unfilled_blanks, check_answer_spaces, check_unboxed_rules,
+    check_widgets,
 ]
 BLOCKING_ONLY = {"check_checkbox_marks"}
 
