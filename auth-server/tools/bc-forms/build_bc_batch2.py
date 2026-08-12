@@ -40,6 +40,25 @@ SC = os.path.join(os.path.dirname(os.path.abspath(__file__)), "xfa", "sc_out2")
 TYPE_BY_TAG = {"textarea": "TextArea", "select": "TextField"}
 
 
+# Forms whose variant split cannot be read off the template, resolved by reading the
+# printed pages instead. `blank_pages.mjs` reports all four PD-58 pages as "wizard" —
+# the template names no subform — but the rendered document plainly carries two of its
+# sections twice:
+#
+#   p1  heading, SEALING ORDER, the before/application/hearing block
+#   p2  "THIS COURT ORDERS that" — item 1, the complete five-row sealing table
+#       (rows 1a, 1b, 2, 3, 4), and item 2's redaction direction
+#   p3  item 3, *plus a second copy of that same table*
+#   p4  item 3 again, in a different layout, *plus the signature blocks*
+#
+# p2 is essential (only it carries items 1 and 2) and p4 is essential (only it carries
+# the signatures), so p3 is the spurious variant: its table duplicates p2's and its
+# item 3 duplicates p4's. Keeping p1, p2 and p4 gives one coherent three-page order.
+KEEP_PAGES = {
+    "BCSC_PD_58": [1, 2, 4],
+}
+
+
 def blank_pages(doc_id, pages):
     """Which rendered pages are the blank court document, 1-based.
 
@@ -52,6 +71,8 @@ def blank_pages(doc_id, pages):
 
     A form with no `blank_*` subform is single-variant: every page is the document.
     """
+    if doc_id in KEEP_PAGES:
+        return [p for p in KEEP_PAGES[doc_id] if p <= pages]
     path = os.path.join(BLANKMAPS, "%s.json" % doc_id)
     if not os.path.exists(path):
         return list(range(1, pages + 1))

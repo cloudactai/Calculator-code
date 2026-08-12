@@ -210,10 +210,10 @@ is §7.5 satisfied.
 |---|---|---|
 | F19.4 Case plan order | 4 | **OK** (p2 repaired earlier) |
 | F25 Order for examination of persons outside the jurisdiction | 3 | **FIX** ×1 (class B only) |
-| F27 Order for issue of a letter of request | 1 | not yet read |
-| F83 Order to register foreign judgment | 2 | not yet read |
+| F27 Order for issue of a letter of request | 1 | **FIX** ×1 (class B only) |
+| F83 Order to register foreign judgment | 2 | **FIX** ×1 (class B only) |
 | F85 Order to waive fees | 2 | **FIX** ×2 — see below |
-| PD-58 Sealing order | 4 | not yet read |
+| PD-58 Sealing order | 4 -> 3 | **FIXED** — duplicated sections dropped |
 
 * **F19.4** — p2's collided discovery-table header is repaired and reads correctly. p1's
   three party rows, both judge checkboxes, the conference block and both signature blocks
@@ -272,3 +272,44 @@ each amount box starting past its `$`. **Still outstanding on that page**: table
 "DETAILS OF EXPENSE" column, where the government's own rules are irregular (its top
 rule spans x 73–361 while the cell needs 91–379), so the four-sides test rejects it.
 Left rather than loosening the rule and risking invented cells elsewhere.
+
+### F27, F83 — clean apart from class B
+
+* **F27** (1 page) — the "BEFORE THE HONOURABLE" block, the application and hearing
+  lines, and the date are all seated. Items 1 and 2 are fixed text with no blanks, and
+  "By the Court." correctly carries no box.
+* **F83** (2 pages) — p1's judgment-dated and court-name boxes are right. p2 completes
+  the sentence across the page break — creditor area, debtor box, "the sum of $[box]",
+  and the costs pair — with both amount boxes starting after their printed `$` (§7.5).
+
+### PD-58 — the document was in the file twice, now resolved
+
+Shipped as 4 pages, and **two of its sections appeared twice**: p2's five-row sealing
+table was repeated on p3, and p3's item 3 was repeated on p4 in a different layout. This
+is class A again, but at section scale rather than block scale, and no gate saw it — the
+copies are on different pages, so nothing collides and nothing overlaps.
+
+`blank_pages.mjs` could not help: it reports all four pages as `wizard`, the template
+naming no subform. So the split was resolved by reading the pages, which is what the
+guide's golden rule asks for when the template is silent:
+
+* p2 is essential — only it carries item 1 and item 2's redaction direction;
+* p4 is essential — only it carries the signature blocks;
+* therefore **p3 is the spurious variant**, duplicating p2's table and p4's item 3.
+
+`build_bc_batch2.KEEP_PAGES` now keeps p1, p2 and p4, giving a coherent three-page order,
+and the re-render confirms it: heading and before-block, then orders with the complete
+table and item 2, then access and both signature blocks with no box on either signature
+rule. Row 1b "Entire court file" correctly has no Description box — the row names itself.
+
+**JUDGEMENT**: the Duration column carries two or three stacked boxes per row against the
+header's three options ("until further order of the Court; until the first day of trial;
+or until a specific date"). They are the government's own fields and do not overlap
+(§7.7 clean), so they stand.
+
+---
+
+## Progress
+
+**Groups 1–5 complete: 32 forms, 124 of 421 pages read.** Groups 6–31 (~113 forms,
+~297 pages) still to read.
