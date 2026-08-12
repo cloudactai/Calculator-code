@@ -395,3 +395,60 @@ build_bc_batch2.py --rows-only
 merge_catalog2.py --promote
 rebind_bc_forms.py
 ```
+
+---
+
+## Groups 6-9 (part) — Protection Orders, Agreements, and the F54 family
+
+| Form | Pages | Verdict |
+|---|---|---|
+| SUP914 Request for protection order registry search | 2 | **OK** |
+| Form 26 Request to file an agreement | 3 | **OK** |
+| Form 12 Application about a protection order | 15 | **OK** |
+| F54.1 Order terminating a protection order | 1 | **FIXED** — duplicated sentence |
+| F54.2 Restraining order | 1 | **FIXED** — both blanks had no field |
+
+* **SUP914** — an English/French mirror pair, both complete. The sideways printed title
+  down the right edge is a **printed backer**, not a rotated writing line, so it correctly
+  gets no `VerticalTextField` (§9.9 applies only where something must be written on a
+  rotated rule).
+* **Form 26** — cover and instruction pages carry 0 fields, correctly; p3's parties,
+  agreement date, six statutory-provision checkboxes and address block are all seated.
+* **Form 12** — 15 pages, all clean. Its affidavit line, three separate person tables,
+  the whole firearms/weapons Yes-No ladder with its explain areas, and both children
+  tables are right, headings left clear throughout.
+
+### F54.2 — neither blank in the operative sentence had a field
+
+The sentence reads "THIS COURT ORDERS … that **___** is restrained from molesting …
+or attempting to molest, annoy, harass or communicate with **___**", and *both* blanks
+were missing. A restraining order could name neither the restrained party nor the
+protected one.
+
+Both escape the narrowed instruction sweep: the first gap is 31 pt, under its 70 pt
+floor, and the second line ends in "with", which is not a phrase that reads as an
+unanswered direction. Only reading the page found them.
+
+### F54.1 — a fourth shape of class A, invisible to line-run comparison
+
+The page prints "THIS COURT ORDERS, under section 187 of the *Family Law Act*, that the
+order dated … made by … is terminated on ." **twice**:
+
+* y 488-539, **laid out** across several lines with its three fields and the connecting
+  words "made by" and "is terminated on" on their own lines;
+* y 566.9, **collapsed onto one line** with the blanks squeezed out and no fields at all.
+
+Because the copies are formatted differently there is no run of matching lines between
+them, so the within-page duplicate sweep cannot see it — only the normalised text of the
+whole sentence matches. The collapsed copy is removed.
+
+### An interaction between two of the repairs
+
+Painting a duplicate white leaves its cell **rectangles** in the content stream — only
+the text is redacted — so `place_missing_bc2.grid_cells` still saw F1 p4's removed header
+cells as empty ruled cells and boxed them. Two things fix it, and both are in place:
+`repair_duplicate_blocks` now drops any field lying wholly inside a painted band, and it
+runs **after** placement in the chain, so the duplicate's text is still present when the
+cells are examined and they are skipped as "has printed content" in the first place. The
+field count fell from 247 to 244, which is exactly the three header cells no longer being
+invented.

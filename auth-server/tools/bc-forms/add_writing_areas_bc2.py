@@ -61,6 +61,20 @@ ADD = {
         (1, "TextArea", fitz.Rect(72.0, 421.0, 557.0, 578.0),
          "which fees are waived"),
     ],
+    "BCSC_F54_2": [
+        # The operative sentence reads "THIS COURT ORDERS ... that ___ is restrained from
+        # molesting ... or attempting to molest, annoy, harass or communicate with ___",
+        # and *neither* blank had a field: the restrained party's name between "that"
+        # (ends y 434.8) and "is restrained from" (starts y 465.9), and the protected
+        # party's between "communicate with" (ends y 491.8) and "By the Court" (y 552.9).
+        # The narrowed instruction sweep misses both — the first gap is only 31 pt, under
+        # its 70 pt floor, and the second line ends in "with", which is not a phrase that
+        # reads as an unanswered direction.
+        (1, "TextField", fitz.Rect(73.4, 439.0, 576.0, 461.0),
+         "the party being restrained"),
+        (1, "TextArea", fitz.Rect(73.4, 496.0, 576.0, 546.0),
+         "the party or parties protected"),
+    ],
     "BCSC_F74": [
         # Part 6 "MATERIAL TO BE RELIED ON": instruction ends y 665.1, the form prints
         # "1." at y 679-690.1, and nothing follows. The area starts right of the printed
