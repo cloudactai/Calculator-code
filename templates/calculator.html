@@ -3,14 +3,29 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>Child Support Calculator — Ontario</title>
+<title>Child Support Calculator</title>
 <link rel="stylesheet" href="{{ url_for('static', filename='css/calculator.css') }}"/>
 </head>
 <body>
 
-<header>CloudAct &nbsp;·&nbsp; <span>Ontario Child Support Calculator</span></header>
+<header>CloudAct &nbsp;·&nbsp; <span>Child Support Calculator</span></header>
 
 <div class="container">
+
+  <!-- Province -->
+  <div class="card">
+    <h2>Province</h2>
+    <div class="row">
+      <div class="field">
+        <label>Province for calculation</label>
+        <select id="province">
+          <option value="ON">Ontario</option>
+          <option value="BC">British Columbia</option>
+          <option value="AB">Alberta</option>
+        </select>
+      </div>
+    </div>
+  </div>
 
   <!-- Party 1 -->
   <div class="card">

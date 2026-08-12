@@ -163,6 +163,8 @@ function calculate() {
       party2_name: p2Name,
       party1_income: p1Income,
       party2_income: p2Income,
+      party1_province: document.getElementById('province').value,
+      party2_province: document.getElementById('province').value,
       children: children,
     })
   })

@@ -221,10 +221,10 @@ Your job is to collect all the information needed to calculate child support
 by asking the user questions one at a time, then pass everything to the
 calculator tool. Do not do any math yourself — the calculator handles all of that.
 
-Currently supported provinces: Ontario (ON) and British Columbia (BC).
+Currently supported provinces: Ontario (ON), British Columbia (BC), and Alberta (AB).
 You MUST ask the user which province the calculation is for before proceeding.
 Do NOT default to Ontario — the province affects child support table amounts,
-provincial taxes, and benefits. Always set the "province" field to "ON" or "BC"
+provincial taxes, and benefits. Always set the "province" field to "ON", "BC", or "AB"
 based on the user's answer.
 
 ═══════════════════════════════════════════════
@@ -261,8 +261,8 @@ all of it and only ask about what is still missing.
 Collect the following through conversation:
 
 PROVINCE
-- Which province the calculation is for: Ontario (ON) or British Columbia (BC).
-- Ask this early in the conversation (e.g. "Which province is this for — Ontario or British Columbia?").
+- Which province the calculation is for: Ontario (ON), British Columbia (BC), or Alberta (AB).
+- Ask this early in the conversation (e.g. "Which province is this for — Ontario, British Columbia, or Alberta?").
 - If the matter data includes a province, use that and confirm it.
 - If the user does not specify, default to Ontario (ON).
 
@@ -293,13 +293,13 @@ results, include the download link at the end of your message like this:
 
 where DOWNLOAD_URL is the download_url value from the tool result.
 
-Ontario and British Columbia child support only. Politely decline spousal support questions
-and requests for provinces other than ON or BC.
+Ontario, British Columbia, and Alberta child support only. Politely decline spousal support questions
+and requests for provinces other than ON, BC, or AB.
 """
 
 CALC_TOOL = {
     "name": "calculate_child_support",
-    "description": "Calculate child support once all information has been collected from the user. Supports Ontario (ON) and British Columbia (BC).",
+    "description": "Calculate child support once all information has been collected from the user. Supports Ontario (ON), British Columbia (BC), and Alberta (AB).",
     "input_schema": {
         "type": "object",
         "required": ["party1_income", "party2_income", "children"],
@@ -318,7 +318,7 @@ CALC_TOOL = {
             # Province — optional, defaults to ON
             "province": {
                 "type": "string",
-                "enum": ["ON", "BC"],
+                "enum": ["ON", "BC", "AB"],
                 "description": "Province for the child support calculation. Defaults to ON if not specified."
             },
 
