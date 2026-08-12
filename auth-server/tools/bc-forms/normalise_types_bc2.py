@@ -7,20 +7,24 @@ the forms found it batch-wide, most visibly on the heading of nearly every Supre
 where `Court File No.` comes out `TextArea` while `Court Registry` directly beneath it,
 same width and same height, comes out `TextField`.
 
-Three rules, in this order. The first two read the box's own height, which is
-unambiguous; the third is §8's own wording and settles what height cannot.
+Two rules. The first reads the box's own height, which is unambiguous for a box that
+cannot hold a second line; the second is §8's own wording and settles what height cannot.
+
+The converse of the first rule — "a box two or more lines tall is a `TextArea`" — was
+tried and **removed**. It is right for a table cell the government drew deep for wrapped
+text, but a height rule applied blindly afterwards cannot tell that from the
+government's own one-line fields whose box is tall only because their *caption* wraps:
+it turned BCPC_12 p10's "Date on which the parties began to live together in a
+marriage-like relationship (dd/mmm/yyyy)" into a `TextArea`, and did the same to F71's
+day-counts, F62.1's "Date:" and F37's `$` amounts. That decision now lives in
+`place_missing_bc2.cell_targets`, which has the cell's geometry in hand and only ever
+types the cells it creates itself.
 
 1. **A box one line tall is a `TextField`.** 439 `TextArea` fields are ≤ 20 pt, and
    their heights cluster at 11-18 pt — a box that size cannot hold a second line, so a
    multi-line control in it is wrong. (The approved single-line height is 13.3 pt.)
 
-2. **A box two or more lines tall is a `TextArea`.** §9.5 says this outright — "these
-   are `TextArea`, not `TextField`, or the app gives one line inside a four-line box."
-   179 `TextField` fields are ≥ 27 pt, nearly all of them table cells that
-   `place_missing_bc2.py` added from cell geometry: the government drew the cell tall
-   because it expects wrapped text.
-
-3. **Inside a column, the minority type loses.** For a run of three or more fields
+2. **Inside a column, the minority type loses.** For a run of three or more fields
    sharing a page, an x position and a width, a *strict* majority type converts the
    rest. This is what catches a mismatch whose boxes are all the same height — F1 p4's
    children table, whose first data row is `TextArea / TextField / TextArea` against
@@ -91,8 +95,6 @@ def normalise(fields):
         height = field["height"] / V.SCALE
         if field["type"] == "TextArea" and height <= SINGLE_LINE_MAX:
             changes.append((field, "TextArea", "TextField", "one line tall (%.1fpt)" % height))
-        elif field["type"] == "TextField" and height >= MULTI_LINE_MIN:
-            changes.append((field, "TextField", "TextArea", "%.1fpt tall" % height))
     for field, _old, new, _why in changes:
         field["type"] = new
 

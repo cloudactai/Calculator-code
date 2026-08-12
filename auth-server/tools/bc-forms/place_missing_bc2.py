@@ -342,7 +342,16 @@ def main():
                 for rect in cell_targets(page, covered):
                     if bp.is_signature_box(rect, None, captions):
                         continue
-                    pending.append((page_number, "TextField", rect))
+                    # The cell's own height decides the control: a cell two lines or
+                    # more deep is a writing block (§9.5), a shallow one holds a value.
+                    # This belongs here, where the cell geometry is in hand, rather than
+                    # in `normalise_types_bc2` — a height rule applied blindly afterwards
+                    # also caught the government's *own* tall one-line fields, turning
+                    # BCPC_12 p10's "Date on which the parties began to live together"
+                    # into a TextArea because its caption wraps to two lines, and doing
+                    # the same to F71's day-counts and F62.1's "Date:".
+                    kind = "TextArea" if rect.height >= 27.0 else "TextField"
+                    pending.append((page_number, kind, rect))
         pdf.close()
 
         if not pending:
