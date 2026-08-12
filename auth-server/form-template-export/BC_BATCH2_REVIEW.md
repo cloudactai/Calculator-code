@@ -504,3 +504,36 @@ across the batch, and reading each settles five of them:
   beside it on its own rule. §5 says a signature line gets no box; batch 1's Registrar
   precedent says otherwise. Both are court-completed either way, so nothing a lawyer
   fills is affected. **Flagged for a decision rather than changed.**
+
+### F101 — two table headers printed twice
+
+Item 7's header on p4 (copies at y 138.5-176.5 and 177.5-215.5, data from 216.5) and item
+8's on p5 (copies at y 171.5-242.5 and 243.5-314.5, data from 315.5). Both are full ruled
+rows, and unlike F1 p4 the two copies are **exactly aligned** — same columns, stacked in
+y — so the column-centre test that settled F1 does not apply here.
+
+What settles it instead is **which copy leaves the header abutting its data**: keeping the
+upper one would leave a 40 pt band between header and first row that reads as an empty
+row, so the upper copy goes.
+
+The first attempt left an **orphaned "Item" cell** floating above p5's real header: the
+header's leftmost column sits at x 126.5-161.5 and the band started at x 155, so that one
+cell survived the paint. Widened to x 120.
+
+*Residual, cosmetic*: p4's first data row is 46 pt against 42 pt on rows 2-5, and starts
+1-2 pt off their column edges — its cells come from the government's XFA while the rows
+below come from cell placement. Every box still sits inside its own cell.
+
+---
+
+## Coverage
+
+| | forms | pages |
+|---|---|---|
+| Read and settled | 41 | ~185 |
+| Not yet read | 104 | ~235 |
+| **Total** | **145** | **420** |
+
+Groups 1-5 complete. Groups 6-9 complete but for PFA914. Groups 10-15 about a third read
+(S-51, Form 5, F24, F19.3, F101 done; F84, F86, F97, Form 23, F22, F23, F26, F28, F47,
+F49, Forms 10/11/39, PFA893, PFA920, F44, F48, F100 outstanding). Groups 16-31 untouched.

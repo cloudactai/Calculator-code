@@ -54,6 +54,20 @@ TEXT_BANDS = {
     "BCSC_F54_1": [
         (1, fitz.Rect(15.0, 561.0, 570.0, 583.0)),
     ],
+    # F101 prints two of its table headers twice, each as a full ruled row:
+    #   p4 item 7  — copies at y 138.5-176.5 and y 177.5-215.5, data from y 216.5
+    #   p5 item 8  — copies at y 171.5-242.5 and y 243.5-314.5, data from y 315.5
+    # Unlike F1 p4 the two copies are *exactly* aligned (same columns, stacked in y), so
+    # the alignment test that settled F1 does not apply. What settles it instead is which
+    # copy leaves the header abutting its data: the **upper** copy goes, because keeping it
+    # would leave a 40 pt band between header and first row that reads as an empty row.
+    "BCSC_F101": [
+        (4, fitz.Rect(120.0, 136.0, 505.0, 176.9)),
+        # x starts at 120, not 155: the header's leftmost "Item" column sits at
+        # x 126.5-161.5, outside the band on the first attempt, which left an
+        # orphaned "Item" cell floating above the real header row.
+        (5, fitz.Rect(120.0, 169.0, 580.0, 242.9)),
+    ],
 }
 # Line art of the duplicate copy, painted over in white. p2: the three checkbox outlines,
 # drawn as eight short segments each.
@@ -65,6 +79,12 @@ TEXT_BANDS = {
 # below the paint, visible as tick marks. So the whole edge is cleared and the data row's
 # own border is drawn back — the same clear-then-restore `repair_notice_pages.py` uses.
 PAINT = {
+    "BCSC_F101": [
+        # Copy 1's cell rectangles. Copy 2's row starts 1 pt below each band, so nothing
+        # is shared and no edge has to be drawn back.
+        (4, fitz.Rect(125.0, 137.0, 500.0, 177.0)),
+        (5, fitz.Rect(120.0, 170.0, 576.0, 243.0)),
+    ],
     "BCSC_F1": [
         (2, fitz.Rect(74.5, 312.0, 89.5, 369.0)),
         (4, fitz.Rect(107.0, 251.0, 541.0, 285.3)),
@@ -87,6 +107,10 @@ KEEP_TEXT = {
     },
     "BCSC_F54_1": {
         1: ["THIS COURT ORDERS", "is terminated on", "By the Court"],
+    },
+    "BCSC_F101": {
+        4: ["Full name of child", "Birth date", "Nature of relationship to child"],
+        5: ["Names of parties to the", "Date of any orders"],
     },
 }
 
