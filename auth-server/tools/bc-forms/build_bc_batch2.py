@@ -54,8 +54,20 @@ TYPE_BY_TAG = {"textarea": "TextArea", "select": "TextField"}
 # p2 is essential (only it carries items 1 and 2) and p4 is essential (only it carries
 # the signatures), so p3 is the spurious variant: its table duplicates p2's and its
 # item 3 duplicates p4's. Keeping p1, p2 and p4 gives one coherent three-page order.
+#
+# F19.3's page 1 is an Adobe **data-entry** page, not part of the filed document. Two
+# things say so and neither is a guess:
+#
+#   * it carries the government's "Last updated ... / Page of" footer on p2 and p3 but
+#     **not on p1** — a sweep for that across the batch finds ten unstamped pages and the
+#     other nine are all zero-field Provincial "information about your appearance"
+#     inserts, so a stamped-elsewhere page with 15 fields on it stands alone;
+#   * its party blocks are drawn with Adobe's **dashed** data-entry borders, and its
+#     content (name of party / name of counsel / address for delivery / telephone) is
+#     collected again by p2's "Party submitting this case plan proposal".
 KEEP_PAGES = {
     "BCSC_PD_58": [1, 2, 4],
+    "BCSC_F19_3": [2, 3],
 }
 
 

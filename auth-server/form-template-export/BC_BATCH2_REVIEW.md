@@ -452,3 +452,55 @@ runs **after** placement in the chain, so the duplicate's text is still present 
 cells are examined and they are skipped as "has printed content" in the first place. The
 field count fell from 247 to 244, which is exactly the three header cells no longer being
 invented.
+
+---
+
+## Groups 6-15 (part) — 7 more forms read
+
+| Form | Pages | Verdict |
+|---|---|---|
+| PFA876 Order for attendance of a prisoner | 1 | **OK** |
+| Form 27 Request to file a determination of parenting coordinator | 3 | **OK** |
+| Form 28 Request to file an order | 4 | **OK** |
+| S-51 Consent for child protection record check | 3 | **OK** |
+| Form 5 Guardianship affidavit | 7 | **OK** |
+| F24 Notice to admit | 2 | **OK** |
+| F19.3 Case plan proposal | 3 -> 2 | **FIXED** — data-entry page dropped |
+
+### F19.3 — page 1 was an Adobe data-entry page
+
+Shipped as three pages, and p1 was never part of the filed document: dashed data-entry
+borders around its party blocks, and its content (name of party / name of counsel /
+address for delivery / telephone) is collected again by p2's "Party submitting this case
+plan proposal". `KEEP_PAGES` now keeps p2-p3.
+
+**The footer stamp is the test that settles it.** Every filed page of these forms carries
+the government's "Last updated … / Page of" line; F19.3 p1 does not. Sweeping the batch
+for a page missing that stamp on a form that stamps the rest gives **ten** pages, and the
+split is clean: nine carry **zero fields** and are the Provincial "important information
+about your appearance" inserts, which legitimately have neither footer nor fields. The
+tenth is F19.3 p1, with 15 fields on it. That is worth keeping as a check.
+
+### Two boxes that look like signature boxes and are not
+
+Twice a contact sheet appeared to show an overlay box sitting on a signature rule —
+PFA876's commissioner and applicant lines, and Form 5 p7's "Signature" — and both times
+the geometry showed **no field there at all**: what the sheet renders is the form's own
+printed rectangle. At sheet scale a thin printed rule and an orange overlay border are
+easy to confuse. **Check §5 findings against the field list, not the render.**
+
+### The real §5 candidates: BCPC_33 and BCPC_34
+
+A sweep for a field sitting directly above a signature or role caption gives six hits
+across the batch, and reading each settles five of them:
+
+* **S-51 p3, BCPC_48 p1, BCPC_49 p1** — *fine*. Their "Signature" line carries no box; the
+  boxes sit above the commissioner-identification and print-name captions, which is
+  §9.8's own pattern.
+* **F19.4 p1** — the "Registrar" box, already recorded as matching batch 1's shipped
+  F51/F52/F33.
+* **BCPC_33 p1 and BCPC_34 p1** — **a box directly on the printed rule above "Judge or
+  Justice of the Peace in and for the Province of British Columbia"**, with the date box
+  beside it on its own rule. §5 says a signature line gets no box; batch 1's Registrar
+  precedent says otherwise. Both are court-completed either way, so nothing a lawyer
+  fills is affected. **Flagged for a decision rather than changed.**
