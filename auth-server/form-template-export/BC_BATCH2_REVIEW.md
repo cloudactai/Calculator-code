@@ -313,3 +313,85 @@ or until a specific date"). They are the government's own fields and do not over
 
 **Groups 1–5 complete: 32 forms, 124 of 421 pages read.** Groups 6–31 (~113 forms,
 ~297 pages) still to read.
+
+---
+
+## Class A and class B fixed
+
+### Class B — `type` normalised against the box the government drew (`normalise_types_bc2.py`)
+
+**640 types corrected across 103 of the 145 forms**, then stable. Three rules, the first
+two reading the box's own height and the third §8's own wording:
+
+1. **One line tall -> `TextField`.** 439 `TextArea` fields were ≤ 20 pt, clustering at
+   11-18 pt. A box that size cannot hold a second line.
+2. **Two or more lines tall -> `TextArea`.** 179 `TextField` fields were ≥ 27 pt, nearly
+   all table cells `place_missing_bc2.py` added from cell geometry — the government drew
+   the cell tall because it expects wrapped text (§9.5 says this outright).
+3. **A column's minority type loses**, for a run of ≥3 fields sharing a page, left edge
+   and width. This is what reached F1 p4's children table, whose first data row was
+   `TextArea / TextField / TextArea` against `TextField x3` below it, all 26 pt.
+
+Two things had to be got right, both §7 rules:
+
+* **Clustering, not rounding** (§7.9's cousin). Bucketing the column key by
+  `round(width/4)` split F1 p4's table in two, because its first row is 178.6 pt wide and
+  the rows below are 177.2 pt — 1.4 pt across a bucket boundary — leaving the row-1 cell
+  alone in a group of one where no majority could reach it.
+* **Height is authoritative over the column majority.** Letting rule 3 overrule rules 1
+  and 2 made the tool **oscillate**: the first run flipped 40 fields to `TextArea` and a
+  second run flipped them straight back. Rule 3 is now confined to the ambiguous
+  20-27 pt band. Runs 2 and 3 report zero changes, and the residual count for all three
+  rules is zero.
+
+Final types across the batch: 2,584 `TextField`, 1,335 `CheckBox`, 779 `TextArea`.
+
+### Class A — F1's duplicated blocks removed (`repair_f1_duplicates.py`)
+
+Both copies confirmed and the right one kept on evidence rather than by eye:
+
+* **p2** — the bare language block at y 314-372 removed with its three checkbox fields,
+  leaving the panelled copy at y 244.5-308.5. The render now shows **three** language
+  checkboxes for one choice, not six.
+* **p4** — the second header row removed. Which copy to keep was settled by column
+  centres: the kept set reads 180.0 / 315.0 / 441.0 against the data rows' 180.7 / 315.7
+  / 441.7, while the removed set sat a uniform 18 pt right of them.
+
+Two techniques worth recording:
+
+* **Line art is painted out, not redacted.** `PDF_REDACT_LINE_ART_REMOVE_IF_TOUCHED`
+  drops every drawing whose rectangle meets the band, and both pages sit inside a
+  full-content frame (p2's is x 72.5-575.5, y 54.5-373.5) that meets any band inside it —
+  so touch-based removal would have taken the form's own border with it.
+* **Clear past a shared edge, then draw it back.** The duplicate header's bottom edge and
+  the data row's top edge are both at y 284.5, and the duplicate's is the wider
+  (x 108.5-539.5 against 90.5-521.5). Stopping short of it left 0.7 pt stubs of six cell
+  verticals showing as tick marks, so the whole edge is now cleared and the data row's own
+  border redrawn — `repair_notice_pages.py`'s technique.
+
+### Class A is *not* safely automatable beyond these
+
+A within-page duplicate-block sweep reports **62 blocks across 33 forms**, and sampling
+shows most are correct: F1 p6's "Fax (optional) / E-mail (optional)" is the Claimant 1
+and Claimant 2 blocks, F19.4 p2's "Step / Date by which step to be completed" is two
+different tables, F25 p2's "[name of person to be examined] / [address]" is two persons.
+Repetition alone cannot tell those from a flatten fault — F1's two were identifiable only
+by *what the copies meant*: one question offered twice, and one table given two
+misaligned headers. So the 62 stay a **worklist to check while reading each page**, not
+something to act on in bulk.
+
+## Pipeline order
+
+The passes are order-dependent and must run:
+
+```
+build_bc_batch2.py            # regenerates PDFs and JSONs, dropping repairs and binds
+repair_f19_4_header.py        # per-form background repairs
+repair_f1_duplicates.py
+place_missing_bc2.py --apply  # adds fields
+trim_label_overlap.py --apply # adjusts geometry (asserts the field set is unchanged)
+normalise_types_bc2.py --apply
+build_bc_batch2.py --rows-only
+merge_catalog2.py --promote
+rebind_bc_forms.py
+```
