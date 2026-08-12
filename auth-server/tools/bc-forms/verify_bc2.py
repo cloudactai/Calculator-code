@@ -19,6 +19,7 @@ import argparse
 import collections
 import json
 import os
+import re
 import sys
 
 import fitz
@@ -256,6 +257,31 @@ def printed_lines(page):
     return out
 
 
+# Captions that name who signs. `bp.is_signature_box` only matches a caption starting with
+# "Signature", so it does not know that "Registrar", "Judge or Justice of the Peace" or
+# "A commissioner for taking affidavits" mark signature rules too. Without this, the boxes
+# `drop_signature_boxes.py` correctly removed come straight back as `rule-no-field` and
+# `blank-no-field` advisories — a worklist telling us to undo §5.
+ROLE_CAPTION = re.compile(
+    r'^\s*(a\s+)?(commissioner|judge|justice|registrar|clerk|notary|deponent|presiding'
+    r'|associate\s+judge)\b|^\s*signature\b|\bsignature\s+of\b', re.I)
+NAME_CAPTION = re.compile(r'print|type|affix|stamp', re.I)
+
+
+def on_signature_rule(page, rect, captions):
+    """True if `rect` sits on a rule whose caption names who signs (§5)."""
+    if bp.is_signature_box(rect, None, captions):
+        return True
+    for line_rect, text in printed_lines(page):
+        if not ROLE_CAPTION.search(text) or NAME_CAPTION.search(text):
+            continue
+        if not 0 < line_rect.y0 - rect.y1 < 26:
+            continue
+        if min(rect.x1, line_rect.x1) - max(rect.x0, line_rect.x0) > 8:
+            return True
+    return False
+
+
 def check_edge_through_text(doc_id, pdf, fields, blocking, advisory):
     """A box edge that cuts through a printed caption.
 
@@ -458,6 +484,10 @@ def check_unfilled_blanks(doc_id, pdf, fields, blocking, advisory):
                                                                  existing.get_area())
                    for existing in boxes):
                 continue
+            if on_signature_rule(page, fitz.Rect(run.x0, run.y0 - STD_LINE,
+                                                 run.x1, run.y0),
+                                 bp.signature_captions(page)):
+                continue
             advisory.append(("blank-no-field", doc_id, page_number,
                              "a %.0fpt printed ______ at %.0f,%.0f has no field"
                              % (run.width, run.x0, run.y0)))
@@ -564,8 +594,8 @@ def check_unboxed_rules(doc_id, pdf, fields, blocking, advisory):
                    for existing in boxes):
                 continue
             # §5: a signature rule is not a blank to be filled.
-            if bp.is_signature_box(fitz.Rect(rule.x0, rule.y0 - STD_LINE, rule.x1, rule.y0),
-                                   None, captions):
+            if on_signature_rule(page, fitz.Rect(rule.x0, rule.y0 - STD_LINE,
+                                                 rule.x1, rule.y0), captions):
                 continue
             if page.get_text(clip=probe).strip():
                 continue

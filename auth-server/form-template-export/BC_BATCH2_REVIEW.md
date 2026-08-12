@@ -389,6 +389,8 @@ build_bc_batch2.py            # regenerates PDFs and JSONs, dropping repairs and
 repair_f19_4_header.py        # per-form background repairs
 repair_f1_duplicates.py
 place_missing_bc2.py --apply  # adds fields
+repair_duplicate_blocks.py --apply
+drop_signature_boxes.py --apply   # §5 — also touches batch 1, which has no rebuild
 trim_label_overlap.py --apply # adjusts geometry (asserts the field set is unchanged)
 normalise_types_bc2.py --apply
 build_bc_batch2.py --rows-only
@@ -556,3 +558,47 @@ Groups 16-31 untouched.
 
 Still outstanding in 10-15: PFA914, F84, F86, F97, Form 23, F22, F23, F26, F28, F47, F49,
 PFA893, F44, F48, F100 — 15 forms, roughly 30 pages.
+
+---
+
+## §5 applied to signature rules, in both batches
+
+The user has confirmed that **the Registrar line is a signature line**. §5 is unconditional
+about those, so every box on one comes off — including batch 1's, which had been left alone
+until now and which batch 2 had been made *consistent* with, propagating the same fault.
+
+**10 boxes removed across 10 forms** (`drop_signature_boxes.py`):
+
+| Batch | Form | Page | Rule |
+|---|---|---|---|
+| 1 | F1.2 | 1 | Registrar |
+| 1 | F51 | 3 | Registrar |
+| 1 | F51.1 | 2 | Registrar |
+| 1 | F52 | 3 | Registrar |
+| 2 | F19.4 | 1 | Registrar |
+| 2 | Form 33 | 1 | Judge or Justice of the Peace |
+| 2 | Form 34 | 1 | Judge or Justice of the Peace |
+| 2 | Form 48 | 1 | A commissioner for taking affidavits |
+| 2 | Form 49 | 1 | A commissioner for taking affidavits |
+| 2 | S-51 | 3 | A commissioner for taking affidavits |
+
+Targets are matched on **page plus geometry**, not field id, so a rebuild that renumbers
+fields cannot miss one or hit the wrong box — and each entry must match exactly one field
+or the tool stops. That assertion earned its keep immediately: Form 34 puts the jurat's
+**Date box on the same baseline** as the judge's rule, so matching on y alone found two
+fields and the tool refused rather than guessing. x is now part of every target.
+
+Three candidates the sweep raised and reading rejected:
+
+* **PFA893 p1** — the flagged box is the full-width "Further court directions" writing
+  area; the "Signature" caption 18 pt below it belongs to the rule beneath, which has no box.
+* **F38 p5** — the box after the printed "on" is the jurat's date.
+* **F33** — has no box on its Registrar rule at all; the three fields there are the
+  BEFORE A JUDGE / ASSOCIATE JUDGE / REGISTRAR checkboxes. An earlier looser probe had
+  wrongly reported this one.
+
+Kept in every case: the **print-name box** above a "[type or print name]" or "(print name
+or affix stamp of commissioner)" caption. That caption labels the box above it, and §9.8
+wants that box — it is the signature rule's box that must go, not this one. F51 p3 now
+reads correctly: Registrar rule bare, both party signature rules bare, print-name and
+party-name boxes intact.
