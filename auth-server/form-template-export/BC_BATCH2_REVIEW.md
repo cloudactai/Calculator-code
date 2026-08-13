@@ -613,7 +613,8 @@ party-name boxes intact.
 
 # Second pass — the remaining 105 forms
 
-Tracked in `_incoming_bc2/review_state.json`, one row per form with its group and status,
+Tracked in `BC_BATCH2_REVIEW_STATE.json` beside this log, one row per form with its group
+and status,
 so the reading survives a break. Renders are one page per PNG rather than 6-up sheets;
 the sheets are for triage and a page has to be read at full size to be judged.
 
@@ -971,7 +972,10 @@ issuing subpoena", Form 50 p2's two consent blocks, PFA709 p4 and PFA907 all rea
 | Read and settled | **145** | **419** |
 | Not yet read | 0 | 0 |
 
-`_incoming_bc2/review_state.json` holds the per-form record.
+`BC_BATCH2_REVIEW_STATE.json` holds the per-form record: docId, form number, group, court,
+category, page and field counts, and status. It sits beside this log rather than in
+`_incoming_bc2/`, which is build staging and gitignored — the review record is documentation
+and belongs in the repo.
 
 ## What the second pass changed
 
