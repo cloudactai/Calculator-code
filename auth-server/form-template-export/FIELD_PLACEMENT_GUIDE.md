@@ -220,6 +220,13 @@ missing a whole box — it's a field whose box is right but which covers text):
 
 ## 5. Signature lines — never place a box
 
+- **Preserve the printed rule and role caption in the flattened background.** pdf.js has
+  no HTML renderer for XFA `<signature>` widgets, so an unpatched flatten drops both the
+  widget and captions such as "Signature of" or "Judge / Associate Judge / Registrar".
+  `xfa/patch_pdfjs_signature.mjs` emits a non-editable blank signing area so the rule and
+  caption print without entering the overlay field map. For `placement="bottom"`, the
+  rule is the signing area's bottom border and the caption must sit below it; never put
+  that border around the outer field-and-caption container.
 - Detect the printed "Signature" caption (case-insensitive, word-boundary),
   excluding "Date of signature" (that one keeps its box).
 - Any candidate field box whose **height is short** (a single signature-line

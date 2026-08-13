@@ -48,8 +48,10 @@ overlays are built from.
 `fetch_pdfjs.sh` also applies `xfa/patch_pdfjs_signature.mjs`. Upstream pdf.js has no
 HTML renderer for XFA `<signature>` widgets, which otherwise drops the widget's printed
 rule and caption (for example, "Judge / Associate Judge / Registrar"). The patch emits
-only a printable container — never an input — so signature captions survive flattening
-without becoming fillable overlay fields.
+a printable blank signing area — never an input — so signature captions survive
+flattening without becoming fillable overlay fields. The signing area's bottom border is
+the rule; pdf.js then places a `placement="bottom"` caption underneath it. Do not put the
+border on the outer field container, or it will underline the caption instead.
 
 ```
 python3 build_bc_supreme.py [--promote]

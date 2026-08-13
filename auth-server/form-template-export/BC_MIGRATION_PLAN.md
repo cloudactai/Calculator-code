@@ -10,6 +10,9 @@ _Written 2026-07-30. Companion to the Ontario work in this folder
 **Shipped: 31 of 44 forms** (11 Provincial + 20 Supreme), catalog rows 101–131,
 `npm run forms:validate-export` green, no Ontario template touched.
 
+> This status records the original migration milestone. The current catalog contains
+> **188 BC templates**; see `catalog.json` and `BC_BATCH2_REVIEW.md` for the later batch.
+
 Two plan assumptions turned out to be wrong, both in our favour and against:
 
 1. **The XFA flatten needs no Adobe and no manual step** (§4 is superseded). pdf.js
@@ -42,8 +45,8 @@ asset to import; it is out of scope rather than pending.
 - **Gates I and K** (province-filter API against a live DB, deploy smoke) need a database
   and a deploy — not runnable here.
 - **§8 Phase 2** BC prefill binds — **the heading and the parties are done**
-  (2026-08-11). `tools/bc-forms/rebind_bc_forms.py` added 104 binds across all 43
-  templates without moving a box: the court file number everywhere, and the
+  (2026-08-11). `tools/bc-forms/rebind_bc_forms.py` added 104 binds across the original
+  43-template batch without moving a box: the court file number everywhere, and the
   claimant (or petitioner) and respondent wherever the form names them.
   Provincial Court forms bind by the government's widget name, Supreme Court
   forms by the caption printed to the left of the box, their XFA flatten emitting

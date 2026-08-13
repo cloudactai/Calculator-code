@@ -1110,21 +1110,28 @@ blocks back to `TextArea`.
   `<signature>` and whose caption, `placement="bottom"`, reads
   **"Judge / Associate Judge / Registrar"**.
 
-pdf.js renders an XFA `<signature>` widget as nothing, and that caption belongs to the
-widget rather than to a separate `<draw>`, so the words vanish with it. Sweeping both
-batches for signature fields with captions: **95 in the sources, 73 never reached the page**
+Unpatched pdf.js renders an XFA `<signature>` widget as nothing, and that caption belongs
+to the widget rather than to a separate `<draw>`, so the words vanish with it. The
+pre-fix sweep of both batches found **95 signature captions in the sources, 73 of which
+never reached the page**
 — "Registrar", "Signature of", "A commissioner for taking affidavits for British Columbia",
 "Signature of Judge or Associate Judge", "Signature of new lawyer", and so on, across ~40
 forms.
 
-**Not patched here, deliberately.** Restoring them means drawing text and a rule into the
-background at positions the flatten never recorded — the widget is gone, so there is nothing
-on our page to anchor to, and XFA's nested flow layout cannot be resolved to absolute
-coordinates without running the layout engine. The right fix is in the flatten itself
-(`xfa/print_xfa.mjs` and `render.html`): keep the signature widget's caption, re-render the
-~40 affected forms, re-run the chain and re-read those pages. That is a scoped follow-up,
-not a patch.
+**Resolved in the flatten on 2026-08-13.** `xfa/patch_pdfjs_signature.mjs`, applied by
+`fetch_pdfjs.sh`, gives pdf.js's unsupported `<signature>` UI a non-editable blank signing
+area. Its bottom border prints the signature rule, and pdf.js's existing
+`placement="bottom"` layout puts the source caption underneath. The first implementation
+put the border on the outer field container and therefore left the caption above the rule;
+the corrected structure keeps the border on the blank signing-area child.
 
-Impact meanwhile is presentational: these are court-completed lines that §5 says carry no
-box in any case, so nothing a filer must complete is missing — only the printed words
-naming who signs.
+F19, F18.1, F32.01 and F32.001 were re-rendered and promoted. Their restored captions are
+"Signature of", "Judge / Associate Judge / Registrar", or "Judge / Associate Judge" as
+specified by each source. The controls contain no `input`, `textarea` or `select`, so they
+never enter the editable overlay map and §5 remains intact. Automated verification asserts
+that each caption is below its corresponding rule; the normal geometry, overlap, native-
+widget and export-import gates also pass.
+
+The shared fix applies to future XFA renders. Other already-promoted PDFs from the earlier
+95-field sweep change only when they are explicitly re-rendered through the corrected
+pipeline; do not claim their missing captions are repaired merely because the build tool is.
