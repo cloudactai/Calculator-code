@@ -21,6 +21,7 @@ auth-server/form-template-export/_incoming/
 # Same staging pattern for the BC batch: government source PDFs, manifests and
 # QA renders. Only the promoted BC*_.pdf/.json templates belong in the repo.
 auth-server/form-template-export/_incoming_bc/
+auth-server/form-template-export/_incoming_bc2/
 # And for the Ontario batch: government sources, the headless XFA flatten and
 # QA renders. The promoted FormXX.pdf/.json templates are what the repo ships.
 auth-server/form-template-export/_incoming_on/
@@ -32,3 +33,6 @@ auth-server/tools/bc-forms/xfa/pdf_viewer.css
 auth-server/tools/bc-forms/xfa/cmaps/
 auth-server/tools/bc-forms/xfa/standard_fonts/
 auth-server/tools/bc-forms/xfa/srcs/
+auth-server/tools/bc-forms/xfa/srcs2/
+auth-server/tools/bc-forms/xfa/sc_out/
+auth-server/tools/bc-forms/xfa/sc_out2/

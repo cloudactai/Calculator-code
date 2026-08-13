@@ -1,0 +1,278 @@
+{
+ "staticFields": [
+  {
+   "id": 1750272638001,
+   "type": "TextField",
+   "x": 397.0,
+   "y": 57.59,
+   "width": 241.5,
+   "height": 27.0,
+   "value": "",
+   "fontSize": 9,
+   "color": [
+    0,
+    0,
+    0
+   ],
+   "background": "none",
+   "border": "none",
+   "page": 1,
+   "bind": "court_info.courtFileNumber"
+  },
+  {
+   "id": 1750272638002,
+   "type": "TextField",
+   "x": 378.0,
+   "y": 75.59,
+   "width": 213.91,
+   "height": 27.0,
+   "value": "",
+   "fontSize": 9,
+   "color": [
+    0,
+    0,
+    0
+   ],
+   "background": "none",
+   "border": "none",
+   "page": 1
+  },
+  {
+   "id": 1750272638003,
+   "type": "TextField",
+   "x": 116.0,
+   "y": 107.0,
+   "width": 663.0,
+   "height": 27.0,
+   "value": "",
+   "fontSize": 9,
+   "color": [
+    0,
+    0,
+    0
+   ],
+   "background": "none",
+   "border": "none",
+   "page": 1
+  },
+  {
+   "id": 1750272638004,
+   "type": "TextField",
+   "x": 116.0,
+   "y": 125.0,
+   "width": 663.0,
+   "height": 27.0,
+   "value": "",
+   "fontSize": 9,
+   "color": [
+    0,
+    0,
+    0
+   ],
+   "background": "none",
+   "border": "none",
+   "page": 1,
+   "bind": "respondent.fullLegalName"
+  },
+  {
+   "id": 1750272638005,
+   "type": "TextArea",
+   "x": 56.83,
+   "y": 225.75,
+   "width": 747.52,
+   "height": 109.17,
+   "value": "",
+   "fontSize": 9,
+   "color": [
+    0,
+    0,
+    0
+   ],
+   "background": "none",
+   "border": "none",
+   "page": 1
+  },
+  {
+   "id": 1750272638007,
+   "type": "TextArea",
+   "x": 56.83,
+   "y": 351.75,
+   "width": 747.52,
+   "height": 109.17,
+   "value": "",
+   "fontSize": 9,
+   "color": [
+    0,
+    0,
+    0
+   ],
+   "background": "none",
+   "border": "none",
+   "page": 1
+  },
+  {
+   "id": 1750272638009,
+   "type": "TextArea",
+   "x": 56.83,
+   "y": 477.75,
+   "width": 747.52,
+   "height": 92.98,
+   "value": "",
+   "fontSize": 9,
+   "color": [
+    0,
+    0,
+    0
+   ],
+   "background": "none",
+   "border": "none",
+   "page": 1
+  },
+  {
+   "id": 1750272638011,
+   "type": "TextArea",
+   "x": 56.83,
+   "y": 570.58,
+   "width": 747.52,
+   "height": 229.1,
+   "value": "",
+   "fontSize": 9,
+   "color": [
+    0,
+    0,
+    0
+   ],
+   "background": "none",
+   "border": "none",
+   "page": 1
+  },
+  {
+   "id": 1750272638012,
+   "type": "TextField",
+   "x": 92.83,
+   "y": 38.83,
+   "width": 234.52,
+   "height": 23.91,
+   "value": "",
+   "fontSize": 9,
+   "color": [
+    0,
+    0,
+    0
+   ],
+   "background": "none",
+   "border": "none",
+   "page": 2
+  },
+  {
+   "id": 1750272638016,
+   "type": "TextField",
+   "x": 55.5,
+   "y": 73.5,
+   "width": 319.5,
+   "height": 27.89,
+   "value": "",
+   "fontSize": 9,
+   "color": [
+    0,
+    0,
+    0
+   ],
+   "background": "none",
+   "border": "none",
+   "page": 2
+  },
+  {
+   "id": 1750272638013,
+   "type": "CheckBox",
+   "x": 332.03,
+   "y": 78.03,
+   "width": 14.9,
+   "height": 14.9,
+   "value": "",
+   "fontSize": 9,
+   "color": [
+    0,
+    0,
+    0
+   ],
+   "background": "none",
+   "border": "none",
+   "page": 2,
+   "shape": "circle"
+  },
+  {
+   "id": 1750272638014,
+   "type": "CheckBox",
+   "x": 418.03,
+   "y": 78.03,
+   "width": 14.9,
+   "height": 14.9,
+   "value": "",
+   "fontSize": 9,
+   "color": [
+    0,
+    0,
+    0
+   ],
+   "background": "none",
+   "border": "none",
+   "page": 2,
+   "shape": "circle"
+  },
+  {
+   "id": 1750272638017,
+   "type": "TextField",
+   "x": 55.5,
+   "y": 95.5,
+   "width": 319.5,
+   "height": 27.89,
+   "value": "",
+   "fontSize": 9,
+   "color": [
+    0,
+    0,
+    0
+   ],
+   "background": "none",
+   "border": "none",
+   "page": 2
+  },
+  {
+   "id": 1750272638015,
+   "type": "TextField",
+   "x": 272.83,
+   "y": 96.42,
+   "width": 423.52,
+   "height": 23.91,
+   "value": "",
+   "fontSize": 9,
+   "color": [
+    0,
+    0,
+    0
+   ],
+   "background": "none",
+   "border": "none",
+   "page": 2
+  },
+  {
+   "id": 1750272638018,
+   "type": "TextField",
+   "x": 55.5,
+   "y": 116.5,
+   "width": 319.5,
+   "height": 17.09,
+   "value": "",
+   "fontSize": 9,
+   "color": [
+    0,
+    0,
+    0
+   ],
+   "background": "none",
+   "border": "none",
+   "page": 2
+  }
+ ]
+}

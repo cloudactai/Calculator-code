@@ -877,3 +877,7 @@ def qa_render(pdf_path, fields, out_path, zoom=2.0):
 def write_mapping(path, fields):
     with open(path, "w") as fh:
         json.dump({"staticFields": fields}, fh, indent=1)
+        # Trailing newline, like every pass that rewrites a mapping afterwards. Without it
+        # a promote churns the six templates no later pass happens to touch, showing them
+        # as "\ No newline at end of file" diffs with no field change behind them.
+        fh.write("\n")
