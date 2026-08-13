@@ -186,6 +186,51 @@
     "BC_CLIMATE_ACTION_FIRST_CHILD": 252.00,
     "BC_CLIMATE_ACTION_ADDL_CHILD": 126.00,
     "BC_CLIMATE_ACTION_SINGLE_THRESHOLD": 41071.00,
-    "BC_CLIMATE_ACTION_FAMILY_THRESHOLD": 57288.00
+    "BC_CLIMATE_ACTION_FAMILY_THRESHOLD": 57288.00,
+
+    "A25_AB_BRACKETS_COMMENT": "A25. Alberta provincial tax brackets 2025. Source: TaxTips.ca / Alberta Personal Income Tax Act. New 8% bracket introduced 2025.",
+    "AB_BRACKETS": [
+      {"From":       0, "To":   60000, "Income_over":      0, "Rate": 0.08, "Basic":       0.0000},
+      {"From":   60000, "To":  151234, "Income_over":  60000, "Rate": 0.10, "Basic":    4800.0000},
+      {"From":  151234, "To":  181481, "Income_over": 151234, "Rate": 0.12, "Basic":   13923.4000},
+      {"From":  181481, "To":  241974, "Income_over": 181481, "Rate": 0.13, "Basic":   17553.0400},
+      {"From":  241974, "To":  362961, "Income_over": 241974, "Rate": 0.14, "Basic":   25417.1300},
+      {"From":  362961, "To": 9999999, "Income_over": 362961, "Rate": 0.15, "Basic":   42355.3100}
+    ],
+
+    "A26_AB_CREDITS_COMMENT": "A26. Alberta provincial credit amounts 2025. Source: TaxTips.ca / TD1AB. Credit rate is 8% (lowest AB bracket rate).",
+    "BASIC_PERSONAL_AMOUNT_AB": 22323.00,
+    "AMOUNT_FOR_ELIGIBLE_DEPENDENT_AB": 22323.00,
+    "DISABILITY_AMOUNT_AB": 17219.00,
+    "AB_AGE_AMOUNT_BASE": 6221.00,
+    "AB_AGE_AMOUNT_THRESHOLD": 46308.00,
+    "AB_CREDIT_RATE": 0.08,
+
+    "A27_AB_CWB_COMMENT": "A27. Canada Workers Benefit — AB-specific amounts 2025. Source: CRA Schedule 6 (5009-S6) for AB / catax.tools. AB uses different phase-in rate (21%) and threshold ($2,760).",
+    "AB_CWB_SINGLE_MAX": 1750.00,
+    "AB_CWB_FAMILY_MAX": 2619.00,
+    "AB_CWB_SINGLE_THRESHOLD": 26159.00,
+    "AB_CWB_FAMILY_THRESHOLD": 32772.00,
+    "AB_CWB_PHASE_IN_RATE": 0.21,
+    "AB_CWB_PHASE_IN_FLOOR": 2760.00,
+
+    "A28_AB_ACFB_COMMENT": "A28. Alberta Child and Family Benefit (ACFB) July 2025–June 2026. Source: alberta.ca/alberta-child-and-family-benefit. Has base + working components.",
+    "ACFB_BASE_1_CHILD": 1499.00,
+    "ACFB_BASE_2_CHILDREN": 2248.00,
+    "ACFB_BASE_3_CHILDREN": 2997.00,
+    "ACFB_BASE_4_CHILDREN": 3746.00,
+    "ACFB_WORKING_1_CHILD": 767.00,
+    "ACFB_WORKING_2_CHILDREN": 1465.00,
+    "ACFB_WORKING_3_CHILDREN": 1883.00,
+    "ACFB_WORKING_4_CHILDREN": 2021.00,
+    "ACFB_BASE_THRESHOLD": 27565.00,
+    "ACFB_WORKING_THRESHOLD": 46191.00,
+    "ACFB_WORKING_INCOME_FLOOR": 2760.00,
+    "ACFB_CAP": 5120.00,
+
+    "A29_AB_CLIMATE_ACTION_COMMENT": "A29. Climate Action Incentive — Alberta amounts 2025. Source: canada.ca/climate-action-incentive. Quarterly $225/$112.50/$56.25 annualized. Note: Program cancelled April 2025; values retained for 2025 tax year calculations.",
+    "AB_CLIMATE_ACTION_BASE": 900.00,
+    "AB_CLIMATE_ACTION_FIRST_CHILD": 450.00,
+    "AB_CLIMATE_ACTION_ADDL_CHILD": 225.00
   }
 }

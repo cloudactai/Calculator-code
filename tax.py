@@ -1,8 +1,8 @@
 """
 tax.py
 ------
-Canadian income-tax + benefits calculator supporting Ontario (ON) and
-British Columbia (BC).
+Canadian income-tax + benefits calculator supporting Ontario (ON),
+British Columbia (BC), and Alberta (AB).
 
 Year-variable constants (bracket tables, indexed amounts, etc.) are stored in
 tax_constants.json and loaded at import time.  To update for a new tax year:
@@ -86,6 +86,19 @@ BC_AGE_AMOUNT_RATE              = 0.15     # BC age-amount phase-out rate
 BC_TAX_REDUCTION_INCOME_RATE    = 0.0356   # income-dependent component of BC tax reduction
 BC_CHILD_BENEFIT_REDUCTION_RATE = 0.04     # BC child benefit clawback rate
 BC_CLIMATE_ACTION_REDUCTION     = 0.02     # BC climate action credit clawback rate
+
+# --------------------------------------------------------------------------
+# B2c. ALBERTA PROVINCIAL CREDIT RATE
+# --------------------------------------------------------------------------
+AB_AGE_AMOUNT_RATE              = 0.15     # Alberta age-amount phase-out rate
+
+# --------------------------------------------------------------------------
+# B2d. ACFB (Alberta Child and Family Benefit) REDUCTION RATES
+#      These are structural (set by regulation, not indexed).
+# --------------------------------------------------------------------------
+ACFB_BASE_REDUCTION_RATES   = {1: 0.0805, 2: 0.1407, 3: 0.1609, 4: 0.2011}
+ACFB_WORKING_REDUCTION_RATES = {1: 0.034, 2: 0.0649, 3: 0.0834, 4: 0.0895}
+ACFB_WORKING_PHASE_IN_RATE  = 0.15  # working component phase-in rate
 
 # --------------------------------------------------------------------------
 # B3. ONTARIO SURTAX RATES
@@ -615,6 +628,82 @@ def calculate_bc_tax(
 
 
 # ===========================================================================
+# ALBERTA PROVINCIAL TAX
+# ===========================================================================
+
+def _eligible_dependent_ab(party_num: int, children_live_with: int, c: dict) -> float:
+    if (
+        (party_num == 1 and children_live_with == 1)
+        or (party_num == 2 and children_live_with == 2)
+        or children_live_with == 4
+    ):
+        return c["AMOUNT_FOR_ELIGIBLE_DEPENDENT_AB"]
+    return 0.0
+
+
+def _age_amount_ab(age: int, taxable_income: float, c: dict) -> float:
+    if age >= 65:
+        return max(
+            c["AB_AGE_AMOUNT_BASE"]
+            - max(taxable_income - c["AB_AGE_AMOUNT_THRESHOLD"], 0) * AB_AGE_AMOUNT_RATE,
+            0.0,
+        )
+    return 0.0
+
+
+def _total_ab_credits(
+    taxable_income: float,
+    employed_income: float,
+    self_employed_income: float,
+    age: int,
+    party_num: int,
+    children_live_with: int,
+    has_disability: bool,
+    c: dict,
+) -> float:
+    return (
+        c["BASIC_PERSONAL_AMOUNT_AB"]
+        + _eligible_dependent_ab(party_num, children_live_with, c)
+        + _age_amount_ab(age, taxable_income, c)
+        + _base_cpp(employed_income, self_employed_income, c)
+        + _ei(employed_income, c)
+        + (c["DISABILITY_AMOUNT_AB"] if has_disability else 0.0)
+    )
+
+
+def calculate_ab_tax(
+    taxable_income: float,
+    employed_income: float,
+    self_employed_income: float,
+    age: int,
+    party_num: int,
+    children_live_with: int,
+    num_children: int,
+    has_disability: bool,
+    c: dict,
+) -> float:
+    """
+    Alberta provincial tax:
+      1. Basic AB tax = bracket_tax − credits × 8% (AB credit rate)
+      No surtax, no health premium, no LIFT, no tax reduction.
+    """
+    prov_row = _find_bracket(c["AB_BRACKETS"], taxable_income)
+    credits = _total_ab_credits(
+        taxable_income, employed_income, self_employed_income,
+        age, party_num, children_live_with, has_disability, c,
+    )
+
+    tax_on_income = max(
+        prov_row["Basic"]
+        + (taxable_income - prov_row["Income_over"]) * prov_row["Rate"],
+        0.0,
+    )
+    effect_of_credits = credits * c["AB_CREDIT_RATE"]
+
+    return max(tax_on_income - effect_of_credits, 0.0)
+
+
+# ===========================================================================
 # BC BENEFITS
 # ===========================================================================
 
@@ -685,6 +774,58 @@ def calculate_bc_climate_action(
             0.0,
         )
     return max(base - reduction, 0.0)
+
+
+# ===========================================================================
+# ALBERTA BENEFITS
+# ===========================================================================
+
+def calculate_ab_child_benefit(
+    taxable_income: float,
+    num_children: int,
+    c: dict,
+) -> float:
+    """
+    Alberta Child and Family Benefit (ACFB) — annual.
+    Two components: family (base) and working, each with their own
+    base amounts, thresholds, and reduction percentages.
+    Capped at ACFB_CAP.
+    """
+    if num_children <= 0:
+        return 0.0
+
+    n = min(num_children, 4)
+
+    # --- Family (base) component ---
+    base_key = f"ACFB_BASE_{n}_CHILD" if n == 1 else f"ACFB_BASE_{n}_CHILDREN"
+    family_base = c.get(base_key, c["ACFB_BASE_4_CHILDREN"])
+    family_reduction_pct = ACFB_BASE_REDUCTION_RATES.get(n, ACFB_BASE_REDUCTION_RATES[4])
+    family_excess = max(taxable_income - c["ACFB_BASE_THRESHOLD"], 0.0) if family_base > 0 else 0.0
+    family_component = max(family_base - family_excess * family_reduction_pct, 0.0)
+
+    # --- Working component ---
+    working_key = f"ACFB_WORKING_{n}_CHILD" if n == 1 else f"ACFB_WORKING_{n}_CHILDREN"
+    working_base = c.get(working_key, c["ACFB_WORKING_4_CHILDREN"])
+    working_reduction_pct = ACFB_WORKING_REDUCTION_RATES.get(n, ACFB_WORKING_REDUCTION_RATES[4])
+    working_excess = max(taxable_income - c["ACFB_WORKING_THRESHOLD"], 0.0) if working_base > 0 else 0.0
+    working_component = max(working_base - working_excess * working_reduction_pct, 0.0)
+
+    return min(family_component + working_component, c["ACFB_CAP"])
+
+
+def calculate_ab_climate_action(
+    party_children: list,
+    year: int,
+    c: dict,
+) -> float:
+    """Climate Action Incentive — Alberta amounts (annual)."""
+    base = c["AB_CLIMATE_ACTION_BASE"]
+    num_children = len(party_children)
+    if num_children >= 1:
+        base += c["AB_CLIMATE_ACTION_FIRST_CHILD"]
+    if num_children >= 2:
+        base += c["AB_CLIMATE_ACTION_ADDL_CHILD"] * (num_children - 1)
+    return base
 
 
 # ===========================================================================
@@ -981,6 +1122,16 @@ def calculate_taxes(inp: TaxInput) -> dict:
         )
         bpa_prov           = c["BASIC_PERSONAL_AMOUNT_BC"]
         prov_credit_rate   = BC_CREDIT_RATE
+    elif province == "AB":
+        elig_dep_prov      = _eligible_dependent_ab(inp.party_num, children_live_with, c)
+        age_amt_prov       = _age_amount_ab(inp.age, taxable_income, c)
+        disab_prov         = c["DISABILITY_AMOUNT_AB"] if has_disability else 0.0
+        total_prov_credits = _total_ab_credits(
+            taxable_income, inp.employed_income, inp.self_employed_income,
+            inp.age, inp.party_num, children_live_with, has_disability, c,
+        )
+        bpa_prov           = c["BASIC_PERSONAL_AMOUNT_AB"]
+        prov_credit_rate   = c["AB_CREDIT_RATE"]
     else:
         elig_dep_prov      = _eligible_dependent_ontario(inp.party_num, children_live_with, c)
         age_amt_prov       = _age_amount_ontario(inp.age, taxable_income, c)
@@ -1011,6 +1162,20 @@ def calculate_taxes(inp: TaxInput) -> dict:
         prov_brackets_key   = "BC_BRACKETS"
         prov_row_for_report = _find_bracket(c["BC_BRACKETS"], taxable_income)
         provincial_tax = calculate_bc_tax(
+            taxable_income       = taxable_income,
+            employed_income      = inp.employed_income,
+            self_employed_income = inp.self_employed_income,
+            age                  = inp.age,
+            party_num            = inp.party_num,
+            children_live_with   = children_live_with,
+            num_children         = len(party_children),
+            has_disability       = has_disability,
+            c                    = c,
+        )
+    elif province == "AB":
+        prov_brackets_key   = "AB_BRACKETS"
+        prov_row_for_report = _find_bracket(c["AB_BRACKETS"], taxable_income)
+        provincial_tax = calculate_ab_tax(
             taxable_income       = taxable_income,
             employed_income      = inp.employed_income,
             self_employed_income = inp.self_employed_income,
@@ -1054,7 +1219,21 @@ def calculate_taxes(inp: TaxInput) -> dict:
             has_disability          = has_disability,
             c                       = bc_cwb_c,
         )
-        cwb += _bc_cwb_supplement(total_income, taxable_income, num_children_with, c)
+        # BC CWB supplement excluded — already reflected in spousal support
+        # cwb += _bc_cwb_supplement(total_income, taxable_income, num_children_with, c)
+    elif province == "AB":
+        ab_cwb_c = dict(c)
+        ab_cwb_c["CWB_SINGLE_MAX"]       = c["AB_CWB_SINGLE_MAX"]
+        ab_cwb_c["CWB_FAMILY_MAX"]        = c["AB_CWB_FAMILY_MAX"]
+        ab_cwb_c["CWB_SINGLE_THRESHOLD"]  = c["AB_CWB_SINGLE_THRESHOLD"]
+        ab_cwb_c["CWB_FAMILY_THRESHOLD"]  = c["AB_CWB_FAMILY_THRESHOLD"]
+        cwb = calculate_cwb(
+            total_income            = total_income,
+            taxable_income          = taxable_income,
+            num_children_with_party = num_children_with,
+            has_disability          = has_disability,
+            c                       = ab_cwb_c,
+        )
     else:
         cwb = calculate_cwb(
             total_income            = total_income,
@@ -1068,6 +1247,8 @@ def calculate_taxes(inp: TaxInput) -> dict:
     capped_child_care = _child_care_deduction(inp.employed_income, inp.child_care_expenses)
     if province == "BC":
         prov_credits_adj = 0.0
+    elif province == "AB":
+        prov_credits_adj = 0.0   # Alberta has no provincial child-care credit
     else:
         prov_credits_adj = _on_care_credit(taxable_income, capped_child_care, inp.year, c)
 
@@ -1089,6 +1270,10 @@ def calculate_taxes(inp: TaxInput) -> dict:
         )
         on_tax_reduction_amt = 0.0
         on_lift_amt          = 0.0
+    elif province == "AB":
+        on_tax_reduction_amt = 0.0
+        on_lift_amt          = 0.0
+        bc_tax_reduction_amt = 0.0
     else:
         bc_tax_reduction_amt = 0.0
         prov_row_on  = _find_bracket(c["ON_BRACKETS"], taxable_income)
@@ -1127,6 +1312,13 @@ def calculate_taxes(inp: TaxInput) -> dict:
         )
         prov_sales_tax_credit = 0.0
         cai = 0.0
+    elif province == "AB":
+        num_children_for_benefit = len([
+            ch for ch in party_children if _child_age(ch.date_of_birth, inp.year) <= 17
+        ])
+        prov_child_benefit    = calculate_ab_child_benefit(taxable_income, num_children_for_benefit, c)
+        prov_sales_tax_credit = 0.0   # Alberta has no sales tax credit
+        cai                   = calculate_ab_climate_action(party_children, inp.year, c)
     else:
         prov_child_benefit    = calculate_ocb(taxable_income, party_children, inp.year, c)
         prov_sales_tax_credit = calculate_ostc(taxable_income, party_children, inp.year, c)
