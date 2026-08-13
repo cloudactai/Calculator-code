@@ -1057,3 +1057,74 @@ one when the green "Add Additional Parties" button is clicked, and that button i
 `relevant="-print"`. The field ids confirm it independently: 005 and 006 sit mid-sequence
 in the extraction order, where a field added by a placement pass would be appended after
 the highest id.
+
+---
+
+# Three questions from the app, answered
+
+## 1. F32 p1 — should the Part 1 area have a second box below the note?
+
+**No.** The area is 484 x 34 pt at y 578, and the government prints
+"[if more space is required - attach page and state \"See Attached\"]" directly under it at
+y 616, leaving 110 pt of blank page below the note. The 34 pt is not a placement choice —
+the printed sentence above ends at y 574 and the note begins at 616, so the area exactly
+fills the gap the government left.
+
+Two reasons not to add a second box under the note. It would sit beneath an instruction
+that tells the filer to **attach a page instead**, which reads as contradicting it; and the
+same "attach page" note governs roughly twenty other forms in the set (F22, F24, F39, F44,
+F68, F70, F71, F73, F74, F86 …), every one of which has one area, the note, and nothing
+after it. Adding one here alone would make F32 the odd form out; adding it everywhere would
+invent a writing area the government does not have.
+
+## 2. Address for service is now a `TextField`
+
+Five labelled address blocks retyped so the text sits vertically centred:
+F3 p4, F5 p3, F6 p3, F68 p2, F89 p2. **F4 p4's was already a `TextField`** at 102 pt tall,
+so this settles a family the government itself is inconsistent about rather than inventing a
+convention.
+
+*Worth knowing*: a single-line control does not wrap, so an address much past ~90 characters
+will run beyond the visible box on these five.
+
+### And the pass batch 1 never had
+
+Checking those boxes showed batch 1 had never been through the §8 type pass at all —
+`normalise_types_bc2.py` was written while batch 2 was being read and only ever ran over
+batch 2. Batch 1 still carried **246 `TextArea` fields one line tall across 32 forms**
+(F45 34, F8 28, F38 26, F3 24, F5 17 …), each drawing a multi-line control in a box that
+cannot hold a second line. `normalise_types_bc1.py` applies **rule 1 only** — the
+unambiguous half — for 251 corrections across 33 forms including the five address blocks.
+
+Rules 2 and 3 are deliberately not run over batch 1: the column-majority rule needs the
+batch read page by page first, and the tall-and-wide rule would flip those very address
+blocks back to `TextArea`.
+
+## 3. "Endorsed:" — the signature line is missing, and not only there
+
+**Confirmed against both authorities, and it is our fault, not the government's.**
+
+* The prescribed form in the Rules (BC Laws, Supreme Court Family Rules, Appendix A) ends
+  F32.01 with `Endorsed:` then `Judge/Associate Judge/Registrar ....` then `Date ....`.
+* The government's own fillable template has it too — as a `<field>` whose `<ui>` is a
+  `<signature>` and whose caption, `placement="bottom"`, reads
+  **"Judge / Associate Judge / Registrar"**.
+
+pdf.js renders an XFA `<signature>` widget as nothing, and that caption belongs to the
+widget rather than to a separate `<draw>`, so the words vanish with it. Sweeping both
+batches for signature fields with captions: **95 in the sources, 73 never reached the page**
+— "Registrar", "Signature of", "A commissioner for taking affidavits for British Columbia",
+"Signature of Judge or Associate Judge", "Signature of new lawyer", and so on, across ~40
+forms.
+
+**Not patched here, deliberately.** Restoring them means drawing text and a rule into the
+background at positions the flatten never recorded — the widget is gone, so there is nothing
+on our page to anchor to, and XFA's nested flow layout cannot be resolved to absolute
+coordinates without running the layout engine. The right fix is in the flatten itself
+(`xfa/print_xfa.mjs` and `render.html`): keep the signature widget's caption, re-render the
+~40 affected forms, re-run the chain and re-read those pages. That is a scoped follow-up,
+not a patch.
+
+Impact meanwhile is presentational: these are court-completed lines that §5 says carry no
+box in any case, so nothing a filer must complete is missing — only the printed words
+naming who signs.
