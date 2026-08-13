@@ -218,6 +218,12 @@ bootstraps the form templates. The template PDF blobs are fetched separately at
   separate `generated_pdf_revision` protects the exported PDF. Either can return a `409`.
 - **Coordinates are overlay coordinates.** The export flips `y` using
   `pageHeight - y - height/scale`. Get this wrong and the fields land in the wrong place.
+- **Missing BC signature captions are a flattening issue, not an overlay issue.** An
+  unpatched pdf.js XFA render drops `<signature>` widgets and captions such as
+  "Signature of" or "Judge / Associate Judge / Registrar". The BC pipeline's
+  `xfa/patch_pdfjs_signature.mjs` preserves a non-editable signing area; its rule must
+  remain above a `placement="bottom"` caption. Do not add an editable field or patch the
+  React viewer to compensate.
 - **A form must have a folder** before it can be created, and only forms that are both
   `production_ready` and `mapping_ready` are offered.
 - **Switching forms is a navigation**, not a state change: the form reloads through the
