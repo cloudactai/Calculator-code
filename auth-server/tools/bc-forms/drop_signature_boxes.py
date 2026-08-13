@@ -54,8 +54,17 @@ TARGETS = {
     "BCPC_48": [(1, 627.9, 23.9, "A commissioner for taking affidavits")],
     "BCPC_49": [(1, 668.1, 23.9, "A commissioner for taking affidavits")],
     "BCSC_S_51": [(3, 511.4, 37.7, "A commissioner for taking affidavits")],
+    # ---- second pass ---------------------------------------------------------
+    # F95's fax-filing payment block. The rule at y 530 is captioned "authorizing
+    # signature (Credit Card)" — a signature rule, so §5 governs here as much as it does
+    # on a jurat. The "print name as it appears on credit card" box above it stays (§9.8).
+    # The gate missed this one because ROLE_CAPTION only matched "signature" at the start
+    # of a caption; it now matches anywhere, with "date" and the print-name words
+    # excluded so "Date of signature (dd/mmm/yyyy)" on BCPC_7 p1 is not swept up.
+    "BCSC_F95": [(2, 500.4, 54.0, "authorizing signature (Credit Card)")],
 }
-BATCH2 = {"BCSC_F19_4", "BCPC_33", "BCPC_34", "BCPC_48", "BCPC_49", "BCSC_S_51"}
+BATCH2 = {"BCSC_F19_4", "BCPC_33", "BCPC_34", "BCPC_48", "BCPC_49", "BCSC_S_51",
+          "BCSC_F95"}
 TOL = 0.6
 
 

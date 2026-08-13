@@ -75,6 +75,27 @@ ADD = {
         (1, "TextArea", fitz.Rect(73.4, 496.0, 576.0, 546.0),
          "the party or parties protected"),
     ],
+    "BCSC_F37": [
+        # p3 item 8 "Medical coverage is" is followed by 41 pt of paper and a drawn rule at
+        # y 255 with no field on it, while items 7, 9, 10 and the three unnumbered rows
+        # around it each have a 69.2 pt writing area. `check_unfilled_blanks` cannot see it
+        # (the blank is line art, not underscores) and it is one of the `rule-no-field`
+        # advisories. The band is bounded above by the item's own caption and below by the
+        # rule, so it takes the band (§9.5) rather than a single line seated on the rule.
+        (3, "TextArea", fitz.Rect(96.8, 216.0, 573.0, 253.7),
+         "item 8's medical-coverage answer, on the form's own drawn rule"),
+    ],
+    "BCSC_F40": [
+        # p1's second option is "withdraw(s) their response to family claim in respect of
+        # the following claim(s) in this family law case:" followed by the printed list
+        # marker "(a)" at x 113-123.3, y 542 — and then 176 pt of bare paper to the
+        # footer, with no field. The withdrawal could not say which claims it covers.
+        # F39, the discontinuance twin, proves the shape: it gives the same list a 25.5 pt
+        # area on p1 *and* a 105 pt continuation on p2, where F40 has only the p2 half.
+        # Starts right of the marker, not over it (§9.7).
+        (1, "TextArea", fitz.Rect(131.0, 540.0, 540.0, 722.0),
+         "the claim(s) withdrawn; only the printed '(a)' was there"),
+    ],
     "BCSC_F74": [
         # Part 6 "MATERIAL TO BE RELIED ON": instruction ends y 665.1, the form prints
         # "1." at y 679-690.1, and nothing follows. The area starts right of the printed

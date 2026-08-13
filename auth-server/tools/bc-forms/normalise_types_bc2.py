@@ -30,6 +30,23 @@ types the cells it creates itself.
    children table, whose first data row is `TextArea / TextField / TextArea` against
    `TextField x3` on the rows below it, all 26 pt.
 
+3. **A box that is both tall and wide is a `TextArea`.** The removed converse rule failed
+   because height alone cannot tell a deep writing block from a one-line field whose
+   *caption* wraps. Width settles it: those one-line fields are narrow — F71's day-counts
+   are 58.9 pt wide, BCPC_12 p10's date 146 pt, PD-58's date column 82.8 pt — while a
+   writing block runs most of the text measure. So a `TextField` at least
+   `MULTI_LINE_MIN` tall **and** `WIDE_MIN` wide becomes a `TextArea`, and so does one
+   over `VERY_TALL` at any width, where no single value could need the room.
+
+   Reading the appeal forms is what found this. F82.2, F82.3, F98.1 and F98.2 each end
+   with a **152.7 pt** `TextField` — the last Part's writing area — directly under sibling
+   Parts of 72.8 and 62.0 pt that are `TextArea`, so one Part of a four-Part statement of
+   argument was drawn as a single-line box. F37 has fourteen more of the same shape, its
+   full-width 62-69 pt narrative rows. The width test leaves every narrow one alone.
+
+   A tall `TextField` whose *column* is mostly `TextArea` converts as well, which is what
+   reaches F101 p2 and p4's odd cell out at 75.9 pt and 86 pt wide.
+
 Only `type` is written; every other key is asserted byte-identical afterwards (§7.8),
 and a second run is a no-op (§7.9).
 
@@ -49,6 +66,8 @@ import verify_bc2 as V  # noqa: E402
 OUT = V.OUT
 SINGLE_LINE_MAX = 20.0   # at or under this a box holds one line
 MULTI_LINE_MIN = 27.0    # at or over this it holds two, so it is a writing block
+WIDE_MIN = 250.0         # ...and at this width it is one, not a tall narrow value cell
+VERY_TALL = 100.0        # no single value needs this much room, whatever the width
 COLUMN_MIN = 3           # a column needs this many members before its majority means anything
 
 
@@ -95,8 +114,35 @@ def normalise(fields):
         height = field["height"] / V.SCALE
         if field["type"] == "TextArea" and height <= SINGLE_LINE_MAX:
             changes.append((field, "TextArea", "TextField", "one line tall (%.1fpt)" % height))
+    for field in fields:
+        if field["type"] != "TextField":
+            continue
+        height = field["height"] / V.SCALE
+        width = field["width"] / V.SCALE
+        if height >= VERY_TALL:
+            changes.append((field, "TextField", "TextArea",
+                            "%.1fpt tall, past any single value" % height))
+        elif height >= MULTI_LINE_MIN and width >= WIDE_MIN:
+            changes.append((field, "TextField", "TextArea",
+                            "tall and wide (%.1fx%.1fpt)" % (width, height)))
     for field, _old, new, _why in changes:
         field["type"] = new
+
+    for members in column_groups(fields):
+        if len(members) < 2:
+            continue
+        counts = collections.Counter(member["type"] for member in members)
+        if counts["TextArea"] <= counts["TextField"]:
+            continue
+        for member in members:
+            # A tall box in a column its neighbours make a writing column. Separate from
+            # the majority rule below, which deliberately confines itself to the
+            # ambiguous 20-27 pt band so it cannot fight the height rules.
+            if member["type"] == "TextField" and member["height"] / V.SCALE >= MULTI_LINE_MIN:
+                changes.append((member, "TextField", "TextArea",
+                                "tall, in a column that is %d/%d TextArea"
+                                % (counts["TextArea"], len(members))))
+                member["type"] = "TextArea"
 
     for members in column_groups(fields):
         if len(members) < COLUMN_MIN:

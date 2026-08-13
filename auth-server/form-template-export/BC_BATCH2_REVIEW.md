@@ -387,9 +387,10 @@ The passes are order-dependent and must run:
 ```
 build_bc_batch2.py            # regenerates PDFs and JSONs, dropping repairs and binds
 repair_f19_4_header.py        # per-form background repairs
-repair_f1_duplicates.py
-place_missing_bc2.py --apply  # adds fields
 repair_duplicate_blocks.py --apply
+drop_hidden_branches.py --apply   # removes text the government's scripts hide
+place_missing_bc2.py --apply  # adds fields (and retracts the two it should not have added)
+add_writing_areas_bc2.py --apply
 drop_signature_boxes.py --apply   # §5 — also touches batch 1, which has no rebuild
 trim_label_overlap.py --apply # adjusts geometry (asserts the field set is unchanged)
 normalise_types_bc2.py --apply
@@ -397,6 +398,11 @@ build_bc_batch2.py --rows-only
 merge_catalog2.py --promote
 rebind_bc_forms.py
 ```
+
+`place_missing_bc2.py` no longer cares whether it runs before or after
+`repair_duplicate_blocks.py` (it skips the painted bands either way), and it asks
+`verify_bc2.on_signature_rule` rather than `bp.is_signature_box`, so the chain can no longer
+undo §5 — see "Two pipeline traps" below.
 
 ---
 
@@ -602,3 +608,391 @@ or affix stamp of commissioner)" caption. That caption labels the box above it, 
 wants that box — it is the signature rule's box that must go, not this one. F51 p3 now
 reads correctly: Registrar rule bare, both party signature rules bare, print-name and
 party-name boxes intact.
+
+---
+
+# Second pass — the remaining 105 forms
+
+Tracked in `_incoming_bc2/review_state.json`, one row per form with its group and status,
+so the reading survives a break. Renders are one page per PNG rather than 6-up sheets;
+the sheets are for triage and a page has to be read at full size to be judged.
+
+## A batch-wide class the *template* found, not the page
+
+`drop_hidden_branches.py`. pdf.js draws the static layout and never runs the
+`layout:ready` scripts Acrobat runs, so any subform the government **hides by default** is
+printed anyway. Sweeping all 145 sources for `presence = "hidden"` inside a
+ready/initialize script and then checking whether the guarded text reached our page gives
+59 hits, and the three-way split matters:
+
+* **26 conditional** — hidden unless some control is set. Eight are real and removed
+  (below); the rest are pages the blank form is *meant* to carry (F37's fact sheets A–F,
+  F1/F102's `_____ Registry` rule, F17.1's list of orders).
+* **33 unconditional** — hidden at `ready` and shown again by the template's own
+  `print_scripts.print_blank_copy_get()` branch. These are the
+  `[if more space is required - attach page…]` notes; a blank form is where they belong,
+  and the approved batch shows them throughout.
+* the page-variant subforms (`blank_printed_page`, `data_entry_page`, …), which
+  `blank_pages.mjs` already owns.
+
+**Removed: 8 blocks across 8 forms.**
+
+| Form | Page | Block | Guard |
+|---|---|---|---|
+| F15 | 3 | video-conference paragraphs 3, 4 | `CheckBox1.rawValue == "0"` |
+| F16 | 2 | same, unnumbered | same |
+| F70 | 2 | same, paragraphs 3, 4 | same |
+| F84 | 2 | same, paragraphs 4, 5 | `VideoConfAffidavitChkbox` |
+| F86 | 2 | same, paragraphs 11, 12 | `CheckBox1.rawValue == "0"` |
+| F97 | 2 | same, unnumbered | same |
+| F32.001 | 1 | the three ticked-option echoes | `paperCopy.CheckBoxN.rawValue == 1` |
+| F29 | 2 | the second signature block (+4 fields) | `addSignature.ShowYN == "1"` |
+
+The affidavit six are the ones that mattered. Each printed, unconditionally, "**I was not
+physically present** before the person before whom this affidavit was sworn or affirmed" —
+false for an affidavit sworn in person, on six forms, with nothing the deponent could
+strike. F84 settles that the removal is what the government wants rather than a guess: it
+guards the bracketed *instruction* with `print_blank_copy_get()=="Y" && CheckBox1 == "0"`,
+so on the blank printed copy the instruction shows and the paragraphs do not. The
+instruction is kept on all six — it is what tells the filer to insert the paragraphs when
+they do apply, and F15, F16, F70 and F97 each carry a free `paragraph_txt` line for it.
+
+## Group 2 — Supreme Court – Notices (6 forms, 10 pages)
+
+| Form | Pages | Verdict |
+|---|---|---|
+| F2 Notice of withdrawal from joint family law case | 1 | **OK** |
+| F7 Notice of withdrawal (divorce claimed) | 2 | **OK** |
+| F39 Notice of discontinuance | 2 | **OK** |
+| F40 Notice of withdrawal | 2 | **FIX** ×1 |
+| F76 Notice of order | 2 | **OK** |
+| F77 Notice of interest | 1 | **OK** |
+
+* **F2** — heading, both claimants, the party box, date, and the two signature checkboxes
+  with the print-name box on its rule. No box on a signature rule.
+* **F7** — p1's eight sub-options are all on their marks. The two top-level marks are
+  printed **circles**, not squares — the XFA makes them radio buttons — and the box is
+  correctly around the circle; at sheet scale that reads as a misplaced box and is not one.
+  p2's describe-the-part area, date and print-name box are right.
+* **F40 — FIX.** p1's second option ends "…in respect of the following claim(s) in this
+  family law case:" followed by the printed list marker **"(a)"** and 176 pt of bare paper
+  with **no field**: the withdrawal could not say which claims it covered. F39, the
+  discontinuance twin, proves the shape — it gives the same list a 25.5 pt area on p1 *and*
+  a 105 pt continuation on p2, where F40 had only the p2 half. Area added right of the
+  marker, not over it (§9.7).
+* **F76, F77** — complete, addresses for service included.
+
+### A detector for the "(a)" class, and what it found
+
+A printed list marker in the left half of the page, nothing printed to its right, no field
+on its line and >25 pt of blank below it: **25 hits, one real**. The other 24 are
+Provincial **cover-page form numbers** (the big "1", "26", "30" a cover prints) and the
+last word of a printed "🠆 Complete Schedule 6" instruction. F40 p1 is the only genuine one
+in the batch, so the class is closed rather than left as a worklist.
+
+## Group 4 — Supreme Court – Service (7 forms, 15 pages)
+
+| Form | Pages | Verdict |
+|---|---|---|
+| F11 Notice for publication | 2 | **OK** — source typo noted |
+| F13 Notice and summary of document | 3 | **OK** |
+| F14 Certificate | 2 | **OK** |
+| F15 Affidavit of personal service | 3 | **FIXED** — hidden branch |
+| F16 Affidavit of ordinary service | 2 | **FIXED** — hidden branch |
+| F18 Certificate of service by sheriff | 1 | **OK** |
+| SUP916 Request for service of family protection order | 2 | **OK** |
+
+* **F11** — *source quirk, not ours*: p2 prints "and the order for service by advertisement
+  from the **and the order for service by advertisement from the**". The doubling is inside
+  a single government draw's rich text, so it is their typo, not a flatten fault, and is
+  left as published — the same treatment Form 8 p13's mislabelled footer got.
+* **F14** — p1's item 2 ("That the document has not been served, by reason of the following
+  facts:") is the last line on the page and its writing area is the first thing on p2. That
+  is a page break, not F40's fault: only 25 pt of paper is left below the caption, where
+  F40 had 176.
+* **F15** — p1's two unlabelled full-width bars are the government's own `paragraph1_txt`
+  and `paragraph2_txt`. p2's third option puts its two sub-checkboxes hard against the
+  following word, which reads like a box over text and is not: the printed ❑ is drawn at
+  exactly x 72.2-81.8 / 313.2-322.8 and the box sits on it.
+* **F15, F16** — *cosmetic, source layout*: the heading's printed rule runs x 503→**648**
+  on a 612 pt page, so it reaches the paper's edge. The fields stop at 608, inside the
+  page and correctly seated after their captions, so nothing is unusable.
+* **SUP916** — an English/French mirror pair, every writing cell of the party-details grid
+  boxed. **JUDGEMENT**: the "FOR REGISTRY USE ONLY" panel's ~14 checkboxes, its process-
+  server rule and its Address rectangle get no boxes, because the government gave widgets
+  to exactly one field in that panel ("Other"). The panel says in print who completes it,
+  which is the difference between this and F37 p9, where "the government left the page
+  field-less" was rejected as a reason.
+
+## Group 5 — Supreme Court – Requisitions (10 forms, 18 pages)
+
+| Form | Pages | Verdict |
+|---|---|---|
+| F12 Request | 2 | **OK** |
+| F17.1 Requisition – filing of agreement | 1 | **OK** |
+| F17.2 Requisition – parenting coordinator determination | 1 | **OK** |
+| F17.3 Requisition – arbitration award | 1 | **OK** |
+| F18.1 Requisition – general (application) | 2 | **OK** |
+| F19.1 Requisition – method of attendance | 3 | **OK** |
+| F29 Requisition for consent order or order without notice | 2 | **FIXED** ×1 + **JUDGEMENT** |
+| F32.001 Requisition – chambers practice | 2 | **FIXED** ×1 |
+| F32.01 Requisition – short notice | 2 | **OK** |
+| F94.1 Requisition – leave (vexatious litigant) | 2 | **OK** |
+
+* **F17.1, F17.2** — the heading's role slot is a *box* here, not the printed "Claimant:"
+  the other Supreme forms show, because these templates give the dropdown no default value.
+  Each form follows its own source; both readings are right for the form they are on.
+* **F19.1** — 64 fields over three pages, all seated: every conference date and location
+  pair, all four communication-medium ladders, the role checkboxes with their
+  "[please specify]" box, and the endorsement panel.
+* **F29 — JUDGEMENT.** p1's item 3 prints its two ❑ marks at y 621.5 and 639.5 and their
+  two statements at y 654 and 672 — the marks stacked *above* the labels instead of beside
+  them, because pdf.js wrapped the `lr-tb` subform's text column below its checkbox column.
+  The order is preserved, so which mark belongs to which statement is still legible, and
+  the boxes sit on the government's own printed ❑. Moving them beside the labels would
+  unseat them from those marks and leave two stray printed ❑ behind, which is worse.
+* **F18.1 p2, F32.01 p2, F94.1 p2** — the court-completed panels *are* boxed here, unlike
+  SUP916's, because the government gave them widgets. The rule is the same in both places:
+  the source's widget set decides.
+* **F94.1 p2** — "Signature of person requesting leave" carries no box; the box below it is
+  the print-name box under its own caption (§9.8).
+
+## Group 8 — Supreme Court – Discovery (6 forms, 12 pages) — all **OK**
+
+F22 Interrogatories, F23 Subpoena to witness, F26 Instructions to examiner, F28 Letter of
+request, F47 Notice to produce, F49 Notice of intention to call adverse party. Nothing to
+change on any page: every signature rule bare with its print-name box below (§9.8), every
+writing area filling its blank, and F49 p2 and F23 p2's quoted rule text correctly carrying
+no fields.
+
+## Group 9 — Supreme Court – Filing (5 forms, 7 pages)
+
+| Form | Pages | Verdict |
+|---|---|---|
+| F32.1 Order signing instructions | 1 | **OK** |
+| F32.2 Cover page | 1 | **OK** |
+| F86.1 Language change and confirmation | 2 | **OK** |
+| F86.2 Notice of extension – official languages | 1 | **OK** |
+| F95 Fax cover sheet | 2 | **FIX** ×1 (§5) |
+
+* **F95 p2 — a box on a signature rule, and the gate could not see it.** The payment block's
+  rule at y 530 is captioned "**authorizing signature (Credit Card)**", and a 223×31 pt
+  `TextArea` sat on it. §5 governs a credit-card authorisation as much as a jurat, so the box
+  is gone (`drop_signature_boxes.py`, now 11 forms); the "print name as it appears on credit
+  card" box above it stays.
+  Why the gate missed it: `ROLE_CAPTION` only matched "signature" at the **start** of a
+  caption. It now matches anywhere, with `date` added to the disqualifying words so
+  BCPC_7 p1's "Date of signature (dd/mmm/yyyy)" is not swept up, and the vertical tolerance
+  starts at −3 pt because a box seated on its rule lands a fraction *inside* the caption's
+  line box — F95's was at −0.2. Re-sweeping the batch with the widened test gives **two**
+  hits: this one and PFA893 p1, already read and kept.
+* **F32.2** — 23 fields, all seated, including the two dashed-bordered party panels (the
+  dashes are the government's own printed rectangles).
+
+## Group 10 — Supreme Court – Divorce (3 forms, 6 pages) — all **OK**
+
+F35 Requisition – undefended family law case, F36 Certificate of pleadings, F102 Statement of
+information for corollary relief. F102's three Yes/No ladders and their detail areas are
+complete over all three pages; its `_______ Registry` conditional prints as a boxed field,
+not as the underscore variant.
+
+## Group 11 — Supreme Court – Enforcement (22 forms, 40 pages) — all **OK**
+
+F41, F42, F50, F57, F58, F59, F60, F61, F62, F62.1, F62.2, F63, F64, F65, F66, F67, F68, F69,
+F70, F92, F93, F94. The largest group in the batch and the cleanest: every amount box starts
+after its printed `$` (§7.5), every "Registrar", "By the Court.", "Examiner", "Surety",
+"Person conducting sale" and "Signature of person being released" line carries **no** box,
+and each judge's print-name box sits under its own caption. F70's video-conference paragraphs
+are the hidden branch removed above.
+
+Two things read and left as published:
+
+* **F60 p1 and F61 p1** print "ordered that the **,** [box], deliver to the **,** [box]" —
+  the role word is composed by the template at fill time and comes out empty, leaving a
+  stray comma. F59, the same writ with checkboxes instead of a composed sentence, shows what
+  the government intended. There is no rule and no blank to place a box on, and inventing a
+  role field on a registrar-issued writ is not a placement decision.
+* **F41 p2**'s "Endorsement To Guarantee No." has no field after "No.". The template's field
+  list (`From`, `To`, `Date`, `Paragraph`) confirms the government gives none, and there is
+  no rule or underscore there either.
+
+## Group 12 — Supreme Court – Trial (3 forms, 4 pages) — all **OK**
+
+F44 Notice of trial, F48 Notice of intention to proceed, F100 Certificate of mediation. F44's
+trial table and contact table box their data rows and leave the column headings clear;
+F100's "Signature of mediator" rule is bare, with the mediator's three detail boxes below the
+caption.
+
+## Group 14 — Supreme Court – Costs (5 forms, 8 pages)
+
+| Form | Pages | Verdict |
+|---|---|---|
+| F71 Bill of costs | 3 | **FIX** ×1 — my own regression |
+| F71.1 List of expenses | 1 | **OK** |
+| F72 Certificate of costs or expenses | 2 | **OK** |
+| F99 Demand | 1 | **OK** |
+| F99.1 Offer to settle costs or expenses | 1 | **OK** |
+
+* **F71 p1 — two boxes in the table's title bar**, at x 73.5 and x 411.5 on the
+  "PART B - TARIFF ITEMS" row. Not the government's: that row is three grey `<draw>` cells —
+  the titled one and an empty one either side — and `place_missing_bc2.cell_targets` read the
+  empty pair as cells wanting fields. §9.2. Both retracted, and the guard that stops it
+  recurring is in the same file (`whole_row_shaded`).
+* **F71 p2** is a good check that the type rules held: every day-count box is a `TextField`
+  and every amount box a `TextField`, while items 8 and 9's printed fixed "250" correctly get
+  no box at all.
+* **F72 p2** carries **two** consent signature blocks, and that is the form's own instruction
+  ("a signature line in the following form must be completed and signed by or for each
+  consenting party"), not F29's script-added duplicate.
+
+### Why the shaded-cell guard had to be narrow
+
+"A field inside a grey box" cannot be the test: the Provincial forms shade the writing cell
+of nearly every labelled row, and **hundreds** of the government's own widgets sit inside
+one. What separates a header row is that the shading runs the whole width of the row, label
+included, where a labelled writing row shades only the part being written in.
+
+## Group 15 — Supreme Court – Appeals (11 forms, 21 pages)
+
+F79, F80, F81, F82, F82.1, F82.2, F82.3, F82.4, F98, F98.1, F98.2 — every page **OK** on
+placement, with one type fault found by reading and fixed batch-wide (below). F82.1 p2's
+two approving-party signature blocks are the form's own instruction; every "By the Court.",
+"Registrar" and "Signature of" rule is bare with its print-name box beneath.
+
+*Checked and not a defect*: on F98.1 and F98.2 the party box's left edge appears to touch
+the printed "Appellant" / "Respondent". It abuts it — the label ends at x 116.0 and the box
+starts at x 116.0 — which is why the ink test never flagged it.
+
+## Group 16 — Supreme Court – Evidence (3 forms, 9 pages)
+
+F84 Affidavit of attainment of majority, F86 Affidavit in support to waive fees, F97
+Declaration. All three carried the video-conference hidden branch, now removed; everything
+else on the nine pages is right, including F86's three financial tables (each amount box
+after its printed `$`) and its three exhibit stamps, and F97 p2's registry authorisation
+panel.
+
+## Group 17 — Supreme Court – Representation (2 forms, 2 pages) — both **OK**
+
+F87 Notice of appointment or change of lawyer, F88 Notice of intention to act in person.
+
+### The type rule the log claimed and the code never had
+
+This log has said since the class-B pass that "**a box two or more lines tall becomes a
+`TextArea`** — 179 fields". That was wrong: the rule was tried, found to be wrong on
+one-line fields whose *caption* wraps, and removed, and the 179 conversions were actually
+`place_missing_bc2` typing the cells it creates. Nothing has ever converted a
+**government-drawn** tall `TextField`, and reading the appeal forms found what that left:
+
+* **F82.2, F82.3, F98.1 and F98.2** each end with a **152.7 pt** `TextField` — the last
+  Part's writing area — directly below sibling Parts of 72.8 and 62.0 pt that are
+  `TextArea`. One Part of every statement of argument was a single-line box.
+* **F37** has fourteen more of the same shape, its full-width 62-69 pt narrative rows,
+  including the three on p3 either side of the item-8 rule.
+
+The rule is now implemented with the test the first attempt lacked — **width**. A one-line
+field whose caption wraps is narrow (F71's day-counts 58.9 pt, BCPC_12 p10's date 146 pt,
+PD-58's date column 82.8 pt); a writing block runs most of the text measure. So a
+`TextField` ≥27 pt tall **and** ≥250 pt wide converts, as does anything over 100 pt tall at
+any width, as does a tall one whose column is mostly `TextArea` (F101 p2 and p4's odd cell
+out). **27 fields across 10 forms**, then stable, and every narrow value cell left alone.
+
+### F37 p3 — item 8 had a rule and no field
+
+"Medical coverage is" is followed by 41 pt of paper and a **drawn** rule at y 255 with
+nothing on it, while items 7, 9, 10 and the three unnumbered rows around it each have a
+69.2 pt writing area. `check_unfilled_blanks` cannot see it (line art, not underscores);
+it was sitting in the `rule-no-field` advisories. Area added across the band, bottom seated
+above the rule.
+
+*Also settled on that page*: its three `blank-no-field` advisories are the printed `___`
+paragraph-number slots at the left margin, which §8 says get no box. No action.
+
+### Two pipeline traps the same dry run exposed
+
+Neither had reached a shipped template, and both would have on the next rebuild:
+
+1. **Placement would have put boxes straight back on four signature rules** —
+   BCPC_33, BCPC_34, BCPC_48 and BCPC_49, the ones §5 had just cleared. `place_missing_bc2`
+   was asking `bp.is_signature_box`, which only knows a caption starting with "Signature",
+   so "Judge or Justice of the Peace" and "A commissioner for taking affidavits" read as
+   ordinary blanks. It now asks `verify_bc2.on_signature_rule`, so the placement pass and the
+   gate agree on what a signature is.
+2. **Placement re-added ten painted-out cells** — F1 p4's and F101 p4/p5's duplicate header
+   rows. Painting a duplicate leaves its cell rectangles, so on an already-repaired PDF those
+   cells look empty. The chain's order (repair *after* placement) hid this; `cell_targets`
+   now skips `repair_duplicate_blocks.PAINT`'s bands outright, so the order no longer matters
+   and the pass is safe to re-run.
+
+## The Provincial groups (22 forms, 53 pages) — all **OK**
+
+| Group | Forms | Pages |
+|---|---|---|
+| 18 Notices | Form 1, Form 2, Form 20, Form 46, Form 50 | 17 |
+| 19 Evidence | Form 23 | 1 |
+| 21 Service | Form 7, Form 47, PFA110, PFA916 | 4 |
+| 23 Case Management | PFA893 | 1 |
+| 24 Protection Orders | PFA914 | 1 |
+| 26 Enforcement | Form 29, Form 30, Form 31, Form 35 | 20 |
+| 27 Representation | Form 40, Form 41, PFA923 | 3 |
+| 28 Filing | Form 52 | 1 |
+| 29 Trial | PFA709 | 4 |
+| 31 Requisitions | PFA907 | 1 |
+
+Nothing to change on any of the 53 pages, which brings the Provincial AcroForm path to
+**37 of 37 forms read with one defect between them** (BCPC_6 p3, and that one was mine).
+Every writing cell is boxed, every column heading left clear, every checkbox on its printed
+mark, and every signature rule bare with the date box beside it — Form 7's shaded signature
+area, Form 20 p2's "Signature of Local Manager or Designate", Form 23's "Signature of person
+issuing subpoena", Form 50 p2's two consent blocks, PFA709 p4 and PFA907 all read that way.
+
+* **The 20 zero-field pages** were read as a set and are all guidance: cover pages, the
+  "complete this form online" page, "Need legal help?", the "Preparing a … Form N"
+  instruction sheet, the "IMPORTANT INFORMATION ABOUT YOUR APPEARANCE" insert, and PFA709's
+  tips page. Their 0 fields are correct.
+* **PFA893 p1 — the §5 candidate, resolved.** What looks like a box on the "Signature" rule
+  of the FOR COURT USE ONLY panel is the panel's own printed rectangle. The field list has
+  the 36.6 pt "Further court directions" area ending at y 663.6 and the Date box at
+  y 670.6-684.3, and nothing between the rule and the caption at y 682. Recorded again
+  because this is the third time a printed rule has read as an overlay box: **check §5
+  findings against the field list, not the render.**
+* **PFA916** is PFA110's and SUP916's sibling and gets the same JUDGEMENT: the government
+  gives its "FOR REGISTRY USE ONLY" panel one widget ("Other"), so the panel's checkboxes and
+  its Address rectangle stay unboxed. PFA110's sheriff-use panel *is* boxed — because there
+  the government gave widgets. The source's widget set decides, form by form.
+* **PFA923** carries 31 fields against the source's 31 widgets, so its part-width
+  date-of-birth cells are the government's own geometry, not a placement fault.
+
+---
+
+## Coverage — complete
+
+| | forms | pages |
+|---|---|---|
+| Read and settled | **145** | **419** |
+| Not yet read | 0 | 0 |
+
+`_incoming_bc2/review_state.json` holds the per-form record.
+
+## What the second pass changed
+
+| Fix | Forms |
+|---|---|
+| Script-hidden branches removed (§9 class A, 5th shape) | F15, F16, F29, F32.001, F70, F84, F86, F97 |
+| Missing writing area added | F40 p1, F37 p3 |
+| Box removed from a signature rule (§5) | F95 p2 |
+| Heading-row strays retracted (my regression) | F71 p1 ×2 |
+| `TextField` -> `TextArea` where the box is a writing block (§8) | 27 fields on F15, F16, F19.4, F37, F82.2, F82.3, F85, F98.1, F98.2, F101 |
+
+Gate state: **0 blocking**, 277 advisory, every advisory class read and accounted for:
+
+* `rule-no-field` 107 — **table borders and signature rules.** S-51 p2 alone accounts for 32:
+  its repeating child table draws a 110 pt and a 250 pt rule per row, and every writing cell
+  in it is boxed. Same for BCPC_12's schedules, SUP916/PFA916's grids and F1's heading rules.
+* `edge-cuts-caption` 84 — all on SUP916 (52), PFA916 (29), S-51 (2) and PFA876 (1), where
+  the government's own widgets sit tight under the captions of a dense grid.
+* `page-no-fields` 66 — cover, instruction, quoted-rule and appearance-insert pages, each one
+  read.
+* `sliver` 7, `heading-stray` 4, `checkbox-no-mark` 2, `box-on-text` 1,
+  `answer-space-no-field` 1, `blank-no-field` 5 — narrow value cells, box heights against a
+  column mode, PFA920's missing printed glyph, and F37's paragraph-number slots. All recorded
+  above or in the first pass.

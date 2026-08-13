@@ -230,6 +230,29 @@ def grid_cells(page, min_width=28.0, min_height=10.0,
 CELL_FURNITURE = set("$.,:;()-–— \t\xa0")
 
 
+def whole_row_shaded(page, cell, shaded):
+    """True if `cell`'s row is shaded right across the table — a header row.
+
+    §9.2. F71 p1's "PART B - TARIFF ITEMS" row is three grey `<draw>` cells: the titled
+    one in the middle and an empty one either side. The empty pair read as cells wanting
+    boxes, so this tool put a field in each, giving the table's title bar two editable
+    slots. The cell being grey is not enough on its own to reject it — the Provincial
+    forms shade the writing cell of nearly every labelled row, and hundreds of the
+    government's own widgets sit inside one. What separates a header row is that the
+    shading runs the **whole width of the row**, label and all, where a labelled writing
+    row shades only the part being written in.
+    """
+    row = fitz.Rect(cell.x0, cell.y0 + 1.0, cell.x1, cell.y1 - 1.0)
+    band = [s for s in shaded if s.y0 <= cell.y0 + 2.0 and s.y1 >= cell.y1 - 2.0]
+    if not band:
+        return False
+    left = min(s.x0 for s in band)
+    right = max(s.x1 for s in band)
+    covered = right - left
+    width = max(s.x1 for s in band + [row]) - min(s.x0 for s in band + [row])
+    return covered >= 0.9 * width and covered > cell.width * 1.5
+
+
 def cell_targets(page, boxes):
     """Empty table cells with no field in them.
 
@@ -244,9 +267,12 @@ def cell_targets(page, boxes):
     cell gets a box inset past the `$`'s ink, never over it.
     """
     out = []
+    shaded = bp.shaded_boxes(page, min_width=10.0, min_height=5.0, max_height=80.0)
     for cell in grid_cells(page):
         text = page.get_text(clip=cell).strip()
         if text and not set(text) <= CELL_FURNITURE:
+            continue
+        if whole_row_shaded(page, cell, shaded):
             continue
         if any((cell & existing).get_area()
                > 0.25 * min(cell.get_area(), existing.get_area()) for existing in boxes):
@@ -296,6 +322,38 @@ def area_targets(page, boxes, doc_id, page_number):
     return out
 
 
+# Fields an earlier run of this tool added and should not have, as
+# docId -> [(page, x, y)]. Kept here rather than in a separate script because the
+# mistake and its retraction belong in the same file: `whole_row_shaded` stops it
+# happening again, and this removes the two it already made. Matched on geometry, so a
+# rebuild that renumbers fields cannot take the wrong one, and a re-run is a no-op.
+WRONGLY_ADDED = {
+    "BCSC_F71": [(1, 73.5, 561.5), (1, 411.5, 561.5)],
+}
+TOL = 0.6
+
+
+def painted_bands(doc_id):
+    """The bands `repair_duplicate_blocks.py` paints white, as (page, rect)."""
+    import repair_duplicate_blocks as R
+    return R.PAINT.get(doc_id, [])
+
+
+def retract(doc_id, fields):
+    removed = []
+    for page_number, x, y in WRONGLY_ADDED.get(doc_id, []):
+        match = [f for f in fields
+                 if f["page"] == page_number and abs(f["x"] - x) <= TOL
+                 and abs(f["y"] - y) <= TOL]
+        if len(match) > 1:
+            raise SystemExit("%s p%d %.1f,%.1f matched %d fields, expected 1"
+                             % (doc_id, page_number, x, y, len(match)))
+        for field in match:
+            fields.remove(field)
+            removed.append(field)
+    return removed
+
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--apply", action="store_true")
@@ -307,11 +365,19 @@ def main():
         want = set(args.only.split(","))
         doc_ids = [d for d in doc_ids if d in want]
 
-    added_total = 0
+    added_total = removed_total = 0
     for doc_id in doc_ids:
         path = os.path.join(OUT, "%s.json" % doc_id)
         mapping = json.load(open(path))
         fields = mapping["staticFields"]
+        for field in retract(doc_id, fields):
+            print("%-14s p%-3d - %-9s %5.1f,%5.1f  (shaded header row, §9.2)"
+                  % (doc_id, field["page"], field["type"], field["x"], field["y"]))
+            removed_total += 1
+        if removed_total and args.apply:
+            with open(path, "w") as fh:
+                json.dump(mapping, fh, indent=1)
+                fh.write("\n")
         pdf = fitz.open(os.path.join(OUT, "%s.pdf" % doc_id))
         by_page = collections.defaultdict(list)
         for field in fields:
@@ -326,9 +392,18 @@ def main():
             # on four of them (S-51 p3, BCPC_23 p1, PFA876 p1, PFA893 p1) because an
             # underscore rule looks identical to any other. The build's own signature
             # test is the one to reuse, so both passes agree on what a signature is.
+            #
+            # `bp.is_signature_box` only recognises a caption that *starts* with
+            # "Signature", so on its own it does not know that "Registrar", "Judge or
+            # Justice of the Peace" and "A commissioner for taking affidavits" mark
+            # signature rules too. Left at that, this pass put boxes straight back onto
+            # the four rules `drop_signature_boxes.py` had just cleared on BCPC_33,
+            # BCPC_34, BCPC_48 and BCPC_49 — the chain would have undone §5 on the next
+            # rebuild. `verify_bc2.on_signature_rule` is the test that knows the roles,
+            # and using it here keeps the placement pass and the gate agreeing.
             captions = bp.signature_captions(page)
             for rect in underscore_targets(page, boxes):
-                if bp.is_signature_box(rect, None, captions):
+                if V.on_signature_rule(page, rect, captions):
                     print("%-14s p%-3d skip signature rule at %.1f,%.1f"
                           % (doc_id, page_number, rect.x0, rect.y0))
                     continue
@@ -339,8 +414,20 @@ def main():
             # placing those first means a cell already covered by one is skipped.
             if len(page.get_text().strip()) < PROSE_CHARS:
                 covered = list(boxes) + [r for _p, _k, r in pending if _p == page_number]
+                painted = [band for number, band in painted_bands(doc_id)
+                           if number == page_number]
                 for rect in cell_targets(page, covered):
-                    if bp.is_signature_box(rect, None, captions):
+                    if V.on_signature_rule(page, rect, captions):
+                        continue
+                    # A duplicate block that `repair_duplicate_blocks.py` painted out
+                    # leaves its cell *rectangles* in the content stream, so on an
+                    # already-repaired PDF those cells read as empty and get boxes —
+                    # F1 p4's and F101 p4/p5's removed header rows, ten cells between
+                    # them. The chain runs the repair after this pass, where the text is
+                    # still present and the cells are skipped as "has printed content",
+                    # but that made the tool unsafe to run twice. Skipping the painted
+                    # bands outright makes the order stop mattering.
+                    if any(band.contains(rect) for band in painted):
                         continue
                     # The cell's own height decides the control: a cell two lines or
                     # more deep is a writing block (§9.5), a shallow one holds a value.
@@ -383,7 +470,8 @@ def main():
                 json.dump(mapping, fh, indent=1)
                 fh.write("\n")
 
-    print("\n%d field(s) added%s" % (added_total, "" if args.apply else "  (dry run)"))
+    print("\n%d field(s) added, %d retracted%s"
+          % (added_total, removed_total, "" if args.apply else "  (dry run)"))
 
 
 if __name__ == "__main__":

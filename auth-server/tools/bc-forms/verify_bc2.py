@@ -262,10 +262,16 @@ def printed_lines(page):
 # "A commissioner for taking affidavits" mark signature rules too. Without this, the boxes
 # `drop_signature_boxes.py` correctly removed come straight back as `rule-no-field` and
 # `blank-no-field` advisories — a worklist telling us to undo §5.
+#
+# "signature" is matched anywhere in the caption, not only at its start: F95 p2's rule is
+# captioned "authorizing signature (Credit Card)", and a box sat on it until this saw it.
 ROLE_CAPTION = re.compile(
     r'^\s*(a\s+)?(commissioner|judge|justice|registrar|clerk|notary|deponent|presiding'
-    r'|associate\s+judge)\b|^\s*signature\b|\bsignature\s+of\b', re.I)
-NAME_CAPTION = re.compile(r'print|type|affix|stamp', re.I)
+    r'|associate\s+judge)\b|\bsignature\b', re.I)
+# What disqualifies a caption from being a signature rule's: "print name or affix stamp of
+# commissioner" labels the box *above* it, which §9.8 wants kept, and "Date of signature"
+# (BCPC_7 p1) labels a date box beside the rule, not the rule.
+NAME_CAPTION = re.compile(r'print|type|affix|stamp|date', re.I)
 
 
 def on_signature_rule(page, rect, captions):
@@ -275,7 +281,9 @@ def on_signature_rule(page, rect, captions):
     for line_rect, text in printed_lines(page):
         if not ROLE_CAPTION.search(text) or NAME_CAPTION.search(text):
             continue
-        if not 0 < line_rect.y0 - rect.y1 < 26:
+        # The lower bound is negative because a box seated on its rule can land a fraction
+        # of a point inside the caption's own line box, as F95 p2's does at -0.2.
+        if not -3 <= line_rect.y0 - rect.y1 < 26:
             continue
         if min(rect.x1, line_rect.x1) - max(rect.x0, line_rect.x0) > 8:
             return True
