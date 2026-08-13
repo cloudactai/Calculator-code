@@ -16,6 +16,10 @@ const PDFJS = "/Users/lorelaiphinnemore/Documents/CloudAct/Frontend /Calculator-
 // required rather than matched as one token.
 const BLANK = /(?=.*blank)(?=.*page)/i;
 const OTHER_VARIANT = /instructional|printed_page|generated|data_entry|saveform|returnto/i;
+// F38's printable output is laid onto the same BlankPage2 page master as its
+// actual blank form.  The page-master name alone therefore produces a false
+// positive unless the enclosing print-only subform wins.
+const PRINT_ONLY = /^printPage\d*$/i;
 
 const pdfjs = await import(PDFJS);
 const doc = await pdfjs.getDocument({
@@ -34,9 +38,10 @@ xfa.children.forEach((page, index) => {
   };
   walk(page);
   const hit = names.find((n) => BLANK.test(n));
-  const variant = hit || names.find((n) => OTHER_VARIANT.test(n)) || "wizard";
+  const printOnly = names.find((n) => PRINT_ONLY.test(n));
+  const variant = printOnly || hit || names.find((n) => OTHER_VARIANT.test(n)) || "wizard";
   groups[index + 1] = variant;
-  if (hit) blank.push(index + 1);
+  if (hit && !printOnly) blank.push(index + 1);
 });
 
 console.log(JSON.stringify({ pages: doc.numPages, blank, groups }));

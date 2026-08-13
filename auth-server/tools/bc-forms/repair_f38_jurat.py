@@ -1,9 +1,9 @@
 """Put F38's three jurats back on the same footing.
 
-F38 carries the jurat three times — the plain affidavit ends on page 5, and the
-video-conference variant of the same affidavit ends on pages 7-8. They are one
-block in the template, so the two faults here are both places the flatten broke
-step with itself, and each is measured against the copies that came out right.
+F38's source carries the jurat three times — the blank affidavit ends on page 5,
+and a print-only rendering repeats it on source pages that older blank-page
+detection also exported as pages 7-8. Current exports omit that print-only
+branch; the page 8 repair below remains compatible with older eight-page builds.
 
 * Page 8's place line collapsed: the writing slot came out 6.19 pt wide where
   page 7 has 176.31, with the comma that closes the line set hard against "at"
@@ -124,35 +124,39 @@ def main():
     fields = json.load(open(path))["staticFields"]
 
     doc = fitz.open(background)
-    good_at, good_comma = place_line(doc[GOOD_PAGE - 1])
-    bad_at, bad_comma = place_line(doc[BAD_PAGE - 1])
-    if not all((good_at, good_comma, bad_at, bad_comma)):
-        raise SystemExit("could not read the place line on both pages")
+    target = target_x = width = bad_comma = None
+    if doc.page_count >= BAD_PAGE:
+        good_at, good_comma = place_line(doc[GOOD_PAGE - 1])
+        bad_at, bad_comma = place_line(doc[BAD_PAGE - 1])
+        if not all((good_at, good_comma, bad_at, bad_comma)):
+            raise SystemExit("could not read the place line on both pages")
 
-    # The comma's offset from "at" is what page 7 establishes; page 8 keeps its
-    # own baseline, so only the horizontal position is taken across.
-    target_x = good_comma["bbox"][0] - good_at["bbox"][0] + bad_at["bbox"][0]
-    print("p%d comma x %.2f -> %.2f (p%d has it %.2f past 'at')"
-          % (BAD_PAGE, bad_comma["bbox"][0], target_x, GOOD_PAGE,
-             good_comma["bbox"][0] - good_at["bbox"][0]))
+        # The comma's offset from "at" is what page 7 establishes; page 8 keeps
+        # its own baseline, so only the horizontal position is taken across.
+        target_x = good_comma["bbox"][0] - good_at["bbox"][0] + bad_at["bbox"][0]
+        print("p%d comma x %.2f -> %.2f (p%d has it %.2f past 'at')"
+              % (BAD_PAGE, bad_comma["bbox"][0], target_x, GOOD_PAGE,
+                 good_comma["bbox"][0] - good_at["bbox"][0]))
 
-    good = [f for f in fields if f["page"] == GOOD_PAGE
-            and abs(f["y"] - (good_at["bbox"][1] + 0.0)) < 12 and f["width"] / bp.SCALE > 20]
-    if not good:
-        raise SystemExit("no place field found on page %d" % GOOD_PAGE)
-    width = max(f["width"] for f in good)
+        good = [f for f in fields if f["page"] == GOOD_PAGE
+                and abs(f["y"] - good_at["bbox"][1]) < 12
+                and f["width"] / bp.SCALE > 20]
+        if not good:
+            raise SystemExit("no place field found on page %d" % GOOD_PAGE)
+        width = max(f["width"] for f in good)
 
-    target = None
-    for f in fields:
-        if f["page"] != BAD_PAGE:
-            continue
-        if abs(f["y"] - bad_comma["bbox"][1]) < 12 and f["width"] / bp.SCALE < 20:
-            target = f
-    if target is None:
-        print("p%d place line already reopened" % BAD_PAGE)
+        for f in fields:
+            if f["page"] == BAD_PAGE \
+                    and abs(f["y"] - bad_comma["bbox"][1]) < 12 \
+                    and f["width"] / bp.SCALE < 20:
+                target = f
+        if target is None:
+            print("p%d place line already reopened" % BAD_PAGE)
+        else:
+            print("p%d field width %.2f -> %.2f"
+                  % (BAD_PAGE, target["width"] / bp.SCALE, width / bp.SCALE))
     else:
-        print("p%d field width %.2f -> %.2f"
-              % (BAD_PAGE, target["width"] / bp.SCALE, width / bp.SCALE))
+        print("print-only pages 6-8 are absent; skipping their legacy jurat repair")
 
     date_box = missing_date_field(doc[DATE_PAGE - 1], fields)
 
@@ -181,8 +185,9 @@ def main():
     os.makedirs(QA, exist_ok=True)
     check = fitz.open(background)
     bp.qa_render(background, fields, os.path.join(QA, "%s_qa.pdf" % DOC_ID))
-    _, moved = place_line(check[BAD_PAGE - 1])
-    print("comma now at x=%.2f" % moved["bbox"][0])
+    if check.page_count >= BAD_PAGE:
+        _, moved = place_line(check[BAD_PAGE - 1])
+        print("comma now at x=%.2f" % moved["bbox"][0])
     check.close()
 
 
