@@ -26,7 +26,7 @@ if (classStart < 0 || nextClass < 0) {
 }
 
 const signatureClass = source.slice(classStart, nextClass);
-if (signatureClass.includes("class: [\"xfaLabel\", \"xfaSignature\"]")) {
+if (signatureClass.includes('style.width = "100%";')) {
   console.log(`${workerPath}: XFA signature patch already present`);
   process.exit(0);
 }
@@ -36,7 +36,7 @@ if (classClose < classStart) {
   throw new Error("pdf.js XFA Signature class closing brace was not found");
 }
 
-const implementation = `
+const oldImplementation = `
   [\$toHTML]() {
     const style = toStyle(this, "border", "margin");
     return HTMLResult.success({
@@ -50,12 +50,48 @@ const implementation = `
   }
 `;
 
-source = source.slice(0, classClose) + implementation + source.slice(classClose);
+const implementation = `
+  [\$toHTML]() {
+    const style = toStyle(this, "border", "margin");
+    style.width = "100%";
+    return HTMLResult.success({
+      name: "div",
+      attributes: {
+        class: ["xfaLabel"]
+      },
+      children: [{
+        name: "div",
+        attributes: {
+          class: ["xfaSignature"],
+          style
+        },
+        children: []
+      }]
+    });
+  }
+`;
+
+if (signatureClass.includes("class: [\"xfaSignature\"]")) {
+  const styleLine = '    const style = toStyle(this, "border", "margin");\n';
+  const styleAt = source.indexOf(styleLine, classStart);
+  if (styleAt < 0 || styleAt > nextClass) {
+    throw new Error("the XFA signature rule width could not be upgraded");
+  }
+  const afterStyle = styleAt + styleLine.length;
+  source = source.slice(0, afterStyle) + '    style.width = "100%";\n' + source.slice(afterStyle);
+} else if (signatureClass.includes("class: [\"xfaLabel\", \"xfaSignature\"]")) {
+  if (!source.includes(oldImplementation)) {
+    throw new Error("the previous XFA signature patch could not be upgraded");
+  }
+  source = source.replace(oldImplementation, implementation);
+} else {
+  source = source.slice(0, classClose) + implementation + source.slice(classClose);
+}
 fs.writeFileSync(workerPath, source);
 
 const patchedClass = source.slice(classStart, nextClass + implementation.length);
 if (!patchedClass.includes("[\$toHTML]()") ||
-    !patchedClass.includes("class: [\"xfaLabel\", \"xfaSignature\"]")) {
+    !patchedClass.includes("class: [\"xfaSignature\"]")) {
   throw new Error("pdf.js XFA signature patch verification failed");
 }
 console.log(`${workerPath}: XFA signature rules and captions enabled`);
