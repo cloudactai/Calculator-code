@@ -1000,3 +1000,60 @@ Gate state: **0 blocking**, 277 advisory, every advisory class read and accounte
   `answer-space-no-field` 1, `blank-no-field` 5 — narrow value cells, box heights against a
   column mode, PFA920's missing printed glyph, and F37's paragraph-number slots. All recorded
   above or in the first pass.
+
+---
+
+# Batch 1, swept with the same test
+
+A question about F32's third party row sent the hidden-branch sweep over **batch 1's 43
+sources**, which it had never been run against — it was written for batch 2. It found the
+same class, including on the most-filed form in the set.
+
+**Removed (3 forms).** The identical video-conference guard, so each printed "I was not
+physically present before the person before whom this affidavit was sworn or affirmed" on
+a blank form:
+
+| Form | Page | Guard |
+|---|---|---|
+| **F8 Financial statement** | 2 | `…AffidavitByVideo.CheckBox1.rawValue == "0"` |
+| F30 Affidavit – desk order divorce | 2 | `VideoConfAffidavitChkbox.rawValue == "0"` |
+| F38 Child support affidavit | 7 | `xfa.record.affidavit_sworn_or_affirmed_by_video_conference.value == "0"` |
+
+F38 is the one where the bracketed instruction never reached the flattened page, so both
+phrases go entirely rather than halving, and the two 14.4 pt paragraph-number slots beside
+them go too. Its guard reads the record rather than a checkbox, and that field's default in
+the source's own `datasets` is `"0"` — checked, not assumed.
+
+**Read and kept**, because a blank printed copy is where they belong:
+
+* **F31 p1** — "This matter is within the jurisdiction of an associate judge." and "This
+  matter is not…". The script hides one, but both print **with a checkbox each**, which is
+  how a paper form offers a choice. Not a contradiction on the page.
+* **F5 p9 and p10** — sections 3 and 4 (current and proposed parenting arrangements),
+  guarded by the section-2 checkbox printed directly above them. Same shape as F37's fact
+  sheets: a conditional *section* of the published form.
+* **F33 p1, F34 p1** — the italic "[For each order, if any, made for parenting time…]"
+  instruction above the order area. Guidance.
+* **F3, F4, F5 p1's `_____ Registry` rule** and **F21 p1's slash-list party label** — the
+  same two cases kept in batch 2.
+
+**Recorded, not changed — F17 p1.** "This requisition is supported by the following:" is
+followed by its instruction, then "(Click if you require the … paragraphs)", and there is
+**no writing area**. The hint is real guidance on the government's form — a button inserts
+`_subRepeating` rows — but our static page has no button, and the gap between the last
+printed hint (y 635) and "Date:" (y 650) is **15 pt**, too little for a usable box. The
+form's own "[if more space is required - attach page and state "See Attached"]" is the
+filer's route. Cramming a 15 pt box under a line that says "click" would be worse than the
+gap; flagged here instead.
+
+### And the question that started it — F32's party rows
+
+The two boxes beside "Claimant:" and "Respondent:" and the **unlabelled pair below them**
+are all the government's. F32's template holds `sop_sf` **twice** plus one `sop_add_sf`,
+where F39 and F41 hold one of each — and on those two forms the `sop_add_sf` instance is
+the visible "Respondent:" row, which is what proves the additional-party row renders on a
+blank form. F32's third row simply has no default role label, because its role only gets
+one when the green "Add Additional Parties" button is clicked, and that button is
+`relevant="-print"`. The field ids confirm it independently: 005 and 006 sit mid-sequence
+in the extraction order, where a field added by a placement pass would be appended after
+the highest id.

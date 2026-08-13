@@ -69,9 +69,22 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import verify_bc2 as V  # noqa: E402
 
 OUT = V.OUT
+EXPORT = V.EXPORT
 
 VIDEO = ["I acknowledge the solemnity", "I was not physically present"]
 INSTRUCTION = "The following paragraphs must be included"
+
+
+def root_for(doc_id):
+    """Where this form's artifacts live.
+
+    Batch 2 is repaired in its staging directory, so a rebuild keeps the repair and the
+    promote carries it across. Batch 1 has no staging — the promoted template *is* the
+    artifact — so its three forms are repaired in the export directly. Same split
+    `drop_signature_boxes.py` makes, and decided by what is on disk rather than by a
+    hand-kept list.
+    """
+    return OUT if os.path.exists(os.path.join(OUT, "%s.pdf" % doc_id)) else EXPORT
 
 # docId -> dict(page, band, why, fields, gone, halved, keep)
 #
@@ -115,6 +128,26 @@ BLOCKS = {
                      halved=["lawyer for filing party(ies)", "type or print name",
                              "dd/mmm/yyyy", "Date:"],
                      keep=["is under a legal disability"]),
+    # ---- batch 1 -------------------------------------------------------------------
+    # Found only because a question about F32's party rows sent the same sweep over
+    # batch 1's 43 sources, which it had never been run against. Three of them carry the
+    # identical video-conference guard, F8 among them — the Financial Statement, one of
+    # the most-filed forms in the set.
+    "BCSC_F8": dict(page=2, band=fitz.Rect(70.0, 428.0, 580.0, 493.0),
+                    why="video-conference paragraphs 3 and 4",
+                    halved=VIDEO, keep=[INSTRUCTION, "SWORN (OR AFFIRMED) BEFORE ME"]),
+    "BCSC_F30": dict(page=2, band=fitz.Rect(34.0, 179.0, 580.0, 244.0),
+                     why="video-conference paragraphs (unnumbered)",
+                     halved=VIDEO, keep=[INSTRUCTION, "SWORN (OR AFFIRMED) BEFORE ME"]),
+    # F38 is the one form where the bracketed instruction never reached the flattened
+    # page, so both phrases go entirely rather than halving, and the two 14.4 pt
+    # paragraph-number slots beside the paragraphs go with them. Its guard reads the
+    # record rather than a checkbox — `affidavit_sworn_or_affirmed_by_video_conference`
+    # — and that field's default in the source's own datasets is "0", so the paragraphs
+    # are hidden on a blank form just the same.
+    "BCSC_F38": dict(page=7, band=fitz.Rect(50.0, 308.0, 580.0, 376.0),
+                     why="video-conference paragraphs, with their number slots", fields=2,
+                     gone=VIDEO, keep=["SWORN (OR AFFIRMED) BEFORE ME"]),
 }
 
 
@@ -130,8 +163,9 @@ def repair(doc_id, apply_it):
     keep = spec.get("keep", [])
     expected_fields = spec.get("fields", 0)
 
-    pdf_path = os.path.join(OUT, "%s.pdf" % doc_id)
-    json_path = os.path.join(OUT, "%s.json" % doc_id)
+    root = root_for(doc_id)
+    pdf_path = os.path.join(root, "%s.pdf" % doc_id)
+    json_path = os.path.join(root, "%s.json" % doc_id)
     mapping = json.load(open(json_path))
     doc = fitz.open(pdf_path)
     page = doc[page_number - 1]
@@ -187,8 +221,9 @@ def repair(doc_id, apply_it):
         if after[phrase] < 1:
             raise SystemExit("%s p%d: %r was removed" % (doc_id, page_number, phrase))
 
-    print("%-12s p%-2d %-42s %s"
-          % (doc_id, page_number, spec["why"],
+    print("%-12s p%-2d %-8s %-42s %s"
+          % (doc_id, page_number,
+             "staging" if root == OUT else "export", spec["why"],
              ", ".join("%s %d->%d" % (p[:22], before[p], after[p])
                        for p in halved + gone)))
     if apply_it:
