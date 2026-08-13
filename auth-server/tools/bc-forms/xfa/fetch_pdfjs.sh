@@ -17,5 +17,6 @@ cp "$WORK/package/build/pdf.mjs" "$WORK/package/build/pdf.worker.mjs" "$DIR/"
 cp "$WORK/package/web/pdf_viewer.css" "$DIR/"
 rm -rf "$DIR/standard_fonts" "$DIR/cmaps"
 cp -R "$WORK/package/standard_fonts" "$WORK/package/cmaps" "$DIR/"
+node "$DIR/patch_pdfjs_signature.mjs" "$DIR/pdf.worker.mjs"
 
 echo "pdfjs-dist ${VERSION} installed into $DIR"

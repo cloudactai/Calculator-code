@@ -35,6 +35,7 @@ GlobalWorkerOptions.workerSrc = "./pdf.worker.mjs";
 
 const params = new URLSearchParams(location.search);
 const file = params.get("file");
+const noTextFit = new Set(["BCSC_F19.pdf"]);
 
 async function main() {
   console.log("start", file);
@@ -84,6 +85,10 @@ async function main() {
   // only the blocks that actually overflow, until their text fits the box the
   // form gave them. Nothing moves, so no cascade.
   function fitOverflowingText(pageEl) {
+    // F19's three notice paragraphs intentionally overflow shallow XFA draw boxes
+    // into generous blank space. They are 9pt and non-overlapping as published;
+    // treating their declared box height as a collision shrinks them to 6pt.
+    if (noTextFit.has(file.split("/").pop())) return 0;
     const blocks = [...pageEl.querySelectorAll(".xfaDraw")].filter((el) => el.textContent.trim());
     let fixed = 0;
     for (const el of blocks) {

@@ -45,6 +45,12 @@ static Letter PDF with a real text layer. It also exports `<docId>.fields.json` 
 government's own field boxes read off the rendered DOM in PDF points, which is what the
 overlays are built from.
 
+`fetch_pdfjs.sh` also applies `xfa/patch_pdfjs_signature.mjs`. Upstream pdf.js has no
+HTML renderer for XFA `<signature>` widgets, which otherwise drops the widget's printed
+rule and caption (for example, "Judge / Associate Judge / Registrar"). The patch emits
+only a printable container — never an input — so signature captions survive flattening
+without becoming fillable overlay fields.
+
 ```
 python3 build_bc_supreme.py [--promote]
 ```

@@ -72,7 +72,12 @@ async function main() {
     try {
       await cdp.send("Page.enable", {}, sessionId);
       await cdp.send("Runtime.enable", {}, sessionId);
-      const url = `${ORIGIN}/render.html?file=${encodeURIComponent(source)}`;
+      // The output directory keeps Chrome's profile between targeted rebuilds.
+      // Disable its HTTP cache so a changed renderer/worker can never silently
+      // produce a PDF with yesterday's flattening code.
+      await cdp.send("Network.enable", {}, sessionId);
+      await cdp.send("Network.setCacheDisabled", { cacheDisabled: true }, sessionId);
+      const url = `${ORIGIN}/render.html?file=${encodeURIComponent(source)}&build=${Date.now()}`;
       await cdp.send("Page.navigate", { url }, sessionId);
 
       let pages = 0;
