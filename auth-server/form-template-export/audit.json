@@ -1171,6 +1171,30 @@
       "fields": 32
     },
     {
+      "docId": "BCAD_2",
+      "pdf": "BCAD_2.pdf",
+      "mapping": "BCAD_2.json",
+      "fields": 19
+    },
+    {
+      "docId": "BCAD_3",
+      "pdf": "BCAD_3.pdf",
+      "mapping": "BCAD_3.json",
+      "fields": 15
+    },
+    {
+      "docId": "BCAD_3_1",
+      "pdf": "BCAD_3_1.pdf",
+      "mapping": "BCAD_3_1.json",
+      "fields": 16
+    },
+    {
+      "docId": "BCAD_5",
+      "pdf": "BCAD_5.pdf",
+      "mapping": "BCAD_5.json",
+      "fields": 19
+    },
+    {
       "docId": "BCSC_F41",
       "pdf": "BCSC_F41.pdf",
       "mapping": "BCSC_F41.json",
@@ -1939,6 +1963,132 @@
       "fields": 26
     },
     {
+      "docId": "BCPC_CFCSA_1",
+      "pdf": "BCPC_CFCSA_1.pdf",
+      "mapping": "BCPC_CFCSA_1.json",
+      "fields": 51
+    },
+    {
+      "docId": "BCPC_CFCSA_2",
+      "pdf": "BCPC_CFCSA_2.pdf",
+      "mapping": "BCPC_CFCSA_2.json",
+      "fields": 85
+    },
+    {
+      "docId": "BCPC_CFCSA_3",
+      "pdf": "BCPC_CFCSA_3.pdf",
+      "mapping": "BCPC_CFCSA_3.json",
+      "fields": 53
+    },
+    {
+      "docId": "BCPC_CFCSA_3_1",
+      "pdf": "BCPC_CFCSA_3_1.pdf",
+      "mapping": "BCPC_CFCSA_3_1.json",
+      "fields": 258
+    },
+    {
+      "docId": "BCPC_CFCSA_3_2",
+      "pdf": "BCPC_CFCSA_3_2.pdf",
+      "mapping": "BCPC_CFCSA_3_2.json",
+      "fields": 224
+    },
+    {
+      "docId": "BCPC_CFCSA_5",
+      "pdf": "BCPC_CFCSA_5.pdf",
+      "mapping": "BCPC_CFCSA_5.json",
+      "fields": 19
+    },
+    {
+      "docId": "BCPC_CFCSA_6",
+      "pdf": "BCPC_CFCSA_6.pdf",
+      "mapping": "BCPC_CFCSA_6.json",
+      "fields": 27
+    },
+    {
+      "docId": "BCPC_CFCSA_10",
+      "pdf": "BCPC_CFCSA_10.pdf",
+      "mapping": "BCPC_CFCSA_10.json",
+      "fields": 30
+    },
+    {
+      "docId": "BCPC_CFCSA_10_1",
+      "pdf": "BCPC_CFCSA_10_1.pdf",
+      "mapping": "BCPC_CFCSA_10_1.json",
+      "fields": 69
+    },
+    {
+      "docId": "BCPC_CFCSA_10_6",
+      "pdf": "BCPC_CFCSA_10_6.pdf",
+      "mapping": "BCPC_CFCSA_10_6.json",
+      "fields": 49
+    },
+    {
+      "docId": "BCPC_CFCSA_4",
+      "pdf": "BCPC_CFCSA_4.pdf",
+      "mapping": "BCPC_CFCSA_4.json",
+      "fields": 33
+    },
+    {
+      "docId": "BCPC_CFCSA_7",
+      "pdf": "BCPC_CFCSA_7.pdf",
+      "mapping": "BCPC_CFCSA_7.json",
+      "fields": 40
+    },
+    {
+      "docId": "BCPC_CFCSA_11",
+      "pdf": "BCPC_CFCSA_11.pdf",
+      "mapping": "BCPC_CFCSA_11.json",
+      "fields": 42
+    },
+    {
+      "docId": "BCPC_CFCSA_10_2",
+      "pdf": "BCPC_CFCSA_10_2.pdf",
+      "mapping": "BCPC_CFCSA_10_2.json",
+      "fields": 35
+    },
+    {
+      "docId": "BCPC_CFCSA_10_5",
+      "pdf": "BCPC_CFCSA_10_5.pdf",
+      "mapping": "BCPC_CFCSA_10_5.json",
+      "fields": 80
+    },
+    {
+      "docId": "BCPC_CFCSA_10_3",
+      "pdf": "BCPC_CFCSA_10_3.pdf",
+      "mapping": "BCPC_CFCSA_10_3.json",
+      "fields": 19
+    },
+    {
+      "docId": "BCPC_CFCSA_10_4",
+      "pdf": "BCPC_CFCSA_10_4.pdf",
+      "mapping": "BCPC_CFCSA_10_4.json",
+      "fields": 16
+    },
+    {
+      "docId": "BCPC_CFCSA_8",
+      "pdf": "BCPC_CFCSA_8.pdf",
+      "mapping": "BCPC_CFCSA_8.json",
+      "fields": 28
+    },
+    {
+      "docId": "BCPC_CFCSA_9",
+      "pdf": "BCPC_CFCSA_9.pdf",
+      "mapping": "BCPC_CFCSA_9.json",
+      "fields": 40
+    },
+    {
+      "docId": "BCAD_1",
+      "pdf": "BCAD_1.pdf",
+      "mapping": "BCAD_1.json",
+      "fields": 35
+    },
+    {
+      "docId": "BCAD_4",
+      "pdf": "BCAD_4.pdf",
+      "mapping": "BCAD_4.json",
+      "fields": 37
+    },
+    {
       "docId": "SKKB_15_47",
       "pdf": "SKKB_15_47.pdf",
       "mapping": "SKKB_15_47.json",
@@ -2211,7 +2361,7 @@
   ],
   "excluded": [],
   "counts": {
-    "included": 368,
+    "included": 393,
     "excluded": 0
   }
 }

@@ -7,7 +7,7 @@ per-template field count.
 The first 25 Ontario templates came from `cloud-act-api-master` and
 `cloudact-frontend-main`; everything since is built from the government sites by
 the pipelines in `auth-server/tools/` — `on-forms/` for Ontario (135 of the 140
-published family-law forms), `bc-forms/` for British Columbia (188). Both write
+published family-law forms), `bc-forms/` for British Columbia (213). Both write
 their staging to gitignored `_incoming*/` directories; only the promoted
 templates live here.
 

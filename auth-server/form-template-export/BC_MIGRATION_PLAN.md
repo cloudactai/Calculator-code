@@ -11,7 +11,12 @@ _Written 2026-07-30. Companion to the Ontario work in this folder
 `npm run forms:validate-export` green, no Ontario template touched.
 
 > This status records the original migration milestone. The current catalog contains
-> **188 BC templates**; see `catalog.json` and `BC_BATCH2_REVIEW.md` for the later batch.
+> **213 BC templates**: batch 2 (`BC_BATCH2_REVIEW.md`) took the two family-rules
+> indexes to 188, and batch 3 (`BC_BATCH3_REVIEW.md`, 2026-08-14) added the 19
+> child-protection forms prescribed by the Provincial Court (CFCSA) Rules and the
+> 6 adoption forms prescribed by Schedule 3 of the Adoption Regulation — neither
+> of which any *Family Rules* index publishes, which is why this plan's scope
+> missed them.
 
 Two plan assumptions turned out to be wrong, both in our favour and against:
 

@@ -79,7 +79,8 @@ def check_ids_and_bounds(doc_id, pdf, fields, blocking, advisory):
     for (page_number, _x, _y), ids in positions.items():
         if len(ids) > 1:
             # Two controls on one mark means one of them cannot be clicked.
-            blocking.append(("shared-position", doc_id, page_number, ", ".join(ids)))
+            blocking.append(("shared-position", doc_id, page_number,
+                             ", ".join(str(field_id) for field_id in ids)))
 
 
 def check_overlaps(doc_id, pdf, fields, blocking, advisory):

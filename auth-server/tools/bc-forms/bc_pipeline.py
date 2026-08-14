@@ -22,8 +22,10 @@ SIG_MAX_HEIGHT = 35
 SIG_CAPTION = re.compile(r"^\s*signature\b", re.I)
 SIG_DATE_CAPTION = re.compile(r"date of signature", re.I)
 # Printed empty-checkbox glyphs. A checkbox overlay is *supposed* to sit on one,
-# so they must never count as a label the box is covering.
-BOX_GLYPHS = set("❑☐□⃞◻▢")
+# so they must never count as a label the box is covering. `` is Wingdings
+# 0xA8 — the open box the CFCSA forms print, which arrives as a private-use code
+# point rather than as ❑ and so was invisible to every check here.
+BOX_GLYPHS = set("❑☐□⃞◻▢")
 
 
 def field_type(widget):

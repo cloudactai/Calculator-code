@@ -114,6 +114,36 @@ names the registry the case is filed in, and the matter has no such field, so it
 would have to be filled from the court's name. Numbered parties (`full name of
 party 1`) are skipped too — a numbered list does not say which one is the applicant.
 
+## 6. Batch 3 — child protection and adoption
+
+The Supreme and Provincial *Family Rules* sets above prescribe no child-protection
+and no adoption form, so those two families are their own batch, staged in
+`_incoming_bc3/` and described in `BC_BATCH3_REVIEW.md`.
+
+```
+python3 fetch_bc3.py                 # 17 government PDFs + 8 forms cut from BC Laws
+python3 build_bc3.py [--promote]     # both paths, plus the gates
+python3 verify_bc3.py                # verify_bc2's whole battery, over batch 3
+python3 merge_catalog3.py --promote  # BC block renumbered 101..313
+python3 rebind_bc3.py                # the court file number, and only that
+```
+
+Run the last two in that order: promoting overwrites the maps the binds live in.
+
+Two of the 19 CFCSA forms (Form 5 Warrant, Form 10 Order) and all six adoption
+forms are published only as enacted text, inside a King's Printer consolidation
+that sets its schedule of forms as continuous copy. `bclaws_cut.py` cuts each one
+out at its own enacting heading — never by page number — and re-lays the bands
+onto fresh Letter pages, leaving the running head and page numbers behind. Their
+blanks are then read off the printed page: dot runs, ruled lines with clear space
+above them, empty cells of a ruled table, and printed ticks.
+
+Unlike `build_bc_laws.py`, batch 3 **does not redact the leaders**. The regulation
+opens a caption inside the same text-showing operation that carries the sentence
+around it, and MuPDF's redaction drops the whole operation — clearing
+`[Court Location]` on CFCSA Form 5 took "the person did not attend this Court at"
+with it. The dots stay printed and the box sits on them.
+
 ## Overlay convention
 
 `field.x` = box left in points, `field.y` = box top in points (y down), `width`/`height`

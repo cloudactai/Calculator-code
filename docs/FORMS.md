@@ -177,7 +177,7 @@ This is the most likely source of confusion for anyone new to the file:
   lets the user tweak/save. The forms are **image-based PDFs** with an overlay coordinate
   convention; the mapping is produced by a server-side extract-from-AcroForm / vector
   pipeline. (See the project's forms-migration and prefill-plan notes for the full
-  mapping pipeline and per-form status — the catalogue holds **135 Ontario, 188 BC,
+  mapping pipeline and per-form status — the catalogue holds **135 Ontario, 213 BC,
   40 Saskatchewan and 5 Manitoba** templates. Build tooling is per province, in
   `auth-server/tools/on-forms/`, `auth-server/tools/bc-forms/`,
   `auth-server/tools/sk-forms/` and `auth-server/tools/mb-forms/`.)
@@ -185,7 +185,9 @@ This is the most likely source of confusion for anyone new to the file:
   The four provinces reach the same overlay convention from very different
   sources, which is the thing to know before touching any of them: Ontario is
   largely **scanned images**, BC is **AcroForm** (Provincial) and **XFA needing a
-  headless flatten** (Supreme), and Saskatchewan and Manitoba are both **static
+  headless flatten** (Supreme) — plus, for the child-protection and adoption forms
+  the government publishes only as enacted text, pages **cut out of a King's
+  Printer consolidation** — and Saskatchewan and Manitoba are both **static
   Word-derived PDFs with a real text layer and no widgets at all** — so their boxes
   are detected from printed anchors and their backgrounds ship byte-identical to
   the government's file.

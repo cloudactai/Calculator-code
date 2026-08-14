@@ -22,6 +22,9 @@ auth-server/form-template-export/_incoming/
 # QA renders. Only the promoted BC*_.pdf/.json templates belong in the repo.
 auth-server/form-template-export/_incoming_bc/
 auth-server/form-template-export/_incoming_bc2/
+# Batch 3 stages the two King's Printer consolidations as well, since the
+# child-protection and adoption forms are cut out of them.
+auth-server/form-template-export/_incoming_bc3/
 # And for the Ontario batch: government sources, the headless XFA flatten and
 # QA renders. The promoted FormXX.pdf/.json templates are what the repo ships.
 auth-server/form-template-export/_incoming_on/
