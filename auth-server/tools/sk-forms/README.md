@@ -187,6 +187,11 @@ form set in another size still lands right.
 
 ## Known gap
 
+**Form 15-8A p1, item 2(a) and (b)** prints two answer labels followed by bare
+whitespace rather than rules. The builder therefore carries two measured manual
+one-line fields in `MANUAL_FIELDS`; they extend from just after each label to the
+same right margin as the neighbouring long answers.
+
 **Form 15-78 p6, item 26 "My occupation is:"** has no field. The line ends with a
 caption and a tab, and the government printed no rule, no cell and no rectangle
 after it — so every detector here correctly finds nothing. Its own twin two items

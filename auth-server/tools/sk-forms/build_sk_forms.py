@@ -127,6 +127,16 @@ SK_SIG_EXCLUDE = re.compile(r"date of signature", re.I)
 SK_ROLE_CAPTION = re.compile(
     r"^\s*\(?\s*(deputy\s+)?(local\s+)?(registrar|judge|justice|clerk)\s*\)?\s*$", re.I)
 
+# The government left these two answer lines as bare whitespace: there is no
+# underscore, cell, or rectangle for the general detectors to measure.  Their
+# bounds follow the (a)/(b) baselines and the neighbouring full-width answers.
+MANUAL_FIELDS = {
+    "SKKB_15_8A": [
+        (1, fitz.Rect(151.0, 481.17, 516.0, 494.17), "TextField"),
+        (1, fitz.Rect(151.0, 499.17, 516.0, 512.17), "TextField"),
+    ],
+}
+
 
 def line_chars(page):
     """Every text line as (text, per-character rects, font size).
@@ -868,6 +878,11 @@ def build(src, promote=False):
             field = _field(doc_id, index, rect, kind)
             field["page"] = number
             fields.append(field)
+    for page_number, rect, kind in MANUAL_FIELDS.get(doc_id, []):
+        index += 1
+        field = _field(doc_id, index, rect, kind)
+        field["page"] = page_number
+        fields.append(field)
     doc.close()
 
     bp.clamp_to_page(fields, page_sizes)
