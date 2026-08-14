@@ -2122,7 +2122,7 @@
       "docId": "SKKB_15_8A",
       "pdf": "SKKB_15_8A.pdf",
       "mapping": "SKKB_15_8A.json",
-      "fields": 18
+      "fields": 20
     },
     {
       "docId": "SKKB_15_8B",
@@ -2134,7 +2134,7 @@
       "docId": "SKKB_15_78",
       "pdf": "SKKB_15_78.pdf",
       "mapping": "SKKB_15_78.json",
-      "fields": 88
+      "fields": 90
     },
     {
       "docId": "SKKB_15_82",
@@ -2177,11 +2177,41 @@
       "pdf": "SKKB_15_138.pdf",
       "mapping": "SKKB_15_138.json",
       "fields": 24
+    },
+    {
+      "docId": "MBKB_70D",
+      "pdf": "MBKB_70D.pdf",
+      "mapping": "MBKB_70D.json",
+      "fields": 285
+    },
+    {
+      "docId": "MBKB_70D_1",
+      "pdf": "MBKB_70D_1.pdf",
+      "mapping": "MBKB_70D_1.json",
+      "fields": 12
+    },
+    {
+      "docId": "MBKB_70D_5",
+      "pdf": "MBKB_70D_5.pdf",
+      "mapping": "MBKB_70D_5.json",
+      "fields": 272
+    },
+    {
+      "docId": "MBKB_70U",
+      "pdf": "MBKB_70U.pdf",
+      "mapping": "MBKB_70U.json",
+      "fields": 104
+    },
+    {
+      "docId": "MBKB_70W",
+      "pdf": "MBKB_70W.pdf",
+      "mapping": "MBKB_70W.json",
+      "fields": 50
     }
   ],
   "excluded": [],
   "counts": {
-    "included": 363,
+    "included": 368,
     "excluded": 0
   }
 }
