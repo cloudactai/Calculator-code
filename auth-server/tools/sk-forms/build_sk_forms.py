@@ -714,8 +714,18 @@ def page_boxes(page):
             box = fitz.Rect(dollar.x1 + 1.5, top, box.x1, top + height)
         if box.width < MIN_BLANK_WIDTH or box.height < 6:
             continue
-        lines = box.height / (SCALE * 6.0)
-        boxes.append((box, "TextArea" if lines > TEXTAREA_LINES else "TextField"))
+        if dollar is not None:
+            # An amount is one line, always -- so a `$` cell is always a
+            # TextField. Left to the height rule it is not: the glyph-derived
+            # height is 17.7pt, which is 1.97 lines and trips the TextArea
+            # threshold, while the same `$` in a shorter cell falls under it. The
+            # column then mixes a one-line input with a resizable box for what is
+            # the same kind of figure (guide 8, "two type values for the same kind
+            # of table cell"). The `$` settles it without measuring anything.
+            kind = "TextField"
+        else:
+            kind = "TextArea" if box.height / (SCALE * 6.0) > TEXTAREA_LINES else "TextField"
+        boxes.append((box, kind))
         filled_cells.append(rect)
 
     # Writing areas the form draws as a bare rectangle, which are neither a ruled

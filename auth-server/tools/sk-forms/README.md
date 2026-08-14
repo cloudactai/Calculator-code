@@ -116,9 +116,9 @@ slice of a merged region, not a cell, and is discarded.
 python3 verify_sk.py [--stage]
 ```
 
-Re-derives all **13** checks from the page rather than comparing against what the
+Re-derives all **14** checks from the page rather than comparing against what the
 builder stored: printed-text coverage, checkbox-on-a-printed-square, unfilled
-blanks, unfilled drawn rectangles, `$` slots (missing *and* covered), amount
+blanks, unfilled drawn rectangles, `$` slots (missing, covered, and typed as anything but a one-line TextField), amount
 seating, vertical stacking, edge clearance, signature rules, bounds, duplicate
 ids, shared positions, box overlap and slivers.
 

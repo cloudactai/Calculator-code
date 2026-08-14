@@ -296,7 +296,8 @@ def check_dollar_slots(doc, fields, problems):
     """
     for number in sorted({f["page"] for f in fields}):
         page = doc[number - 1]
-        mine = [box_of(f) for f in fields if f["page"] == number]
+        here = [f for f in fields if f["page"] == number]
+        mine = [box_of(f) for f in here]
         for text, boxes, _sizes in B.line_chars(page):
             for index, char in enumerate(text):
                 if char != "$":
@@ -305,6 +306,18 @@ def check_dollar_slots(doc, fields, problems):
                 if following and following[0].isdigit():
                     continue
                 glyph = boxes[index]
+                # An amount is one line, so its control is a TextField. A column
+                # that mixes TextField and TextArea for the same kind of figure
+                # reads as two different inputs (guide 8).
+                for field in here:
+                    box = box_of(field)
+                    if (box.x0 >= glyph.x1 - 1 and box.x0 - glyph.x1 < 40
+                            and box.y0 < glyph.y1 and box.y1 > glyph.y0
+                            and field["type"] != "TextField"):
+                        problems.append({"check": "dollar-type", "page": number,
+                                         "id": field["id"],
+                                         "detail": "amount box is %s, not TextField"
+                                                   % field["type"]})
                 if any((box & glyph).get_area() > 0.4 * glyph.get_area() for box in mine):
                     problems.append({"check": "dollar-covered", "page": number, "id": None,
                                      "detail": "a box covers the $ at %.0f,%.0f"
