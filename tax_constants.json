@@ -231,6 +231,57 @@
     "A29_AB_CLIMATE_ACTION_COMMENT": "A29. Climate Action Incentive — Alberta amounts 2025. Source: canada.ca/climate-action-incentive. Quarterly $225/$112.50/$56.25 annualized. Note: Program cancelled April 2025; values retained for 2025 tax year calculations.",
     "AB_CLIMATE_ACTION_BASE": 900.00,
     "AB_CLIMATE_ACTION_FIRST_CHILD": 450.00,
-    "AB_CLIMATE_ACTION_ADDL_CHILD": 225.00
+    "AB_CLIMATE_ACTION_ADDL_CHILD": 225.00,
+
+    "A30_SK_BRACKETS_COMMENT": "A30. Saskatchewan provincial tax brackets 2025. Source: TaxTips.ca / Saskatchewan Income Tax Act. Indexed by federal factor 1.027.",
+    "SK_BRACKETS": [
+      {"From":       0, "To":   53463, "Income_over":      0, "Rate": 0.1050, "Basic":       0.0000},
+      {"From":   53463, "To":  152750, "Income_over":  53463, "Rate": 0.1250, "Basic":    5613.6150},
+      {"From":  152750, "To": 9999999, "Income_over": 152750, "Rate": 0.1450, "Basic":   18024.4400}
+    ],
+
+    "A31_SK_CREDITS_COMMENT": "A31. Saskatchewan provincial credit amounts 2025. Source: TaxTips.ca / TD1SK. Credit rate is 10.5% (lowest SK bracket rate). SK has unique child amount ($7,704 per child under 19) and senior supplementary amount ($2,028).",
+    "BASIC_PERSONAL_AMOUNT_SK": 19491.00,
+    "AMOUNT_FOR_ELIGIBLE_DEPENDENT_SK": 19491.00,
+    "DISABILITY_AMOUNT_SK": 13986.00,
+    "SK_AGE_AMOUNT_BASE": 5785.00,
+    "SK_AGE_AMOUNT_THRESHOLD": 43065.00,
+    "SK_CREDIT_RATE": 0.105,
+    "SK_CHILD_AMOUNT": 7704.00,
+    "SK_SENIOR_SUPPLEMENT": 2028.00,
+
+    "A32_SK_CLIMATE_ACTION_COMMENT": "A32. Canada Carbon Rebate — SK amounts 2024 base year (final April 2025 payment). Source: CRA CCR calculation sheet for SK. Program cancelled April 2025; values retained for 2025 tax year calculations.",
+    "SK_CLIMATE_ACTION_BASE": 824.00,
+    "SK_CLIMATE_ACTION_FIRST_CHILD": 412.00,
+    "SK_CLIMATE_ACTION_ADDL_CHILD": 206.00,
+
+    "A33_SK_SLITC_COMMENT": "A33. Saskatchewan Low-Income Tax Credit (SLITC) July 2025–June 2026. Source: canada.ca/province-saskatchewan. Refundable credit similar to ON sales tax credit.",
+    "SK_SLITC_INDIVIDUAL": 429.00,
+    "SK_SLITC_SPOUSE": 429.00,
+    "SK_SLITC_PER_CHILD": 169.00,
+    "SK_SLITC_MAX_CHILDREN": 2,
+    "SK_SLITC_THRESHOLD": 38588.00,
+
+    "A34_MB_BRACKETS_COMMENT": "A34. Manitoba provincial tax brackets 2025. Source: TaxTips.ca / Manitoba Income Tax Act. Indexation frozen starting 2025.",
+    "MB_BRACKETS": [
+      {"From":       0, "To":   47000, "Income_over":      0, "Rate": 0.1080, "Basic":       0.0000},
+      {"From":   47000, "To":  100000, "Income_over":  47000, "Rate": 0.1275, "Basic":    5076.0000},
+      {"From":  100000, "To": 9999999, "Income_over": 100000, "Rate": 0.1740, "Basic":   11833.5000}
+    ],
+
+    "A35_MB_CREDITS_COMMENT": "A35. Manitoba provincial credit amounts 2025. Source: TaxTips.ca / TD1MB. Credit rate is 10.8% (lowest MB bracket rate). MB BPA phases out over $200k-$400k net income range.",
+    "BASIC_PERSONAL_AMOUNT_MB": 15780.00,
+    "AMOUNT_FOR_ELIGIBLE_DEPENDENT_MB": 9134.00,
+    "DISABILITY_AMOUNT_MB": 6180.00,
+    "MB_AGE_AMOUNT_BASE": 3728.00,
+    "MB_AGE_AMOUNT_THRESHOLD": 27749.00,
+    "MB_CREDIT_RATE": 0.108,
+    "MB_BPA_PHASE_OUT_START": 200000.00,
+    "MB_BPA_PHASE_OUT_END": 400000.00,
+
+    "A36_MB_CLIMATE_ACTION_COMMENT": "A36. Canada Carbon Rebate — MB amounts 2024 base year (final April 2025 payment). Source: CRA CCR calculation sheet for MB. Program cancelled April 2025; values retained for 2025 tax year calculations.",
+    "MB_CLIMATE_ACTION_BASE": 600.00,
+    "MB_CLIMATE_ACTION_FIRST_CHILD": 300.00,
+    "MB_CLIMATE_ACTION_ADDL_CHILD": 150.00
   }
 }

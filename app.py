@@ -221,10 +221,10 @@ Your job is to collect all the information needed to calculate child support
 by asking the user questions one at a time, then pass everything to the
 calculator tool. Do not do any math yourself — the calculator handles all of that.
 
-Currently supported provinces: Ontario (ON), British Columbia (BC), and Alberta (AB).
+Currently supported provinces: Ontario (ON), British Columbia (BC), Alberta (AB), Saskatchewan (SK), and Manitoba (MB).
 You MUST ask the user which province the calculation is for before proceeding.
 Do NOT default to Ontario — the province affects child support table amounts,
-provincial taxes, and benefits. Always set the "province" field to "ON", "BC", or "AB"
+provincial taxes, and benefits. Always set the "province" field to "ON", "BC", "AB", "SK", or "MB"
 based on the user's answer.
 
 ═══════════════════════════════════════════════
@@ -261,8 +261,8 @@ all of it and only ask about what is still missing.
 Collect the following through conversation:
 
 PROVINCE
-- Which province the calculation is for: Ontario (ON), British Columbia (BC), or Alberta (AB).
-- Ask this early in the conversation (e.g. "Which province is this for — Ontario, British Columbia, or Alberta?").
+- Which province the calculation is for: Ontario (ON), British Columbia (BC), Alberta (AB), Saskatchewan (SK), or Manitoba (MB).
+- Ask this early in the conversation (e.g. "Which province is this for — Ontario, British Columbia, Alberta, Saskatchewan, or Manitoba?").
 - If the matter data includes a province, use that and confirm it.
 - If the user does not specify, default to Ontario (ON).
 
@@ -293,13 +293,13 @@ results, include the download link at the end of your message like this:
 
 where DOWNLOAD_URL is the download_url value from the tool result.
 
-Ontario, British Columbia, and Alberta child support only. Politely decline spousal support questions
-and requests for provinces other than ON, BC, or AB.
+Ontario, British Columbia, Alberta, Saskatchewan, and Manitoba child support only. Politely decline spousal support questions
+and requests for provinces other than ON, BC, AB, SK, or MB.
 """
 
 CALC_TOOL = {
     "name": "calculate_child_support",
-    "description": "Calculate child support once all information has been collected from the user. Supports Ontario (ON), British Columbia (BC), and Alberta (AB).",
+    "description": "Calculate child support once all information has been collected from the user. Supports Ontario (ON), British Columbia (BC), Alberta (AB), Saskatchewan (SK), and Manitoba (MB).",
     "input_schema": {
         "type": "object",
         "required": ["party1_income", "party2_income", "children"],
@@ -318,7 +318,7 @@ CALC_TOOL = {
             # Province — optional, defaults to ON
             "province": {
                 "type": "string",
-                "enum": ["ON", "BC", "AB"],
+                "enum": ["ON", "BC", "AB", "SK", "MB"],
                 "description": "Province for the child support calculation. Defaults to ON if not specified."
             },
 
@@ -2144,9 +2144,9 @@ def tax_chat():
 
 
 SPOUSAL_CHAT_SYSTEM = """
-You are a spousal support intake assistant for CloudAct (Ontario).
+You are a spousal support intake assistant for CloudAct.
 
-Your job is to collect all the information needed to calculate Ontario SSAG
+Your job is to collect all the information needed to calculate SSAG
 spousal support by asking questions one at a time, then call the
 calculate_spousal_support tool. Do not do any math yourself.
 
@@ -2286,7 +2286,8 @@ If the children path was used, also show:
 Payor INDI (mid):   $X,XXX / year
 Recipient INDI (mid): $X,XXX / year
 
-Ontario SSAG only. Politely decline questions about other provinces.
+Supports Ontario (ON), British Columbia (BC), Alberta (AB), Saskatchewan (SK), and Manitoba (MB).
+Politely decline questions about provinces other than ON, BC, AB, SK, or MB.
 
 ───────────────────────────────────────────────
 PDF REPORT
@@ -2302,7 +2303,7 @@ where DOWNLOAD_URL is the download_url value from the tool result.
 SPOUSAL_CALC_TOOL = {
     "name": "calculate_spousal_support",
     "description": (
-        "Calculate Ontario SSAG spousal support. "
+        "Calculate SSAG spousal support (ON, BC, AB, SK, MB). "
         "Both paths use gross (before-tax) incomes. "
         "Use children=false for the no-children formula (pct × gross income difference). "
         "Use children=true for the iterative tax-converging formula."

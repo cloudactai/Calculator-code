@@ -2,7 +2,7 @@
 tax.py
 ------
 Canadian income-tax + benefits calculator supporting Ontario (ON),
-British Columbia (BC), and Alberta (AB).
+British Columbia (BC), Alberta (AB), Saskatchewan (SK), and Manitoba (MB).
 
 Year-variable constants (bracket tables, indexed amounts, etc.) are stored in
 tax_constants.json and loaded at import time.  To update for a new tax year:
@@ -99,6 +99,17 @@ AB_AGE_AMOUNT_RATE              = 0.15     # Alberta age-amount phase-out rate
 ACFB_BASE_REDUCTION_RATES   = {1: 0.0805, 2: 0.1407, 3: 0.1609, 4: 0.2011}
 ACFB_WORKING_REDUCTION_RATES = {1: 0.034, 2: 0.0649, 3: 0.0834, 4: 0.0895}
 ACFB_WORKING_PHASE_IN_RATE  = 0.15  # working component phase-in rate
+
+# --------------------------------------------------------------------------
+# B2e. SASKATCHEWAN PROVINCIAL RATES
+# --------------------------------------------------------------------------
+SK_AGE_AMOUNT_RATE              = 0.15     # SK age-amount phase-out rate
+SK_SLITC_REDUCTION_RATE         = 0.02     # SLITC phase-out rate
+
+# --------------------------------------------------------------------------
+# B2f. MANITOBA PROVINCIAL RATES
+# --------------------------------------------------------------------------
+MB_AGE_AMOUNT_RATE              = 0.15     # MB age-amount phase-out rate
 
 # --------------------------------------------------------------------------
 # B3. ONTARIO SURTAX RATES
@@ -704,6 +715,190 @@ def calculate_ab_tax(
 
 
 # ===========================================================================
+# SASKATCHEWAN PROVINCIAL TAX
+# ===========================================================================
+
+def _eligible_dependent_sk(party_num: int, children_live_with: int, c: dict) -> float:
+    if (
+        (party_num == 1 and children_live_with == 1)
+        or (party_num == 2 and children_live_with == 2)
+        or children_live_with == 4
+    ):
+        return c["AMOUNT_FOR_ELIGIBLE_DEPENDENT_SK"]
+    return 0.0
+
+
+def _age_amount_sk(age: int, taxable_income: float, c: dict) -> float:
+    if age >= 65:
+        return max(
+            c["SK_AGE_AMOUNT_BASE"]
+            - max(taxable_income - c["SK_AGE_AMOUNT_THRESHOLD"], 0) * SK_AGE_AMOUNT_RATE,
+            0.0,
+        )
+    return 0.0
+
+
+def _sk_child_amount(party_children: list, year: int, c: dict) -> float:
+    """SK child amount: $7,704 per child under 19."""
+    count = sum(1 for ch in party_children if _child_age(ch.date_of_birth, year) < 19)
+    return count * c["SK_CHILD_AMOUNT"]
+
+
+def _sk_senior_supplement(age: int, c: dict) -> float:
+    """SK senior supplementary amount for age 65+."""
+    return c["SK_SENIOR_SUPPLEMENT"] if age >= 65 else 0.0
+
+
+def _total_sk_credits(
+    taxable_income: float,
+    employed_income: float,
+    self_employed_income: float,
+    age: int,
+    party_num: int,
+    children_live_with: int,
+    has_disability: bool,
+    party_children: list,
+    year: int,
+    c: dict,
+) -> float:
+    return (
+        c["BASIC_PERSONAL_AMOUNT_SK"]
+        + _eligible_dependent_sk(party_num, children_live_with, c)
+        + _age_amount_sk(age, taxable_income, c)
+        + _sk_senior_supplement(age, c)
+        + _sk_child_amount(party_children, year, c)
+        + _base_cpp(employed_income, self_employed_income, c)
+        + _ei(employed_income, c)
+        + (c["DISABILITY_AMOUNT_SK"] if has_disability else 0.0)
+    )
+
+
+def calculate_sk_tax(
+    taxable_income: float,
+    employed_income: float,
+    self_employed_income: float,
+    age: int,
+    party_num: int,
+    children_live_with: int,
+    num_children: int,
+    has_disability: bool,
+    party_children: list,
+    year: int,
+    c: dict,
+) -> float:
+    """
+    Saskatchewan provincial tax:
+      bracket_tax − credits × 10.5% (SK credit rate)
+    No surtax, no health premium, no LIFT, no tax reduction.
+    """
+    prov_row = _find_bracket(c["SK_BRACKETS"], taxable_income)
+    credits = _total_sk_credits(
+        taxable_income, employed_income, self_employed_income,
+        age, party_num, children_live_with, has_disability,
+        party_children, year, c,
+    )
+
+    tax_on_income = max(
+        prov_row["Basic"]
+        + (taxable_income - prov_row["Income_over"]) * prov_row["Rate"],
+        0.0,
+    )
+    effect_of_credits = credits * c["SK_CREDIT_RATE"]
+
+    return max(tax_on_income - effect_of_credits, 0.0)
+
+
+# ===========================================================================
+# MANITOBA PROVINCIAL TAX
+# ===========================================================================
+
+def _eligible_dependent_mb(party_num: int, children_live_with: int, c: dict) -> float:
+    if (
+        (party_num == 1 and children_live_with == 1)
+        or (party_num == 2 and children_live_with == 2)
+        or children_live_with == 4
+    ):
+        return c["AMOUNT_FOR_ELIGIBLE_DEPENDENT_MB"]
+    return 0.0
+
+
+def _age_amount_mb(age: int, taxable_income: float, c: dict) -> float:
+    if age >= 65:
+        return max(
+            c["MB_AGE_AMOUNT_BASE"]
+            - max(taxable_income - c["MB_AGE_AMOUNT_THRESHOLD"], 0) * MB_AGE_AMOUNT_RATE,
+            0.0,
+        )
+    return 0.0
+
+
+def _mb_bpa(net_income: float, c: dict) -> float:
+    """MB BPA with phase-out for high income ($200k–$400k)."""
+    bpa = c["BASIC_PERSONAL_AMOUNT_MB"]
+    start = c["MB_BPA_PHASE_OUT_START"]
+    end = c["MB_BPA_PHASE_OUT_END"]
+    if net_income <= start:
+        return bpa
+    if net_income >= end:
+        return 0.0
+    # Linear phase-out
+    return bpa * (1.0 - (net_income - start) / (end - start))
+
+
+def _total_mb_credits(
+    taxable_income: float,
+    employed_income: float,
+    self_employed_income: float,
+    age: int,
+    party_num: int,
+    children_live_with: int,
+    has_disability: bool,
+    c: dict,
+) -> float:
+    return (
+        _mb_bpa(taxable_income, c)
+        + _eligible_dependent_mb(party_num, children_live_with, c)
+        + _age_amount_mb(age, taxable_income, c)
+        + _base_cpp(employed_income, self_employed_income, c)
+        + _ei(employed_income, c)
+        + (c["DISABILITY_AMOUNT_MB"] if has_disability else 0.0)
+    )
+
+
+def calculate_mb_tax(
+    taxable_income: float,
+    employed_income: float,
+    self_employed_income: float,
+    age: int,
+    party_num: int,
+    children_live_with: int,
+    num_children: int,
+    has_disability: bool,
+    c: dict,
+) -> float:
+    """
+    Manitoba provincial tax:
+      bracket_tax − credits × 10.8% (MB credit rate)
+    No surtax, no health premium, no LIFT, no tax reduction.
+    MB BPA phases out between $200k–$400k net income.
+    """
+    prov_row = _find_bracket(c["MB_BRACKETS"], taxable_income)
+    credits = _total_mb_credits(
+        taxable_income, employed_income, self_employed_income,
+        age, party_num, children_live_with, has_disability, c,
+    )
+
+    tax_on_income = max(
+        prov_row["Basic"]
+        + (taxable_income - prov_row["Income_over"]) * prov_row["Rate"],
+        0.0,
+    )
+    effect_of_credits = credits * c["MB_CREDIT_RATE"]
+
+    return max(tax_on_income - effect_of_credits, 0.0)
+
+
+# ===========================================================================
 # BC BENEFITS
 # ===========================================================================
 
@@ -825,6 +1020,63 @@ def calculate_ab_climate_action(
         base += c["AB_CLIMATE_ACTION_FIRST_CHILD"]
     if num_children >= 2:
         base += c["AB_CLIMATE_ACTION_ADDL_CHILD"] * (num_children - 1)
+    return base
+
+
+# ===========================================================================
+# SASKATCHEWAN BENEFITS
+# ===========================================================================
+
+def calculate_sk_climate_action(
+    party_children: list,
+    year: int,
+    c: dict,
+) -> float:
+    """Canada Carbon Rebate — SK amounts (annual). Program ended April 2025."""
+    base = c["SK_CLIMATE_ACTION_BASE"]
+    num_children = len(party_children)
+    if num_children >= 1:
+        base += c["SK_CLIMATE_ACTION_FIRST_CHILD"]
+    if num_children >= 2:
+        base += c["SK_CLIMATE_ACTION_ADDL_CHILD"] * (num_children - 1)
+    return base
+
+
+def calculate_sk_slitc(
+    taxable_income: float,
+    party_children: list,
+    year: int,
+    c: dict,
+) -> float:
+    """Saskatchewan Low-Income Tax Credit (annual, refundable)."""
+    base = c["SK_SLITC_INDIVIDUAL"]
+    # Add spouse/dependent amount (assumed for family law context)
+    num_children = min(len(party_children), c.get("SK_SLITC_MAX_CHILDREN", 2))
+    base += num_children * c["SK_SLITC_PER_CHILD"]
+
+    reduction = max(
+        (taxable_income - c["SK_SLITC_THRESHOLD"]) * SK_SLITC_REDUCTION_RATE,
+        0.0,
+    )
+    return max(base - reduction, 0.0)
+
+
+# ===========================================================================
+# MANITOBA BENEFITS
+# ===========================================================================
+
+def calculate_mb_climate_action(
+    party_children: list,
+    year: int,
+    c: dict,
+) -> float:
+    """Canada Carbon Rebate — MB amounts (annual). Program ended April 2025."""
+    base = c["MB_CLIMATE_ACTION_BASE"]
+    num_children = len(party_children)
+    if num_children >= 1:
+        base += c["MB_CLIMATE_ACTION_FIRST_CHILD"]
+    if num_children >= 2:
+        base += c["MB_CLIMATE_ACTION_ADDL_CHILD"] * (num_children - 1)
     return base
 
 
@@ -1132,6 +1384,27 @@ def calculate_taxes(inp: TaxInput) -> dict:
         )
         bpa_prov           = c["BASIC_PERSONAL_AMOUNT_AB"]
         prov_credit_rate   = c["AB_CREDIT_RATE"]
+    elif province == "SK":
+        elig_dep_prov      = _eligible_dependent_sk(inp.party_num, children_live_with, c)
+        age_amt_prov       = _age_amount_sk(inp.age, taxable_income, c)
+        disab_prov         = c["DISABILITY_AMOUNT_SK"] if has_disability else 0.0
+        total_prov_credits = _total_sk_credits(
+            taxable_income, inp.employed_income, inp.self_employed_income,
+            inp.age, inp.party_num, children_live_with, has_disability,
+            party_children, inp.year, c,
+        )
+        bpa_prov           = c["BASIC_PERSONAL_AMOUNT_SK"]
+        prov_credit_rate   = c["SK_CREDIT_RATE"]
+    elif province == "MB":
+        elig_dep_prov      = _eligible_dependent_mb(inp.party_num, children_live_with, c)
+        age_amt_prov       = _age_amount_mb(inp.age, taxable_income, c)
+        disab_prov         = c["DISABILITY_AMOUNT_MB"] if has_disability else 0.0
+        total_prov_credits = _total_mb_credits(
+            taxable_income, inp.employed_income, inp.self_employed_income,
+            inp.age, inp.party_num, children_live_with, has_disability, c,
+        )
+        bpa_prov           = _mb_bpa(taxable_income, c)
+        prov_credit_rate   = c["MB_CREDIT_RATE"]
     else:
         elig_dep_prov      = _eligible_dependent_ontario(inp.party_num, children_live_with, c)
         age_amt_prov       = _age_amount_ontario(inp.age, taxable_income, c)
@@ -1176,6 +1449,36 @@ def calculate_taxes(inp: TaxInput) -> dict:
         prov_brackets_key   = "AB_BRACKETS"
         prov_row_for_report = _find_bracket(c["AB_BRACKETS"], taxable_income)
         provincial_tax = calculate_ab_tax(
+            taxable_income       = taxable_income,
+            employed_income      = inp.employed_income,
+            self_employed_income = inp.self_employed_income,
+            age                  = inp.age,
+            party_num            = inp.party_num,
+            children_live_with   = children_live_with,
+            num_children         = len(party_children),
+            has_disability       = has_disability,
+            c                    = c,
+        )
+    elif province == "SK":
+        prov_brackets_key   = "SK_BRACKETS"
+        prov_row_for_report = _find_bracket(c["SK_BRACKETS"], taxable_income)
+        provincial_tax = calculate_sk_tax(
+            taxable_income       = taxable_income,
+            employed_income      = inp.employed_income,
+            self_employed_income = inp.self_employed_income,
+            age                  = inp.age,
+            party_num            = inp.party_num,
+            children_live_with   = children_live_with,
+            num_children         = len(party_children),
+            has_disability       = has_disability,
+            party_children       = party_children,
+            year                 = inp.year,
+            c                    = c,
+        )
+    elif province == "MB":
+        prov_brackets_key   = "MB_BRACKETS"
+        prov_row_for_report = _find_bracket(c["MB_BRACKETS"], taxable_income)
+        provincial_tax = calculate_mb_tax(
             taxable_income       = taxable_income,
             employed_income      = inp.employed_income,
             self_employed_income = inp.self_employed_income,
@@ -1249,6 +1552,8 @@ def calculate_taxes(inp: TaxInput) -> dict:
         prov_credits_adj = 0.0
     elif province == "AB":
         prov_credits_adj = 0.0   # Alberta has no provincial child-care credit
+    elif province in ("SK", "MB"):
+        prov_credits_adj = 0.0   # SK/MB have no provincial child-care credit
     else:
         prov_credits_adj = _on_care_credit(taxable_income, capped_child_care, inp.year, c)
 
@@ -1270,7 +1575,7 @@ def calculate_taxes(inp: TaxInput) -> dict:
         )
         on_tax_reduction_amt = 0.0
         on_lift_amt          = 0.0
-    elif province == "AB":
+    elif province in ("AB", "SK", "MB"):
         on_tax_reduction_amt = 0.0
         on_lift_amt          = 0.0
         bc_tax_reduction_amt = 0.0
@@ -1319,6 +1624,14 @@ def calculate_taxes(inp: TaxInput) -> dict:
         prov_child_benefit    = calculate_ab_child_benefit(taxable_income, num_children_for_benefit, c)
         prov_sales_tax_credit = 0.0   # Alberta has no sales tax credit
         cai                   = calculate_ab_climate_action(party_children, inp.year, c)
+    elif province == "SK":
+        prov_child_benefit    = 0.0   # SK has no provincial child benefit
+        prov_sales_tax_credit = calculate_sk_slitc(taxable_income, party_children, inp.year, c)
+        cai                   = calculate_sk_climate_action(party_children, inp.year, c)
+    elif province == "MB":
+        prov_child_benefit    = 0.0   # MB has no provincial child benefit
+        prov_sales_tax_credit = 0.0   # MB has no sales tax credit
+        cai                   = calculate_mb_climate_action(party_children, inp.year, c)
     else:
         prov_child_benefit    = calculate_ocb(taxable_income, party_children, inp.year, c)
         prov_sales_tax_credit = calculate_ostc(taxable_income, party_children, inp.year, c)
