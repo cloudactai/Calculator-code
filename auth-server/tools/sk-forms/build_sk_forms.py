@@ -135,6 +135,10 @@ MANUAL_FIELDS = {
         (1, fitz.Rect(151.0, 481.17, 516.0, 494.17), "TextField"),
         (1, fitz.Rect(151.0, 499.17, 516.0, 512.17), "TextField"),
     ],
+    "SKKB_15_78": [
+        (2, fitz.Rect(202.0, 379.03, 516.0, 392.03), "TextField"),
+        (2, fitz.Rect(230.0, 394.03, 516.0, 407.03), "TextField"),
+    ],
 }
 
 
