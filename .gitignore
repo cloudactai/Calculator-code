@@ -25,6 +25,9 @@ auth-server/form-template-export/_incoming_bc2/
 # And for the Ontario batch: government sources, the headless XFA flatten and
 # QA renders. The promoted FormXX.pdf/.json templates are what the repo ships.
 auth-server/form-template-export/_incoming_on/
+# And for the Saskatchewan batch: King's Printer source PDFs, the manifest and
+# QA renders. Only the promoted SKKB_*.pdf/.json templates belong in the repo.
+auth-server/form-template-export/_incoming_sk/
 # pdf.js vendor build used by the headless XFA flatten, plus the source PDFs
 # staged for it. Fetched by tools/bc-forms/xfa/fetch_pdfjs.sh, not committed.
 auth-server/tools/bc-forms/xfa/pdf.mjs

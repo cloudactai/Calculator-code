@@ -54,10 +54,12 @@ entry point. Flow:
 3. **Load the form catalog for that province.** `FormsArray(province, true, true)` from
    [MatterFormData.jsx](cloudact-ui/src/utils/matterData/MatterFormData.jsx) hits
    `GET /forms?province=<XX>&production_ready=true&mapping_ready=true`. It normalizes
-   province names (`ontario → ON`, `alberta → AB`, `british columbia → BC`) and groups
-   the returned templates into **category folders** dynamically (ordered by the API's
-   `sortOrder`, then title) — so any catalogued category becomes its own folder, not
-   just a hardcoded Divorce / Child-Protection pair.
+   province names through `provinceCodeOf` (`ontario → ON`, `alberta → AB`,
+   `british columbia → BC`, `saskatchewan → SK`) and groups the returned templates
+   into **category folders** dynamically (ordered by the API's `sortOrder`, then
+   title) — so any catalogued category becomes its own folder, not just a hardcoded
+   Divorce / Child-Protection pair. This is why adding a province needs no frontend
+   change: Saskatchewan's eight "King's Bench – …" folders appeared on their own.
 4. **Pick / create a folder.** Forms must be saved into a folder. The page lists
    existing folders (`formsService.listFolders`) and lets you create one
    (`formsService.createFolder`). A form cannot be created without a folder.
@@ -175,9 +177,18 @@ This is the most likely source of confusion for anyone new to the file:
   lets the user tweak/save. The forms are **image-based PDFs** with an overlay coordinate
   convention; the mapping is produced by a server-side extract-from-AcroForm / vector
   pipeline. (See the project's forms-migration and prefill-plan notes for the full
-  mapping pipeline and per-form status — 135 of Ontario's 140 published forms are
-  catalogued, plus the BC set; the Ontario build tooling is in
-  `auth-server/tools/on-forms/`.)
+  mapping pipeline and per-form status — the catalogue holds **135 Ontario, 188 BC
+  and 40 Saskatchewan** templates. Build tooling is per province, in
+  `auth-server/tools/on-forms/`, `auth-server/tools/bc-forms/` and
+  `auth-server/tools/sk-forms/`.)
+
+  The three provinces reach the same overlay convention from very different
+  sources, which is the thing to know before touching any of them: Ontario is
+  largely **scanned images**, BC is **AcroForm** (Provincial) and **XFA needing a
+  headless flatten** (Supreme), and Saskatchewan is **static Word-derived PDFs with
+  a real text layer and no widgets at all** — so its boxes are detected from printed
+  anchors (underscore runs, 9×9 squares, ruled grids) and its background ships
+  byte-identical to the government's file.
 
 If you're adding a form or fixing a field position, the fix almost always belongs in the
 **template/mapping on the backend**, not in this React code.
