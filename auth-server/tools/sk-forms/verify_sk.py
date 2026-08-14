@@ -178,7 +178,149 @@ def check_structure(fields, page_sizes, problems):
                              "detail": "%.1fpt wide" % (field["width"] / SCALE)})
 
 
-CHECKS = (check_printed_text, check_checkbox_marks, check_unfilled_blanks, check_signatures)
+def check_unfilled_rectangles(doc, fields, problems):
+    """A writing area the form draws as a rectangle, with no field on it.
+
+    This is the check that would have caught the biggest defect in the first
+    build: 73 of Form 15-47's writing areas -- "Job/Occupation", "Name of
+    employer", the whole of page 7 -- are drawn as plain rectangles rather than
+    as ruled cells or underscore rules, and nothing placed a field on them.
+
+    Shaded rectangles are excused, because a shaded row is a section heading
+    (the same rule the build uses), and so are rectangles holding printed text.
+    """
+    for number in range(1, doc.page_count + 1):
+        page = doc[number - 1]
+        mine = [box_of(f) for f in fields if f["page"] == number]
+        cells = B.grid_cells(page)
+        pix = B.page_greyscale(page)
+        for rect in B.drawn_boxes(page):
+            if any((rect & other).get_area() > 0.35 * rect.get_area() for other in mine):
+                continue
+            if B.is_shaded(pix, page, rect):
+                continue
+            problems.append({"check": "unfilled-rectangle", "page": number, "id": None,
+                             "detail": "a %.0fx%.0f drawn box at %.0f,%.0f has no field"
+                                       % (rect.width, rect.height, rect.x0, rect.y0)})
+
+
+def check_amount_seating(doc, fields, problems):
+    """An amount box must sit on its own `$`, not merely in the same cell.
+
+    Form 15-47 p9 puts the self-employment `$` two-thirds of the way down a tall
+    cell; anchoring the box to the cell's top left the printed `$` with nothing
+    beside it and the box 40pt adrift.
+    """
+    for number in sorted({f["page"] for f in fields}):
+        page = doc[number - 1]
+        dollars = []
+        for text, boxes, _sizes in B.line_chars(page):
+            for index, char in enumerate(text):
+                if char == "$":
+                    dollars.append(boxes[index])
+        for field in [f for f in fields if f["page"] == number]:
+            box = box_of(field)
+            mine = [d for d in dollars
+                    if 0 <= box.x0 - d.x1 <= 6 and d.y0 < box.y1 and d.y1 > box.y0]
+            if not mine:
+                continue
+            nearest = min(mine, key=lambda d: abs(d.y0 - box.y0))
+            if abs(nearest.y0 - box.y0) > 6:
+                problems.append({"check": "amount-seating", "page": number,
+                                 "id": field["id"],
+                                 "detail": "box top %.1f but its $ is at %.1f"
+                                           % (box.y0, nearest.y0)})
+
+
+def check_stacking(doc, fields, problems):
+    """Two boxes in the same column may not overlap vertically at all.
+
+    The generic overlap gate is an area test and passes a 2pt bleed between two
+    13pt boxes; the viewer draws a border on each and renders them as a crushed
+    stack (Form 15-47 p9's five "Gross $____" rows, set on a 12pt pitch).
+    """
+    by_page = collections.defaultdict(list)
+    for field in fields:
+        by_page[field["page"]].append(field)
+    for number, group in by_page.items():
+        boxes = sorted(((box_of(f), f) for f in group), key=lambda pair: pair[0].y0)
+        for index, (first, field) in enumerate(boxes):
+            for second, other in boxes[index + 1:]:
+                if second.y0 >= first.y1 - 0.01:
+                    break
+                overlap_x = min(first.x1, second.x1) - max(first.x0, second.x0)
+                if overlap_x > 1.0:
+                    problems.append({
+                        "check": "stacked", "page": number, "id": field["id"],
+                        "detail": "overlaps %s by %.1fpt vertically"
+                                  % (other["id"], first.y1 - second.y0)})
+                    break
+
+
+def check_edge_clearance(doc, fields, problems):
+    """A box may not start flush against a letter printed on its own line.
+
+    The overlay rectangle is correct in these cases -- Saskatchewan sets a blank
+    at exactly the x where the preceding word ends -- but the viewer draws a
+    bordered control inside it and the border sits on the letter.
+    """
+    for number in sorted({f["page"] for f in fields}):
+        page = doc[number - 1]
+        glyphs = []
+        for text, boxes, _sizes in B.line_chars(page):
+            for index, char in enumerate(text):
+                if char not in " \t_":
+                    glyphs.append(boxes[index])
+        for field in [f for f in fields if f["page"] == number and f["type"] != "CheckBox"]:
+            box = box_of(field)
+            for glyph in glyphs:
+                if glyph.y1 < box.y0 + 2 or glyph.y0 > box.y1 - 2:
+                    continue
+                if -0.5 <= box.x0 - glyph.x1 < 1.0 or -0.5 <= glyph.x0 - box.x1 < 1.0:
+                    problems.append({"check": "edge-clearance", "page": number,
+                                     "id": field["id"],
+                                     "detail": "starts flush against printed type"})
+                    break
+
+
+def check_dollar_slots(doc, fields, problems):
+    """Every printed `$` that opens an empty amount slot must have a box after it.
+
+    The strongest single signal on a financial form: the government prints a `$`
+    exactly where a figure is to be written. Three separate faults hid behind it
+    -- a `$` set flush with its cell's top rule so the cell read as empty and the
+    box landed *on* the `$`; a shaded amount row skipped as if it were a section
+    heading; and a tall cell whose box sat at the top instead of beside the glyph.
+    39 slots on the two financial forms. A `$` followed by a digit is prose
+    ("$150,000 per year"), not a slot.
+    """
+    for number in sorted({f["page"] for f in fields}):
+        page = doc[number - 1]
+        mine = [box_of(f) for f in fields if f["page"] == number]
+        for text, boxes, _sizes in B.line_chars(page):
+            for index, char in enumerate(text):
+                if char != "$":
+                    continue
+                following = text[index + 1:index + 3].strip()
+                if following and following[0].isdigit():
+                    continue
+                glyph = boxes[index]
+                if any((box & glyph).get_area() > 0.4 * glyph.get_area() for box in mine):
+                    problems.append({"check": "dollar-covered", "page": number, "id": None,
+                                     "detail": "a box covers the $ at %.0f,%.0f"
+                                               % (glyph.x0, glyph.y0)})
+                    continue
+                if any(box.x0 >= glyph.x1 - 1 and box.x0 - glyph.x1 < 40
+                       and box.y0 < glyph.y1 and box.y1 > glyph.y0 for box in mine):
+                    continue
+                problems.append({"check": "dollar-slot", "page": number, "id": None,
+                                 "detail": "the $ at %.0f,%.0f has no box beside it"
+                                           % (glyph.x0, glyph.y0)})
+
+
+CHECKS = (check_printed_text, check_checkbox_marks, check_unfilled_blanks,
+          check_signatures, check_unfilled_rectangles, check_amount_seating,
+          check_stacking, check_edge_clearance, check_dollar_slots)
 
 
 def verify(doc_id, folder):

@@ -63,6 +63,11 @@ RULE_CLEARANCE = 1.3
 LINE_RATIO = 1.3
 # Shorter than this is a stray, not a blank anyone can type in.
 MIN_BLANK_WIDTH = 16.0
+# Room left between a blank and a letter printed hard against it, and between a
+# box and the rule of the blank above. Both exist because the viewer draws a
+# bordered control inside the rectangle we store.
+EDGE_CLEARANCE = 1.5
+STACK_GAP = 1.0
 # A checkbox on these forms is always a 9x9 stroked square.
 CB_MIN, CB_MAX = 4.0, 20.0
 # Table geometry. The width floor is deliberately below a tick column's 17.8pt:
@@ -98,6 +103,11 @@ SHADED_BELOW = 248
 SHADE_ZOOM = 2.0
 
 UNDERSCORE_RUN = re.compile(r"_+")
+# Saskatchewan shades its section-heading rows *and* its totals rows the same
+# grey, but only one of the two is a heading. A row the form calls a total is a
+# figure the filer works out and writes in, so shading must not take its boxes:
+# Form 15-47's SUBTOTAL rows on pages 13 and 17 lost all six.
+TOTAL_ROW = re.compile(r"\b(sub)?total\b", re.I)
 
 # Saskatchewan parenthesises its signature captions -- "(signature of party)",
 # "(signature )" -- so bc_pipeline's `^signature` anchor never fires. The
@@ -166,8 +176,47 @@ def underscore_blanks(page):
             if rect.width < MIN_BLANK_WIDTH:
                 continue
             size = max(sizes[start:end])
+            # A blank set hard against a printed letter must not start *on* it.
+            # The geometry is flush -- Form 15-47 p6 begins the run at exactly the
+            # x where the "y" of "approximately" ends -- and the overlay rectangle
+            # is therefore correct, but the viewer draws a bordered control inside
+            # that rectangle and the border lands on the letter. Guide 2 records
+            # the same one-sided bleed for checkbox marks. Give it a hair of room
+            # at whichever end actually touches type.
+            left, right = rect.x0, rect.x1
+            if start > 0 and text[start - 1] not in " \t":
+                left += EDGE_CLEARANCE
+            if end < len(text) and text[end] not in " \t":
+                right -= EDGE_CLEARANCE
+            if right - left >= MIN_BLANK_WIDTH:
+                rect = fitz.Rect(left, rect.y0, right, rect.y1)
             blanks.append((rect, rect.y1 - size * RULE_INSET_RATIO, size))
     return blanks
+
+
+def seat_blanks(blanks):
+    """Turn each blank into its box, never overlapping the blank above it.
+
+    A blank's box hangs *upward* from its own rule, one line deep. Where the form
+    stacks blanks tighter than a line -- Form 15-47 p9 sets the five "Gross $____"
+    rows on a 12pt pitch, against a 13pt box -- consecutive boxes overlap by a
+    couple of points and the viewer renders them as a crushed stack of borders.
+    The pitch is readable: it is the distance to the rule of the nearest blank
+    above that shares any of this one's width.
+    """
+    seated = []
+    for rect, rule_y, size in blanks:
+        bottom = rule_y - RULE_CLEARANCE
+        height = size * LINE_RATIO
+        above = [other_rule for other, other_rule, _s in blanks
+                 if other_rule < rule_y - 1
+                 and other.x1 > rect.x0 and other.x0 < rect.x1]
+        if above:
+            height = min(height, rule_y - max(above) - STACK_GAP)
+        if height < 6:
+            continue
+        seated.append(fitz.Rect(rect.x0, bottom - height, rect.x1, bottom))
+    return seated
 
 
 def checkboxes(page):
@@ -252,6 +301,31 @@ def _is_merged_slice(rect, lines, tolerance=2.0):
     return False
 
 
+def page_chars(page):
+    """Every printed character on the page as (rect, char), read once."""
+    out = []
+    for text, boxes, _sizes in line_chars(page):
+        for index, char in enumerate(text):
+            out.append((boxes[index], char))
+    return out
+
+
+def cell_contents(chars, rect):
+    """What the government printed inside a cell, read by character centre.
+
+    Not `get_text(clip=...)`: that admits a glyph only when its box is inside the
+    clip, and the amount cells on Form 15-47 p20 set their `$` flush with the top
+    rule, so a 1pt inset dropped it. The cell then read as empty and its box was
+    placed at the cell's left edge -- on top of the printed `$` rather than after
+    it, on 39 amount slots across the financial forms. A character belongs to the
+    cell its centre falls in, which needs no tolerance at all.
+    """
+    inside = [(box, char) for box, char in chars
+              if rect.x0 <= (box.x0 + box.x1) / 2 <= rect.x1
+              and rect.y0 <= (box.y0 + box.y1) / 2 <= rect.y1]
+    return "".join(char for _box, char in inside).strip(), inside
+
+
 def grid_cells(page):
     """Ruled table cells, each with whatever the government printed inside it.
 
@@ -267,6 +341,7 @@ def grid_cells(page):
     """
     horizontal, vertical = _segments(page)
     lines = _line_spans(page)
+    chars = page_chars(page)
     ys = sorted({h[0] for h in horizontal})
     cells = []
     for top, bottom in zip(ys, ys[1:]):
@@ -286,15 +361,14 @@ def grid_cells(page):
             rect = fitz.Rect(left, top, right, bottom)
             if _is_merged_slice(rect, lines):
                 continue
-            inner = rect + (1, 1, -1, -1)
-            text = page.get_text("text", clip=inner).strip()
+            text, inside = cell_contents(chars, rect)
             dollar = None
             if text:
                 stripped = text.replace("$", "").replace("0", "").strip()
                 if "$" in text and not stripped:
                     # Guide 4: an amount cell. The `$` is the government's, and a
                     # printed `0` beside it is a stale default, not wording.
-                    dollar = _dollar_rect(page, inner)
+                    dollar = next((box for box, char in inside if char == "$"), None)
                     text = ""
             cells.append((rect, text, dollar))
     return cells
@@ -443,6 +517,36 @@ def _dollar_rect(page, clip):
     return None
 
 
+def drawn_boxes(page):
+    """Writing areas the form draws as a standalone rectangle.
+
+    Not every writing area on these forms is a table cell or an underscore rule.
+    Form 15-47 draws "Job/Occupation", "Name of employer" and "Name and address
+    of business" as plain rectangles, and page 7 has no ruled grid on it at all --
+    just five of these. They were invisible to the build, because `_segments`
+    reads only line items and `checkboxes` takes only `re` items in the 4-20pt
+    range, so 73 writing areas on Form 15-47 got no field.
+
+    A rectangle qualifies when it is bigger than a checkbox and prints nothing
+    inside it. The forms also draw bordered boxes around blocks of instructions,
+    and those hold text, so the emptiness test excludes them.
+    """
+    out = []
+    for drawing in page.get_drawings():
+        for item in drawing["items"]:
+            if item[0] != "re":
+                continue
+            rect = fitz.Rect(item[1])
+            if CB_MIN < rect.width < CB_MAX and CB_MIN < rect.height < CB_MAX:
+                continue
+            if rect.width < MIN_BLANK_WIDTH or rect.height < CELL_MIN_HEIGHT:
+                continue
+            if page.get_text("text", clip=rect + (2, 2, -2, -2)).strip():
+                continue
+            out.append(rect)
+    return out
+
+
 def _field(doc_id, index, rect, kind, size=9):
     return {
         "id": bp.new_id(doc_id, index),
@@ -460,6 +564,98 @@ def _field(doc_id, index, rect, kind, size=9):
     }
 
 
+# Guide 6: a caption ending in ":" with an empty band under it is a writing area
+# the form expects you to use but drew nothing for. Bands outside this range are
+# a line of leading (too small) or the rest of the sheet (too large).
+BAND_MIN, BAND_MAX = 22.0, 260.0
+BAND_FOOTER = 45.0
+
+
+def writing_area_bands(page, placed):
+    """Answer spaces the form anchors with a caption and then leaves as paper.
+
+    Form 15-47 p14 ends Schedule 3 with "If you are unable to provide proof of
+    payment, indicate why here:" and then 68pt of blank page. There is no rule,
+    no cell and no shading to detect, so every other rule in this file correctly
+    finds nothing, and a lawyer has nowhere to answer.
+
+    Two guards, both of which the guide records as necessary. A caption that
+    already has a field **on its own line** is answered beside itself, not below
+    -- that is what "c. Equals total annual expenses: $____" looks like, and it
+    is the false positive this scan produces twice on this very form. And the
+    band has to be bounded: the rest of an empty sheet is not an answer space.
+    """
+    lines = []
+    for block in page.get_text("dict")["blocks"]:
+        for line in block.get("lines", []):
+            text = "".join(span["text"] for span in line["spans"]).strip()
+            if text:
+                lines.append((fitz.Rect(line["bbox"]), text))
+    lines.sort(key=lambda pair: pair[0].y0)
+    floor = page.rect.height - BAND_FOOTER
+    out = []
+    for rect, text in lines:
+        if not text.rstrip().endswith(":"):
+            continue
+        # Answered beside the caption rather than under it.
+        if any(box.y0 < rect.y1 and box.y1 > rect.y0 and box.x0 >= rect.x0
+               for box in placed):
+            continue
+        below = [other.y0 for other, _t in lines if other.y0 > rect.y1 + 1]
+        band = fitz.Rect(rect.x0, rect.y1 + 2, page.rect.width - 72,
+                         min(min(below, default=floor), floor))
+        if not BAND_MIN <= band.height <= BAND_MAX:
+            continue
+        if any(band.intersects(box) for box in placed):
+            continue
+        out.append(band)
+    return out
+
+
+def heading_row_tops(page, cells, total_rows):
+    """Row tops that are a bold section title, whose empty cells are frame space.
+
+    Form 15-49 p3 runs three rules down the full height of the sheet, so the band
+    holding the bold title "3: BANK ACCOUNTS AND SAVINGS" is enclosed on the right
+    by two more cells. They are not fields; they are the part of the frame the
+    title does not reach. Bold is the signal, because the form sets its section
+    titles bold and its data rows plain -- but a totals row is bold too, so those
+    are exempted first, or "TOTAL VALUE OF BANK ACCOUNTS AND SAVINGS" would lose
+    the boxes it needs. Across all 40 forms this rule removes exactly these two
+    cells and nothing else.
+    """
+    bold = []
+    for block in page.get_text("dict")["blocks"]:
+        for line in block.get("lines", []):
+            for span in line["spans"]:
+                if span["text"].strip() and "bold" in span["font"].lower():
+                    bold.append(fitz.Rect(span["bbox"]))
+    rows = collections.defaultdict(list)
+    for rect, text, _dollar in cells:
+        rows[round(rect.y0)].append((rect, text))
+    out = set()
+    for top, members in rows.items():
+        if top in total_rows:
+            continue
+        labelled = [rect for rect, text in members if text]
+        if labelled and any(span.intersects(rect) for rect in labelled for span in bold):
+            out.add(top)
+    return out
+
+
+def total_row_tops(cells):
+    """Row tops whose printed label calls the row a total.
+
+    Read per row rather than per cell, because the word is printed in the row's
+    label cell and the cells that need the exemption are the empty ones beside it.
+    """
+    rows = collections.defaultdict(list)
+    for rect, text, _dollar in cells:
+        rows[round(rect.y0)].append(text)
+    return {top for top, texts in rows.items()
+            if TOTAL_ROW.search(" ".join(t for t in texts if t))}
+
+
 def page_boxes(page):
     """Every candidate box on one page, as (rect, type), in reading order."""
     marks = checkboxes(page)
@@ -468,6 +664,8 @@ def page_boxes(page):
     cells = grid_cells(page)
     kinds = classify_columns(page, cells)
     pix = page_greyscale(page) if cells else None
+    total_rows = total_row_tops(cells)
+    heading_rows = heading_row_tops(page, cells, total_rows)
     filled_cells = []
     for rect, text, dollar in cells:
         if text:
@@ -477,7 +675,14 @@ def page_boxes(page):
         kind = kinds[(round(rect.x0, 0), round(rect.x1, 0))]
         if kind == "reference":
             continue  # a blank in the government's own reference grid
-        if is_shaded(pix, page, rect):
+        # Shading marks a section-heading row -- but it also marks totals rows and
+        # some amount rows, and neither of those is a heading. A row the form
+        # calls a total, and any cell the form prints a `$` in, are places the
+        # filer writes a figure: a heading never carries a `$`.
+        if dollar is None and round(rect.y0) in heading_rows:
+            continue  # frame space beside a bold section title
+        if (dollar is None and round(rect.y0) not in total_rows
+                and is_shaded(pix, page, rect)):
             continue  # a shaded section-heading row (guide 9.2)
         if kind == "tick":
             # The column is headed by a check glyph and prints no square of its
@@ -490,28 +695,88 @@ def page_boxes(page):
             continue
         box = rect + (1.5, 1.5, -1.5, -1.5)
         if dollar is not None:
-            # Guide 4: start after the `$`, and take the height from the glyph,
-            # clamped to the cell so a one-line amount in a tall cell stays one line.
+            # Guide 4: start after the `$`, take the height from the glyph, and
+            # -- the part that was wrong -- take the *vertical position* from the
+            # glyph too. Anchoring the top to the cell instead put Form 15-47 p9's
+            # self-employment amount 40pt above the `$` it belongs to, at the top
+            # of a tall cell, leaving the printed `$` with nothing beside it.
             height = min(dollar.height * LINE_RATIO, box.height)
-            box = fitz.Rect(dollar.x1 + 1.5, box.y0, box.x1, box.y0 + height)
+            top = min(max(dollar.y0, box.y0), box.y1 - height)
+            box = fitz.Rect(dollar.x1 + 1.5, top, box.x1, top + height)
         if box.width < MIN_BLANK_WIDTH or box.height < 6:
             continue
         lines = box.height / (SCALE * 6.0)
         boxes.append((box, "TextArea" if lines > TEXTAREA_LINES else "TextField"))
         filled_cells.append(rect)
 
+    # Writing areas the form draws as a bare rectangle, which are neither a ruled
+    # cell nor an underscore rule. Skipped where something already covers them.
+    placed = [rect for rect, _kind in boxes]
+    for rect in drawn_boxes(page):
+        if any((rect & other).get_area() > 0.35 * rect.get_area() for other in placed):
+            continue
+        if is_shaded(pix, page, rect) if pix is not None else False:
+            continue
+        box = rect + (1.5, 1.5, -1.5, -1.5)
+        if box.width < MIN_BLANK_WIDTH or box.height < 6:
+            continue
+        lines = box.height / (SCALE * 6.0)
+        boxes.append((box, "TextArea" if lines > TEXTAREA_LINES else "TextField"))
+        filled_cells.append(rect)
+
+    kept = []
     for rect, rule_y, size in underscore_blanks(page):
-        # A blank inside a cell that already got a field is that field, seen twice.
-        # A blank inside a cell that did *not* is a real one: Form 15-47 p9 prints
-        # "A. Business income... Gross $_____ ...Net" inside one labelled cell, so
-        # the cell is correctly skipped and the gross figure still has to be typed.
+        # A blank inside a cell or drawn box that already got a field is that
+        # field, seen twice. A blank inside one that did *not* is a real one:
+        # Form 15-47 p9 prints "A. Business income... Gross $_____ ...Net" inside
+        # one labelled cell, so the cell is correctly skipped and the gross figure
+        # still has to be typed.
         if any(cell.intersects(rect) and cell.get_area() > rect.get_area()
                for cell in filled_cells):
             continue
-        bottom = rule_y - RULE_CLEARANCE
-        boxes.append((fitz.Rect(rect.x0, bottom - size * LINE_RATIO, rect.x1, bottom),
-                      "TextField"))
-    return boxes
+        kept.append((rect, rule_y, size))
+    for box in seat_blanks(kept):
+        boxes.append((box, "TextField"))
+
+    for band in writing_area_bands(page, [rect for rect, _kind in boxes]):
+        boxes.append((band, "TextArea"))
+    return clear_of_type(page, boxes)
+
+
+def clear_of_type(page, boxes):
+    """Trim any box whose side edge is flush against printed type.
+
+    Applied to every box rather than only to underscore runs, because a ruled
+    cell and a drawn rectangle butt against the next word just as often -- Form
+    15-102's judgment line ends 0.18pt short of the word after it. The viewer
+    draws a bordered control inside the rectangle we store, so a gap that reads
+    as correct in the overlay puts a border through a letter in the app.
+
+    Checkboxes are left alone: they are seated on their printed square, and
+    moving an edge to dodge the caption beside them would take them off it.
+    """
+    glyphs = []
+    for text, char_boxes, _sizes in line_chars(page):
+        for index, char in enumerate(text):
+            if char not in " \t_":
+                glyphs.append(char_boxes[index])
+    out = []
+    for rect, kind in boxes:
+        if kind == "CheckBox":
+            out.append((rect, kind))
+            continue
+        left, right = rect.x0, rect.x1
+        for glyph in glyphs:
+            if glyph.y1 < rect.y0 + 2 or glyph.y0 > rect.y1 - 2:
+                continue
+            if -0.5 <= left - glyph.x1 < EDGE_CLEARANCE:
+                left = glyph.x1 + EDGE_CLEARANCE
+            if -0.5 <= glyph.x0 - right < EDGE_CLEARANCE:
+                right = glyph.x0 - EDGE_CLEARANCE
+        if right - left >= MIN_BLANK_WIDTH:
+            rect = fitz.Rect(left, rect.y0, right, rect.y1)
+        out.append((rect, kind))
+    return out
 
 
 def drop_signature_rules(boxes, captions):
