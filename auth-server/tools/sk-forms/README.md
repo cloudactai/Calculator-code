@@ -75,9 +75,14 @@ field:
   a render, not read from `get_drawings()` — the shading is painted as a few
   large bands rather than per row. Data cells read 255 and heading cells 219–230,
   with nothing between.
-- **A signature or commissioner's rule** (guide §5), with one refinement
-  Saskatchewan forces: a caption claims its **nearest** rule, not every rule in
-  the 24pt window. The jurat sets `2_ _________ .` one line above "A Commissioner
+- **A signature, commissioner's or court officer's rule** (guide §5). Three
+  vocabularies: `(signature of party)` in parentheses, `A Commissioner for Oaths
+  for Saskatchewan`, and the office alone — six forms close with a rule captioned
+  just `Local Registrar`. The role is matched as a whole line, so the instruction
+  that mentions the office in passing ("the staff members at the Local
+  Registrar's Office ... are commissioners for oaths") is not read as a caption.
+  One further refinement Saskatchewan forces: a caption claims its **nearest**
+  rule, not every rule in the 24pt window. The jurat sets `2_ _________ .` one line above "A Commissioner
   for Oaths for Saskatchewan", 23.95pt clear of it, so a flat rule deleted the
   year along with the signature line.
 
@@ -111,10 +116,15 @@ slice of a merged region, not a cell, and is discarded.
 python3 verify_sk.py [--stage]
 ```
 
-Re-derives every check from the page rather than comparing against what the
+Re-derives all **13** checks from the page rather than comparing against what the
 builder stored: printed-text coverage, checkbox-on-a-printed-square, unfilled
-blanks, signature rules, bounds, duplicate ids, shared positions, box overlap and
-slivers. `--stage` checks the staged build; the default checks the promoted
+blanks, unfilled drawn rectangles, `$` slots (missing *and* covered), amount
+seating, vertical stacking, edge clearance, signature rules, bounds, duplicate
+ids, shared positions, box overlap and slivers.
+
+Five of those exist because the first batch shipped with defects that only showed
+up **in the app**: the overlay render draws the stored rectangle, while the viewer
+draws its own bordered control inside it (guide §7). `--stage` checks the staged build; the default checks the promoted
 templates.
 
 The printed-text check reads **characters, not words**. `get_text("words")` hands
@@ -123,7 +133,7 @@ either flags every correctly-placed box for the underscores it is supposed to si
 on, or — once underscores are excused — waves through a box that really has
 covered the caption glued to them.
 
-Current state: **40 forms, 3,054 fields, zero findings**, and the build is
+Current state: **40 forms, 3,087 fields, zero findings**, and the build is
 idempotent (two runs produce byte-identical maps).
 
 ## 4. Catalog
@@ -175,10 +185,17 @@ Measured on Form 15-47 p1 at 10pt — char box 139.40–154.48, ink 152.23–152
 so the rule is 1.75pt up, or 0.175 of the font size. It is stored as a ratio so a
 form set in another size still lands right.
 
-## Known artifact
+## Known gap
 
-Form 15-49 p3 encloses a strip of frame beside its "BANK ACCOUNTS AND SAVINGS"
-section title, and two 18pt boxes land in that dead space. They cover no printed
-text and block nothing; every rule tried for removing them (bold-heading bands,
-label-to-cell width ratios) also removed real fields — the TOTAL row's own `$`
-boxes among them. Recorded rather than fixed with a rule that guesses.
+**Form 15-78 p6, item 26 "My occupation is:"** has no field. The line ends with a
+caption and a tab, and the government printed no rule, no cell and no rectangle
+after it — so every detector here correctly finds nothing. Its own twin two items
+down ("The respondent's/petitioner's occupation is: ______") does carry a rule,
+which is what makes the omission visible.
+
+Guide §9.6's remedy is to copy the twin, and a sweep for that shape was written
+and then **not** shipped: matching a caption to its twin across 195 pages produced
+one false positive and missed this case, and a mis-tuned auto-placer that adds
+fields set-wide is a worse outcome than one missing box. Fix it by hand against
+the twin's geometry, or tune the sweep and review a render before applying it
+broadly (guide "change discipline").

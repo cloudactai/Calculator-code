@@ -118,6 +118,14 @@ TOTAL_ROW = re.compile(r"\b(sub)?total\b", re.I)
 SK_SIG_CAPTION = re.compile(r"^\s*\(?\s*(your\s+)?signature\b", re.I)
 SK_COMMISSIONER = re.compile(r"^\s*a\s+commissioner\s+for\s+oaths\b", re.I)
 SK_SIG_EXCLUDE = re.compile(r"date of signature", re.I)
+# A court officer's rule is captioned by the office, not by the word "signature":
+# the petition, the judgment, the certificate of divorce and three more all close
+# with a rule captioned "Local Registrar". Matched as a whole line so the
+# instruction that mentions the office in passing ("the staff members at the Local
+# Registrar's Office in the Court House are commissioners for oaths") is not read
+# as a caption -- that sentence is what an unanchored match would catch.
+SK_ROLE_CAPTION = re.compile(
+    r"^\s*\(?\s*(deputy\s+)?(local\s+)?(registrar|judge|justice|clerk)\s*\)?\s*$", re.I)
 
 
 def line_chars(page):
@@ -146,7 +154,8 @@ def signature_captions(page):
             text = "".join(span["text"] for span in line["spans"])
             if SK_SIG_EXCLUDE.search(text):
                 continue
-            if SK_SIG_CAPTION.search(text) or SK_COMMISSIONER.search(text):
+            if (SK_SIG_CAPTION.search(text) or SK_COMMISSIONER.search(text)
+                    or SK_ROLE_CAPTION.match(text)):
                 out.append(fitz.Rect(line["bbox"]))
     return out
 

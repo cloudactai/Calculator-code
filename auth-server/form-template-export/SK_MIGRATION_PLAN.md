@@ -9,7 +9,7 @@ this folder. The build tooling and the full "why" live in
 ## STATUS — complete
 
 **Shipped: 40 of 40** Part 15 family-law forms, catalog rows 301–340,
-`npm run forms:validate-export` green, **3,054 fields, zero verifier findings**,
+`npm run forms:validate-export` green, **3,087 fields, zero findings across 13 gates**,
 and no Ontario or BC template touched.
 
 Financial forms were built and reviewed first, as asked; the other 32 followed
@@ -65,10 +65,12 @@ self-describing.**
 
 ---
 
-## The three findings worth carrying forward
+## The findings worth carrying forward
 
-Each was found by looking at a rendered page, not by a measurement, and each is
-now a check.
+Each was found by looking at a page, not by a measurement, and each is now a
+check. The last four were found only after the forms were opened **in the app** —
+the QA render draws the stored rectangle, the viewer draws its own bordered
+control inside it, and that difference hid every one of them (guide §7).
 
 1. **A printed reference grid is not a set of empty fields.** Form 15-47's
    checklist prints "Schedules you must attach" as columns 1–7 with dots. Most of
@@ -87,6 +89,24 @@ now a check.
    x-grid cut each table at the other's rule positions and silently produced *no
    cells at all* for the property statement's Category and Institution columns —
    a whole-column loss that no bounds or overlap check would ever flag.
+
+4. **Not every writing area is a cell or a rule.** 73 of Form 15-47's are a plain
+   drawn rectangle, and its page 7 has no grid at all — just five of them. Nothing
+   looked at `re` items except the 9×9 checkbox detector.
+
+5. **Read a cell by character centre, not by `get_text(clip=...)`.** That call
+   admits a glyph only when its box is inside the clip, and 39 amount cells set
+   their `$` flush with the top rule — so the cell read as empty and its box was
+   placed *on* the `$`.
+
+6. **Shading marks headings, totals and some amount rows alike.** Only the first
+   is a heading. A row the form calls a total, and any cell carrying a `$`, keep
+   their boxes; a heading never carries a `$`.
+
+7. **Geometry that is correct in the overlay can still be wrong in the app.** A
+   box flush against printed type, and two boxes on a 12pt pitch each one line
+   deep, both measure fine and both render as a border through a letter or a
+   crushed stack. The viewer's control needs the clearance, not the rectangle.
 
 ---
 
@@ -125,10 +145,12 @@ any third province.
   scan; this batch adds 40 templates to an existing 323.
 - **Per-form prefill past the heading.** As with BC, anything beyond the court
   file number and the parties is per-form work.
-- **One recorded artifact:** two stray boxes in the frame beside Form 15-49 p3's
-  "BANK ACCOUNTS AND SAVINGS" section title. They cover nothing and block
-  nothing; every rule tried for removing them also removed real fields (the TOTAL
-  row's `$` boxes among them), so it is recorded rather than fixed by guesswork.
+- **One known gap:** Form 15-78 p6 item 26 "My occupation is:" has no field. The
+  government printed no rule, cell or rectangle after the caption, so nothing here
+  detects it; its twin two items down does carry a rule. Guide §9.6's copy-the-twin
+  sweep was written and deliberately not shipped — across 195 pages it produced a
+  false positive and missed this case, and an auto-placer that adds fields set-wide
+  is worse than one missing box. See `tools/sk-forms/README.md`.
 - **A render of the overlay is not a render of the app** (guide §7). The pages
   reviewed here were QA renders; the templates still want a look in the viewer
   once they are imported and deployed.
