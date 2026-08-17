@@ -126,6 +126,7 @@ python3 build_bc3.py [--promote]     # both paths, plus the gates
 python3 verify_bc3.py                # verify_bc2's whole battery, over batch 3
 python3 merge_catalog3.py --promote  # BC block renumbered 101..313
 python3 seat_rows_on_type.py --apply # option-list cells dropped onto their own row
+python3 align_cfcsa9_document_lines.py --apply # Form 9 document lines share both edges
 python3 rebind_bc3.py                # the court file number, and only that
 ```
 
