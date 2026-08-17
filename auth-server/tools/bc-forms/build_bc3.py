@@ -193,7 +193,7 @@ def place(background, fields):
     separate_shared_marks(background, fields)
     add_captioned_rows(background, fields)
     seat_on_rules(background, fields)
-    harmonise_rows(fields)
+    harmonise_rows(background, fields)
     harmonise_columns(background, fields)
     clamp_to_frames(background, fields)
 
@@ -205,6 +205,10 @@ SINGLE_LINE_MAX = 20.0
 # above it the top edge starts.
 SEAT = 0.5
 HEAD = 1.0
+# The shortest cell worth cutting. Below `MIN_FIELD_HEIGHT`, because a page may
+# rule two lines closer together than a comfortable line and a short cell still
+# beats one that laps over its neighbour.
+MIN_ROW_HEIGHT = 5.5
 
 
 def row_rules(page, min_width=25.0):
@@ -273,6 +277,7 @@ def seat_on_rules(background, fields, reach=6.0, lift=8.0):
         page = doc[number - 1]
         rules = row_rules(page)
         words = [fitz.Rect(w[:4]) for w in page.get_text("words") if w[4].strip()]
+        frames = page_frames(page)
         for field in [f for f in fields if f["page"] == number
                       and f["type"] in ("TextField", "TextArea")]:
             box = fitz.Rect(field["x"], field["y"],
@@ -294,21 +299,30 @@ def seat_on_rules(background, fields, reach=6.0, lift=8.0):
             above = [y for y, _x0, _x1 in spanning if y < rule - 4]
             if not above:
                 continue
-            top = max(above) + HEAD
             bottom = rule - SEAT
-            # Type lying across the cell, between that rule and this one. A word
-            # only to the left or the right of the box is the row's caption and
-            # bounds nothing, so it has to cover the box's own columns to count.
-            across = [w.y1 + HEAD for w in words
-                      if top <= w.y1 <= rule - MIN_FIELD_HEIGHT
-                      and min(w.x1, box.x1) - max(w.x0, box.x0) > 0.5 * w.width]
-            top = max([top] + across)
+            # The rule above, the edge of a panel drawn across the cell, or the
+            # type lying over it — whichever is lowest. A panel edge is only ever
+            # read as a *ceiling*: as a seating rule it re-cut boxes onto printed
+            # type (below), but as a bound on how far up a box may reach it can
+            # only ever shorten one. Form 10's "Before the Honourable Judge" line
+            # is 7.5 pt below the top of its panel and its widget reached 9 pt
+            # past that, into the panel above.
+            edges = [edge + HEAD for frame in frames
+                     for edge in (frame.y0, frame.y1)
+                     if frame.x0 < box.x1 and frame.x1 > box.x0
+                     and bottom - SINGLE_LINE_MAX <= edge <= bottom - MIN_ROW_HEIGHT]
+            ceiling = max([max(above) + HEAD] + edges
+                          + [c for c in [type_ceiling(words, field, bottom)] if c])
+            top = ceiling
             if bottom - top > SINGLE_LINE_MAX:
                 # Nothing here says how tall the cell is; seat it and no more.
                 top = bottom - box.height
-                if top < max([max(above) + HEAD] + across):
+                if top < ceiling:
                     continue
-            if bottom - top < MIN_FIELD_HEIGHT:
+            # A row can genuinely be tighter than a comfortable line: Form 10 sets
+            # its two "Persons appearing" lines 7.7 pt apart, and refusing to cut
+            # a cell that small left the two boxes overlapping each other by 6 pt.
+            if bottom - top < MIN_ROW_HEIGHT:
                 continue
             if abs(top - box.y0) < 0.05 and abs(bottom - box.y1) < 0.05:
                 continue
@@ -382,14 +396,26 @@ def add_captioned_rows(background, fields, min_width=60.0, gap=2.0):
     return added
 
 
-def harmonise_rows(fields, tolerance=1.5):
+def harmonise_rows(background, fields, tolerance=1.5):
     """Give every cell on one ruled row the same top and height.
 
     `seat_on_rules` works a cell at a time and skips any it cannot find both rules
     for, which leaves a row with one box a different size from its neighbours —
     the exact thing the row seating exists to prevent. Cells are grouped by the
     line they sit on and made to match the one the most of them already agree on.
+
+    A row is never squared back onto printed type. CFCSA Form 6's address panel
+    prints each caption *under* the rule, at the top left of the cell it names, so
+    `seat_on_rules` cut the Name cell to clear the word "Name" and this pass then
+    handed it back the shape of the cell beside it, which has no caption over it
+    and so no reason to be short — the fix undone one line later. The row's top is
+    now held below the lowest ceiling any of its cells has, which keeps the row
+    square *and* off the type: both cells come out the same height, just shorter.
     """
+    doc = fitz.open(background)
+    words = {number: [fitz.Rect(w[:4]) for w in doc[number - 1].get_text("words") if w[4].strip()]
+             for number in sorted({f["page"] for f in fields})}
+    doc.close()
     rows = {}
     for field in fields:
         if field["type"] == "CheckBox" or field["height"] / bp.SCALE > SINGLE_LINE_MAX:
@@ -404,12 +430,38 @@ def harmonise_rows(fields, tolerance=1.5):
         # Most cells win; where none does, the taller shape wins, because a box
         # too tall for its row is untidy and a box too short crops what is typed.
         top, height = max(shapes, key=lambda shape: (shapes[shape], shape[1]))
+        bottom = top + height / bp.SCALE
+        ceiling = max([top] + [c for f in group for c in [type_ceiling(words[f["page"]], f, bottom)]
+                               if c is not None])
+        if ceiling > top and bottom - ceiling >= MIN_FIELD_HEIGHT:
+            top, height = round(ceiling, 2), round((bottom - ceiling) * bp.SCALE, 2)
         for field in group:
             if (field["y"], field["height"]) == (top, height):
                 continue
             field["y"], field["height"] = top, height
             changed += 1
     return changed
+
+
+def type_ceiling(words, field, bottom):
+    """How far up a cell on this line may reach before it covers printed type.
+
+    A word only to the left or the right of the cell is the row's caption and
+    bounds nothing, so it has to lie across the cell's own columns to count.
+
+    The window reaches down to the cell's own bottom rather than to the last line
+    that would still fit. CFCSA Form 10 prints "name of judge" and "mm/dd/yyyy" in
+    4 pt type under the line above, 6.5 pt clear of the next one, and a window
+    that stopped short of them read the row as empty and let the box cover them.
+    A ceiling that leaves too little to write on makes the cell unseatable, which
+    is the honest answer — not a box over the type.
+    """
+    box = fitz.Rect(field["x"], bottom - SINGLE_LINE_MAX,
+                    field["x"] + field["width"] / bp.SCALE, bottom)
+    across = [w.y1 + HEAD for w in words
+              if box.y0 <= w.y1 <= box.y1
+              and min(w.x1, box.x1) - max(w.x0, box.x0) > 0.5 * w.width]
+    return max(across) if across else None
 
 
 def harmonise_columns(background, fields, tolerance=2.5, gap=1.2):
@@ -502,14 +554,19 @@ def clamp_to_frames(background, fields, overrun=24.0, inset=1.0):
     centre and the field may only be reaching past one edge, by less than
     `overrun`. A field that spans a frame edge by more than that is crossing the
     frame on purpose and is left alone.
+
+    Both axes, because CFCSA Form 10's "THIS COURT ORDERS" area runs 20 pt past
+    the right-hand side of the panel it is written in, and a frame is read from
+    the rectangles a path actually draws rather than from the path's bounding box.
+    That distinction is the whole of it on the consolidation forms: Form 10 draws
+    its four panels as `re` items of one path, so the bounding box is the union of
+    all four and no field is ever inside any single one of them.
     """
     doc = fitz.open(background)
     clamped = 0
     for number in sorted({f["page"] for f in fields}):
         page = doc[number - 1]
-        frames = [d["rect"] for d in page.get_drawings()
-                  if d["type"] == "s" and d["rect"].width > 100 and d["rect"].height > 20
-                  and any(item[0] == "re" for item in d["items"])]
+        frames = page_frames(doc[number - 1])
         for field in [f for f in fields if f["page"] == number]:
             rect = fitz.Rect(field["x"], field["y"],
                              field["x"] + field["width"] / bp.SCALE,
@@ -522,13 +579,27 @@ def clamp_to_frames(background, fields, overrun=24.0, inset=1.0):
             top = max(rect.y0, frame.y0 + inset) if 0 < frame.y0 - rect.y0 < overrun else rect.y0
             bottom = (min(rect.y1, frame.y1 - inset)
                       if 0 < rect.y1 - frame.y1 < overrun else rect.y1)
-            if bottom - top < 8 or (top == rect.y0 and bottom == rect.y1):
+            left = max(rect.x0, frame.x0 + inset) if 0 < frame.x0 - rect.x0 < overrun else rect.x0
+            right = (min(rect.x1, frame.x1 - inset)
+                     if 0 < rect.x1 - frame.x1 < overrun else rect.x1)
+            if bottom - top < MIN_ROW_HEIGHT or right - left < MIN_BLANK_WIDTH:
+                continue
+            if (top, bottom, left, right) == (rect.y0, rect.y1, rect.x0, rect.x1):
                 continue
             field["y"] = round(top, 2)
             field["height"] = round((bottom - top) * bp.SCALE, 2)
+            field["x"] = round(left, 2)
+            field["width"] = round((right - left) * bp.SCALE, 2)
             clamped += 1
     doc.close()
     return clamped
+
+
+def page_frames(page, min_width=100.0, min_height=20.0):
+    """The panels the page draws, one per rectangle rather than one per path."""
+    return [fitz.Rect(item[1]) for drawing in page.get_drawings()
+            if drawing["type"] == "s" for item in drawing["items"]
+            if item[0] == "re" and item[1].width > min_width and item[1].height > min_height]
 
 
 def build_acroform(src):
@@ -952,8 +1023,19 @@ def build_bclaws(src):
     # The consolidation forms are built from the printed anchors, so their boxes
     # already sit on their rules; they still get the row pass, because a table row
     # read cell by cell can come out a fraction of a point out of line.
-    harmonise_rows(fields)
+    #
+    # And they get the two passes that read the page rather than the widget layer.
+    # Nothing here was ever a widget, so `clear_printed_labels` and the type
+    # ceiling are the only things standing between a box read off an anchor and
+    # the caption printed beside or above it: on Form 10 the registry cells hung
+    # out of the panel drawn round them, "Before the Honourable Judge" reached up
+    # into the row above, and the two "Persons appearing" lines were tall enough
+    # to overlap each other.
+    clear_printed_labels(background, fields)
+    seat_on_rules(background, fields)
+    harmonise_rows(background, fields)
     harmonise_columns(background, fields)
+    clamp_to_frames(background, fields)
     bp.clamp_to_page(fields, page_sizes)
     audit = {"docId": doc_id, "fields": len(fields),
              "checkboxes": sum(1 for f in fields if f["type"] == "CheckBox"),

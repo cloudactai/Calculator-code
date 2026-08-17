@@ -125,10 +125,21 @@ python3 fetch_bc3.py                 # 17 government PDFs + 8 forms cut from BC 
 python3 build_bc3.py [--promote]     # both paths, plus the gates
 python3 verify_bc3.py                # verify_bc2's whole battery, over batch 3
 python3 merge_catalog3.py --promote  # BC block renumbered 101..313
+python3 seat_rows_on_type.py --apply # option-list cells dropped onto their own row
 python3 rebind_bc3.py                # the court file number, and only that
 ```
 
-Run the last two in that order: promoting overwrites the maps the binds live in.
+Run the last three in that order: promoting overwrites the maps both the seating and
+the binds are written into.
+
+`seat_rows_on_type.py` is a post-pass over the promoted maps, not part of the build.
+On a checkbox option list ("Other ___ *Specify*") BC draws the write-in rule a few
+points above its option's baseline, so a cell correctly seated on that rule by
+`build_bc3.seat_on_rules` still reads a row high — and an oversized one covers the
+row above it. The pass drops those cells onto the line of type the rule runs through.
+Its cost is real and accepted: a cell now sits over the top of the 7 pt caption
+printed under the rule, which `verify_bc3.py` reports as `edge-cuts-caption`. The two
+cannot both be cleared — the form itself interleaves them.
 
 Two of the 19 CFCSA forms (Form 5 Warrant, Form 10 Order) and all six adoption
 forms are published only as enacted text, inside a King's Printer consolidation
