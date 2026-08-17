@@ -160,6 +160,6 @@ export const SPOUSAL_SUPPORT_CAL = "SPOUSAL_SUPPORT";
 export const CHILD_AND_SPOUSAL_SUPPORT_CAL = "CHILD_AND_SPOUSAL_SUPPORT";
 
 //PROVINCE TYPE
-export type Province = "ON" | "BC" | "AB" | "";
+export type Province = "ON" | "BC" | "AB" | "SK" | "MB" | "";
 
 export type ItypeOfSplitting = "SPLIT" | "SEPARATED" | "SHARED" | "HYBRID";
