@@ -808,6 +808,10 @@ const getProviveFromSuffice = (suffice) => {
       return "British Columbia";
     case "AB":
       return "Alberta";
+    case "SK":
+      return "Saskatchewan";
+    case "MB":
+      return "Manitoba";
     default:
       return "Ontario";
   }
