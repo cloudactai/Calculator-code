@@ -517,7 +517,7 @@ const Screen1 = ({
               });
             }
           }}
-          options={["ON", "AB", "BC"]}
+          options={["ON", "AB", "BC", "SK", "MB"]}
         />
       </div>
     );

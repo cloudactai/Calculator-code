@@ -126,7 +126,7 @@ const headings = ["#", "Name", "Birthdate", "Lives With*"];
                 <div className="form-group">
 
                   <Dropdown
-                    options={["ON", "AB", "BC"]}
+                    options={["ON", "AB", "BC", "SK", "MB"]}
                   />
 
 
@@ -213,7 +213,7 @@ const headings = ["#", "Name", "Birthdate", "Lives With*"];
               <div className="form-group">
 
                   <Dropdown
-                    options={["ON", "AB", "BC"]}
+                    options={["ON", "AB", "BC", "SK", "MB"]}
                   />
 
 
