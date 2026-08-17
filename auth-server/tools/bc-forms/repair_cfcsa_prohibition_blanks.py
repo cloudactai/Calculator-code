@@ -26,18 +26,26 @@ printed line above where there is room. Where there is not — 10.1's "owns" bla
 descender band above by at most 1.7 pt, which is what "taller" costs on these two
 lines and is invisible behind a translucent input.
 
-Run: python3 repair_cfcsa_prohibition_blanks.py [--promote]
+This edits the *promoted* map in `form-template-export/` in place, and only the four
+boxes' x/y/width/height: every other key in the file is asserted byte-identical before
+it is written, and a second run is a no-op. It deliberately does not promote by copying
+its staged output over the top, the way the build does. Staging carries no `bind`, so a
+copy silently drops the prefill the rebind pass wrote — which is what happened in
+c183814, taking `court_info.courtFileNumber` off both of these forms. Repair passes run
+after the build, on the file the build produced; only `build_bc3.py --promote` may
+overwrite a promoted map wholesale.
+
+Run: python3 repair_cfcsa_prohibition_blanks.py [--promote]   (without it, reports only)
 """
+import copy
 import json
 import os
-import shutil
 import sys
 
 import fitz
 
 EXPORT = ("/Users/lorelaiphinnemore/Documents/CloudAct/Frontend /Calculator-code"
           "/auth-server/form-template-export")
-OUT = os.path.join(EXPORT, "_incoming_bc3", "out")
 
 SCALE = 1.5  # field width/height are stored pre-divided by the viewer's zoom
 
@@ -72,22 +80,28 @@ def box(field):
                      field["y"] + field["height"] / SCALE)
 
 
+GEOMETRY = ("x", "y", "width", "height")
+
+
 def main():
     promote = "--promote" in sys.argv
 
     for doc_id, repairs in REPAIRS.items():
-        path = os.path.join(OUT, "%s.json" % doc_id)
+        path = os.path.join(EXPORT, "%s.json" % doc_id)
         mapping = json.load(open(path))
         fields = {field["id"]: field for field in mapping["staticFields"]}
         missing = set(repairs) - set(fields)
         if missing:
             raise SystemExit("%s: no such field(s): %s" % (doc_id, sorted(missing)))
 
-        page = fitz.open(os.path.join(OUT, "%s.pdf" % doc_id))[0]
+        # Everything the pass is not allowed to touch, captured before it runs.
+        untouched = copy.deepcopy(mapping)
+        page = fitz.open(os.path.join(EXPORT, "%s.pdf" % doc_id))[0]
         rules = {(round(d["rect"].x0, 1), round(d["rect"].x1, 1), round(d["rect"].y0, 1))
                  for d in page.get_drawings()
                  if d["rect"].height < 2.0 and d["rect"].width > 20.0}
 
+        changed = 0
         for field_id, (x, y, width, height) in repairs.items():
             field = fields[field_id]
             # The rule is the whole justification for these numbers, so refuse to
@@ -95,29 +109,51 @@ def main():
             if RULES[doc_id][field_id] not in rules:
                 raise SystemExit("%s: field %d's rule %s is gone from the page"
                                  % (doc_id, field_id, RULES[doc_id][field_id]))
+            seated = tuple(field[key] for key in GEOMETRY) == (x, y, width, height)
             before = box(field)
-            field.update({"x": x, "y": y, "width": width, "height": height})
+            field.update(dict(zip(GEOMETRY, (x, y, width, height))))
             after = box(field)
             x0, x1, rule_y = RULES[doc_id][field_id]
             if (abs(after.x0 - x0) > TOLERANCE or abs(after.x1 - x1) > TOLERANCE
                     or abs(after.y1 - rule_y) > TOLERANCE):
                 raise SystemExit("%s: field %d does not sit on its rule: %s"
                                  % (doc_id, field_id, after))
+            # Only meaningful the first time. On a re-run the box is already the
+            # repaired one, so "no taller than before" is the no-op, not a failure.
+            if seated:
+                print("%s %d  already seated, %.1f x %.1f at (%.1f, %.1f)"
+                      % (doc_id, field_id, after.width, after.height, after.x0, after.y0))
+                continue
             if after.height <= before.height:
                 raise SystemExit("%s: field %d got shorter (%.1f -> %.1f)"
                                  % (doc_id, field_id, before.height, after.height))
+            changed += 1
             print("%s %d  %.1f x %.1f at (%.1f, %.1f)  ->  %.1f x %.1f at (%.1f, %.1f)"
                   % (doc_id, field_id, before.width, before.height, before.x0, before.y0,
                      after.width, after.height, after.x0, after.y0))
 
+        # The four boxes' geometry is the whole of the diff. Put the old numbers
+        # back on a copy; anything else that moved shows up here as a mismatch.
+        check = copy.deepcopy(mapping)
+        for field in check["staticFields"]:
+            if field["id"] in repairs:
+                original = next(f for f in untouched["staticFields"] if f["id"] == field["id"])
+                field.update({key: original[key] for key in GEOMETRY})
+        if json.dumps(check, sort_keys=True) != json.dumps(untouched, sort_keys=True):
+            raise SystemExit("%s: the pass changed something other than the four boxes"
+                             % doc_id)
+
+        if not promote:
+            print("%s: %d box(es) would change (--promote to write)" % (doc_id, changed))
+            continue
+        if not changed:
+            print("%s: unchanged" % doc_id)
+            continue
         tmp = path + ".tmp"
         with open(tmp, "w") as handle:
             json.dump(mapping, handle, indent=1)
         os.replace(tmp, path)
-
-        if promote:
-            shutil.copy(path, os.path.join(EXPORT, "%s.json" % doc_id))
-            print("promoted %s" % doc_id)
+        print("wrote %s" % doc_id)
 
 
 if __name__ == "__main__":
