@@ -138,6 +138,9 @@ MANUAL_FIELDS = {
     "SKKB_15_78": [
         (2, fitz.Rect(202.0, 379.03, 516.0, 392.03), "TextField"),
         (2, fitz.Rect(230.0, 394.03, 516.0, 407.03), "TextField"),
+        # Item 8 requests particulars but leaves the rest of the page as bare
+        # writing space: no underscores, grid, or standalone rectangle exists.
+        (2, fitz.Rect(138.0, 559.0, 516.0, 747.0), "TextArea"),
     ],
 }
 

@@ -196,6 +196,10 @@ same right margin as the neighbouring long answers.
 the two list prompts. Its measured manual fields begin after `(i)` and after
 `(ii) etc.` respectively, and extend to the form's right answer margin.
 
+**Form 15-78 p2, item 8** asks for particulars proving the marriage and leaves
+the remainder of the page as bare writing space. A measured manual text area
+runs from below the paragraph to the standard footer clearance.
+
 **Form 15-78 p6, item 26 "My occupation is:"** has no field. The line ends with a
 caption and a tab, and the government printed no rule, no cell and no rectangle
 after it — so every detector here correctly finds nothing. Its own twin two items
