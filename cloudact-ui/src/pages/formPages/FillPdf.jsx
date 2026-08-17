@@ -19,6 +19,7 @@ import {
   getPdfOverrides,
   normalizeVerticalRotation,
 } from "./verticalTextField";
+import { ensureMinimumTextFieldHeights } from "./textFieldGeometry";
 import Loader from "../../components/Loader";
 import axios from "../../utils/axios";
 import { formsService } from "../../services/formsService";
@@ -202,9 +203,12 @@ const FillPdf = ({ currentUserRole }) => {
 
         const staticFields = remoteDocument.mapping?.staticFields;
         if (!Array.isArray(staticFields)) throw new Error('The form field mapping is unavailable.');
-        setFields(staticFields.map((field) => remoteDocument.fieldValues?.[field.id] !== undefined
-          ? { ...field, value: remoteDocument.fieldValues[field.id] }
-          : field));
+        const fieldsWithValues = staticFields.map((field) => (
+          remoteDocument.fieldValues?.[field.id] !== undefined
+            ? { ...field, value: remoteDocument.fieldValues[field.id] }
+            : field
+        ));
+        setFields(ensureMinimumTextFieldHeights(fieldsWithValues));
 
         setFieldsReady(true);
       } catch (error) {
