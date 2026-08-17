@@ -650,6 +650,36 @@ Manitoba stops the grid at the Comments columns on a total row, so the cells are
 whichever verticals actually cross that row's band, and the leftmost one carries
 the row's own name and must stay empty (§9.3).
 
+### 9.14b A verifier that re-runs the builder's rule cannot see that rule's bug
+
+The strongest discipline in this pipeline — *where the builder makes a
+judgement, the verifier calls the builder's own rule again on the page, so a
+mistake has to be made twice in the same way to get through* — has one blind
+spot, and it is worth naming because it reads as extra safety rather than less.
+
+When the builder **drops** an anchor, the verifier excuses the missing field by
+asking the same function whether it was dropped on purpose. If the drop was
+wrong, both agree, and the gate is silent about a blank nobody can fill:
+
+- Form 70I p1 lists what was served as `(a)` `(b)` `(c)`, three writing lines.
+  Each label ends in `)`, so the page carries three `)` in a tight vertical
+  stack at one x — which is exactly Manitoba's *jurat bracket column*. The
+  builder read them as a jurat and dropped all three lines as the deponent's
+  signature rule; `check_unfilled_blanks` then excused all three via
+  `_on_a_signature_rule`, which re-runs the same detector. Every gate passed on
+  an affidavit of service with nowhere to describe the documents served.
+
+**The discriminator, once the page is read:** a jurat bracket *closes* its line
+— it is the right-hand edge of the jurat and nothing is printed after it — while
+an enumerator *opens* one. Count and pitch cannot separate them; what follows
+the glyph can.
+
+**The lesson for the next batch:** an "excused" finding is not a passing
+finding. Where a check excuses itself by consulting the rule under test, the
+excuses have to be looked at, not just counted — or the check needs a second,
+independent signal. Ask periodically: *which anchors did the builder throw away
+on this page, and is each one really furniture?*
+
 ### 9.15 Where a sortOrder block starts is not a constant
 
 `merge_mb_catalog.py` hardcoded Manitoba's block at 401 "clear of BC's 101-288

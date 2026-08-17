@@ -45,9 +45,11 @@ STAGE = B.STAGE
 # Characters a field box is entitled to cover: its own printed rule, the `$` it
 # is anchored to, and the punctuation the forms set against a blank.
 IGNORABLE = set("_$ \t.,;:()")
-# Narrower than this is a sliver worth justifying. The narrowest legitimate blank
-# in the financial batch is 21.4pt -- the two-digit year in Form 70D's jurat
-# ("this ___ day of ______, ____") -- so the floor sits just under it.
+# Below this width a box has to justify itself by covering its whole printed
+# blank (see `_spans_its_anchor`). Manitoba's narrowest genuine blanks are the
+# jurat's "this ___ day of" at 18.4pt and Form 70S.3's "20___" at 16.8pt, so a
+# flat floor here called five correct boxes defects while still passing a box
+# covering half of a 200pt line.
 MIN_FIELD_WIDTH = 20.0
 
 
@@ -90,7 +92,7 @@ def check_checkbox_marks(doc, fields, problems):
     """
     for number in sorted({f["page"] for f in fields}):
         page = doc[number - 1]
-        marks = B.checkboxes(page) + [square for _, _, square in mb_marks.marks(page)]
+        marks = B.checkboxes(page)
         ticks = B.tick_rects(page)
         taken = {}
         for field in [f for f in fields
@@ -205,7 +207,17 @@ def check_underlines(doc, fields, problems):
             if not B._is_underline(chars, key, start, end, size):
                 continue
             for box, field in mine:
-                if box.y1 <= key - 14 or box.y0 >= key + 2:
+                # **Seated on it, not merely near it.** A one-line look-back
+                # (the window `check_unfilled_rules` uses to find the box
+                # belonging to a rule) also catches a box seated on its *own*
+                # rule with a heading underlined 10-14pt below -- Forms 70E.1 p3
+                # ("spouse"/"common-law partner)"), 70D.4 p4 ("PART 3 - AREAS IN
+                # DISPUTE") and 70E.2 p2 all read that way and none of them is a
+                # defect. A box that really is on this underline either hangs off
+                # it (bottom within a rule clearance of it) or covers it.
+                seated = key - 6 <= box.y1 <= key + 2
+                covers = box.y0 < key < box.y1
+                if not (seated or covers):
                     continue
                 if min(box.x1, end) - max(box.x0, start) > 0.5 * (end - start):
                     problems.append({"check": "on-underline", "page": number,
@@ -213,7 +225,7 @@ def check_underlines(doc, fields, problems):
                                      "detail": "box sits on a heading's underline"})
 
 
-def check_structure(fields, page_sizes, problems):
+def check_structure(doc, fields, page_sizes, problems):
     """Duplicate ids, shared positions, overlapping boxes, slivers, bounds."""
     for detail in bp.check_geometry(fields, page_sizes):
         problems.append({"check": "geometry", "page": None, "id": None,
@@ -240,13 +252,39 @@ def check_structure(fields, page_sizes, problems):
                                      "id": first["id"],
                                      "detail": "overlaps %s" % second["id"]})
 
+    # **A sliver is a box narrower than its own blank, not a box on a short
+    # blank.** Manitoba prints plenty of genuinely narrow ones -- "this ___ day
+    # of" on the jurats of Forms 70I, 70M and 70M.1 (18.4pt), and "20___" on
+    # Form 70S.3 (16.8pt) -- and a flat floor calls every one of them a defect
+    # while still passing a box that covers half of a 200pt line. Measure the
+    # printed anchor and compare.
     for field in fields:
         if field["type"] == "CheckBox":
             continue
-        if field["width"] / SCALE < MIN_FIELD_WIDTH:
-            problems.append({"check": "sliver", "page": field["page"],
-                             "id": field["id"],
-                             "detail": "%.1fpt wide" % (field["width"] / SCALE)})
+        width = field["width"] / SCALE
+        if width >= MIN_FIELD_WIDTH:
+            continue
+        if _spans_its_anchor(doc[field["page"] - 1], box_of(field)):
+            continue
+        problems.append({"check": "sliver", "page": field["page"],
+                         "id": field["id"],
+                         "detail": "%.1fpt wide" % width})
+
+
+def _spans_its_anchor(page, box, tolerance=2.0):
+    """Does this narrow box cover the whole blank it sits on?
+
+    The anchor is whichever underscore run or printed rule the box is seated on.
+    Covering it end to end means the box is as wide as the form lets it be.
+    """
+    for rect, _rule_y, _size in B.underscore_blanks(page):
+        if abs(rect.x0 - box.x0) <= tolerance and abs(rect.x1 - box.x1) <= tolerance:
+            return True
+    for rect, key, _size in B.printed_rules(page, B.grid_cells(page)):
+        if (abs(rect.x0 - box.x0) <= tolerance and abs(rect.x1 - box.x1) <= tolerance
+                and abs(key - box.y1) <= 6):
+            return True
+    return False
 
 
 def check_amount_seating(doc, fields, problems):
@@ -415,7 +453,7 @@ def verify(doc_id, folder):
     doc = fitz.open(pdf)
     page_sizes = [[round(p.rect.width, 1), round(p.rect.height, 1)] for p in doc]
     problems = []
-    check_structure(fields, page_sizes, problems)
+    check_structure(doc, fields, page_sizes, problems)
     for check in CHECKS:
         check(doc, fields, problems)
     doc.close()

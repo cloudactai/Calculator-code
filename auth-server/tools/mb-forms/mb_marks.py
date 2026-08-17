@@ -46,11 +46,23 @@ def _spans(page):
                 yield span
 
 
+_CHARS = {}
+
+
 def _chars(page):
-    for span in _spans(page):
-        for char in span.get("chars", []):
-            if char["c"].strip():
-                yield char["c"], fitz.Rect(char["bbox"])
+    """Every printed character on the page as (char, Rect), memoised.
+
+    `ink_box` needs this to mask a neighbour's ink out of a mark's font box, and
+    it is called once per mark -- 47 of them on Form 70A's pages. Re-parsing
+    `rawdict` each time made a full 43-form verify pass take minutes.
+    """
+    key = (page.parent.name, page.number)
+    if key not in _CHARS:
+        _CHARS[key] = [(char["c"], fitz.Rect(char["bbox"]))
+                       for span in _spans(page)
+                       for char in span.get("chars", [])
+                       if char["c"].strip()]
+    return _CHARS[key]
 
 
 def candidates(page):
@@ -152,7 +164,19 @@ def mark_box(page, kind, font_box, own):
     return fitz.Rect(cx - side / 2, cy - side / 2, cx + side / 2, cy + side / 2)
 
 
+_CACHE = {}
+
+
 def marks(page):
-    """(kind, font_box, square) for every option mark on the page."""
-    return [(kind, box, mark_box(page, kind, box, own))
-            for kind, box, own in candidates(page)]
+    """(kind, font_box, square) for every option mark on the page.
+
+    Memoised per (file, page). Measuring a mark renders a pixmap, and both the
+    builder and two separate verifier checks ask for the same page's marks, so
+    without this a 43-form verify pass re-rendered every mark on every page
+    several times over.
+    """
+    key = (page.parent.name, page.number)
+    if key not in _CACHE:
+        _CACHE[key] = [(kind, box, mark_box(page, kind, box, own))
+                       for kind, box, own in candidates(page)]
+    return _CACHE[key]

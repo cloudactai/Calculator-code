@@ -58,7 +58,7 @@ import mb_marks  # noqa: E402
 
 EXPORT = os.path.join(os.path.dirname(os.path.abspath(__file__)),
                       "..", "..", "form-template-export")
-FORMS = ["MBKB_70D", "MBKB_70D_1", "MBKB_70D_5", "MBKB_70U", "MBKB_70W"]
+FORMS = ["MBKB_70D", "MBKB_70D_1", "MBKB_70D_5", "MBKB_70U", "MBKB_70W", "MBKB_70Z"]
 
 # Overlay convention (README "Overlay convention"): x/y are points, width/height
 # are points x 1.5.
@@ -283,6 +283,56 @@ VALUE_COLUMN_X = 362.16   # Form 70U p1's "VALUE (total from Part)" column
 VALUE_COLUMN_TOP = 500.0  # the "of ___," box on the line above sits at x 361.92
 
 
+ROLE_CAPTION = "Petitioner/Applicant/Respondent"
+
+
+def add_70z_second_party(doc_id, data, pdf):
+    """Repair 6: Form 70Z p1's second party had nowhere to write its name.
+
+    The style of cause captions both parties with the role alone -- there is no
+    `(full name)` under the line and no rule drawn for it -- so the only anchor
+    is "BETWEEN:", and that anchors the *first* party. The second got nothing,
+    while the first got a full writing area: the asymmetry a style of cause can
+    never actually have. Sweeping the batch for it found exactly this one page
+    (Form 70D.5's two hits are its table's "Petitioner"/"Respondent" column
+    headings, not party lines), so it is repaired here rather than turned into a
+    builder rule on a single example.
+
+    Built by copying its twin (guide 9.6): x, width and height come from the
+    first party's area, and only y comes from this row -- seated on the clear
+    paper between "- and -" and the second role caption.
+    """
+    if doc_id != "MBKB_70Z":
+        return []
+    fields = data["staticFields"]
+    twin = next((f for f in fields if f["page"] == 1 and f["type"] == "TextArea"), None)
+    if twin is None:
+        return []
+    page = pdf[0]
+    captions = []
+    for block in page.get_text("dict")["blocks"]:
+        for line in block.get("lines", []):
+            if "".join(s["text"] for s in line["spans"]).strip() == ROLE_CAPTION:
+                captions.append(fitz.Rect(line["bbox"]))
+    if len(captions) != 2:
+        return []
+    captions.sort(key=lambda r: r.y0)
+    height = twin["height"] / SCALE
+    y = captions[1].y0 - 1 - height
+    if any(f["page"] == 1 and abs(f["y"] - y) < 1.0 and abs(f["x"] - twin["x"]) < 1.0
+           for f in fields):
+        return []
+    # The paper has to actually be clear: nothing printed between "- and -" and
+    # the caption this box hangs above.
+    band = fitz.Rect(twin["x"], y, twin["x"] + twin["width"] / SCALE, captions[1].y0 - 1)
+    if page.get_text("text", clip=band).strip():
+        return []
+    fields.append(new_field(twin, id=next_id(fields), page=1,
+                            x=twin["x"], y=round(y, 2),
+                            width=twin["width"], height=twin["height"]))
+    return ["p1 second party writing area, copied from the first"]
+
+
 def reseat_70u_heading_box(doc_id, data, pdf):
     """Repair 4: take the column's height, keep the box's seat on its rule.
 
@@ -345,6 +395,7 @@ def repair(doc_id, check):
     notes += reseat_70u_heading_box(doc_id, data, pdf)
     notes += clear_70u_comma(doc_id, data, pdf)
     notes += fill_total_rows(doc_id, data, pdf)
+    notes += add_70z_second_party(doc_id, data, pdf)
     notes += add_checkboxes(doc_id, data, pdf)
 
     dropped = {f["id"] for f in data["staticFields"]}

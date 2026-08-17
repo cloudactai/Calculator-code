@@ -29,7 +29,11 @@ COURT = "King's Bench"
 
 # Categories built and catalogued right now. Everything else in FORMS is
 # recorded, fetched and verified, but not turned into a template.
-SHIPPED_CATEGORIES = {"Financial"}
+# All nine ship as of 2026-08-17; the set is kept rather than replaced by a
+# boolean because it is still the switch a future batch would be added through.
+SHIPPED_CATEGORIES = set(["Financial", "Pleadings", "Applications",
+                          "Case Management", "Service", "Affidavits",
+                          "Orders & Judgments", "Enforcement", "Other"])
 
 # (formNo, title, category, pages)
 # `pages` is what the government's file actually carries, checked on every fetch;

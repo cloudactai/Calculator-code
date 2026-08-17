@@ -57,6 +57,7 @@ sys.path.insert(0, HERE)
 sys.path.insert(0, os.path.join(os.path.dirname(HERE), "bc-forms"))
 
 import bc_pipeline as bp  # noqa: E402
+import mb_marks  # noqa: E402
 from mb_sources import all_sources, shipped_sources  # noqa: E402
 
 EXPORT = os.path.join(os.path.dirname(os.path.dirname(HERE)), "form-template-export")
@@ -115,6 +116,10 @@ UNDERLINE_COVER = 0.50
 # How far above a rule to look for the type that would make it an underline, as a
 # multiple of the font size. One line: an underline's glyphs sit directly on it.
 UNDERLINE_BAND = 1.3
+
+# Glyphs that do not make a rule a heading's underline: the underscore run that
+# *is* the blank, and the punctuation Manitoba sets hard against one.
+IGNORED_ON_RULE = set("_ \t.,;:")
 
 UNDERSCORE_RUN = re.compile(r"_+")
 TOTAL_ROW = re.compile(r"\b(sub)?total\b", re.I)
@@ -206,8 +211,19 @@ def jurat_brackets(page):
     marks = []
     for text, boxes, _sizes in line_chars(page):
         for index, char in enumerate(text):
-            if char == JURAT_BRACKET:
-                marks.append(boxes[index])
+            if char != JURAT_BRACKET:
+                continue
+            # **A jurat bracket closes its line; an enumerator opens one.** The
+            # bracket column is the right-hand edge of the jurat, so nothing is
+            # printed after it. An "(a)"/"(b)"/"(c)" list gives three ")" in a
+            # tight vertical stack at the same x -- indistinguishable from a
+            # jurat by pitch and count alone -- and Form 70I p1's "a true copy
+            # of:" list is exactly that, so all three of its writing lines were
+            # dropped as the deponent's signature rule and the affidavit shipped
+            # with nowhere to describe what was served.
+            if text[index + 1:].strip():
+                continue
+            marks.append(boxes[index])
     columns = collections.defaultdict(list)
     for box in marks:
         columns[round((box.x0 + box.x1) / 2, 0)].append(box)
@@ -330,12 +346,22 @@ def _is_underline(chars, key, x0, x1, size):
     Word draws both with the same primitive. The discriminator is how much of the
     rule's own length carries glyphs sitting on it: measured on Form 70D p3, the
     two underlines read 94% and 95% and all 44 writing rules read 0%.
+
+    **An underscore is not type for this purpose.** Where Manitoba sets a blank
+    as `______________` it also draws a rule along it, so the run's own glyphs
+    cover their rule 100% and the test above reads the blank as a heading. The
+    financial batch has 3 underscore runs in 31 pages and never showed it; the
+    other 38 forms have 793, and it misread 45 of them -- putting a genuine
+    writing line on Form 70E p1's "on ___, ___, at ___" out of reach. Only
+    letters and digits make a rule an underline; `_` is the blank itself.
     """
     width = x1 - x0
     if width <= 0:
         return False
     covered = 0.0
-    for box, _char, _size in chars:
+    for box, char, _size in chars:
+        if char in IGNORED_ON_RULE:
+            continue
         centre = (box.y0 + box.y1) / 2
         if not key - UNDERLINE_BAND * size <= centre <= key:
             continue
@@ -459,7 +485,7 @@ def printed_rules(page, cells):
     return out
 
 
-def seat_rules(rules):
+def seat_rules(rules, ceilings=()):
     """Turn each printed rule into its box, never overlapping the rule above.
 
     A blank's box hangs *upward* from its own rule, one line deep, capped by the
@@ -467,6 +493,12 @@ def seat_rules(rules):
     jurat's three rules on a 25pt pitch and Form 70D p3's income schedule stacks
     its amount rules on an 11.5pt pitch, against a 13pt box, so uncapped boxes
     would render as a crushed stack of borders.
+
+    `ceilings` are the other printed horizontals a box may not cross: the
+    underlines. They are not writing rules and so are absent from `rules`, but a
+    box that rises through one still draws its border across underlined type --
+    Form 70E.2 p2 underlines "MY CHILDREN (… whether they are First Nation
+    members):" one point above the "1)" answer line beneath it.
     """
     seated = []
     for rect, key, size in rules:
@@ -475,12 +507,33 @@ def seat_rules(rules):
         above = [other_key for other, other_key, _s in rules
                  if other_key < key - 1
                  and other.x1 > rect.x0 and other.x0 < rect.x1]
+        above += [other_key for other_key, start, end in ceilings
+                  if other_key < key - 1 and end > rect.x0 and start < rect.x1]
         if above:
-            height = min(height, key - max(above) - STACK_GAP)
+            # Measure the cap from the box's own bottom, not from its rule.
+            # `bottom` is already RULE_CLEARANCE above `key`, so capping the
+            # height at `key - ceiling - STACK_GAP` puts the top at
+            # `ceiling + STACK_GAP - RULE_CLEARANCE` -- 0.3pt *through* the
+            # thing it was meant to stop at, every time.
+            height = min(height, bottom - (max(above) + STACK_GAP))
         if height < 6:
             continue
         seated.append(fitz.Rect(rect.x0, bottom - height, rect.x1, bottom))
     return seated
+
+
+def underline_keys(page):
+    """The printed underlines, as (y, x0, x1) -- ceilings for `seat_rules`."""
+    horizontal, _vertical = _segments(page)
+    chars = page_chars(page)
+    out = []
+    for key, start, end in horizontal:
+        if end - start < MIN_BLANK_WIDTH:
+            continue
+        size = _font_at(chars, key, start, end)
+        if _is_underline(chars, key, start, end, size):
+            out.append((key, start, end))
+    return out
 
 
 def underscore_blanks(page):
@@ -522,7 +575,23 @@ def underscore_blanks(page):
 
 
 def checkboxes(page):
-    """The printed stroked squares. One square is one control -- never union two."""
+    """Every printed option mark on the page. One mark is one control.
+
+    Manitoba writes an option three ways and this is the single definition of
+    "printed square" for the whole pipeline -- the builder places a control on
+    each, and `verify_mb.check_checkbox_marks` asks the same function whether a
+    stored control has one under it:
+
+    * a **stroked square**, the vocabulary BC and Saskatchewan use;
+    * a **`[ ]` bracket pair** (Forms 70D, 70D.1, 70A, 70B, …);
+    * a **`☐` glyph** (Forms 70W, 70Z, …).
+
+    The last two are *text*, so a detector that only reads vector art finds
+    nothing at all on them. That is exactly what happened: the financial batch
+    shipped with zero CheckBox fields against 30 printed options, and building
+    the remaining 38 forms without this turned up 247 more. `mb_marks` measures
+    the text ones off the page (glyph first, then refined to rendered ink).
+    """
     out = []
     for drawing in page.get_drawings():
         if drawing["type"] != "s":
@@ -533,6 +602,9 @@ def checkboxes(page):
             rect = fitz.Rect(item[1])
             if CB_MIN < rect.width < CB_MAX and CB_MIN < rect.height < CB_MAX:
                 out.append(rect)
+    for _kind, _font_box, square in mb_marks.marks(page):
+        if not any(square.intersects(rect) for rect in out):
+            out.append(square)
     return out
 
 
@@ -844,6 +916,11 @@ CAPTION_LINE_HEIGHT = 14.0
 # heading filling its cell rather than a question answered beside itself.
 CAPTION_MAX_LINE = 16.0
 CAPTION_GAP = 2.0
+# What is left of a caption's band after trimming it clear of the type above has
+# to still be a line somebody can write a name on. Form 70T's respondent line
+# keeps 9.4pt of the nominal 14 once "- and -" is cleared, which is the tightest
+# real one in the batch; the party lines that keep a full line are all 14.0.
+CAPTION_MIN_HEIGHT = 8.0
 
 
 def writing_area_bands(page, placed, cells):
@@ -877,6 +954,19 @@ def writing_area_bands(page, placed, cells):
         below = [other.y0 for other, _t in lines if other.y0 > rect.y1 + 1]
         band = fitz.Rect(rect.x0, rect.y1 + 2, page.rect.width - 72,
                          min(min(below, default=floor), floor))
+        # **A band is empty paper.** Taking the bottom from "the next line
+        # starting more than 1pt below this caption" is not the same thing: a
+        # sentence set immediately under its caption starts *within* that 1pt,
+        # so it is skipped and the band closes on the line after it, swallowing
+        # the government's own words. Forms 70A.1 and 70J p3 both do this --
+        # "Reconciliation:" over "There is no possibility of reconciliation or
+        # resumption of cohabitation." -- and a writing area over a printed
+        # statement is guide 9.3. Cut the band at whatever actually prints in it.
+        printed = [other.y0 for other, _t in lines
+                   if other.y0 > rect.y1 - 0.5 and other.y0 < band.y1
+                   and other.x1 > band.x0 and other.x0 < band.x1]
+        if printed:
+            band.y1 = min(printed) - 1
         # A caption set out in the right margin leaves no room for a band under
         # it; the rectangle then comes back empty or inverted, which reaches
         # `check_geometry` as a non-positive size rather than as no field at all.
@@ -922,6 +1012,25 @@ def caption_below_blanks(page, placed):
             if band.is_empty or band.width < MIN_BLANK_WIDTH:
                 continue
             if any(band.intersects(box) for box in placed):
+                continue
+            # **Trim the band to the clear paper, rather than refusing it.**
+            # A full line's worth of space above the caption is what the style
+            # of cause usually leaves, but not always: Form 70T sets "- and -"
+            # 16pt above the respondent's "(full name)," so the band reached it
+            # and the respondent -- alone of the two parties -- got no box at
+            # all. Cut the top to whatever prints in the way and keep what is
+            # left, provided it is still a line somebody can write on.
+            for other in page.get_text("dict")["blocks"]:
+                for other_line in other.get("lines", []):
+                    if not "".join(s["text"] for s in other_line["spans"]).strip():
+                        continue
+                    box = fitz.Rect(other_line["bbox"])
+                    if box.y1 <= band.y0 or box.y0 >= band.y1:
+                        continue
+                    if box.x1 <= band.x0 or box.x0 >= band.x1:
+                        continue
+                    band.y0 = max(band.y0, box.y1 + 1)
+            if band.height < CAPTION_MIN_HEIGHT:
                 continue
             if page.get_text("text", clip=band).strip():
                 continue
@@ -1012,7 +1121,7 @@ def page_boxes(page):
     # cell that already got a field is that field seen twice; a rule inside one
     # that did *not* is a real blank, so the test is against the cells actually
     # filled rather than against every cell on the page.
-    for box in seat_rules(printed_rules(page, cells)):
+    for box in seat_rules(printed_rules(page, cells), underline_keys(page)):
         if any(cell.intersects(box) and cell.get_area() > box.get_area()
                for cell in filled_cells):
             continue
@@ -1024,9 +1133,23 @@ def page_boxes(page):
                for cell in filled_cells):
             continue
         kept.append((rect, rule_y, size))
+    # An underscore blank hangs upward from its own run and is capped by the run
+    # above it, exactly as `seat_rules` caps a drawn rule -- the underscore path
+    # simply never had the cap, because the financial batch has 3 runs in 31
+    # pages and none of them stacked. Form 70T p1 sets its five-line
+    # "circumstances necessitating this request" block on a 14.0pt pitch against
+    # a 14.3pt box, so every line overlapped the one above it and the block
+    # rendered as a crush of borders.
     for rect, rule_y, size in kept:
         bottom = rule_y - RULE_CLEARANCE
-        boxes.append((fitz.Rect(rect.x0, bottom - size * LINE_RATIO, rect.x1, bottom),
+        height = size * LINE_RATIO
+        above = [other_y for other, other_y, _s in kept
+                 if other_y < rule_y - 1 and other.x1 > rect.x0 and other.x0 < rect.x1]
+        if above:
+            height = min(height, rule_y - max(above) - STACK_GAP)
+        if height < 6:
+            continue
+        boxes.append((fitz.Rect(rect.x0, bottom - height, rect.x1, bottom),
                       "TextField"))
 
     placed = [rect for rect, _kind in boxes]
@@ -1043,18 +1166,44 @@ def dedupe(boxes, tolerance=2.0):
     Two vocabularies can describe the same blank -- an underscore run set on top
     of a drawn rule, which Form 70U does in its "TOTAL: $______" cells -- and two
     stacked controls in the viewer read as one control with a doubled border.
+
+    **The two need not agree on the extent, and then the longer one wins.** Word
+    often draws the rule along only part of the run: Form 70E p6 sets "Dated at
+    ______, this ___ day of ______, ___." with a rule over the right-hand end of
+    each blank, so the rule says 16.7pt where the run says 105pt. Keeping the
+    fragment leaves a box right-aligned inside its own blank with most of the
+    line unreachable, so a box wholly inside another of the same kind is dropped
+    however it was found. (Only visible since `_is_underline` stopped counting
+    `_` as type, which is what hands these rules back as writing lines at all.)
     """
-    out = []
-    for rect, kind in boxes:
-        if any(other_kind == kind
-               and abs(other.x0 - rect.x0) <= tolerance
-               and abs(other.x1 - rect.x1) <= tolerance
-               and abs(other.y0 - rect.y0) <= tolerance
-               and abs(other.y1 - rect.y1) <= tolerance
-               for other, other_kind in out):
+    def one_blank(a, b):
+        """Do these two boxes describe the same printed blank?
+
+        Same line, and really overlapping rather than merely adjacent -- "this
+        ___ day of ______" is two blanks that touch, and must stay two.
+        """
+        if a.y1 <= b.y0 + tolerance or b.y1 <= a.y0 + tolerance:
+            return False
+        shared = min(a.x1, b.x1) - max(a.x0, b.x0)
+        return shared > 0.5 * min(a.width, b.width)
+
+    # Largest first, so a pair is anchored on the box that spans most of the
+    # blank; the survivors go back into reading order, which numbers the fields.
+    order = sorted(range(len(boxes)), key=lambda i: -boxes[i][0].get_area())
+    merged = {}
+    for index in order:
+        rect, kind = boxes[index]
+        host = next((j for j in merged
+                     if boxes[j][1] == kind and one_blank(merged[j], rect)), None)
+        if host is None:
+            merged[index] = fitz.Rect(rect)
             continue
-        out.append((rect, kind))
-    return out
+        # The two detectors disagree about where the blank ends -- Form 70DD p2's
+        # "scheduled for ______," has the run starting 63pt left of the rule and
+        # the rule ending 4.5pt right of the run -- so take everything either of
+        # them found rather than picking one and losing the difference.
+        merged[host] |= rect
+    return [(merged[i], boxes[i][1]) for i in sorted(merged)]
 
 
 def clear_of_type(page, boxes):
@@ -1168,8 +1317,38 @@ def signature_rule_rects(page):
                                 jurat_brackets(page))[1]
 
 
-def build(src, promote=False):
+def hand_finished(doc_id):
+    """Keys in a promoted map that a build cannot reproduce.
+
+    Guide §1: never rebuild a form that already carries binds or hand-placed
+    fields. `--promote` is an `os.replace`, so promoting over one silently
+    destroys them -- on the financial batch that would be 20 binds, plus the
+    24 total-row cells and the stray-area deletions `repair_mb_forms.py` applied
+    in place. Returns the reasons, or an empty list if it is safe to overwrite.
+
+    **A bind is the signal; a checkbox is not.** Checkboxes were the tell while
+    only `repair_mb_forms.py` could place them, but the builder emits them now
+    (see `checkboxes`), so counting them made every form block its own second
+    promote -- silently, since a refusal here is not an error. Binds are added
+    after promotion by `rebind_mb_forms.py` and a rebuild drops them, which is
+    exactly the loss this guards; all five hand-finished forms carry at least
+    one.
+    """
+    path = os.path.join(EXPORT, "%s.json" % doc_id)
+    if not os.path.exists(path):
+        return []
+    fields = json.load(open(path))["staticFields"]
+    bound = sum(1 for f in fields if f.get("bind"))
+    return ["%d bind(s)" % bound] if bound else []
+
+
+def build(src, promote=False, force=False):
     doc_id = src["docId"]
+    blockers = hand_finished(doc_id) if promote else []
+    if blockers and not force:
+        print("%-13s SKIPPED promote: promoted map carries %s (use --force to "
+              "overwrite, or repair it in place)" % (doc_id, ", ".join(blockers)))
+        promote = False
     source = os.path.join(STAGE, "%s_source.pdf" % doc_id)
     doc = fitz.open(source)
     page_sizes = [[round(p.rect.width, 1), round(p.rect.height, 1)] for p in doc]
@@ -1223,6 +1402,8 @@ def main():
     parser.add_argument("--all", action="store_true",
                         help="include categories not yet shipped")
     parser.add_argument("--promote", action="store_true")
+    parser.add_argument("--force", action="store_true",
+                        help="promote even over a hand-finished map (see hand_finished)")
     args = parser.parse_args()
 
     sources = all_sources() if args.all else shipped_sources()
@@ -1231,7 +1412,7 @@ def main():
     if args.category:
         sources = [s for s in sources if s["shortCategory"] == args.category]
 
-    report = [build(src, args.promote) for src in sources]
+    report = [build(src, args.promote, args.force) for src in sources]
     total = sum(r["fields"] for r in report)
     bad = [r["docId"] for r in report if r["geometry"]]
     print("\n%d forms, %d fields, %d with geometry problems: %s"

@@ -15,18 +15,24 @@ published by Manitoba Justice. The civil parts and the probate forms are
 deliberately out of scope, matching the Ontario, BC and Saskatchewan catalogues.
 
 All 43 are recorded in `mb_sources.py` and fetched, so a form that is renumbered
-or withdrawn surfaces immediately. Only the categories named in
-`SHIPPED_CATEGORIES` are built, catalogued and bound. **This batch ships
-`Financial` — 5 forms, 777 fields.** Adding a category is one edit there, then
-build → verify → merge → rebind.
+or withdrawn surfaces immediately. `SHIPPED_CATEGORIES` is the switch for what is
+built, catalogued and bound. **All nine categories ship as of 2026-08-17 — 43
+forms, 188 pages, 2,685 fields, 229 binds, zero findings.** The financial five
+shipped first (2026-08-14); the other 38 followed, and §7 records what building
+them taught.
 
-| Form | Title | Pages | Fields |
-| --- | --- | --- | --- |
-| 70D | Financial Statement | 8 | 288 |
-| 70D.1 | Demand for Financial Information | 3 | 34 |
-| 70D.5 | Comparative Family Property Statement | 6 | 292 |
-| 70U | Summary of Assets and Liabilities | 13 | 104 |
-| 70W | Recalculation and Enforcement Information Form | 1 | 55 |
+| Category | Forms | Notes |
+| --- | --- | --- |
+| Financial | 5 | 70D, 70D.1, 70D.5, 70U, 70W |
+| Pleadings | 6 | 70A, 70A.1, 70B, 70J, 70K, 70L |
+| Applications | 10 | 70E, 70E.1, 70E.3, 70F, 70G, 70H, 70H.1, 70H.2, 70Q, 70BB |
+| Case Management | 8 | 70D.2, 70D.3, 70D.4, 70R, 70S.3, 70T, 70Z, 70DD |
+| Service | 2 | 70C, 70I |
+| Affidavits | 3 | 70E.2, 70M, 70M.1 |
+| Orders & Judgments | 5 | 70N, 70O, 70O.1, 70P, 70CC |
+| Enforcement | 2 | 70X, 70Y |
+| Other | 2 | 70V, 70AA |
+
 
 ## 1. Fetch and verify sources (gates A, B)
 
@@ -67,8 +73,9 @@ Form 70U's producer draws a stroked line. Across this batch:
 | --- | --- | --- |
 | A printed rule (filled rect or stroked line) | 1,528 | a text field seated on it |
 | A ruled grid | — | a field per empty cell |
-| A run of underscores | 12 | a text field |
+| A run of underscores | 796 | a text field |
 | A `(full name)` caption under blank paper | 6 | a text field above the caption |
+| A printed `[ ]` or `☐` option mark | 277 | a checkbox on the mark (§7) |
 
 **The background PDF ships byte-identical to the government's file** — the same
 choice Saskatchewan made, and for the same reason: the rules already print as the
@@ -112,9 +119,11 @@ an underline.
   the window. And a **jurat bracket column** — Manitoba sets its jurat as two
   columns joined by a run of `)` characters with the deponent's signature rule to
   the right of them and *no caption anywhere near it*, which no caption rule can
-  reach. A bracket column is three or more `)` in a tight vertical stack; nothing
-  reads the gap to the word before, because two of Form 70D's four are printed
-  3pt after the comma ending the left column's line.
+  reach. A bracket column is three or more `)` in a tight vertical stack that
+  **close their lines** — nothing is printed after them. Nothing reads the gap to
+  the word *before*, because two of Form 70D's four are printed 3pt after the
+  comma ending the left column's line; but what comes after is decisive, and an
+  "(a)/(b)/(c)" list is otherwise indistinguishable (§7).
 
 ### What it fills that Saskatchewan's rules would not
 
@@ -182,7 +191,7 @@ back `FD_______________` as one token, so a word-level test either flags every
 correctly-placed box for the rule it is supposed to sit on, or waves through a
 box that has covered a caption.
 
-Current state: **5 forms, 777 fields, zero findings**, and the build is
+Current state: **43 forms, 2,685 fields, zero findings**, and the build is
 idempotent (two runs produce byte-identical maps).
 
 ## 4. Catalog
@@ -192,8 +201,8 @@ python3 merge_mb_catalog.py
 cd ../.. && npm run forms:validate-export
 ```
 
-Rewrites the MB block of `catalog.json` (sortOrder from 401, clear of Ontario's
-1–135, BC's 101–288 and Saskatchewan's 301–340) and regenerates `audit.json`.
+Rewrites the MB block of `catalog.json` (sortOrder derived from the block above
+whatever the other provinces occupy — 501–543 today) and regenerates `audit.json`.
 Only the shipped batch is written — a row for a form that has not been built
 would advertise a template the API cannot serve.
 
@@ -229,8 +238,9 @@ and Form 70D.5 runs the blank's underscores inside the very same line, so the
 bbox reaches 130pt past what the form prints. One rule then reads all four
 layouts ("File # FD", "File No. FD", "File No: FD").
 
-20 fields bind: the court file number on every page that prints one, plus the
-applicant and respondent on 70D, 70D.1 and 70U.
+229 fields bind across the 43 forms: the court file number on every page that
+prints one, plus the applicant and respondent wherever the style of cause names
+them.
 
 Deliberately left unbound, with reasons in `mb_binds.py`:
 
@@ -302,6 +312,70 @@ Two things deliberately **not** changed, both recorded rather than guessed at:
   whole batch, and the loose measure ("does the box reach into the line above?")
   returns 419 hits that are overwhelmingly a row label sitting beside its own
   cell, which is guide §9.2's documented false-positive trap. Left alone.
+
+## 7. What the other 38 forms taught (2026-08-17)
+
+The financial five were 31 pages of drawn rules and grids. The remaining 38 are
+157 pages that lean the other way — **793 underscore runs against the financial
+batch's 3** — so they are much closer to Saskatchewan in vocabulary, and most of
+what follows is a rule that had simply never been exercised. Gate findings went
+**309 → 0**; every fix below is in the builder or the gates, not a per-form
+patch.
+
+- **`--promote` is an `os.replace` and will happily overwrite a finished map.**
+  Running it over the batch would have destroyed the financial five's 30
+  checkboxes, 24 total-row cells and 20 binds. `hand_finished` now blocks it.
+  The signal is **binds**, not checkboxes: checkboxes were the tell only while
+  `repair_mb_forms.py` was the one placing them, and once the builder emitted
+  them too, counting them made every form silently refuse its own second promote.
+- **247 more untickable options**, the same defect as the financial five's 30.
+  `checkboxes()` is now the single definition of "printed square" for build and
+  verify alike, covering the drawn square, the `[ ]` pair and the `☐` glyph, so
+  this is structural rather than a repair. `check_unticked_marks` asks the
+  converse question.
+- **An underscore is not type, for the purpose of spotting an underline.** Word
+  draws a rule along each `______` run, so the run covers its own rule 100% and
+  `_is_underline` read 45 genuine writing lines as headings. Excluding `_` fixes
+  it; Form 70D p3's two real heading underlines still measure 94–95%, which is
+  the regression test.
+- **…and then the rule and the run both claim the blank.** They rarely agree on
+  its extent — Form 70E p6's "Dated at ______, this ___ day of ______, ___."
+  draws each rule over only the right-hand end of its run — so `dedupe` now
+  merges two same-line boxes that really overlap into their union. Picking one
+  and dropping the other left boxes right-aligned inside their own blanks
+  (16.7pt against a 105pt line); keeping both stacked two controls per blank.
+- **The underscore path had no stacking cap.** `seat_rules` caps a box against
+  the rule above it; the underscore branch never did, because nothing in the
+  financial batch stacked. Form 70T p1's five-line block rendered as a crush of
+  borders. While fixing it: the cap was measured from the rule rather than from
+  the box's own bottom, so it had always landed `RULE_CLEARANCE` **past** the
+  thing it was meant to stop at.
+- **An underline is a ceiling too.** A box hanging up from its rule can cross an
+  underlined heading one point above it (Form 70E.2 p2). `seat_rules` now takes
+  the underlines as additional ceilings.
+- **A band is empty paper.** `writing_area_bands` took its bottom from "the next
+  line starting more than 1pt below the caption", which skips a sentence set
+  immediately under it — so Forms 70A.1 and 70J p3 put a writing area over
+  "There is no possibility of reconciliation or resumption of cohabitation."
+  Cut the band at whatever prints in it.
+- **Trim a caption's band, don't refuse it.** Form 70T sets "- and -" 16pt above
+  the respondent's `(full name),`, so the band reached it and the respondent —
+  alone of the two parties — got no box at all.
+- **`(a)` `(b)` `(c)` is not a jurat.** Three `)` in a tight vertical stack at
+  one x is exactly the jurat bracket column, so Form 70I p1's list of documents
+  served was dropped as the deponent's signature rule — and
+  `check_unfilled_blanks` excused all three by re-running the same detector. A
+  jurat bracket *closes* its line; an enumerator opens one. See guide §9.14b:
+  where a check excuses itself by consulting the rule under test, the excuses
+  have to be looked at.
+- **A sliver is a box narrower than its own blank**, not a box on a short blank.
+  Manitoba prints "this ___ day of" (18.4pt) and "20___" (16.8pt); a flat floor
+  called five correct boxes defects while still passing a box covering half of a
+  200pt line.
+
+Still open, recorded rather than guessed at: Form 70D.1 p3's two "(Name and
+address of…)" captions have no writing area and no twin in the batch to take a
+column from.
 
 ## Overlay convention
 
