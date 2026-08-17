@@ -193,6 +193,7 @@ def place(background, fields):
     separate_shared_marks(background, fields)
     seat_on_rules(background, fields)
     harmonise_rows(fields)
+    harmonise_columns(background, fields)
     clamp_to_frames(background, fields)
 
 
@@ -224,7 +225,7 @@ def row_rules(page, min_width=25.0):
     return sorted(set(out))
 
 
-def seat_on_rules(background, fields, reach=6.0, lift=4.0):
+def seat_on_rules(background, fields, reach=6.0, lift=8.0):
     """Sit every small ruled cell on its own rule, sized to its own row.
 
     BC's widget rectangles disagree about how tall a one-line cell is: 825 of them
@@ -239,6 +240,14 @@ def seat_on_rules(background, fields, reach=6.0, lift=4.0):
     which includes the last row of a panel, written on the panel's own border. A
     border was tried as a rule here and rejected: it re-cut boxes elsewhere onto
     printed type, taking `box-on-text` from 17 to 30 across the batch.
+
+    `lift` is how far a widget may hang *below* the rule it is written on and
+    still be recognised as that row's cell. An oversized widget does hang: the
+    third date-of-birth cell of CFCSA Form 3's child table is 16.5 pt tall in a
+    10.5 pt row and its bottom clears the table's last rule by 4.04 pt, which the
+    original 4.0 missed by four hundredths of a point and left as the one box on
+    the page at the wrong size. The rule chosen this way is still required to lie
+    in the box's lower half, so a cell is never re-seated on the rule above it.
     """
     doc = fitz.open(background)
     seated = 0
@@ -258,7 +267,8 @@ def seat_on_rules(background, fields, reach=6.0, lift=4.0):
             # leaves the cell at whatever height the widget happened to have.
             spanning = [(y, x0, x1) for y, x0, x1 in rules
                         if min(x1, box.x1) - max(x0, box.x0) >= 0.85 * box.width]
-            below = [y for y, _x0, _x1 in spanning if -lift <= y - box.y1 <= reach]
+            below = [y for y, _x0, _x1 in spanning
+                     if -lift <= y - box.y1 <= reach and y > (box.y0 + box.y1) / 2]
             if not below:
                 continue
             rule = min(below, key=lambda y: abs(y - box.y1))
@@ -310,6 +320,83 @@ def harmonise_rows(fields, tolerance=1.5):
             field["y"], field["height"] = top, height
             changed += 1
     return changed
+
+
+def harmonise_columns(background, fields, tolerance=2.5, gap=1.2):
+    """Give every cell in one table column the same left edge and width.
+
+    `harmonise_rows` squares a row up; nothing squares a column. A stacked table —
+    CFCSA Form 3's three child rows, Name and Date of Birth — gets each of its
+    cells from a separate widget rectangle, and BC's disagree slightly: the three
+    Name cells start at 98.86, 98.56 and 97.95. Every one is right on its own row
+    and the column still steps down the page. Cells are clustered by left edge and
+    width, both within `tolerance`, and the cluster is squared on the shape most
+    of them already have.
+
+    Two bounds keep it from being a licence to move boxes around. A cell only ever
+    moves within `tolerance`, so this cannot rescue a box that is in the wrong
+    place — that is the row and rule passes' job. And a cell is left where it is
+    rather than brought closer than `gap` to a caption printed to its left, the
+    same bound `align_boxes_to_rules` puts on the batch-2 templates: a column is
+    worth less than a legible caption.
+
+    Checkboxes are left alone. They are seated on the printed ❑, and the mark, not
+    the column, is what a checkbox has to agree with.
+    """
+    doc = fitz.open(background)
+    changed = 0
+    for number in sorted({f["page"] for f in fields}):
+        page = doc[number - 1]
+        words = [fitz.Rect(w[:4]) for w in page.get_text("words") if w[4].strip()]
+        cells = [f for f in fields if f["page"] == number and f["type"] != "CheckBox"]
+        for column in cluster_columns(cells, tolerance):
+            shapes = collections.Counter((f["x"], f["width"]) for f in column)
+            # Most cells win, as on a row; where none does, the shape furthest
+            # right, which is the one that cannot push the column onto a caption.
+            x, width = max(shapes, key=lambda shape: (shapes[shape], shape[0]))
+            for field in column:
+                if (field["x"], field["width"]) == (x, width):
+                    continue
+                if (abs(x - field["x"]) > tolerance
+                        or abs(width - field["width"]) / bp.SCALE > tolerance):
+                    continue
+                ink = ink_left_of(words, field)
+                if x < field["x"] and ink is not None and x < ink + gap:
+                    continue
+                field["x"], field["width"] = x, width
+                changed += 1
+    doc.close()
+    return changed
+
+
+def cluster_columns(cells, tolerance):
+    """The groups of two or more cells that share a left edge and a width.
+
+    Single-linkage on both edges at once, so a column survives its cells drifting
+    a little from top to bottom, and a cell on the same left edge but a different
+    width — a full-width line above a two-column table — starts a column of its
+    own rather than dragging the table's cells out to its length.
+    """
+    columns = []
+    for cell in sorted(cells, key=lambda f: (f["x"], f["width"])):
+        for column in columns:
+            if (abs(cell["x"] - column[-1]["x"]) <= tolerance
+                    and abs(cell["width"] - column[-1]["width"]) / bp.SCALE <= tolerance):
+                column.append(cell)
+                break
+        else:
+            columns.append([cell])
+    return [c for c in columns if len({f["y"] for f in c}) > 1]
+
+
+def ink_left_of(words, field):
+    """Right edge of the nearest printed word to the left, on the cell's own line."""
+    box = fitz.Rect(field["x"], field["y"],
+                    field["x"] + field["width"] / bp.SCALE,
+                    field["y"] + field["height"] / bp.SCALE)
+    left = [w for w in words
+            if w.x1 <= box.x0 + 0.5 and min(box.y1, w.y1) - max(box.y0, w.y0) > 2.0]
+    return max((w.x1 for w in left), default=None)
 
 
 def clamp_to_frames(background, fields, overrun=24.0, inset=1.0):
@@ -776,6 +863,7 @@ def build_bclaws(src):
     # already sit on their rules; they still get the row pass, because a table row
     # read cell by cell can come out a fraction of a point out of line.
     harmonise_rows(fields)
+    harmonise_columns(background, fields)
     bp.clamp_to_page(fields, page_sizes)
     audit = {"docId": doc_id, "fields": len(fields),
              "checkboxes": sum(1 for f in fields if f["type"] == "CheckBox"),

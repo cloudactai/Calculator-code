@@ -165,10 +165,10 @@ widgets and page 13 carries 41: the government's own file omits the two
 "is/are Indigenous — Yes / No" ticks from the service copy. §1 says never to
 estimate a fillable-form box, so the copy ships as published.
 
-## 3b. Read in the app — five fixes, batch 3 only
+## 3b. Read in the app — seven fixes, batch 3 only
 
 Found by looking at the forms in the editor, which is where §7.10 says the rest
-of them will be. **All five live in `build_bc3.py`, not in `bc_pipeline.py`** —
+of them will be. **All seven live in `build_bc3.py`, not in `bc_pipeline.py`** —
 three of them are corrections to the shared rules, and overriding locally keeps
 batch 1 and batch 2 exactly as they were reviewed.
 
@@ -200,6 +200,23 @@ batch 1 and batch 2 exactly as they were reviewed.
    and height. **0 of 696 rows now disagree internally.** Sizing to each row rather
    than to one batch-wide number is deliberate: a 12 pt row and a 16 pt row are
    genuinely different rows.
+6. **A cell hanging just far enough below its rule to miss it.** Form 3 p3's third
+   date-of-birth cell is 16.5 pt tall in a 10.5 pt row: its bottom clears the child
+   table's last rule by 4.04 pt, and `seat_on_rules` only looked 4.0 pt up for the
+   rule a box is written on. One box on the page kept the government's height and
+   printed a third taller than the two above it. The reach above the box is now
+   8 pt, bounded by requiring the rule to lie in the box's lower half so nothing is
+   ever re-seated on the rule above it. **Exactly one cell in the batch changes.**
+7. **A column that steps down the page.** `harmonise_rows` squares a row up and
+   nothing squared a column: Form 3's three child Name cells came off three widgets
+   starting at 98.86, 98.56 and 97.95, each right on its own row and visibly ragged
+   as a column. `harmonise_columns` clusters cells by left edge and width, both
+   within 2.5 pt, and squares the cluster on the shape most of them already have —
+   **176 cells across the batch**. A cell never moves further than that tolerance,
+   so this cannot rescue a box that is in the wrong place, and it is skipped rather
+   than brought within 1.2 pt of a caption printed to its left (the bound
+   `align_boxes_to_rules` puts on batch 2). Checkboxes are left alone: a checkbox
+   agrees with its printed ❑, not with a column.
 
 Two things tried and reverted, recorded so they are not tried again:
 
