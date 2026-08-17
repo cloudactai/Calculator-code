@@ -606,3 +606,55 @@ it is a check, not a class.
 - Render the page with the boxes drawn on and read it before committing. Every
   fix in this section was confirmed that way, and two were wrong on the first
   attempt in a way only the render showed.
+
+### 9.13 A mark the province draws in *text*, and the gate that never fired
+
+Everything in §2 assumes the option mark is drawn — a vector square, a circle,
+or a `❑` glyph the extractor hands back. Manitoba draws none of them. It sets an
+option as an ASCII **bracket pair** `[ ]` (Forms 70D, 70D.1) or as a `☐` in
+SegoeUISymbol (Form 70W), and a detector looking for drawn art finds nothing at
+all. All five Manitoba templates therefore shipped with **zero** CheckBox fields
+against 30 printed options — including fifteen on 70D.1 p2, a page headed
+"(Check all applicable boxes)" — and every gate passed, because each one only
+asked whether the checkboxes that *existed* were well placed.
+
+- **Ask the converse question explicitly.** "Is there a field on every printed
+  anchor?" is a different check from "is every field on an anchor," and only the
+  first one finds a whole vocabulary you never implemented. `check_unfilled_rules`
+  already did this for writing lines on this batch and is why the rules came out
+  right; nothing did it for options.
+- **A bracket pair needs a width cut.** `[Note: …]` and `[Please check the box
+  below…]` are bracketed *sentences*, and on Form 70W they sit on the same page
+  as real ticks. Require whitespace only between the brackets and cap the pair's
+  width (20pt against the sentences' 459pt — three decades of clear air).
+- **§2.3's font-box warning is worse for a lone glyph than for `❑Yes`.** A `☐`
+  measures 8.58 x 12.84 as a font box and 7.0 x 7.0 as ink. Take the ink.
+- **§2.4's bleed is not only about padding.** Clipping the ink probe to the font
+  box exactly still let a neighbour in: on 70W p1 the `[` opening `[Please check
+  the box below…]` sits *inside* the font box of the `☐` on the next line, and
+  the mark measured 8.12 x 12.00 instead of 8.12 x 8.12. Mask every character
+  that is not one of the mark's own glyphs before reading pixels.
+
+### 9.14 A shading rule that also refuses the row it should fill
+
+A rule that keeps boxes off the government's own headings by looking for a grey
+band will also refuse a **totals row**, if the province shades those the same
+grey. Form 70D.5's "(A) TOTAL ASSETS:", "(B) TOTAL DEBTS:" and "(A) – (B) =
+NET:" rows are each ruled into four valuation cells, and all 24 shipped empty —
+the most consequential figures on a family property statement, untypeable. This
+is §4's printed-`$0` lesson (F8 pages 4, 5, 10) arriving through a different
+door, and the same tell finds it: **count the ruled cells against the fields.**
+
+When filling them, read the row from the page rather than from the header:
+Manitoba stops the grid at the Comments columns on a total row, so the cells are
+whichever verticals actually cross that row's band, and the leftmost one carries
+the row's own name and must stay empty (§9.3).
+
+### 9.15 Where a sortOrder block starts is not a constant
+
+`merge_mb_catalog.py` hardcoded Manitoba's block at 401 "clear of BC's 101-288
+and Saskatchewan's 301-340." BC has since grown to 313 and Saskatchewan moved to
+401-440, so the constant had come to name Saskatchewan's block, and merely
+re-running the tool to refresh a field count moved all five Manitoba rows on top
+of it. A per-province catalog tool should **derive** its block from what the
+other provinces currently occupy, not restate a boundary that was true once.

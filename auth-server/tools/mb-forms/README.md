@@ -17,16 +17,16 @@ deliberately out of scope, matching the Ontario, BC and Saskatchewan catalogues.
 All 43 are recorded in `mb_sources.py` and fetched, so a form that is renumbered
 or withdrawn surfaces immediately. Only the categories named in
 `SHIPPED_CATEGORIES` are built, catalogued and bound. **This batch ships
-`Financial` — 5 forms, 723 fields.** Adding a category is one edit there, then
+`Financial` — 5 forms, 777 fields.** Adding a category is one edit there, then
 build → verify → merge → rebind.
 
 | Form | Title | Pages | Fields |
 | --- | --- | --- | --- |
-| 70D | Financial Statement | 8 | 285 |
-| 70D.1 | Demand for Financial Information | 3 | 12 |
-| 70D.5 | Comparative Family Property Statement | 6 | 272 |
+| 70D | Financial Statement | 8 | 288 |
+| 70D.1 | Demand for Financial Information | 3 | 34 |
+| 70D.5 | Comparative Family Property Statement | 6 | 292 |
 | 70U | Summary of Assets and Liabilities | 13 | 104 |
-| 70W | Recalculation and Enforcement Information Form | 1 | 50 |
+| 70W | Recalculation and Enforcement Information Form | 1 | 55 |
 
 ## 1. Fetch and verify sources (gates A, B)
 
@@ -165,20 +165,24 @@ Re-derives every check from the page rather than comparing against what the
 builder stored; where the builder makes a judgement, the verifier calls the
 builder's own rule again, so a mistake has to be made twice in the same way to
 get through. Checks: printed-text coverage, checkbox-on-a-printed-square,
-**unfilled rules**, unfilled underscore blanks, signature rules, **fields on
-underlines**, amount seating, vertical stacking, edge clearance, dollar slots,
-bounds, duplicate ids, shared positions, box overlap and slivers.
+**unticked marks**, **unfilled rules**, unfilled underscore blanks, signature
+rules, **fields on underlines**, amount seating, vertical stacking, edge
+clearance, dollar slots, bounds, duplicate ids, shared positions, box overlap
+and slivers.
 
 `check_unfilled_rules` is the one that matters most here: Manitoba's blanks are
 geometry, so "is there a field on every printed rule?" is the direct question,
 and it is what catches a rule wrongly refused.
+
+`check_unticked_marks` is the same question asked of options, and it exists
+because the batch shipped without it — see §6.
 
 The printed-text check reads **characters, not words**. `get_text("words")` hands
 back `FD_______________` as one token, so a word-level test either flags every
 correctly-placed box for the rule it is supposed to sit on, or waves through a
 box that has covered a caption.
 
-Current state: **5 forms, 723 fields, zero findings**, and the build is
+Current state: **5 forms, 777 fields, zero findings**, and the build is
 idempotent (two runs produce byte-identical maps).
 
 ## 4. Catalog
@@ -246,6 +250,58 @@ Deliberately left unbound, with reasons in `mb_binds.py`:
   party", Form 70D.1's "(specify full name of the party who is to provide
   information)". All are completed by striking out what does not apply, and none
   says which party is the client.
+
+## 6. Repairs found by reading the pages (`repair_mb_forms.py`)
+
+All 31 pages of the batch were read individually with the overlay drawn on,
+after `verify_mb.py` reported zero findings on all five forms. It found 60
+things, in four kinds, and **every one of them was invisible to the gates
+because no gate was asking the question** — guide §9's through-line exactly.
+
+    python3 repair_mb_forms.py [--check]
+
+Applied in place to the promoted maps, never by rebuilding; all 20 binds and
+every other non-geometry key are asserted byte-identical, and a second run is a
+no-op.
+
+- **30 printed options, none of them tickable.** Manitoba writes an option as a
+  `[ ]` bracket pair (70D, 70D.1) or a `☐` glyph (70W). The builder's checkbox
+  detector looks for the drawn square BC and Saskatchewan use, so it found
+  nothing, and all five forms shipped with **zero** CheckBox fields. Form 70D.1
+  p2 is the worst of it: fifteen options under the heading "(Check all
+  applicable boxes)", and the page carried one field — the court file number.
+  `mb_marks.py` measures each mark off the page; `check_unticked_marks` now asks
+  the direct question so it cannot recur.
+- **24 untypeable totals on Form 70D.5.** "(A) TOTAL ASSETS:", "(B) TOTAL
+  DEBTS:", "(A) – (B) = NET:" and their (C)/(D) twins on p4 are each ruled into
+  four valuation cells, and every one was empty. This is guide §4's Form 8
+  lesson in another dialect: the `is_shaded` rule that keeps boxes off the
+  government's own headings also refused these, because Manitoba shades a total
+  row the same grey as a heading.
+- **4 stray text areas on Form 70D.5 p2 and p4.** One per page opened in the
+  margin under the TOTAL ASSETS row and ran down into the *next* table, covering
+  its border and part of its column-heading row (guide §9.2); the other floated
+  in blank paper below the NET row, anchored to nothing.
+- **2 boxes on Form 70U p1**: the Part 1 value box was the topmost in its column
+  and 13.0pt against the column's modal 10.4 — the §9.2 signal — and the extra
+  height sat on "VALUE (total from Part)"; and the `of ___,` box covered the
+  comma closing its own line.
+
+Two things deliberately **not** changed, both recorded rather than guessed at:
+
+- **Form 70D.1 p3's "(Name and address of lawyer or party filing)" and "TO:
+  (Name and address of other party's lawyer or of other party)"** have no
+  writing area. There is a clear band under each, so guide §6's caption anchor
+  arguably applies — but neither caption has a twin anywhere in the batch to
+  take a column from, and §6 is explicit that where the geometry cannot be read
+  off the page it should be said so rather than invented. Worth a decision.
+- **Form 70D p2 item 2(a)'s three year boxes graze the descenders of the line
+  above.** They are geometrically identical to item 2(b)'s on the same page;
+  only the absence of a paragraph gap makes 2(a) look struck through. The strict
+  measure — does a box cover a third of a printed glyph? — is clean across the
+  whole batch, and the loose measure ("does the box reach into the line above?")
+  returns 419 hits that are overwhelmingly a row label sitting beside its own
+  cell, which is guide §9.2's documented false-positive trap. Left alone.
 
 ## Overlay convention
 

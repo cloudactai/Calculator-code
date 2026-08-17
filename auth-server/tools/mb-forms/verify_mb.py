@@ -35,6 +35,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(HERE), "bc-forms"))
 
 import bc_pipeline as bp  # noqa: E402
 import build_mb_forms as B  # noqa: E402
+import mb_marks  # noqa: E402
 from mb_sources import all_sources, shipped_sources  # noqa: E402
 
 SCALE = bp.SCALE
@@ -79,10 +80,17 @@ def check_printed_text(doc, fields, problems):
 
 
 def check_checkbox_marks(doc, fields, problems):
-    """Every checkbox must sit on a printed square, and one square per control."""
+    """Every checkbox must sit on a printed square, and one square per control.
+
+    "Printed square" has three vocabularies on these forms and the check has to
+    know all of them, or it reports a correctly-placed control as unanchored:
+    the drawn square `B.checkboxes` finds, and the `[ ]` bracket pair and `☐`
+    glyph that `mb_marks` measures. Manitoba never draws one — all 30 of the
+    batch's options are set as text.
+    """
     for number in sorted({f["page"] for f in fields}):
         page = doc[number - 1]
-        marks = B.checkboxes(page)
+        marks = B.checkboxes(page) + [square for _, _, square in mb_marks.marks(page)]
         ticks = B.tick_rects(page)
         taken = {}
         for field in [f for f in fields
@@ -364,7 +372,35 @@ def check_dollar_slots(doc, fields, problems):
                                            % (glyph.x0, glyph.y0)})
 
 
-CHECKS = (check_printed_text, check_checkbox_marks, check_unfilled_rules,
+def check_unticked_marks(doc, fields, problems):
+    """Every printed option mark must carry a checkbox.
+
+    The converse of `check_checkbox_marks`, and the direct question, the way
+    `check_unfilled_rules` is for a writing line. It exists because the whole
+    batch shipped without it: Manitoba sets an option as a `[ ]` bracket pair or
+    a `☐` glyph rather than as the drawn square BC and Saskatchewan use, the
+    builder's detector looks for drawn squares, and so all 30 options across
+    Forms 70D, 70D.1 and 70W went out untickable -- including the fifteen on
+    70D.1 p2, a page headed "(Check all applicable boxes)". Nothing else here
+    asked the question, so nothing else noticed.
+    """
+    boxes = collections.defaultdict(list)
+    for field in fields:
+        if field["type"] == "CheckBox":
+            boxes[field["page"]].append(box_of(field))
+    for number in range(1, doc.page_count + 1):
+        page = doc[number - 1]
+        for kind, _font_box, square in mb_marks.marks(page):
+            if any((square & box).get_area() > 0.6 * square.get_area()
+                   for box in boxes[number]):
+                continue
+            problems.append({"check": "unticked-mark", "page": number, "id": None,
+                             "detail": "the %s mark at %.0f,%.0f has no checkbox"
+                                       % (kind, square.x0, square.y0)})
+
+
+CHECKS = (check_printed_text, check_checkbox_marks, check_unticked_marks,
+          check_unfilled_rules,
           check_unfilled_blanks, check_signatures, check_underlines,
           check_amount_seating, check_stacking, check_edge_clearance,
           check_dollar_slots)
