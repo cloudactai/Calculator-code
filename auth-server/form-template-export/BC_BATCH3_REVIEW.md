@@ -137,20 +137,21 @@ Two blocking faults were found and fixed rather than accepted:
   also fixes the exemptions that keep a checkbox overlay from reporting as a box
   over printed text.
 
-### Advisory (324) — read, not fixed
+### Advisory (303) — read, not fixed
 
 Proportionally higher than batch 2's 282 over 145 forms, and almost all of it is
-the government's own geometry, which §1 says is ground truth:
+the government's own geometry, which §1 says is ground truth. Counts are after
+§3b's fixes:
 
 | Kind | n | Reading |
 |---|---|---|
-| `edge-cuts-caption` | 164 | BC prints each cell's caption ("City", "Phone", "court location") inside the cell's own bottom-left, so the widget rect always clips it by a point or two. Batch 2 shipped 84 of the same. |
+| `edge-cuts-caption` | 154 | BC prints each cell's caption ("City", "Phone", "court location") inside the cell's own bottom-left, so the widget rect always clips it by a point or two. Batch 2 shipped 84 of the same. |
 | `checkbox-no-mark` | 36 | Inline options in the "APPLYING FOR" lists (Form 2, Form 10.1) where Acrobat drew the square and the printed background has none. The widget rect is still ground truth; the app draws its own control. |
 | `page-no-fields` | 25 | The instruction sheets the government bundles into these PDFs ("TO APPLY FOR AN ORDER … Step 1", "IMPORTANT INFORMATION ABOUT YOUR HEARING"). Correctly fieldless. |
-| `sliver` | 24 | Narrow table cells on Forms 3.1, 3.2 and 9 — real cells, not stray boxes. |
-| `leader-box-on-type` | 24 | A box whose ends graze the `[caption]` beside its dot run. |
-| `box-on-text` | 20 | Mostly a cell caption inside its own box; one real one, below. |
-| `field-overlap` | 20 | Adjacent rows of BC's name tables, whose widget rects overlap each other by ~27% in the government's file. |
+| `sliver` | 26 | Narrow table cells on Forms 3.1, 3.2 and 9 — real cells, not stray boxes. |
+| `leader-box-on-type` | 25 | A box whose ends graze the `[caption]` beside its dot run. |
+| `box-on-text` | 18 | Mostly a cell caption inside its own box; one real one, below. |
+| `field-overlap` | 18 | Adjacent rows of BC's name tables, whose widget rects overlap each other by ~27% in the government's file. |
 | `rule-no-field` | 9 | Printed rules that close a section rather than ask for anything. |
 
 **One worth a second look before the next pass:** CFCSA Form 3 p3, the box on
@@ -163,6 +164,54 @@ documented guard, not a miss.
 widgets and page 13 carries 41: the government's own file omits the two
 "is/are Indigenous — Yes / No" ticks from the service copy. §1 says never to
 estimate a fillable-form box, so the copy ships as published.
+
+## 3b. Read in the app — five fixes, batch 3 only
+
+Found by looking at the forms in the editor, which is where §7.10 says the rest
+of them will be. **All five live in `build_bc3.py`, not in `bc_pipeline.py`** —
+three of them are corrections to the shared rules, and overriding locally keeps
+batch 1 and batch 2 exactly as they were reviewed.
+
+1. **A box printing over the tail of its own caption.** `bp.clear_printed_labels`
+   moves a field's left edge past a caption *mostly covered* by the box. BC sets
+   these hard against their cell and the widget starts a point or two inside the
+   last letter, so 15-20% of the word is covered and the rule read it as clear —
+   "Name", "Postal Code", "Phone", "Email Address" all had a box on them. A word
+   the edge cuts is now judged by where it *starts*, not by how much is covered.
+2. **A box running on under the next cell's caption.** The same row prints
+   "Province | Postal Code | Phone | Fax" and each widget runs past its own cell.
+   The right edge now stops before the next caption, and at the table's own edge
+   where the widget overran that too.
+3. **A column caption read as a hint, dropping the box a line.** `bp.nudge_off_hint`
+   moves a box below printed text at its top. Form 2's parent panel prints "Name"
+   at the far left of the first line, so the whole box went to the panel's second
+   line and left the first blank. A hint is printed *inside* the writing area, so
+   only a word starting at or after the box's left edge counts now.
+4. **A field hanging out of its printed panel.** Form 2 p5's "Details of the order
+   requested" widget runs 7.5 pt below the frame that encloses it. Acrobat clips a
+   field to itself and never shows the overhang; the overlay draws the stored
+   rectangle. `clamp_to_frames` pulls a field back inside the panel holding it,
+   but only where it overruns one edge by less than 24 pt.
+5. **Fourteen heights for one kind of cell.** 825 single-line cells across these
+   forms came in heights between 11.2 and 16.5 pt, so a single ruled row printed
+   three sizes that did not line up. `seat_on_rules` re-cuts each from the two
+   rules that bound it — bottom seated on the rule it is written on, top under the
+   rule above — and `harmonise_rows` then gives every cell on one row the same top
+   and height. **0 of 696 rows now disagree internally.** Sizing to each row rather
+   than to one batch-wide number is deliberate: a 12 pt row and a 16 pt row are
+   genuinely different rows.
+
+Two things tried and reverted, recorded so they are not tried again:
+
+* **A panel's border as a rule.** It would seat the last row of a panel (the
+  "Email Address" row, which is written on the border itself), but it re-cut boxes
+  elsewhere onto printed type — `box-on-text` went 17 to 30. Those last rows keep
+  the government's height.
+* **Any intersection counting as "on the line".** A box seated on its rule ends a
+  fraction of a point inside the line above; Form 2's "This application is filed
+  by:" heading overhangs the Name box by 0.6 pt, and treating that as a caption in
+  the box shoved the field 47 pt right, into the middle of its own cell. A word now
+  has to overlap the box by 40% of its own height.
 
 ## 4. Prefill binds
 

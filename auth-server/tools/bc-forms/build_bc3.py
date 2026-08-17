@@ -35,6 +35,7 @@ Run: python3 build_bc3.py [--promote]
 Without --promote it writes to _incoming_bc3/out and prints the gate results.
 """
 import argparse
+import collections
 import json
 import os
 import re
@@ -91,18 +92,266 @@ SIG_DATE = re.compile(r"date of signature", re.I)
 
 # ---------------------------------------------------------------- acroform path
 
+def nudge_off_hint(background, fields, min_remaining=14.0):
+    """`bp.nudge_off_hint`, but a caption to the left is not a hint.
+
+    A hint is printed *inside* the writing area, so only a word starting at or
+    after the box's left edge counts. A word starting to the left of it is the
+    cell's own caption, which the box merely clips — CFCSA Form 2's parent panel
+    prints "Name" at the far left of its first line, and treating that as a hint
+    dropped the whole box onto the panel's second line and left the first blank.
+    `clear_printed_labels` deals with a caption: move right, not down.
+    """
+    doc = fitz.open(background)
+    nudged = 0
+    for number in sorted({f["page"] for f in fields}):
+        words = doc[number - 1].get_text("words")
+        for field in [f for f in fields if f["page"] == number]:
+            height = field["height"] / bp.SCALE
+            if height < min_remaining * 2:
+                continue
+            box = fitz.Rect(field["x"], field["y"],
+                            field["x"] + field["width"] / bp.SCALE, field["y"] + height)
+            band = fitz.Rect(box.x0, box.y0, box.x1, box.y0 + min_remaining)
+            bottoms = [y1 for x0, y0, x1, y1, word, *_ in words
+                       if word.strip() and not set(word.strip()) <= bp.BOX_GLYPHS
+                       and x0 >= box.x0 - 0.5
+                       and not (band & fitz.Rect(x0, y0, x1, y1)).is_empty]
+            if not bottoms:
+                continue
+            top = max(bottoms) + 1.0
+            if top <= field["y"] or box.y1 - top < min_remaining:
+                continue
+            field["height"] = round((box.y1 - top) * bp.SCALE, 2)
+            field["y"] = round(top, 2)
+            nudged += 1
+    doc.close()
+    return nudged
+
+
+def clear_printed_labels(background, fields, gap=1.5, zone=0.6):
+    """`bp.clear_printed_labels`, widened to the two edges it was missing.
+
+    The shared rule moves a field's left edge past a caption **mostly covered** by
+    the box. BC's CFCSA forms set their captions hard against the cell and the
+    government's widget starts a point or two inside the last letter, so only
+    15-20% of the word is covered and the rule read it as clear — the field prints
+    over the tail of "Name", "Postal Code", "Phone", "Email Address". Two shapes
+    are added, both judged by where the word *starts* rather than by how much of
+    it is covered:
+
+    * a caption the left edge cuts through (it starts left of the box);
+    * the next cell's caption, printed just past the right edge — BC lays
+      "Province | Postal Code | Phone | Fax" across one ruled row and each widget
+      runs on under the caption of the cell after it.
+    """
+    doc = fitz.open(background)
+    fixed = 0
+    for number in sorted({f["page"] for f in fields}):
+        page = doc[number - 1]
+        words = [fitz.Rect(w[:4]) for w in page.get_text("words") if w[4].strip()]
+        for field in [f for f in fields if f["page"] == number
+                      and f["type"] in ("TextField", "TextArea")]:
+            box = fitz.Rect(field["x"], field["y"],
+                            field["x"] + field["width"] / bp.SCALE,
+                            field["y"] + field["height"] / bp.SCALE)
+            limit = box.x0 + box.width * zone
+            # On the *line*, not merely touching it. A box seated on its own rule
+            # ends a fraction of a point inside the line above — CFCSA Form 2's
+            # "This application is filed by:" heading overhangs the Name box below
+            # it by 0.6 pt — and reading that as a caption in the box shoved the
+            # field 47 pt to the right, into the middle of its own cell.
+            on_line = [r for r in words if min(r.y1, box.y1) - max(r.y0, box.y0)
+                       > 0.4 * r.height]
+            covered = [r for r in on_line if r.x1 <= limit
+                       and ((r & box).get_area() > 0.55 * r.get_area()
+                            or r.x0 < box.x0 - 0.5 < r.x1)]
+            trailing = [r for r in on_line
+                        if r.x1 > box.x1 + 0.5 and box.x1 > r.x0 >= limit]
+            left = max([r.x1 + gap for r in covered] + [box.x0])
+            right = min([r.x0 - gap for r in trailing] + [box.x1])
+            if right - left < 8 or (left == box.x0 and right == box.x1):
+                continue
+            field["x"] = round(left, 2)
+            field["width"] = round((right - left) * bp.SCALE, 2)
+            fixed += 1
+    doc.close()
+    return fixed
+
+
 def place(background, fields):
-    """The shared placement chain — the same calls, in the same order, as batch 2."""
-    bp.nudge_off_hint(background, fields)
+    """The batch-2 chain, with batch 3's own versions of two of its steps."""
+    nudge_off_hint(background, fields)
     bp.snap_checkboxes(background, fields)
     bp.assign_marks(background, fields)
     bp.stamp_shapes(background, fields)
     bp.snap_text_fields(background, fields)
     bp.expand_ruled_blocks(fields, background)
-    bp.clear_printed_labels(background, fields)
+    clear_printed_labels(background, fields)
     bp.merge_sliver_fields(background, fields)
     bp.size_amounts_to_dollar(background, fields)
     separate_shared_marks(background, fields)
+    seat_on_rules(background, fields)
+    harmonise_rows(fields)
+    clamp_to_frames(background, fields)
+
+
+# A cell taller than this is a writing *area*, not one of the small ruled lines,
+# and it is left to `expand_ruled_blocks`.
+SINGLE_LINE_MAX = 20.0
+# How far above its rule the box's bottom edge sits, and how far below the rule
+# above it the top edge starts.
+SEAT = 0.5
+HEAD = 1.0
+
+
+def row_rules(page, min_width=25.0):
+    """Every horizontal rule on the page, as (y, x0, x1).
+
+    Read off the path items rather than the drawing bboxes, and including the
+    hairline `re` BC uses for a rule, so a row's own line is found whether the
+    form drew it as a stroke or as a filled sliver.
+    """
+    out = []
+    for drawing in page.get_drawings():
+        for item in drawing["items"]:
+            if item[0] == "l" and abs(item[1].y - item[2].y) < 0.6:
+                x0, x1 = sorted((item[1].x, item[2].x))
+                if x1 - x0 >= min_width:
+                    out.append((round(item[1].y, 2), x0, x1))
+            elif item[0] == "re" and item[1].height <= 1.5 and item[1].width >= min_width:
+                out.append((round(item[1].y0, 2), item[1].x0, item[1].x1))
+    return sorted(set(out))
+
+
+def seat_on_rules(background, fields, reach=6.0, lift=4.0):
+    """Sit every small ruled cell on its own rule, sized to its own row.
+
+    BC's widget rectangles disagree about how tall a one-line cell is: 825 of them
+    across these forms come in fourteen heights between 11.2 and 16.5 pt, so a
+    single ruled row prints boxes of three different sizes that do not line up.
+    Each is re-cut from the two rules that bound it — bottom seated on the rule it
+    is written on, top just under the rule above — which keeps a row internally
+    consistent without inventing a batch-wide number that no page actually uses.
+
+    A cell is only touched when both rules are there and they span it. Anything
+    taller than a single line, and anything not sitting on a rule, is left alone —
+    which includes the last row of a panel, written on the panel's own border. A
+    border was tried as a rule here and rejected: it re-cut boxes elsewhere onto
+    printed type, taking `box-on-text` from 17 to 30 across the batch.
+    """
+    doc = fitz.open(background)
+    seated = 0
+    for number in sorted({f["page"] for f in fields}):
+        page = doc[number - 1]
+        rules = row_rules(page)
+        for field in [f for f in fields if f["page"] == number
+                      and f["type"] in ("TextField", "TextArea")]:
+            box = fitz.Rect(field["x"], field["y"],
+                            field["x"] + field["width"] / bp.SCALE,
+                            field["y"] + field["height"] / bp.SCALE)
+            if box.height > SINGLE_LINE_MAX:
+                continue
+            # "Spans this cell" means covers most of it, not all of it: BC's
+            # widgets on Form 1 run about 5 pt past the right end of the table's
+            # own rules, which a containment test reads as "no rule here" and
+            # leaves the cell at whatever height the widget happened to have.
+            spanning = [(y, x0, x1) for y, x0, x1 in rules
+                        if min(x1, box.x1) - max(x0, box.x0) >= 0.85 * box.width]
+            below = [y for y, _x0, _x1 in spanning if -lift <= y - box.y1 <= reach]
+            if not below:
+                continue
+            rule = min(below, key=lambda y: abs(y - box.y1))
+            above = [y for y, _x0, _x1 in spanning if y < rule - 4]
+            if not above:
+                continue
+            top = max(above) + HEAD
+            bottom = rule - SEAT
+            if bottom - top < MIN_FIELD_HEIGHT or bottom - top > SINGLE_LINE_MAX:
+                continue
+            if abs(top - box.y0) < 0.05 and abs(bottom - box.y1) < 0.05:
+                continue
+            field["y"] = round(top, 2)
+            field["height"] = round((bottom - top) * bp.SCALE, 2)
+            # And stop at the table's own edge when the widget ran past it.
+            edge = max(x1 for y, _x0, x1 in spanning if y == rule)
+            if 0 < box.x1 - edge <= 8:
+                field["width"] = round((edge - box.x0) * bp.SCALE, 2)
+            seated += 1
+    doc.close()
+    return seated
+
+
+def harmonise_rows(fields, tolerance=1.5):
+    """Give every cell on one ruled row the same top and height.
+
+    `seat_on_rules` works a cell at a time and skips any it cannot find both rules
+    for, which leaves a row with one box a different size from its neighbours —
+    the exact thing the row seating exists to prevent. Cells are grouped by the
+    line they sit on and made to match the one the most of them already agree on.
+    """
+    rows = {}
+    for field in fields:
+        if field["type"] == "CheckBox" or field["height"] / bp.SCALE > SINGLE_LINE_MAX:
+            continue
+        key = (field["page"], round((field["y"] + field["height"] / bp.SCALE) / tolerance))
+        rows.setdefault(key, []).append(field)
+    changed = 0
+    for group in rows.values():
+        if len(group) < 2:
+            continue
+        shapes = collections.Counter((f["y"], f["height"]) for f in group)
+        # Most cells win; where none does, the taller shape wins, because a box
+        # too tall for its row is untidy and a box too short crops what is typed.
+        top, height = max(shapes, key=lambda shape: (shapes[shape], shape[1]))
+        for field in group:
+            if (field["y"], field["height"]) == (top, height):
+                continue
+            field["y"], field["height"] = top, height
+            changed += 1
+    return changed
+
+
+def clamp_to_frames(background, fields, overrun=24.0, inset=1.0):
+    """Pull a field back inside the panel the form draws around it.
+
+    The widget rectangle is ground truth for *where* a field goes (§1), but it is
+    not always inside the box the page prints: CFCSA Form 2 p5's "Details of the
+    order requested" widget runs 7.5 pt below the panel that encloses it. Acrobat
+    clips a field to itself and never shows the overhang; our overlay draws the
+    stored rectangle, so it hangs out of the printed frame.
+
+    Only a genuine overhang is clamped — the frame has to enclose the field's
+    centre and the field may only be reaching past one edge, by less than
+    `overrun`. A field that spans a frame edge by more than that is crossing the
+    frame on purpose and is left alone.
+    """
+    doc = fitz.open(background)
+    clamped = 0
+    for number in sorted({f["page"] for f in fields}):
+        page = doc[number - 1]
+        frames = [d["rect"] for d in page.get_drawings()
+                  if d["type"] == "s" and d["rect"].width > 100 and d["rect"].height > 20
+                  and any(item[0] == "re" for item in d["items"])]
+        for field in [f for f in fields if f["page"] == number]:
+            rect = fitz.Rect(field["x"], field["y"],
+                             field["x"] + field["width"] / bp.SCALE,
+                             field["y"] + field["height"] / bp.SCALE)
+            centre = fitz.Point((rect.x0 + rect.x1) / 2, (rect.y0 + rect.y1) / 2)
+            holding = [f for f in frames if f.contains(centre)]
+            if not holding:
+                continue
+            frame = min(holding, key=lambda f: f.get_area())
+            top = max(rect.y0, frame.y0 + inset) if 0 < frame.y0 - rect.y0 < overrun else rect.y0
+            bottom = (min(rect.y1, frame.y1 - inset)
+                      if 0 < rect.y1 - frame.y1 < overrun else rect.y1)
+            if bottom - top < 8 or (top == rect.y0 and bottom == rect.y1):
+                continue
+            field["y"] = round(top, 2)
+            field["height"] = round((bottom - top) * bp.SCALE, 2)
+            clamped += 1
+    doc.close()
+    return clamped
 
 
 def build_acroform(src):
@@ -523,6 +772,10 @@ def build_bclaws(src):
     pages = doc.page_count
     doc.close()
 
+    # The consolidation forms are built from the printed anchors, so their boxes
+    # already sit on their rules; they still get the row pass, because a table row
+    # read cell by cell can come out a fraction of a point out of line.
+    harmonise_rows(fields)
     bp.clamp_to_page(fields, page_sizes)
     audit = {"docId": doc_id, "fields": len(fields),
              "checkboxes": sum(1 for f in fields if f["type"] == "CheckBox"),
