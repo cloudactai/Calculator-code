@@ -191,6 +191,7 @@ def place(background, fields):
     bp.merge_sliver_fields(background, fields)
     bp.size_amounts_to_dollar(background, fields)
     separate_shared_marks(background, fields)
+    add_captioned_rows(background, fields)
     seat_on_rules(background, fields)
     harmonise_rows(fields)
     harmonise_columns(background, fields)
@@ -248,12 +249,30 @@ def seat_on_rules(background, fields, reach=6.0, lift=8.0):
     original 4.0 missed by four hundredths of a point and left as the one box on
     the page at the wrong size. The rule chosen this way is still required to lie
     in the box's lower half, so a cell is never re-seated on the rule above it.
+
+    Two things bound the top of a cell, and until both were read a whole class of
+    BC's cells came out wrong. The rule above is one. **Printed type across the
+    cell is the other**: Form 3 p3 asks "Since the order was made, circumstances
+    have changed significantly as follows:" and the government's widget starts
+    5.8 pt inside that caption and covers it, because the rule above the caption
+    is the bottom of the writing block two lines up and re-cutting to it would
+    make a 33 pt cell. The bounds are what the page draws — the bottom of the type
+    above and the line the answer is written on — so a word lying across the cell
+    now raises its top the way a rule does.
+
+    And when neither bound gives a single line — Form 3's "The reason for failing
+    to attend when the order was made is:", where the caption sits to the *left*
+    of the box and so bounds nothing, and the nearest rule above is 34 pt up — the
+    cell keeps the height the government gave it and only slides down onto its
+    rule. A box that hangs below the line it is written on looks wrong whether or
+    not this pass can work out how tall it should be.
     """
     doc = fitz.open(background)
     seated = 0
     for number in sorted({f["page"] for f in fields}):
         page = doc[number - 1]
         rules = row_rules(page)
+        words = [fitz.Rect(w[:4]) for w in page.get_text("words") if w[4].strip()]
         for field in [f for f in fields if f["page"] == number
                       and f["type"] in ("TextField", "TextArea")]:
             box = fitz.Rect(field["x"], field["y"],
@@ -277,7 +296,19 @@ def seat_on_rules(background, fields, reach=6.0, lift=8.0):
                 continue
             top = max(above) + HEAD
             bottom = rule - SEAT
-            if bottom - top < MIN_FIELD_HEIGHT or bottom - top > SINGLE_LINE_MAX:
+            # Type lying across the cell, between that rule and this one. A word
+            # only to the left or the right of the box is the row's caption and
+            # bounds nothing, so it has to cover the box's own columns to count.
+            across = [w.y1 + HEAD for w in words
+                      if top <= w.y1 <= rule - MIN_FIELD_HEIGHT
+                      and min(w.x1, box.x1) - max(w.x0, box.x0) > 0.5 * w.width]
+            top = max([top] + across)
+            if bottom - top > SINGLE_LINE_MAX:
+                # Nothing here says how tall the cell is; seat it and no more.
+                top = bottom - box.height
+                if top < max([max(above) + HEAD] + across):
+                    continue
+            if bottom - top < MIN_FIELD_HEIGHT:
                 continue
             if abs(top - box.y0) < 0.05 and abs(bottom - box.y1) < 0.05:
                 continue
@@ -290,6 +321,65 @@ def seat_on_rules(background, fields, reach=6.0, lift=8.0):
             seated += 1
     doc.close()
     return seated
+
+
+def add_captioned_rows(background, fields, min_width=60.0, gap=2.0):
+    """Give a box to a ruled row that has a caption printed on it and no field.
+
+    §1 forbids *estimating* a box on a fillable form, and this does not estimate
+    one. Every edge comes off the page: the row is drawn — two rules bounding it,
+    a caption printed hard against the left end, and clear paper from the caption
+    to the rule's right end. What is missing is only the government's widget.
+
+    Form 3 p3's "This application is filed by" panel is the case. It prints
+    Address / City / Postal Code / Phone / Fax / Email Address and ships a widget
+    for all of them except Email Address, so the applicant cannot type the address
+    that the panel's own margin note ("the name, address and email address of the
+    one who is making this application") asks for. The same form's address-for-
+    service panel below it, laid out identically, does have its `email` widget.
+
+    Deliberately narrow. A row qualifies only when its caption starts at the rule's
+    own left end — a sentence running across the page is prose, not a cell — and
+    when `min_width` of clear rule is left to write on. Across the batch's 72 pages
+    it fires exactly once, on that row.
+    """
+    doc = fitz.open(background)
+    added = 0
+    for number in sorted({f["page"] for f in fields}):
+        page = doc[number - 1]
+        rules = row_rules(page)
+        words = [fitz.Rect(w[:4]) for w in page.get_text("words") if w[4].strip()]
+        boxes = [fitz.Rect(f["x"], f["y"], f["x"] + f["width"] / bp.SCALE,
+                           f["y"] + f["height"] / bp.SCALE)
+                 for f in fields if f["page"] == number]
+        for y, x0, x1 in rules:
+            if x1 - x0 < min_width:
+                continue
+            above = [yy for yy, a, b in rules
+                     if 4 < y - yy <= 20 and min(b, x1) - max(a, x0) >= 0.8 * (x1 - x0)]
+            if not above:
+                continue
+            top, bottom = max(above) + HEAD, y - SEAT
+            if not MIN_FIELD_HEIGHT <= bottom - top <= SINGLE_LINE_MAX:
+                continue
+            row = fitz.Rect(x0, top, x1, bottom)
+            if any((b & row).get_area() > 0.15 * row.get_area() for b in boxes):
+                continue
+            caption = [w for w in words if (w & row).get_area() > 0.3 * w.get_area()]
+            if not caption or min(w.x0 for w in caption) > x0 + 10:
+                continue
+            left = max(w.x1 for w in caption) + gap
+            if x1 - left < min_width:
+                continue
+            twin = next(f for f in fields if f["page"] == number and f["type"] == "TextField")
+            fields.append(dict(twin, id=max(f["id"] for f in fields) + 1,
+                               x=round(left, 2), y=round(top, 2),
+                               width=round((x1 - left) * bp.SCALE, 2),
+                               height=round((bottom - top) * bp.SCALE, 2), value=""))
+            fields[-1].pop("bind", None)
+            added += 1
+    doc.close()
+    return added
 
 
 def harmonise_rows(fields, tolerance=1.5):

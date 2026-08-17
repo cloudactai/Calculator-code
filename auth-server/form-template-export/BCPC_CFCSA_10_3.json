@@ -16,7 +16,8 @@
    ],
    "background": "none",
    "border": "none",
-   "page": 1
+   "page": 1,
+   "bind": "court_info.courtFileNumber"
   },
   {
    "id": 1750105138002,
@@ -58,9 +59,9 @@
    "id": 1750105138004,
    "type": "TextField",
    "x": 109.8,
-   "y": 134.05,
+   "y": 140.52,
    "width": 710.67,
-   "height": 23.25,
+   "height": 13.55,
    "value": "",
    "fontSize": 9,
    "color": [
@@ -76,9 +77,9 @@
    "id": 1750105138005,
    "type": "TextField",
    "x": 101.4,
-   "y": 189.84,
+   "y": 189.09,
    "width": 723.98,
-   "height": 20.16,
+   "height": 20.87,
    "value": "",
    "fontSize": 9,
    "color": [
@@ -204,9 +205,9 @@
    "id": 1750105138012,
    "type": "TextField",
    "x": 205.2,
-   "y": 425.76,
-   "width": 568.44,
-   "height": 20.16,
+   "y": 423.09,
+   "width": 568.27,
+   "height": 23.87,
    "value": "",
    "fontSize": 9,
    "color": [
@@ -313,7 +314,7 @@
    "type": "TextField",
    "x": 371.04,
    "y": 475.01,
-   "width": 162.9,
+   "width": 162.72,
    "height": 25.49,
    "value": "",
    "fontSize": 9,
@@ -330,9 +331,9 @@
    "id": 1750105138019,
    "type": "TextField",
    "x": 100.08,
-   "y": 537.84,
-   "width": 426.78,
-   "height": 20.16,
+   "y": 531.09,
+   "width": 426.6,
+   "height": 29.87,
    "value": "",
    "fontSize": 9,
    "color": [

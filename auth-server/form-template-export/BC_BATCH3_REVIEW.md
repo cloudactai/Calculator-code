@@ -12,7 +12,7 @@ BC's catalogue carried none of either. This batch is those two families:
 | Child protection, Provincial Court (CFCSA) Rules, B.C. Reg. 533/95 | 19 | 17 government fillable PDFs + 2 cut from the consolidation | `Provincial Court – Child Protection` |
 | Adoption, Adoption Regulation Sch. 3, B.C. Reg. 291/96 | 6 | all cut from the consolidation | `Supreme Court – Adoption` (4), `Adoption – Director of Adoption` (2) |
 
-**25 templates, 72 pages, 1 339 fields**, catalog rows renumbered so the BC block
+**25 templates, 72 pages, 1 340 fields**, catalog rows renumbered so the BC block
 runs 101–313. `npm run forms:validate-export` green; no Ontario, Saskatchewan or
 Manitoba template touched, and no batch-1 or batch-2 BC template touched beyond
 its `sortOrder`.
@@ -119,7 +119,7 @@ and `check_idempotence` (§7.9, the build re-run into a scratch directory and
 diffed byte for byte).
 
 ```
-25 forms, 72 pages, 1339 fields
+25 forms, 72 pages, 1340 fields
 checkbox mark alignment: median 0.00pt, 95th 0.00pt, worst 2.00pt (276 marks)
 BLOCKING: 0   (1 accepted exception, above)
 ```
@@ -137,38 +137,39 @@ Two blocking faults were found and fixed rather than accepted:
   also fixes the exemptions that keep a checkbox overlay from reporting as a box
   over printed text.
 
-### Advisory (303) — read, not fixed
+### Advisory (260) — read, not fixed
 
-Proportionally higher than batch 2's 282 over 145 forms, and almost all of it is
-the government's own geometry, which §1 says is ground truth. Counts are after
-§3b's fixes:
+Almost all of it is the government's own geometry, which §1 says is ground truth.
+Counts are after §3b's fixes, which took the advisory total from 303 to 260 —
+`edge-cuts-caption` 154 to 116 and `box-on-text` 18 to 14, because a cell whose
+top is cut from the type above it stops covering that type:
 
 | Kind | n | Reading |
 |---|---|---|
-| `edge-cuts-caption` | 154 | BC prints each cell's caption ("City", "Phone", "court location") inside the cell's own bottom-left, so the widget rect always clips it by a point or two. Batch 2 shipped 84 of the same. |
+| `edge-cuts-caption` | 116 | BC prints each cell's caption ("City", "Phone", "court location") inside the cell's own bottom-left, so the widget rect always clips it by a point or two. Batch 2 shipped 84 of the same. |
 | `checkbox-no-mark` | 36 | Inline options in the "APPLYING FOR" lists (Form 2, Form 10.1) where Acrobat drew the square and the printed background has none. The widget rect is still ground truth; the app draws its own control. |
 | `page-no-fields` | 25 | The instruction sheets the government bundles into these PDFs ("TO APPLY FOR AN ORDER … Step 1", "IMPORTANT INFORMATION ABOUT YOUR HEARING"). Correctly fieldless. |
 | `sliver` | 26 | Narrow table cells on Forms 3.1, 3.2 and 9 — real cells, not stray boxes. |
 | `leader-box-on-type` | 25 | A box whose ends graze the `[caption]` beside its dot run. |
-| `box-on-text` | 18 | Mostly a cell caption inside its own box; one real one, below. |
-| `field-overlap` | 18 | Adjacent rows of BC's name tables, whose widget rects overlap each other by ~27% in the government's file. |
+| `box-on-text` | 14 | Mostly a cell caption inside its own box; one real one, below. |
+| `field-overlap` | 7 | Adjacent rows of BC's name tables, whose widget rects overlap each other by ~27% in the government's file. |
 | `rule-no-field` | 9 | Printed rules that close a section rather than ask for anything. |
 
-**One worth a second look before the next pass:** CFCSA Form 3 p3, the box on
-"Since the order was made, circumstances have changed significantly as follows:"
-starts on the caption line rather than under it (§3). `bp.nudge_off_hint` leaves
-it alone because nudging would leave under 14 pt of writing space — the
-documented guard, not a miss.
+**Fixed since, in §3b.8:** CFCSA Form 3 p3's box on "Since the order was made,
+circumstances have changed significantly as follows:" started on the caption line
+rather than under it. `bp.nudge_off_hint` left it alone because nudging would
+leave under 14 pt of writing space; `seat_on_rules` now cuts it from the type
+above and the rule below, which is the 9.8 pt the page actually offers there.
 
 **Form 3.1's service copy is short two widgets.** Pages 3, 7 and 10 carry 43
 widgets and page 13 carries 41: the government's own file omits the two
 "is/are Indigenous — Yes / No" ticks from the service copy. §1 says never to
 estimate a fillable-form box, so the copy ships as published.
 
-## 3b. Read in the app — seven fixes, batch 3 only
+## 3b. Read in the app — ten fixes, batch 3 only
 
 Found by looking at the forms in the editor, which is where §7.10 says the rest
-of them will be. **All seven live in `build_bc3.py`, not in `bc_pipeline.py`** —
+of them will be. **All ten live in `build_bc3.py`, not in `bc_pipeline.py`** —
 three of them are corrections to the shared rules, and overriding locally keeps
 batch 1 and batch 2 exactly as they were reviewed.
 
@@ -217,6 +218,35 @@ batch 1 and batch 2 exactly as they were reviewed.
    than brought within 1.2 pt of a caption printed to its left (the bound
    `align_boxes_to_rules` puts on batch 2). Checkboxes are left alone: a checkbox
    agrees with its printed ❑, not with a column.
+8. **A box printed across the caption it answers.** Two bounds hold the top of a
+   cell and `seat_on_rules` read only one of them, the rule above. Printed type
+   across the cell is the other: Form 3 p3's "Since the order was made,
+   circumstances have changed significantly as follows:" and "The change or
+   cancellation of the order would be in the best interest of the child(ren)
+   because:" both had the government's widget starting inside the caption and
+   covering it, because the nearest rule above is the bottom of a writing block
+   two lines up and re-cutting to it would give a 33 pt cell. A word lying across
+   the cell now raises its top the way a rule does — **the bounds are what the
+   page draws: the bottom of the type above, and the line the answer is written
+   on.** This is what takes `edge-cuts-caption` from 154 to 116 and `box-on-text`
+   from 18 to 14 across the batch.
+9. **A box hanging below the line it is written on.** Where neither bound gives a
+   single line — Form 3 p3's "The reason for failing to attend when the order was
+   made is:", whose caption sits to the *left* of the box and so bounds nothing,
+   with the nearest rule above 34 pt up — the cell now keeps the height the
+   government gave it and slides down onto its rule. A box that hangs below its
+   line looks wrong whether or not the pass can work out how tall it should be.
+10. **A row with a caption, a rule and no field.** Form 3 p3's "This application
+   is filed by" panel prints Address / City / Postal Code / Phone / Fax / Email
+   Address and ships a widget for every one of them *except* Email Address, so
+   the applicant could not type the address the panel's own margin note asks for.
+   §1 forbids estimating a box on a fillable form and `add_captioned_rows` does
+   not estimate one: both rules, the caption's right edge and the rule's right end
+   are drawn on the page, and only the widget was missing. It is deliberately
+   narrow — the caption must start at the rule's own left end and leave 60 pt of
+   clear rule — and **across the batch's 72 pages it fires exactly once**, on that
+   row. The same form's address-for-service panel below it, laid out identically,
+   does have its `email` widget; this is the one the government dropped.
 
 Two things tried and reverted, recorded so they are not tried again:
 
