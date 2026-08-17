@@ -486,6 +486,146 @@ const CalculationReport = forwardRef<HTMLDivElement, CalculationReportProps>(
             )}
           </tbody>
         </table>
+
+        {/* TAX PROFILE SECTION */}
+        {screen2?.taxProfileFromApi?.party1Low && (
+          <>
+            <style>{`
+              .calc-report .tax-profile-table {
+                margin-top: 14px;
+                page-break-inside: avoid;
+                break-inside: avoid;
+              }
+              .calc-report .tax-profile-table td,
+              .calc-report .tax-profile-table th {
+                font-size: 9.5px;
+                padding: 2px 5px;
+              }
+              .calc-report .tax-section-row td {
+                font-weight: bold;
+                background: #eef2f7;
+                font-size: 10px;
+              }
+              .calc-report .tax-total-row td {
+                font-weight: bold;
+                border-top: 2px solid #999;
+              }
+            `}</style>
+            {(() => {
+              const tp = screen2.taxProfileFromApi;
+              const p = (profile: any, key: string): number => safeNumber(profile?.[key]);
+              const fmtP = (profile: any, key: string): string => fmt(Math.round(p(profile, key)));
+
+              // Tax profile row helper
+              const tpRow = (label: string, key: string, negate: boolean = false) => (
+                <tr>
+                  <td className="lbl">{label}</td>
+                  <td className="val">{negate ? fmt(Math.round(-p(tp.party1Low, key))) : fmtP(tp.party1Low, key)}</td>
+                  <td className="val">{negate ? fmt(Math.round(-p(tp.party1Mid, key))) : fmtP(tp.party1Mid, key)}</td>
+                  <td className="val">{negate ? fmt(Math.round(-p(tp.party1High, key))) : fmtP(tp.party1High, key)}</td>
+                  <td className="val">{negate ? fmt(Math.round(-p(tp.party2Low, key))) : fmtP(tp.party2Low, key)}</td>
+                  <td className="val">{negate ? fmt(Math.round(-p(tp.party2Mid, key))) : fmtP(tp.party2Mid, key)}</td>
+                  <td className="val">{negate ? fmt(Math.round(-p(tp.party2High, key))) : fmtP(tp.party2High, key)}</td>
+                </tr>
+              );
+
+              const sectionRow = (label: string) => (
+                <tr className="tax-section-row">
+                  <td colSpan={7}>{label}</td>
+                </tr>
+              );
+
+              return (
+                <table className="tax-profile-table">
+                  <thead>
+                    <tr>
+                      <th colSpan={7} className="section-header" style={{ textAlign: "left", margin: 0 }}>Tax Profile</th>
+                    </tr>
+                    <tr>
+                      <th className="lbl"></th>
+                      <th colSpan={3} className="scenario-hdr">{party1Name || "Party 1"}</th>
+                      <th colSpan={3} className="scenario-hdr">{party2Name || "Party 2"}</th>
+                    </tr>
+                    <tr className="sub-hdr">
+                      <td className="lbl"></td>
+                      <td>Low</td>
+                      <td>Mid</td>
+                      <td>High</td>
+                      <td>Low</td>
+                      <td>Mid</td>
+                      <td>High</td>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {/* Income */}
+                    {sectionRow("Income")}
+                    {tpRow("Gross income", "gross_income")}
+                    {tpRow("Taxable income", "taxable_income")}
+
+                    {/* Deductions */}
+                    {sectionRow("Deductions")}
+                    {tpRow("CPP/EI deductions", "cpp_ei_deductions")}
+                    {tpRow("CPP enhanced", "cpp_enhanced")}
+
+                    {/* Federal Credits */}
+                    {sectionRow("Federal Credits")}
+                    {tpRow("Basic personal amount", "basic_personal_amount_fed")}
+                    {tpRow("Age amount", "age_amount_fed")}
+                    {tpRow("Eligible dependent", "eligible_dependent_credit_fed")}
+                    {tpRow("CPP/EI credit", "cpp_ei_credit")}
+                    {tpRow("Canada employment", "canada_employment_credit")}
+                    {tpRow("Disability credit", "disability_credit_fed")}
+
+                    {/* Provincial Credits */}
+                    {sectionRow("Provincial Credits")}
+                    {tpRow("Basic personal amount", "basic_personal_amount_prov")}
+                    {tpRow("Eligible dependent", "eligible_dependent_credit_prov")}
+                    {tpRow("Age amount", "age_amount_prov")}
+                    {tpRow("Disability credit", "disability_credit_prov")}
+
+                    {/* Taxes and Deductions */}
+                    {sectionRow("Taxes And Deductions")}
+                    {tpRow("Federal tax", "federal_tax")}
+                    {tpRow("Provincial tax", "provincial_tax")}
+                    {tpRow("Ontario health premium", "ontario_health_premium")}
+                    {tpRow("Ontario surtax", "ontario_surtax")}
+                    {tpRow("Ontario tax reduction", "ontario_tax_reduction", true)}
+                    {tpRow("Ontario LIFT credit", "ontario_lift_credit", true)}
+                    {tpRow("BC tax reduction", "bc_tax_reduction", true)}
+                    {tpRow("CPP/EI deductions", "cpp_ei_deductions")}
+                    {tpRow("Canada workers benefit", "canada_workers_benefit", true)}
+                    <tr className="tax-total-row">
+                      <td className="lbl">Total taxes</td>
+                      <td className="val">{fmtP(tp.party1Low, "total_taxes")}</td>
+                      <td className="val">{fmtP(tp.party1Mid, "total_taxes")}</td>
+                      <td className="val">{fmtP(tp.party1High, "total_taxes")}</td>
+                      <td className="val">{fmtP(tp.party2Low, "total_taxes")}</td>
+                      <td className="val">{fmtP(tp.party2Mid, "total_taxes")}</td>
+                      <td className="val">{fmtP(tp.party2High, "total_taxes")}</td>
+                    </tr>
+
+                    {/* Benefits */}
+                    {sectionRow("Benefits")}
+                    {tpRow("Canada child benefit", "canada_child_benefit")}
+                    {tpRow("GST/HST benefit", "gst_hst_benefit")}
+                    {tpRow("Provincial child benefit", "provincial_child_benefit")}
+                    {tpRow("Provincial sales tax credit", "provincial_sales_tax_credit")}
+                    {tpRow("Climate action incentive", "climate_action_incentive")}
+                    <tr className="tax-total-row">
+                      <td className="lbl">Total benefits</td>
+                      <td className="val">{fmtP(tp.party1Low, "total_benefits")}</td>
+                      <td className="val">{fmtP(tp.party1Mid, "total_benefits")}</td>
+                      <td className="val">{fmtP(tp.party1High, "total_benefits")}</td>
+                      <td className="val">{fmtP(tp.party2Low, "total_benefits")}</td>
+                      <td className="val">{fmtP(tp.party2Mid, "total_benefits")}</td>
+                      <td className="val">{fmtP(tp.party2High, "total_benefits")}</td>
+                    </tr>
+                  </tbody>
+                </table>
+              );
+            })()}
+          </>
+        )}
       </div>
     );
   }

@@ -22,6 +22,46 @@ export type SpousalSupportFlaskPayload = {
   monthly_notional_child_support?: number; // override: monthly notional CS
 };
 
+export type TaxProfileData = {
+  gross_income: number;
+  taxable_income: number;
+  basic_personal_amount_fed: number;
+  age_amount_fed: number;
+  eligible_dependent_credit_fed: number;
+  cpp_base: number;
+  ei: number;
+  canada_employment_credit: number;
+  disability_credit_fed: number;
+  cpp_ei_credit: number;
+  total_federal_credits: number;
+  basic_personal_amount_prov: number;
+  eligible_dependent_credit_prov: number;
+  age_amount_prov: number;
+  disability_credit_prov: number;
+  total_provincial_credits: number;
+  federal_tax_before_credits: number;
+  provincial_tax_before_credits: number;
+  federal_tax: number;
+  provincial_tax: number;
+  ontario_health_premium: number;
+  ontario_surtax: number;
+  cpp_enhanced: number;
+  cpp2: number;
+  cpp_ei_deductions: number;
+  canada_workers_benefit: number;
+  canada_child_benefit: number;
+  gst_hst_benefit: number;
+  provincial_child_benefit: number;
+  provincial_sales_tax_credit: number;
+  climate_action_incentive: number;
+  total_benefits: number;
+  ontario_tax_reduction: number;
+  ontario_lift_credit: number;
+  bc_tax_reduction: number;
+  total_taxes: number;
+  net_income_after_tax: number;
+};
+
 export type SpousalSupportFlaskResult = {
   monthly_low: number;
   monthly_med: number;
@@ -50,6 +90,13 @@ export type SpousalSupportFlaskResult = {
   recipient_benefits_low: number;
   recipient_benefits_mid: number;
   recipient_benefits_high: number;
+  // Detailed tax profiles per party per scenario
+  payor_tax_profile_low?: TaxProfileData;
+  payor_tax_profile_mid?: TaxProfileData;
+  payor_tax_profile_high?: TaxProfileData;
+  recipient_tax_profile_low?: TaxProfileData;
+  recipient_tax_profile_mid?: TaxProfileData;
+  recipient_tax_profile_high?: TaxProfileData;
 };
 
 const calcSpousalSupportFlask = async (

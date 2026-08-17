@@ -125,6 +125,13 @@ class IterativeResult:
     iterations_mid:       int
     iterations_high:      int
     monthly_cs_paid:      int
+    # Detailed tax profiles per party per scenario (full calculate_taxes() dicts)
+    payor_tax_profile_low:      dict = None
+    payor_tax_profile_mid:      dict = None
+    payor_tax_profile_high:     dict = None
+    recipient_tax_profile_low:  dict = None
+    recipient_tax_profile_mid:  dict = None
+    recipient_tax_profile_high: dict = None
 
 
 # ===========================================================================
@@ -455,6 +462,7 @@ def _compute_net_indi(
         "indi": indi,
         "total_taxes": result["total_taxes"],
         "total_benefits": result["total_benefits"],
+        "tax_profile": result,  # full tax breakdown for reporting
     }
 
 
@@ -737,6 +745,8 @@ def calculate_spousal_support_iterative(
         payor_benefits = 0.0
         recip_taxes = 0.0
         recip_benefits = 0.0
+        payor_tax_profile = None
+        recip_tax_profile = None
         iters      = 0
 
         for i in range(max_iter):
@@ -764,6 +774,7 @@ def calculate_spousal_support_iterative(
             payor_indi = payor_result["indi"]
             payor_taxes = payor_result["total_taxes"]
             payor_benefits = payor_result["total_benefits"]
+            payor_tax_profile = payor_result["tax_profile"]
 
             recip_result = _compute_net_indi(
                 gross_income             = recipient_gross,
@@ -787,6 +798,7 @@ def calculate_spousal_support_iterative(
             recip_indi = recip_result["indi"]
             recip_taxes = recip_result["total_taxes"]
             recip_benefits = recip_result["total_benefits"]
+            recip_tax_profile = recip_result["tax_profile"]
 
             new_ss = spousal_support_formula_by_rate(payor_indi, recip_indi, rate)
 
@@ -805,6 +817,8 @@ def calculate_spousal_support_iterative(
             "recip_taxes":    round(recip_taxes, 2),
             "recip_benefits": round(recip_benefits, 2),
             "iters":          iters,
+            "payor_tax_profile": payor_tax_profile,
+            "recip_tax_profile": recip_tax_profile,
         }
 
     dur = formula_for_calculating_duration_of_support(
@@ -846,6 +860,12 @@ def calculate_spousal_support_iterative(
         iterations_mid       = rate_results["mid"]["iters"],
         iterations_high      = rate_results["high"]["iters"],
         monthly_cs_paid      = monthly_cs_paid,
+        payor_tax_profile_low      = rate_results["low"]["payor_tax_profile"],
+        payor_tax_profile_mid      = rate_results["mid"]["payor_tax_profile"],
+        payor_tax_profile_high     = rate_results["high"]["payor_tax_profile"],
+        recipient_tax_profile_low  = rate_results["low"]["recip_tax_profile"],
+        recipient_tax_profile_mid  = rate_results["mid"]["recip_tax_profile"],
+        recipient_tax_profile_high = rate_results["high"]["recip_tax_profile"],
     )
 
 

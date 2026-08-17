@@ -1651,6 +1651,53 @@ def _parse_dob(dob) -> str:
     return str(dob)[:10]
 
 
+def _serialize_tax_profile(tp: dict) -> dict:
+    """Round every numeric value in a tax profile dict for JSON serialization."""
+    if tp is None:
+        return None
+    return {k: round(v, 2) if isinstance(v, (int, float)) else v for k, v in tp.items()}
+
+
+def _compute_no_children_tax_profiles(
+    payor_gross: float, recipient_gross: float,
+    payor_age: int, recipient_age: int,
+    ss_low: float, ss_mid: float, ss_high: float,
+    province: str, year: int,
+) -> dict:
+    """Compute tax profiles for both parties at low/mid/high SS levels (no-children path)."""
+    import contextlib, io
+    profiles = {}
+    for label, ss_annual in [("low", ss_low), ("mid", ss_mid), ("high", ss_high)]:
+        for role, gross, age, ss_paid, ss_received in [
+            ("payor", payor_gross, payor_age, ss_annual, 0.0),
+            ("recipient", recipient_gross, recipient_age, 0.0, ss_annual),
+        ]:
+            party_num = 1 if role == "payor" else 2
+            inp = TaxInput(
+                party_num               = party_num,
+                province                = province,
+                age                     = age,
+                eligible_for_disability = "No",
+                employed_income         = gross,
+                self_employed_income    = 0.0,
+                other_income            = 0.0,
+                support_received        = ss_received,
+                deductible_support_paid = ss_paid,
+                child_care_expenses     = 0.0,
+                other_deductions        = 0.0,
+                children                = [],
+                type_of_splitting       = "SOLE",
+                child_counts            = {"party1": 0, "party2": 0, "shared": 0},
+                child_support_amounts   = {},
+                both_incomes            = {"party1": payor_gross, "party2": recipient_gross},
+                year                    = year,
+            )
+            with contextlib.redirect_stdout(io.StringIO()):
+                result = calculate_taxes(inp)
+            profiles[f"{role}_tax_profile_{label}"] = _serialize_tax_profile(result)
+    return profiles
+
+
 @app.route("/spousal-calculate", methods=["POST"])
 def spousal_calculate():
     try:
@@ -1710,6 +1757,18 @@ def spousal_calculate():
                 years               = years,
                 recipient_age       = recipient_age,
             )
+            # Compute detailed tax profiles for the no-children path
+            nc_profiles = _compute_no_children_tax_profiles(
+                payor_gross     = payor_gross,
+                recipient_gross = recipient_gross,
+                payor_age       = payor_age,
+                recipient_age   = recipient_age,
+                ss_low          = result_nc.annual_low,
+                ss_mid          = result_nc.annual_med,
+                ss_high         = result_nc.annual_high,
+                province        = province,
+                year            = year,
+            )
             return jsonify({
                 "payor":               payor_name,
                 "recipient":           recipient_name,
@@ -1728,6 +1787,7 @@ def spousal_calculate():
                 "iterations_low":      0, "iterations_mid":      0, "iterations_high":      0,
                 "duration_low":        result_nc.duration_low,
                 "duration_high":       result_nc.duration_high,
+                **nc_profiles,
             })
 
         # --- Run iterative calculation (computes CS internally if -1) ---
@@ -1793,6 +1853,12 @@ def spousal_calculate():
             "iterations_high":    result.iterations_high,
             "duration_low":       result.duration_low,
             "duration_high":      result.duration_high,
+            "payor_tax_profile_low":      _serialize_tax_profile(result.payor_tax_profile_low),
+            "payor_tax_profile_mid":      _serialize_tax_profile(result.payor_tax_profile_mid),
+            "payor_tax_profile_high":     _serialize_tax_profile(result.payor_tax_profile_high),
+            "recipient_tax_profile_low":  _serialize_tax_profile(result.recipient_tax_profile_low),
+            "recipient_tax_profile_mid":  _serialize_tax_profile(result.recipient_tax_profile_mid),
+            "recipient_tax_profile_high": _serialize_tax_profile(result.recipient_tax_profile_high),
         })
 
     except KeyError as e:
