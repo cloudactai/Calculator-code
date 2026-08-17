@@ -132,10 +132,18 @@ TOTAL_ROW = re.compile(r"\b(sub)?total\b", re.I)
 #   "Signature of Deponent", "Signature of Petitioner"   -- the word itself
 #   "A Commissioner for Oaths in and for the Province of Manitoba"
 #   "Deputy Registrar" / "Registrar"                      -- the office alone
-MB_SIG_CAPTION = re.compile(r"^\s*\(?\s*(your\s+)?signature\b", re.I)
+# A caption naming a signature, in **any word order**. Anchoring on "signature"
+# at the start of the line missed every form that puts the role first -- Forms
+# 70BB p2 and 70DD p1 write "Party's signature/signature of counsel", and Forms
+# 70C and 70Y p1 write "Witness (signature)" and "Respondent (signature)" -- so
+# six boxes shipped sitting on signature lines, which guide §5 forbids outright.
+# Bounded to a caption's length so a sentence that merely mentions a signature
+# is not read as one, and `MB_SIG_EXCLUDE` keeps the "Date of ... signature"
+# boxes, which §5 exempts by name.
+MB_SIG_CAPTION = re.compile(r"^[^.]{0,60}\bsignature\b[^.]{0,40}$", re.I)
 MB_COMMISSIONER = re.compile(
     r"^\s*a\s+commissioner\s+for\s+oaths\b|^\s*a\s+notary\s+public\b", re.I)
-MB_SIG_EXCLUDE = re.compile(r"date of signature", re.I)
+MB_SIG_EXCLUDE = re.compile(r"\bdate\b", re.I)
 MB_ROLE_CAPTION = re.compile(
     r"^\s*\(?\s*(deputy\s+)?(local\s+)?(registrar|judge|justice|clerk|"
     r"associate\s+judge)\s*\)?\s*$", re.I)
@@ -980,6 +988,95 @@ def writing_area_bands(page, placed, cells):
     return out
 
 
+# A narrative prompt: a parenthesised instruction telling the filer to write
+# something, closing its own paragraph. Manitoba draws no rule for these -- the
+# answer goes on the blank paper underneath -- so no other detector in this file
+# finds them, and Form 70Q shipped as a Notice of Motion whose relief, grounds
+# and documentary evidence all had nowhere to be written.
+#
+# Matched against the **paragraph**, not the line. Form 70Q's "THE GROUNDS FOR
+# THE MOTION ARE (Specify the grounds to be argued, including a reference to any
+# statutory provision or rule to be relied on.)" wraps, so the opening "(" and
+# the closing ")" are on different lines and neither one matches alone. `.*`
+# rather than `[^()]*` for the same reason in miniature: Form 70Y writes
+# "(Insert clause(s) as set out in order)", with a bracket inside the bracket.
+NARRATIVE_PROMPT = re.compile(
+    r"\((?:state|specify|list|set out|explain|describe|insert|provide|give)\b"
+    r".*\)[.\]\s]*$", re.I)
+# One line of writing is a real answer space -- it is what Form 70Q leaves
+# between "THE MOTION IS FOR (State here the precise relief sought.)" and the
+# paragraph under it, and every box on these forms is about 14pt tall.
+NARRATIVE_MIN = 12.0
+NARRATIVE_MAX = 260.0
+# Lines closer together than this are one paragraph. Manitoba's body leading is
+# 12-13pt and its paragraph gap 23pt or more, so the cut has 10pt of clear air.
+PARA_LEADING = 18.0
+
+
+def narrative_prompt_bands(page, placed, cells):
+    """Answer spaces for a prompt that names no rule, cell or blank of its own.
+
+    Guide §6 and §9.5. The band runs from just under the instruction's own line
+    to whatever prints next, and takes its column from the page's text measure.
+    Everything that would make it a false positive is refused rather than
+    trimmed, because a spurious writing area over printed type is worse than a
+    missing one:
+
+    * a prompt inside a ruled cell -- its table answers it;
+    * a band with anything printed in it, or with a field already in it;
+    * a band shorter than a line, or longer than `NARRATIVE_MAX` (which is what
+      separates "the space the form left" from "the rest of the page").
+    """
+    lines = []
+    for block in page.get_text("dict")["blocks"]:
+        for line in block.get("lines", []):
+            text = "".join(span["text"] for span in line["spans"]).strip()
+            if text:
+                lines.append((fitz.Rect(line["bbox"]), text))
+    lines.sort(key=lambda pair: (round(pair[0].y0, 1), pair[0].x0))
+
+    # Join a line to the next only while its brackets are unbalanced, which is
+    # exactly as far as a wrapped instruction runs and no further. Leading
+    # cannot do this job here: Form 70Q sets 12.8pt between two *separate*
+    # prompts and ~11pt inside one that wraps, so grouping by spacing swallowed
+    # all three of its prompts into one and produced a single band.
+    paragraphs = []
+    index = 0
+    while index < len(lines):
+        rect, text = lines[index]
+        whole, last_line = fitz.Rect(rect), rect
+        while text.count("(") > text.count(")") and index + 1 < len(lines):
+            index += 1
+            nxt_rect, nxt_text = lines[index]
+            text = "%s %s" % (text, nxt_text)
+            whole |= nxt_rect
+            last_line = nxt_rect
+        paragraphs.append((whole, text, last_line))
+        index += 1
+
+    left = min((r.x0 for r, _t in lines), default=72.0)
+    right = max((r.x1 for r, _t in lines), default=page.rect.width - 72)
+    out = []
+    for index, (whole, text, last_line) in enumerate(paragraphs):
+        if not NARRATIVE_PROMPT.search(text):
+            continue
+        if any(cell.intersects(whole) for cell, _t, _d, _c in cells):
+            continue
+        floor = min([other.y0 for other, _t, _l in paragraphs[index + 1:]
+                     if other.y1 > last_line.y1 + 1]
+                    or [page.rect.height - BAND_FOOTER])
+        band = fitz.Rect(left, last_line.y1 + 2, right,
+                         min(floor - 1, last_line.y1 + 2 + NARRATIVE_MAX))
+        if band.height < NARRATIVE_MIN:
+            continue
+        if any(band.intersects(box) for box in placed):
+            continue
+        if page.get_text("text", clip=band).strip():
+            continue
+        out.append(band)
+    return out
+
+
 def caption_below_blanks(page, placed):
     """The party lines Manitoba captions from below and draws no rule for.
 
@@ -1156,6 +1253,8 @@ def page_boxes(page):
     for band in caption_below_blanks(page, placed):
         boxes.append((band, "TextField"))
     for band in writing_area_bands(page, [rect for rect, _kind in boxes], cells):
+        boxes.append((band, "TextArea"))
+    for band in narrative_prompt_bands(page, [rect for rect, _kind in boxes], cells):
         boxes.append((band, "TextArea"))
     return clear_of_type(page, dedupe(boxes))
 
