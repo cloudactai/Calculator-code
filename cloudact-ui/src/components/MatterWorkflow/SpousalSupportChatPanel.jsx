@@ -32,7 +32,7 @@ function renderText(text) {
     .replace(/>/g, "&gt;");
   return escaped
     .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
-    .replace(/\[(.+?)\]\((\/download-report\/[^)]+)\)/g, "")
+    .replace(/\[([^\]]*(?:Download|Report)[^\]]*)\]\([^)]+\)/gi, "")
     .replace(/\n/g, "<br/>");
 }
 
