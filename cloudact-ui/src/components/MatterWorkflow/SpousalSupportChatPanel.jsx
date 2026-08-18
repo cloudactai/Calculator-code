@@ -414,10 +414,13 @@ export default function SpousalSupportChatPanel({
         )}
 
         {bubbles.map((b, i) => {
-          const downloadUrl = b.role === "assistant" ? extractDownloadUrl(b.text) : null;
-          const isLastDownloadBubble = downloadUrl && !bubbles.slice(i + 1).some(
-            (fb) => fb.role === "assistant" && extractDownloadUrl(fb.text)
+          // Show action buttons on the last assistant bubble when a calc result exists.
+          // Previously gated on extractDownloadUrl finding a markdown link in the AI
+          // reply — if the model omitted or reformatted the link, both buttons vanished.
+          const isLastAssistant = b.role === "assistant" && !bubbles.slice(i + 1).some(
+            (fb) => fb.role === "assistant"
           );
+          const showActions = isLastAssistant && lastCalcResult;
           return (
             <div key={i} className={`mw-chat-row mw-chat-row--${b.role}`}>
               <div className="mw-chat-row__label">
@@ -427,18 +430,33 @@ export default function SpousalSupportChatPanel({
                 className="mw-chat-bubble"
                 dangerouslySetInnerHTML={{ __html: renderText(b.text) }}
               />
-              {isLastDownloadBubble && (
+              {showActions && (
                 <div className="mw-action-buttons">
-                  <a
+                  <button
                     className="mw-download-btn"
-                    href={downloadUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    download
+                    onClick={() => {
+                      if (lastCalcResult.pdf_base64) {
+                        const byteChars = atob(lastCalcResult.pdf_base64);
+                        const byteArray = new Uint8Array(byteChars.length);
+                        for (let j = 0; j < byteChars.length; j++) byteArray[j] = byteChars.charCodeAt(j);
+                        const blob = new Blob([byteArray], { type: "application/pdf" });
+                        const url = URL.createObjectURL(blob);
+                        const a = document.createElement("a");
+                        a.href = url;
+                        a.download = lastCalcResult.pdf_filename || "spousal_support_report.pdf";
+                        document.body.appendChild(a);
+                        a.click();
+                        a.remove();
+                        URL.revokeObjectURL(url);
+                      } else {
+                        const serverUrl = extractDownloadUrl(b.text);
+                        if (serverUrl) window.open(serverUrl, "_blank");
+                      }
+                    }}
                   >
                     Download PDF Report
-                  </a>
-                  {matterId && lastCalcResult && (
+                  </button>
+                  {matterId && (
                     <button
                       className="mw-save-btn"
                       onClick={saveToMatter}

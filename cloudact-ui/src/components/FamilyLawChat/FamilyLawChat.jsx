@@ -63,7 +63,7 @@ const CALCULATORS = [
   },
 ];
 
-const EMPTY_CHAT = { bubbles: [], messages: [] };
+const EMPTY_CHAT = { bubbles: [], messages: [], lastCalcResult: null };
 
 // Spousal support is now an AI chat — no form state needed.
 
@@ -182,6 +182,7 @@ export default function FamilyLawChat() {
           [id]: {
             bubbles: [...cur.bubbles, { role: "assistant", text: data.reply }],
             messages: data.messages || cur.messages,
+            lastCalcResult: data.calculationResult || cur.lastCalcResult,
           },
         };
       });
@@ -294,27 +295,43 @@ export default function FamilyLawChat() {
               )}
 
               {chat.bubbles.map((b, i) => {
-                const downloadUrl = b.role === "assistant" ? extractDownloadUrl(b.text) : null;
-                if (b.role === "assistant") {
-                  console.log(`[FamilyLawChat] Bubble ${i} downloadUrl:`, downloadUrl);
-                  console.log(`[FamilyLawChat] Bubble ${i} text snippet:`, b.text?.slice(-150));
-                }
+                // Show download button on the last assistant bubble when a calc result exists.
+                const isLastAssistant = b.role === "assistant" && !chat.bubbles.slice(i + 1).some(
+                  (fb) => fb.role === "assistant"
+                );
+                const showDownload = isLastAssistant && chat.lastCalcResult;
                 return (
                   <div key={i} className={`flc-row flc-${b.role}`}>
                     <div
                       className="flc-bubble"
                       dangerouslySetInnerHTML={{ __html: renderText(b.text) }}
                     />
-                    {downloadUrl && (
-                      <a
+                    {showDownload && (
+                      <button
                         className="mw-download-btn"
-                        href={downloadUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        download
+                        onClick={() => {
+                          const cr = chat.lastCalcResult;
+                          if (cr.pdf_base64) {
+                            const byteChars = atob(cr.pdf_base64);
+                            const byteArray = new Uint8Array(byteChars.length);
+                            for (let j = 0; j < byteChars.length; j++) byteArray[j] = byteChars.charCodeAt(j);
+                            const blob = new Blob([byteArray], { type: "application/pdf" });
+                            const url = URL.createObjectURL(blob);
+                            const a = document.createElement("a");
+                            a.href = url;
+                            a.download = cr.pdf_filename || "calculation_report.pdf";
+                            document.body.appendChild(a);
+                            a.click();
+                            a.remove();
+                            URL.revokeObjectURL(url);
+                          } else {
+                            const serverUrl = extractDownloadUrl(b.text);
+                            if (serverUrl) window.open(serverUrl, "_blank");
+                          }
+                        }}
                       >
                         Download PDF Report
-                      </a>
+                      </button>
                     )}
                   </div>
                 );
