@@ -1694,6 +1694,14 @@ def _compute_no_children_tax_profiles(
             )
             with contextlib.redirect_stdout(io.StringIO()):
                 result = calculate_taxes(inp)
+            # Augment with input values needed for Tax Profile report table
+            result["employed_income"] = gross
+            result["self_employed_income"] = 0.0
+            result["other_income"] = 0.0
+            result["deductible_support_paid"] = ss_paid
+            result["support_received"] = ss_received
+            result["child_care_expenses"] = 0.0
+            result["other_deductions"] = 0.0
             profiles[f"{role}_tax_profile_{label}"] = _serialize_tax_profile(result)
     return profiles
 
