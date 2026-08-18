@@ -296,6 +296,10 @@ no-op.
   and 13.0pt against the column's modal 10.4 — the §9.2 signal — and the extra
   height sat on "VALUE (total from Part)"; and the `of ___,` box covered the
   comma closing its own line.
+- **Form 70A.1 p2's first relief checklist** used a ruled table for layout, so
+  19 empty cells around the actual checkbox marks became false text fields.
+  They are removed, and the printed rule beside `other (specify)` receives the
+  checklist's only text field.
 
 Two things deliberately **not** changed, both recorded rather than guessed at:
 

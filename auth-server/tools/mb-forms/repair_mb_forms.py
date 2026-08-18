@@ -11,7 +11,7 @@ on the way through (guide §1, §7.8).
 
 `--check` reports without writing. A second run is a no-op (guide §7.9).
 
-The five repairs, in the order they were found:
+The repairs, in the order they were found:
 
 **1. Not one of the batch's 30 printed option marks was tickable.** Manitoba
 writes an option as a `[ ]` bracket pair (70D, 70D.1) or a `☐` glyph (70W)
@@ -45,6 +45,12 @@ repair takes the column's height and leaves the seat alone.
 **5. Form 70U p1's "of ___," box covered the comma closing its line** (guide
 §3: the box must clear printed content). Its right edge is pulled back to
 clear the glyph.
+
+**7. Form 70A.1 p2's relief checklist carried 19 false text fields.** The Word
+source lays the options out in a ruled table, and the extractor treated the
+empty layout cells around the real checkbox marks as writable data cells. Those
+fields are removed, and the one actual writing rule beside "other (specify)" is
+given a single text field.
 """
 import argparse
 import json
@@ -58,7 +64,8 @@ import mb_marks  # noqa: E402
 
 EXPORT = os.path.join(os.path.dirname(os.path.abspath(__file__)),
                       "..", "..", "form-template-export")
-FORMS = ["MBKB_70D", "MBKB_70D_1", "MBKB_70D_5", "MBKB_70U", "MBKB_70W", "MBKB_70Z"]
+FORMS = ["MBKB_70D", "MBKB_70D_1", "MBKB_70D_5", "MBKB_70U", "MBKB_70W",
+         "MBKB_70Z", "MBKB_70A_1"]
 
 # Overlay convention (README "Overlay convention"): x/y are points, width/height
 # are points x 1.5.
@@ -153,6 +160,66 @@ def drop_strays(doc_id, data):
         (dropped if hit else keep).append(field)
     data["staticFields"] = keep
     return ["p%d stray TextArea at y %.1f" % (f["page"], f["y"]) for f in dropped]
+
+
+# --------------------------------------------------------------------------
+# Repair 7 — Form 70A.1's first relief checklist
+# --------------------------------------------------------------------------
+
+RELIEF_GRID_Y0 = 114.0
+RELIEF_GRID_Y1 = 196.0
+SPECIFY_RULE = fitz.Rect(217.97, 180.14, 288.29, 180.98)
+
+
+def repair_70a1_relief_checklist(doc_id, data, pdf):
+    """Remove layout-cell fields and fill the checklist's real writing rule."""
+    if doc_id != "MBKB_70A_1":
+        return []
+
+    page = pdf[1]
+    rule_exists = any(
+        item[0] == "re"
+        and all(abs(actual - expected) < 0.1 for actual, expected in zip(
+            (item[1].x0, item[1].y0, item[1].x1, item[1].y1), SPECIFY_RULE))
+        for drawing in page.get_drawings()
+        for item in drawing["items"]
+    )
+    if not rule_exists:
+        raise SystemExit("%s: the printed 'other (specify)' rule moved" % doc_id)
+
+    fields = data["staticFields"]
+    false_fields = [
+        field for field in fields
+        if field["page"] == 2 and field["type"] == "TextField"
+        and RELIEF_GRID_Y0 <= field["y"] < RELIEF_GRID_Y1
+        and (60.0 <= field["x"] < 125.0 or 310.0 <= field["x"] < 368.0)
+    ]
+    false_ids = {field["id"] for field in false_fields}
+    data["staticFields"] = [field for field in fields if field["id"] not in false_ids]
+
+    notes = ["p2 false relief-grid TextField id %s" % field["id"]
+             for field in false_fields]
+    fields = data["staticFields"]
+    if any(field["page"] == 2 and field["type"] == "TextField"
+           and abs(field["x"] - SPECIFY_RULE.x0) < 0.1
+           and abs(field["x"] + field["width"] / SCALE - SPECIFY_RULE.x1) < 0.1
+           for field in fields):
+        return notes
+
+    template = next(field for field in fields if field["type"] == "TextField")
+    bottom = SPECIFY_RULE.y0 - 1.3
+    height = 13.0
+    fields.append(new_field(
+        template,
+        id=next_id(fields),
+        page=2,
+        x=round(SPECIFY_RULE.x0, 2),
+        y=round(bottom - height, 2),
+        width=round(SPECIFY_RULE.width * SCALE, 2),
+        height=round(height * SCALE, 2),
+    ))
+    notes.append("p2 TextField added on the 'other (specify)' rule")
+    return notes
 
 
 # --------------------------------------------------------------------------
@@ -392,6 +459,7 @@ def repair(doc_id, check):
 
     notes = []
     notes += drop_strays(doc_id, data)
+    notes += repair_70a1_relief_checklist(doc_id, data, pdf)
     notes += reseat_70u_heading_box(doc_id, data, pdf)
     notes += clear_70u_comma(doc_id, data, pdf)
     notes += fill_total_rows(doc_id, data, pdf)
