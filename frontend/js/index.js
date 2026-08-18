@@ -64,6 +64,19 @@ function appendBubble(role, text) {
   } else {
     bubble.textContent = text;
   }
+  // Convert download links into styled buttons
+  if (role === "assistant") {
+    bubble.querySelectorAll('a[href*="/download-report/"]').forEach(a => {
+      const href = a.getAttribute("href");
+      if (href.startsWith("/")) {
+        const base = apiUrl.replace(/\/chat\/?$/, "").replace(/\/$/, "");
+        a.setAttribute("href", base + href);
+      }
+      a.className = "download-btn";
+      a.setAttribute("download", "");
+      a.setAttribute("target", "_blank");
+    });
+  }
   row.appendChild(bubble);
   win.appendChild(row);
   scrollToBottom();
