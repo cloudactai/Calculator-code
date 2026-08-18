@@ -141,6 +141,26 @@ MANUAL_FIELDS = {
         # Item 8 requests particulars but leaves the rest of the page as bare
         # writing space: no underscores, grid, or standalone rectangle exists.
         (2, fitz.Rect(138.0, 559.0, 516.0, 747.0), "TextArea"),
+        # "Known gap" (README): item 26 "My occupation is:" ends in a caption and
+        # a tab, no rule -- unlike its twin two items down ("The
+        # respondent's/petitioner's occupation is: ______"), which does. Built
+        # against that twin's own geometry: field starts EDGE_CLEARANCE past
+        # "is:" (measured 197.85), runs to the page's answer margin (516.0, the
+        # same right edge item 27's field and every full-width answer on this
+        # page use), and sits at the same offset above its own caption's line
+        # top that item 27's field sits above its (0.97pt, height 13).
+        (6, fitz.Rect(199.35, 107.23, 516.0, 120.23), "TextField"),
+    ],
+    "SKKB_15_61": [
+        # Neither "Telephone Number:" caption on p3 has a field -- same shape as
+        # 15-78's occupation gap: a caption and a tab, no rule, cell or
+        # underscore for the general detectors to measure. Both sit at x=285 (the
+        # same left margin as the signature rule above them) with the caption's
+        # own text ending at x=376.49; the field starts EDGE_CLEARANCE past that
+        # and runs to the form's own right answer margin (516.0, matching the
+        # "DATED at" line above each). Petitioner's block, then respondent's.
+        (3, fitz.Rect(377.99, 184.23, 516.0, 197.23), "TextField"),
+        (3, fitz.Rect(377.99, 332.23, 516.0, 345.23), "TextField"),
     ],
 }
 

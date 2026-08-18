@@ -200,15 +200,27 @@ the two list prompts. Its measured manual fields begin after `(i)` and after
 the remainder of the page as bare writing space. A measured manual text area
 runs from below the paragraph to the standard footer clearance.
 
-**Form 15-78 p6, item 26 "My occupation is:"** has no field. The line ends with a
-caption and a tab, and the government printed no rule, no cell and no rectangle
-after it — so every detector here correctly finds nothing. Its own twin two items
-down ("The respondent's/petitioner's occupation is: ______") does carry a rule,
-which is what makes the omission visible.
+**Fixed 2026-08-18, by hand, not by sweep.** Two more instances of the same
+shape — a caption and a tab, no rule, no cell, no rectangle — turned up by
+searching the batch for the words that open an answer ("(specify", "as
+follows:", bare `:` captions, etc.) and checking whether anything was placed
+near each hit:
+
+- **Form 15-78 p6, item 26 "My occupation is:"** had no field; its own twin two
+  items down ("The respondent's/petitioner's occupation is: ______") does carry
+  a rule, which is what made the omission visible. Built against that twin's
+  geometry: starts `EDGE_CLEARANCE` past "is:", runs to the page's own answer
+  margin.
+- **Form 15-61 p3, both "Telephone Number:" captions** (petitioner's and
+  respondent's, in the jurat block) had no field either. Same shape, same fix:
+  starts `EDGE_CLEARANCE` past the caption, runs to the margin the "DATED at"
+  line above each one uses.
 
 Guide §9.6's remedy is to copy the twin, and a sweep for that shape was written
-and then **not** shipped: matching a caption to its twin across 195 pages produced
-one false positive and missed this case, and a mis-tuned auto-placer that adds
-fields set-wide is a worse outcome than one missing box. Fix it by hand against
-the twin's geometry, or tune the sweep and review a render before applying it
-broadly (guide "change discipline").
+once and **not** shipped: matching a caption to its twin across 195 pages
+produced one false positive and missed the occupation case entirely, and a
+mis-tuned auto-placer that adds fields set-wide is a worse outcome than one
+missing box. Both fixes above are hand-measured entries in `MANUAL_FIELDS`, not
+a general rule — the next instance of this shape still needs a human to read
+the page and confirm there's really nowhere printed to answer before adding a
+box.

@@ -1,8 +1,16 @@
 """Merge the Saskatchewan rows into catalog.json + audit.json (gate H prep).
 
-Saskatchewan gets its own contiguous sortOrder block starting at 301, clear of
-Ontario's 1-135 and BC's 101-288. The API filters by province, so sortOrder only
-orders forms *within* Saskatchewan and neither of the other provinces moves.
+Saskatchewan gets its own contiguous sortOrder block, clear of every other
+province. The API filters by province, so sortOrder only orders forms *within*
+Saskatchewan and none of the other provinces moves.
+
+**Where that block starts is read from the catalog, not written down here.**
+This used to hardcode 301, "clear of Ontario's 1-135 and BC's 101-288" — but BC
+has since grown to 313, and Manitoba now occupies 501-543, so the hardcoded 301
+had quietly drifted into BC's block (`auth-server/tools/mb-forms/merge_mb_catalog.py`
+hit the identical bug first; this is the same fix). Rounding up from whatever the
+other provinces currently occupy keeps the block clear without anyone having to
+remember to edit a constant here.
 """
 import json
 import os
@@ -15,7 +23,7 @@ sys.path.insert(0, HERE)
 from sk_sources import CATEGORY_ORDER, all_sources  # noqa: E402
 
 EXPORT = os.path.join(os.path.dirname(os.path.dirname(HERE)), "form-template-export")
-SK_START = 301
+SK_BLOCK = 100  # blocks are allocated a round hundred at a time
 # The picker groups by category and BC already sets the house style: an en dash
 # between the court and the function, not a hyphen.
 DASH = "–"
@@ -32,6 +40,12 @@ TITLE_OVERRIDE = {
 }
 
 
+def sk_start(keep):
+    """The next free hundred above every other province's rows."""
+    highest = max(item["sortOrder"] for item in keep)
+    return (highest // SK_BLOCK + 1) * SK_BLOCK + 1
+
+
 def main():
     catalog = json.load(open(os.path.join(EXPORT, "catalog.json")))
     manifest = {m["docId"]: m for m in
@@ -40,6 +54,7 @@ def main():
     keep = [item for item in catalog if item.get("province") != "SK"]
     other_orders = [(item["province"], item["sortOrder"]) for item in keep]
     assert len(set(other_orders)) == len(other_orders), "sortOrder collision outside SK"
+    start = sk_start(keep)
 
     rows = []
     for offset, src in enumerate(all_sources()):
@@ -60,7 +75,7 @@ def main():
             "category": src["category"].replace(" - ", " %s " % DASH),
             "version": 1,
             "pageCount": page_count,
-            "sortOrder": SK_START + offset,
+            "sortOrder": start + offset,
         })
 
     merged = keep + rows
