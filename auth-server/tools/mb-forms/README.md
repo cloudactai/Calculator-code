@@ -10,16 +10,30 @@ Saskatchewan and unlike BC, nothing here has to be flattened.
 
 ## Scope
 
-The **43 family-law forms of Rule 70** of the Court of King's Bench Rules,
-published by Manitoba Justice. The civil parts and the probate forms are
+**86 forms in two batches, 279 pages, 4,168 fields, 258 binds, zero findings.**
+
+**Batch 1 -- the 43 family-law forms of Rule 70** of the Court of King's Bench
+Rules, published by Manitoba Justice. The civil parts and the probate forms are
 deliberately out of scope, matching the Ontario, BC and Saskatchewan catalogues.
 
-All 43 are recorded in `mb_sources.py` and fetched, so a form that is renumbered
-or withdrawn surfaces immediately. `SHIPPED_CATEGORIES` is the switch for what is
-built, catalogued and bound. **All nine categories ship as of 2026-08-17 — 43
-forms, 188 pages, 2,685 fields, 229 binds, zero findings.** The financial five
-shipped first (2026-08-14); the other 38 followed, and §7 records what building
-them taught.
+**Batch 2 -- the 43 child-protection and adoption forms** Manitoba prescribes by
+*regulation* rather than by a court rule (`mb_sources_batch2.py`, and §8 below).
+Rule 70 is Manitoba's equivalent of BC's Family Rules sets only; it prescribes no
+child-protection and no adoption form, which is why the catalogue carried none
+until 2026-08-18. Sources: M.R. 16/99 Schedule A (21 CFS forms), M.R. 14/99
+(3 CA forms), M.R. 19/99 Schedule B (18 AA forms) and M.R. 21/99 (FA-1).
+
+All 86 are recorded — Rule 70 in `mb_sources.py`, the rest in
+`mb_sources_batch2.py` — and all 86 are fetched, so a form that is renumbered or
+withdrawn surfaces immediately. `mb_sources.all_sources()` is the aggregation
+point every tool here reads its work list from; adding a batch is a new
+`mb_sources_batch*.py` plus one entry in `_BATCHES`. Each batch carries its own
+`SHIPPED_CATEGORIES`, the switch for what is built, catalogued and bound.
+
+Rule 70: **43 forms, 188 pages, 2,680 fields, 229 binds**, all nine categories
+shipped. The financial five shipped first (2026-08-14); the other 38 followed,
+and §7 records what building them taught. Batch 2: **43 forms, 91 pages,
+1,488 fields, 29 binds**, shipped 2026-08-18, and §8 records what *it* taught.
 
 | Category | Forms | Notes |
 | --- | --- | --- |
@@ -33,6 +47,22 @@ them taught.
 | Enforcement | 2 | 70X, 70Y |
 | Other | 2 | 70V, 70AA |
 
+Batch 2 (`mb_sources_batch2.SHIPPED_CATEGORIES`), one prefix per regulation:
+
+| Category | Forms | Notes |
+| --- | --- | --- |
+| Child Protection – Applications | 5 | CFS-11, CFS-12, CFS-17, CFS-19, CFS-20 |
+| Child Protection – Guardianship | 4 | CFS-13, CFS-14, CFS-15, CFS-16 |
+| Child Protection – Warrants | 4 | CFS-23, CFS-24, CFS-25, CFS-26 |
+| Child Protection – Orders | 2 | CFS-27, CFS-28 |
+| Child Protection – Service & Notice | 5 | CFS-3, CFS-21, CFS-22A, CFS-22B, CFS-29 |
+| Child Protection – Financial | 1 | CFS-10 |
+| Child Abuse Registry | 3 | CA-1, CA-2, CA-3 |
+| Adoption – Placement | 7 | AA-1 to AA-6, AA-13 |
+| Adoption – Consents | 5 | AA-8 to AA-12 |
+| Adoption – Court | 5 | AA-14, AA-14.1, AA-15, AA-16, AA-17 |
+| Adoption – Financial | 2 | AA-7, FA-1 |
+
 
 ## 1. Fetch and verify sources (gates A, B)
 
@@ -40,14 +70,17 @@ them taught.
 python3 fetch_mb.py
 ```
 
-Downloads all 43 forms into `_incoming_mb/`, verifies PDF magic, the page count
+Downloads all 86 forms into `_incoming_mb/`, verifies PDF magic, the page count
 against `mb_sources.py`, and that the form prints its own number ("Form 70D") in
 its text, then writes `_incoming_mb/manifest.json` with sha256, byte size, page
 count, footer line and `kind`.
 
-The download URL is **derived, not recorded**: Manitoba serves each form from a
-slug built out of the form number (`70D` → `70de.pdf`, `70D.1` → `70d1e.pdf`),
-so there is nothing to go stale except the numbers themselves. That is also why
+The download URL is **derived, not recorded**, in both batches. Rule 70 is served
+from a slug built out of the form number (`70D` → `70de.pdf`, `70D.1` →
+`70d1e.pdf`). Batch 2 is served out of one directory per regulation, each with
+its own filename convention (`form_cfs-22ae.pdf`, but `aa14_1e.pdf`), which is
+why every batch-2 row carries its regulation and `REGULATIONS` holds the pattern.
+Either way there is nothing to go stale except the numbers themselves. That is also why
 the form-number check matches with a non-dot boundary — the slug drops the dot,
 which is exactly how a typo lands on Form 70D.1 while asking for Form 70D.
 
@@ -55,7 +88,7 @@ which is exactly how a typo lands on Form 70D.1 while asking for Form 70D.
 > whose root is in the system trust store but not in certifi. The BC and SK
 > fetchers shell out for the same reason.
 
-All 43 come back `static` — no widgets, no XFA.
+All 86 come back `static` — no widgets, no XFA.
 
 ## 2. Build
 
@@ -75,6 +108,7 @@ Form 70U's producer draws a stroked line. Across this batch:
 | A ruled grid | — | a field per empty cell |
 | A run of underscores | 796 | a text field |
 | A `(full name)` caption under blank paper | 6 | a text field above the caption |
+| A role word closing a style of cause | 24 | a text field above it (§8) |
 | A printed `[ ]` or `☐` option mark | 277 | a checkbox on the mark (§7) |
 
 **The background PDF ships byte-identical to the government's file** — the same
@@ -99,6 +133,11 @@ an underline.
   *cell* marks their borders). One with verticals standing at **both ends** —
   Form 70D.5 p3's "Positions on Equalization" table has no interior columns at
   all, so nothing crosses its row rules and all four read as 690pt blanks.
+- **A heading bracket**, the pair of rules Manitoba draws above and below a
+  document's title (§8). Neither has anything printed on its own line, so
+  everything else here correctly passes them.
+- **A footer separator**, the short left-margin rule above the regulation
+  citation or the copy-distribution block (§8).
 - **A section separator.** Form 70D.1 p1 rules off the list of orders the court
   may make before "YOU MUST:", in the same 0.8pt black as every writing line, so
   nothing about the object says which it is. Two things about its placement do,
@@ -191,7 +230,7 @@ back `FD_______________` as one token, so a word-level test either flags every
 correctly-placed box for the rule it is supposed to sit on, or waves through a
 box that has covered a caption.
 
-Current state: **43 forms, 2,685 fields, zero findings**, and the build is
+Current state: **86 forms, 4,168 fields, zero findings**, and the build is
 idempotent (two runs produce byte-identical maps).
 
 ## 4. Catalog
@@ -202,7 +241,11 @@ cd ../.. && npm run forms:validate-export
 ```
 
 Rewrites the MB block of `catalog.json` (sortOrder derived from the block above
-whatever the other provinces occupy — 501–543 today) and regenerates `audit.json`.
+whatever the other provinces occupy — 701–786 today) and regenerates `audit.json`.
+The picker grouping is matched on the source's own `shortCategory`, not on the
+row's category string: the row has had its hyphen swapped for the picker's en
+dash, so an `endswith` on the written name stopped matching the moment a batch-2
+category ("Child Protection - Applications") carried one.
 Only the shipped batch is written — a row for a form that has not been built
 would advertise a template the API cannot serve.
 
@@ -238,9 +281,9 @@ and Form 70D.5 runs the blank's underscores inside the very same line, so the
 bbox reaches 130pt past what the form prints. One rule then reads all four
 layouts ("File # FD", "File No. FD", "File No: FD").
 
-229 fields bind across the 43 forms: the court file number on every page that
-prints one, plus the applicant and respondent wherever the style of cause names
-them.
+229 fields bind across the 43 Rule 70 forms and 29 across batch 2: the court file
+number on every page that prints one, plus the applicant and respondent wherever
+the style of cause names them.
 
 Deliberately left unbound, with reasons in `mb_binds.py`:
 
@@ -379,7 +422,156 @@ patch.
 
 Still open, recorded rather than guessed at: Form 70D.1 p3's two "(Name and
 address of…)" captions have no writing area and no twin in the batch to take a
-column from.
+column from. Form CFS-11 p2 and Form AA-15 p3's "TO: (name and address of each
+respondent)" are the same shape, and the same decision.
+
+**Three Rule 70 items closed on 2026-08-18**, while building batch 2:
+
+- **Form 70Q p1's documentary-evidence area** was placed by
+  `narrative_prompt_bands` all along and then *vetoed by the lawyer's signature
+  rule sitting in it* — which `build` deletes a moment later, leaving neither.
+  `page_boxes` now offers the band detectors the boxes that will **survive**
+  `drop_signature_rules`, and offers every box, signature rules included, as a
+  **floor**, so the band stops above the rule rather than over it. Form 70G p8's
+  "The Applicant's Lawyer is:" and six more documentary-evidence areas (70H,
+  70H.1, 70H.2, 70DD, 70C, 70D, 70D.1, 70A.1) came back with it.
+- **Form 70L p1's "Consented to:" has no writing area because it does not need
+  one.** It heads the petitioner's signature block: 17pt of paper and then the
+  signature rule, captioned "Petitioner or Petitioner's Lawyer". The consent is
+  given by signing, `BAND_MIN` refuses the 17pt, and `scan_missing_areas.py`
+  still reports it — as the one prompt in 86 forms with a band and no field,
+  which is the honest place for it to sit.
+
+## 8. What child protection and adoption taught (2026-08-18)
+
+Rule 70 is 43 forms from one Word template. Batch 2 is 43 forms from four
+regulations spanning 1999 to 2025, and it broke six rules that had been correct
+for 188 pages. Findings went **15 → 0** across three build/verify rounds, and
+every fix is in the builder or the gates. **Rule 70's own output is unchanged by
+all of them** except where it is strictly better — the diff against a build from
+the previous builder is 10 writing areas gained and 3 boxes removed from judges'
+signature lines, and that was checked on every one of the 43 before promoting.
+
+- **A heading bracket is not two blanks.** Manitoba rules a document's title
+  above and below — `_______ / O R D E R / _______` — in the same 0.8pt filled
+  rect as a writing line, with nothing printed on either rule's own line, so
+  every test in `printed_rules` correctly passed them and 22 pages carried a text
+  box across the form's own title. `heading_brackets` refuses a pair of
+  same-span rules with exactly one line between them, centred on the pair and
+  clear of both. The genuine ones leave ≥0.30 of the gap above and below the
+  heading; a *caption* ("Signature of Interpreter", "(Petitioner)") hugs its rule
+  within 0.07, and the nearest non-bracket in Rule 70 is 68pt off centre.
+  A parenthetical between the rules captions the rule **above** it — Form CFS-17's
+  backing sheet writes "(title of document)" there — so only the lower rule goes.
+- **The footer separator.** Word draws a short rule at the left margin above the
+  regulation citation ("M.R. 76/2000; 205/2001") and above the copy-distribution
+  block. Rule 70 has none — it prints "Form 70N (page 2 of 2)" instead — so 23
+  pages seated a box on one, hanging *upward* into the last line of the form's
+  own text: over "NOTE: Wording may be adapted if more than one child." six
+  times. `footer_separators` refuses a left-margin rule below which everything
+  printed is the citation or the distribution block. Read on the lines'
+  **bottoms**: Form AA-5 p2 draws the separator 2pt inside the citation's own
+  line box.
+- **A caption can be printed in the middle of its own blank.**
+  `_______(date)_______`, `______(occupation)______`: Word draws one rule under
+  the whole thing, and `_clear_rule_start` searches only the left half on
+  purpose, so the box was seated straight over the caption — eleven times on one
+  page of Forms CFS-22A and CFS-22B. `_rule_segments` splits the rule at the
+  type on it and keeps both sides, which is right: "On ______(date)______" gives
+  the filer more room before the caption than after. Alphanumerics only — the
+  punctuation Manitoba sets against a blank, and guide §4's `$`, are on the rule
+  too.
+- **The style of cause with no rule and no caption.** Rule 70 draws a rule and
+  captions it `(full name)`. Forms CFS-19, CFS-27 and AA-15 leave bare paper
+  between "BETWEEN:" and a right-aligned "Petitioner," — so every detector here
+  correctly found nothing and the parties had nowhere to go, on the most
+  important line of the form. `style_of_cause_bands` takes the role word as the
+  anchor and opens the clear line above it, from the left text measure across to
+  where the role word ends, which is how a filed Manitoba style of cause is
+  typed. "BETWEEN:" must appear above it: without that guard the same words read
+  as the signature captions on Forms CFS-13 and CFS-19 p2.
+- **A bare role word is a signature caption here, and 40 boxes sat on signature
+  lines.** Rule 70 captions every party signature "Signature of X", so
+  `MB_ROLE_CAPTION` only ever had to know four court offices. Batch 2 writes
+  "Witness", "Parent", "Guardian", "Executive Director/Regional Director". Two
+  restrictions, neither of which geometry can supply — the caption is centred
+  under its rule in every case, so there is nothing to measure:
+  **no parentheses**, because a parenthesised party role is Manitoba's
+  *strike-out name* caption (Form 70D p1's "FINANCIAL STATEMENT OF ______
+  (Petitioner/Respondent)", Form 70D.5's nine); and **no trailing comma or full
+  stop**, which is the whole difference between a signature caption and the
+  style-of-cause role word above. "Petitioner", "Respondent", "Applicant" and
+  "Co-petitioner" are ambiguous even then — Form 70A p4 labels two *name*
+  columns with them — so they are accepted only where they **share a line with a
+  caption already known to be a signature**, which is how Manitoba sets a
+  signature block: "Witness    Respondent". And a caption may not reach back over
+  a `(full name)` note to claim the blank above it, or Form 70Z p2 loses both
+  parties.
+- **A total row is bold, and the label arrives with its spaces removed.**
+  `TOTAL_ROW` was `\btotal\b`, tested against a cell's contents — which is
+  `TotalAnnualFamilyIncomeBeforeAdjustments`, so it had never matched **anything**,
+  and Form 70D.5's twenty-four totals were put back by hand
+  (`repair_mb_forms.fill_total_rows`) rather than by fixing it. Forms CFS-10,
+  AA-7 and FA-1 lost 42 cells the same way. Now matched as a substring, plus the
+  "Add:" and "Subtract:" arithmetic rows, which are bold for the same reason.
+
+Four smaller ones, each a rule that had simply never been exercised:
+
+- **`clear_of_type` was throwing its own trim away.** Refusing it at
+  `MIN_BLANK_WIDTH` does not leave the blank wide — it leaves the box *on the
+  type*. "20___" set as a drawn rule butting against the "20" costs 1.3pt out of
+  16.5. `MIN_TRIMMED_WIDTH` is what a box must **keep**, not what a blank must
+  **be** to earn one.
+- **A neighbour is not a ceiling.** Two blanks abutting on one line — Form 70H
+  p10's drawn rule ending at x 134.2 and an underscore run starting at 134.2,
+  1.2pt apart — shared an edge and a baseline, and reading one as the other's
+  ceiling capped the box to nothing. `CEILING_MIN_RISE`/`CEILING_MIN_OVERLAP`.
+  While there: an underscore run is a ceiling for a drawn rule, which nothing
+  had told `seat_rules` (Form AA-2's jurat, 0.2pt).
+- **A band is cut by whatever *is in* it, not by whatever *starts below* it.**
+  Form AA-15 p3 runs "(Specify the grounds…)" from y 312.5 while its own caption
+  "The grounds for the application are:" ends at 313.6 — 1.1pt of overlap — so a
+  test on `y0 > caption.y1` could not see the line it was meant to stop at, and
+  the writing area opened over the government's instruction.
+- **A parenthetical under a blank is that blank's caption.** Form CA-2 p1 ends
+  "person ______ / (insert name if known)", which matched `NARRATIVE_PROMPT` on
+  the word "insert" and opened 76pt of writing area in the bottom margin. Only
+  where the parenthetical is the **whole** paragraph: Form 70C's "(Insert your
+  full name, address …)" closes a sentence that begins with the form's own words
+  and is a genuine prompt.
+
+Recorded rather than guessed at:
+
+- **The child-protection style of cause is deliberately unbound**
+  (`mb_binds.UNBOUND_STYLE_PREFIXES`). The petitioner on a Form CFS-19 petition
+  is the child and family services agency and the respondents are the parents —
+  the reverse of every other form in the catalogue, where the party who starts
+  the case is the matter's client. Binding it would print the client's name as
+  the agency bringing a protection proceeding against them. Adoption *is* bound:
+  the applicant is the person seeking to adopt.
+- **Forms CFS-27/28's "THE HONOURABLE ______ JUSTICE"** has no writing area. The
+  judge's name goes in a gap between two printed lines with a jurat bracket
+  column to the right and no rule, caption or cell anywhere near it; guide §6 is
+  explicit that where the geometry cannot be read off the page it should be said
+  so rather than invented.
+- **Form CFS-19 p3's "(Petitioner)"** keeps a text box on what is really a
+  signature line. It is the price of the no-parentheses rule above, and the rule
+  is worth more than the box: without it Form 70D p1's financial statement loses
+  the line the party's name goes on.
+
+## 9. Reading the pages
+
+Both batches were read page by page with the overlay drawn on, after
+`verify_mb.py` reported zero findings — guide §9's through-line, and it held
+again: **six of the nine defects in §8 were invisible to every gate**, because
+no gate was asking the question. The renders come out of `_incoming_mb/qa/`,
+which `build_mb_forms.py` writes on every run.
+
+`scan_missing_areas.py` is the other half — it reads the *words* and asks
+whether anything was placed near them, which is the only way to find a prompt
+with nowhere to answer. Across all 86 forms it now reports one hit, Form 70L
+p1's "Consented to:", and §7 records why that is the right answer rather than a
+missing field.
 
 ## Overlay convention
 

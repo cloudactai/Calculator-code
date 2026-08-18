@@ -87,7 +87,18 @@ MIN_BLANK_WIDTH = 16.0
 # box and the rule of the blank above. Both exist because the viewer draws a
 # bordered control inside the rectangle we store.
 EDGE_CLEARANCE = 1.5
+# What a box has to keep after `clear_of_type` trims it off printed type. This is
+# deliberately below `MIN_BLANK_WIDTH`: that is the width a *blank* must have to
+# earn a box at all, while this is the width a box that already exists must keep
+# to be worth having. Conflating the two made a narrow blank keep its overlap.
+MIN_TRIMMED_WIDTH = 8.0
 STACK_GAP = 1.0
+# What makes a neighbouring rule a *ceiling* rather than the blank next to it:
+# it has to rise clear of this one and to overlap it by more than an edge.
+# Manitoba's tightest genuine stack is Form 70D p3's amount rules at an 11.5pt
+# pitch, so 3pt has the whole gap to sit in.
+CEILING_MIN_RISE = 3.0
+CEILING_MIN_OVERLAP = 1.0
 # A stroked square in the checkbox size range. The financial batch prints none --
 # Form 70Z's ballot boxes are a `☐` glyph, not geometry -- but the later batches
 # do, and leaving the detector in costs nothing on a form with no squares.
@@ -122,7 +133,17 @@ UNDERLINE_BAND = 1.3
 IGNORED_ON_RULE = set("_ \t.,;:")
 
 UNDERSCORE_RUN = re.compile(r"_+")
-TOTAL_ROW = re.compile(r"\b(sub)?total\b", re.I)
+# A row the form calls a total, or an arithmetic step -- both are rows the filer
+# writes a figure in, and both are set bold, which `heading_row_tops` otherwise
+# reads as the government's own heading.
+#
+# **Matched without word boundaries**, because what this is tested against is a
+# cell's contents with the spaces already removed: "Total Annual Family Income
+# Before Adjustments" arrives as `TotalAnnualFamilyIncomeBeforeAdjustments`, so
+# `\btotal\b` never matched one. Forms CFS-10, AA-7 and FA-1 lost all four of
+# their totals to that, and Form 70D.5's twenty-four were put back by hand
+# (`repair_mb_forms.fill_total_rows`) rather than by fixing it here.
+TOTAL_ROW = re.compile(r"(sub)?total|^(add|subtract):", re.I)
 
 # --- signature vocabulary ---------------------------------------------------
 # Manitoba captions its signature rules from below, in three shapes, all matched
@@ -141,12 +162,76 @@ TOTAL_ROW = re.compile(r"\b(sub)?total\b", re.I)
 # is not read as one, and `MB_SIG_EXCLUDE` keeps the "Date of ... signature"
 # boxes, which §5 exempts by name.
 MB_SIG_CAPTION = re.compile(r"^[^.]{0,60}\bsignature\b[^.]{0,40}$", re.I)
+# "of Oaths", not only "for Oaths": Form CA-2 p2 prints "A Commissioner of Oaths
+# in and for The Province of Manitoba", and the whole jurat turned on that word.
 MB_COMMISSIONER = re.compile(
-    r"^\s*a\s+commissioner\s+for\s+oaths\b|^\s*a\s+notary\s+public\b", re.I)
+    r"^\s*a\s+commissioner\s+(for|of)\s+oaths\b|^\s*a\s+notary\s+public\b", re.I)
 MB_SIG_EXCLUDE = re.compile(r"\bdate\b", re.I)
-MB_ROLE_CAPTION = re.compile(
+
+# **The office alone** -- a court officer's signature line, captioned with
+# nothing but the office. Parentheses are allowed here because Manitoba writes
+# both "(judge)" and "Deputy Registrar", and a court officer is never a party, so
+# there is no name blank for this to take by mistake.
+MB_OFFICE_CAPTION = re.compile(
     r"^\s*\(?\s*(deputy\s+)?(local\s+)?(registrar|judge|justice|clerk|"
     r"associate\s+judge)\s*\)?\s*$", re.I)
+
+# **The party alone**, which Rule 70 never needed: it captions every party
+# signature "Signature of X", so a bare role word only ever named an officer. The
+# child-protection and adoption forms caption a party's signature with nothing
+# but the role -- "Witness", "Parent", "Guardian", "Applicant", "Executive
+# Director/Regional Director" -- and 40 typeable boxes sat on signature lines
+# because of it.
+#
+# Two restrictions, each of which a form makes necessary and neither of which
+# geometry can supply -- the caption is centred under its rule in both cases, so
+# there is nothing to measure:
+#
+# **No parentheses.** A parenthesised party role is Manitoba's *strike-out name*
+# caption, not a signature: Form 70D p1's "FINANCIAL STATEMENT OF ______
+# (Petitioner/Respondent)" and Form 70D.5's nine "(petitioner/respondent)" blanks
+# all want the party's name typed on the rule, and dropping them would take the
+# name off the front of a financial statement. The cost is Form CFS-19 p3's
+# "(Petitioner)", which really is a signature line and keeps a box.
+#
+# **No trailing comma or full stop.** That is what keeps this off the style of
+# cause: `style_of_cause_bands` places a box above "Petitioner," and
+# "Respondent(s).", captioned by the very same words. Manitoba punctuates the
+# style of cause and leaves a signature caption bare.
+_QUALIFIER = (r"(?:deputy\s+|local\s+|associate\s+|executive\s+|regional\s+|"
+              r"area\s+|agency\s+|case\s+conference\s+|prospective\s+|"
+              r"adoptive\s+)*")
+_SUFFIX = (r"s?(?:\s+[A-Z])?"
+           r"(?:\s+of\s+(?:child\s+and\s+family\s+services|the\s+child))?")
+
+
+def _role_caption(words):
+    """A caption made of nothing but role words, slashes and "or"."""
+    role = _QUALIFIER + r"(?:" + words + r")" + _SUFFIX
+    return re.compile(r"^\s*(?:a\s+)?" + role +
+                      r"(?:\s*(?:/|\s+or\s+)\s*" + role + r")*\s*$", re.I)
+
+
+MB_PARTY_CAPTION = _role_caption(
+    r"registrar|judge|justice|clerk|witness|parent|guardian|agency|director|"
+    r"manager|deponent|informant|interpreter|mother|father")
+
+# **The four roles that are not evidence on their own.** "Petitioner",
+# "Respondent", "Applicant" and "Co-petitioner" caption a signature line on Forms
+# CFS-19/20/21 and AA-6 -- and a *name blank* on Rule 70: Form 70A p4 sets
+# "(e) Full name at birth:" over two columns and labels them "Petitioner" and
+# "Respondent", and Form 70Z's style of cause closes with
+# "Petitioner/Applicant/Respondent". The caption is centred under its rule in
+# every one of those cases, so no measurement separates them.
+#
+# What does: **a signature block sets its captions side by side.** Manitoba pairs
+# the signer with the witness on one line -- "Witness    Respondent",
+# "Witness    Applicant" -- so a role sharing its line with a caption already
+# known to be a signature is one too, and a role standing alone on its line is
+# left as the name blank it usually is.
+MB_AMBIGUOUS_ROLE = _role_caption(r"respondent|petitioner|co-petitioner|applicant")
+# How close two captions have to sit to count as printed on the same line.
+SAME_LINE_TOL = 2.0
 # "My Commission expires: ______" is a real blank the commissioner fills in, and
 # it sits inside the jurat block where the signature captions live. Naming it
 # keeps it out of the signature sweep's reach.
@@ -194,17 +279,50 @@ def page_chars(page):
     return out
 
 
-def signature_captions(page):
-    """Rects of the captions that mark a rule as somebody's signature line."""
+def name_notes(page):
+    """The `(full name)` notes -- what `drop_signature_rules` reads to tell a
+    caption that belongs to the box above it from a role word reaching back over
+    the style of cause's own note to get there.
+
+    Only these lines, not every printed line: a signature block routinely sets
+    *two* captions under its rule -- Form 70L p1 prints "Petitioner or
+    Petitioner's Lawyer" and then "(signature of petitioner or petitioner's
+    lawyer)" -- and treating the first as an obstacle would put a typeable box on
+    the signature line it names.
+    """
     out = []
+    for block in page.get_text("dict")["blocks"]:
+        for line in block.get("lines", []):
+            text = "".join(span["text"] for span in line["spans"]).strip()
+            if CAPTION_BELOW.match(text):
+                out.append(fitz.Rect(line["bbox"]))
+    return out
+
+
+def signature_captions(page):
+    """Rects of the captions that mark a rule as somebody's signature line.
+
+    Two passes, because `MB_AMBIGUOUS_ROLE` is decided by its neighbours: a bare
+    "Respondent" is a signature caption where it shares a line with one, and a
+    column label where it stands alone (see the pattern's own note).
+    """
+    out, maybe = [], []
     for block in page.get_text("dict")["blocks"]:
         for line in block.get("lines", []):
             text = "".join(span["text"] for span in line["spans"])
             if MB_SIG_EXCLUDE.search(text) or MB_SIG_KEEP.search(text):
                 continue
+            rect = fitz.Rect(line["bbox"])
             if (MB_SIG_CAPTION.search(text) or MB_COMMISSIONER.search(text)
-                    or MB_ROLE_CAPTION.match(text)):
-                out.append(fitz.Rect(line["bbox"]))
+                    or MB_OFFICE_CAPTION.match(text)
+                    or MB_PARTY_CAPTION.match(text)):
+                out.append(rect)
+            elif MB_AMBIGUOUS_ROLE.match(text):
+                maybe.append(rect)
+    for rect in maybe:
+        if any(abs(other.y0 - rect.y0) <= SAME_LINE_TOL and other != rect
+               for other in out):
+            out.append(rect)
     return out
 
 
@@ -429,6 +547,59 @@ def _clear_rule_start(chars, key, start, end, size):
     return edge
 
 
+# Letters printed on a rule *after* its left-hand caption split it into two
+# blanks. Only alphanumerics count: the punctuation Manitoba sets against a blank
+# ("of the ______, in the") and the `$` guide 4 anchors an amount to are on the
+# rule too, and splitting on those would fragment every money line in the batch.
+# 3pt joins the words of one caption -- "(name of person served/" -- without
+# reaching the next blank, Manitoba's narrowest being 16.8pt.
+CAPTION_JOIN = 3.0
+
+
+def _rule_segments(chars, key, start, end, size):
+    """One printed rule, split into the blanks the type on it leaves.
+
+    Manitoba writes a short blank by **captioning it from inside**:
+    `_______(date)_______`, `_______(occupation)_______`, `______(name)______`.
+    Word draws one rule under the whole thing, so `_clear_rule_start` -- which
+    searches only the left half, on purpose -- leaves the caption in the middle
+    of the span and the box is seated straight over it. Forms CFS-22A and CFS-22B
+    do this eleven times on one page each.
+
+    The caption divides the rule into the segments either side of it, and both
+    are real: "On ______(date)______, 20___" gives the filer more room before the
+    caption than after. A rule with its caption at the left end still yields one
+    segment, which is what `_clear_rule_start` has always returned.
+    """
+    start = _clear_rule_start(chars, key, start, end, size)
+    runs = []
+    for box, char, _size in chars:
+        if not char.isalnum():
+            continue
+        centre = (box.y0 + box.y1) / 2
+        if not key - UNDERLINE_BAND * size <= centre <= key:
+            continue
+        if box.x1 <= start or box.x0 >= end:
+            continue
+        runs.append((max(box.x0, start), min(box.x1, end)))
+    runs.sort()
+    merged = []
+    for run_start, run_end in runs:
+        if merged and run_start - merged[-1][1] <= CAPTION_JOIN:
+            merged[-1][1] = max(merged[-1][1], run_end)
+        else:
+            merged.append([run_start, run_end])
+
+    out, edge = [], start
+    for run_start, run_end in merged:
+        if run_start - EDGE_CLEARANCE - edge >= MIN_BLANK_WIDTH:
+            out.append((edge, run_start - EDGE_CLEARANCE))
+        edge = max(edge, run_end + EDGE_CLEARANCE)
+    if end - edge >= MIN_BLANK_WIDTH:
+        out.append((edge, end))
+    return out
+
+
 def _is_separator(chars, key, start, end, size):
     """Is this rule a section divider drawn across the page?
 
@@ -457,6 +628,134 @@ def _is_separator(chars, key, start, end, size):
                    for box in printed)
 
 
+# A heading bracket: the pair of rules Manitoba draws above and below a
+# document's title. Both are 0.8pt filled rects indistinguishable from a writing
+# rule, and neither has anything printed on its own line, so every other test in
+# `printed_rules` correctly passes them -- which put a text box over "O R D E R"
+# and over "PETITION AND NOTICE OF HEARING" on 22 pages of the child-protection
+# and adoption batch. See `heading_brackets`.
+BRACKET_MIN_GAP, BRACKET_MAX_GAP = 10.0, 70.0
+# How far the heading may sit off the pair's own centre. The genuine brackets in
+# the batch measure 0.1-10.5pt; the nearest thing that is *not* one is Form 70A
+# p5's left-aligned "(b) The respondent's full address ..." between two answer
+# rules, at 80pt, so the cut has 68pt of clear air in it.
+BRACKET_MAX_OFFSET = 12.0
+# ...and the heading has to float between the rules rather than caption one of
+# them. Measured as a fraction of the gap: the genuine brackets leave at least
+# 0.30 clear above and below, while a caption ("Signature of Interpreter",
+# "(Petitioner)", "Address") sits within 0.07 of the rule it belongs to.
+BRACKET_MIN_CLEAR = 0.25
+# A parenthetical between the rules is Manitoba's caption idiom, and it captions
+# the rule *above* it -- Form CFS-17's backing sheet writes "(title of document)"
+# between the pair and expects the title on the upper rule. Only the lower rule
+# is decoration there.
+BRACKET_CAPTION = re.compile(r"^\(.*\)[.,;]?$")
+
+
+def heading_brackets(page):
+    """The rule keys that bracket a printed heading rather than a blank.
+
+    Returns the set of `round(key, 1)` to refuse. A bracket is two rules of the
+    same span, `BRACKET_MIN_GAP` to `BRACKET_MAX_GAP` apart, with **exactly one**
+    printed line between them, centred on the pair and clear of both rules.
+
+    Both rules go, unless the line between is a parenthetical caption, in which
+    case only the lower one does -- see `BRACKET_CAPTION`.
+    """
+    horizontal, _vertical = _segments(page)
+    lines = []
+    for text, boxes, _sizes in line_chars(page):
+        if text.strip():
+            lines.append((fitz.Rect(boxes[0]) | fitz.Rect(boxes[-1]), text.strip()))
+
+    # A rule with type on its own line is a blank beside a caption, never a
+    # bracket. The line is read at the rule's own baseline, which is where
+    # `_is_underline` looks too.
+    chars = page_chars(page)
+    empty = []
+    for key, start, end in horizontal:
+        if end - start < MIN_BLANK_WIDTH:
+            continue
+        size = _font_at(chars, key, start, end)
+        if any(abs((r.y0 + r.y1) / 2 - (key - size / 2)) < size * 0.6
+               and r.x1 > start - 2 and r.x0 < end + 2 for r, _t in lines):
+            continue
+        empty.append((key, start, end))
+
+    refused = set()
+    for upper_key, start, end in empty:
+        for lower_key, other_start, other_end in empty:
+            gap = lower_key - upper_key
+            if not BRACKET_MIN_GAP < gap < BRACKET_MAX_GAP:
+                continue
+            if abs(start - other_start) > 1 or abs(end - other_end) > 1:
+                continue
+            between = [(r, t) for r, t in lines if upper_key < (r.y0 + r.y1) / 2 < lower_key]
+            if len(between) != 1:
+                continue
+            rect, text = between[0]
+            if abs((rect.x0 + rect.x1) / 2 - (start + end) / 2) > BRACKET_MAX_OFFSET:
+                continue
+            if (rect.y0 - upper_key) / gap < BRACKET_MIN_CLEAR:
+                continue
+            if (lower_key - rect.y1) / gap < BRACKET_MIN_CLEAR:
+                continue
+            refused.add(round(lower_key, 1))
+            if not BRACKET_CAPTION.match(text):
+                refused.add(round(upper_key, 1))
+    return refused
+
+
+# What Manitoba prints below the last rule on a page, and nothing else on these
+# forms looks like: the regulation citation ("M.R. 76/2000; 205/2001") and, on
+# the forms filed in multiple copies, the distribution block ("Copy 1 - agency
+# for court" ... "All five copies must be signed and witnessed").
+CITATION_FOOTER = re.compile(
+    r"^(M\.R\.|R\.M\.)\s*\d|^copy\s+\d|^all\s+\w+\s+copies\b", re.I)
+# The separator above that footer starts at the page's left text margin. A blank
+# is never set there: Manitoba indents its answer lines, so the commissioner's
+# "My Commission expires ______" on the same forms starts at 173.5-182.5pt while
+# the separator starts at 63 or 72. Width is deliberately not constrained -- the
+# separator above a citation measures 57.5-76.6pt and the one above a
+# distribution block runs the page's whole measure.
+FOOTER_MARGIN_TOL = 2.0
+
+
+def footer_separators(page):
+    """The rule keys that separate the body from the regulation citation.
+
+    Returns the set of `round(key, 1)` to refuse. Rule 70 has none of these --
+    those forms print a "Form 70N (page 2 of 2)" footer instead -- which is why
+    the financial and pleadings batches never met one. Twenty-three pages of the
+    child-protection and adoption set do, and the box seated on the rule hangs
+    *upward* into the last line of the form's own text: over "NOTE: Wording may
+    be adapted if more than one child." on six forms, over "Backing for Forms
+    CFS-19 and CFS-20." on another, and over the "Total Adjusted Annual Family
+    Income" row of all three declarations of family income.
+    """
+    horizontal, _vertical = _segments(page)
+    lines = []
+    for text, boxes, _sizes in line_chars(page):
+        if text.strip():
+            lines.append((fitz.Rect(boxes[0]) | fitz.Rect(boxes[-1]), text.strip()))
+    if not lines:
+        return set()
+    left = min(rect.x0 for rect, _t in lines)
+
+    refused = set()
+    for key, start, end in horizontal:
+        if abs(start - left) > FOOTER_MARGIN_TOL:
+            continue
+        # Any line reaching below the rule, not only one starting below it:
+        # Form AA-5 p2 draws its separator 2pt *inside* the citation's own line
+        # box, so a test on the line's top saw nothing below the rule at all.
+        below = [text for rect, text in lines if rect.y1 > key]
+        if not below or not all(CITATION_FOOTER.match(text) for text in below):
+            continue
+        refused.add(round(key, 1))
+    return refused
+
+
 def printed_rules(page, cells):
     """Writing rules: horizontal rules that are neither a table border nor an underline.
 
@@ -468,6 +767,7 @@ def printed_rules(page, cells):
     """
     horizontal, vertical = _segments(page)
     chars = page_chars(page)
+    brackets = heading_brackets(page) | footer_separators(page)
     borders = set()
     for rect, _text, _dollar, _caption in cells:
         borders.add(round(rect.y0, 0))
@@ -475,6 +775,8 @@ def printed_rules(page, cells):
 
     out = []
     for key, start, end in horizontal:
+        if round(key, 1) in brackets:
+            continue
         if end - start < MIN_BLANK_WIDTH:
             continue
         if any(abs(key - border) <= 2.0 for border in borders):
@@ -486,10 +788,8 @@ def printed_rules(page, cells):
             continue
         if _is_separator(chars, key, start, end, size):
             continue
-        start = _clear_rule_start(chars, key, start, end, size)
-        if end - start < MIN_BLANK_WIDTH:
-            continue
-        out.append((fitz.Rect(start, key - size, end, key), key, size))
+        for seg_start, seg_end in _rule_segments(chars, key, start, end, size):
+            out.append((fitz.Rect(seg_start, key - size, seg_end, key), key, size))
     return out
 
 
@@ -512,11 +812,17 @@ def seat_rules(rules, ceilings=()):
     for rect, key, size in rules:
         bottom = key - RULE_CLEARANCE
         height = size * LINE_RATIO
+        # **Overlap by more than a hair, and sit more than a hair above.** Two
+        # blanks that abut on the same line -- Form 70H p10 sets a drawn rule
+        # ending at x 134.2 and an underscore run starting at x 134.2, 1.2pt
+        # apart vertically -- share an edge and a baseline, and reading the
+        # neighbour as a ceiling capped the box to nothing and dropped the blank.
         above = [other_key for other, other_key, _s in rules
-                 if other_key < key - 1
-                 and other.x1 > rect.x0 and other.x0 < rect.x1]
+                 if other_key < key - CEILING_MIN_RISE
+                 and min(other.x1, rect.x1) - max(other.x0, rect.x0) > CEILING_MIN_OVERLAP]
         above += [other_key for other_key, start, end in ceilings
-                  if other_key < key - 1 and end > rect.x0 and start < rect.x1]
+                  if other_key < key - CEILING_MIN_RISE
+                  and min(end, rect.x1) - max(start, rect.x0) > CEILING_MIN_OVERLAP]
         if above:
             # Measure the cap from the box's own bottom, not from its rule.
             # `bottom` is already RULE_CLEARANCE above `key`, so capping the
@@ -931,7 +1237,7 @@ CAPTION_GAP = 2.0
 CAPTION_MIN_HEIGHT = 8.0
 
 
-def writing_area_bands(page, placed, cells):
+def writing_area_bands(page, placed, cells, obstacles=()):
     """Answer spaces the form anchors with a caption and then leaves as paper.
 
     Three guards, each of which a form in this batch makes necessary. A caption
@@ -959,7 +1265,14 @@ def writing_area_bands(page, placed, cells):
             continue
         if any(cell.contains(rect) for cell, _t, _d, _c in cells):
             continue
+        # A box closes a band as surely as printed type does, and one that is
+        # about to be *deleted* closes it too: Form 70L p1's "Consented to:" is
+        # followed by 80pt of paper and then the respondent's signature rule,
+        # which `placed` does not carry (it is dropped) and no printed line
+        # reports. Floored at the box's own top, not at the rule under it.
         below = [other.y0 for other, _t in lines if other.y0 > rect.y1 + 1]
+        below += [box.y0 for box in obstacles
+                  if box.y0 > rect.y1 + 1 and box.x1 > rect.x0]
         band = fitz.Rect(rect.x0, rect.y1 + 2, page.rect.width - 72,
                          min(min(below, default=floor), floor))
         # **A band is empty paper.** Taking the bottom from "the next line
@@ -970,11 +1283,26 @@ def writing_area_bands(page, placed, cells):
         # "Reconciliation:" over "There is no possibility of reconciliation or
         # resumption of cohabitation." -- and a writing area over a printed
         # statement is guide 9.3. Cut the band at whatever actually prints in it.
-        printed = [other.y0 for other, _t in lines
-                   if other.y0 > rect.y1 - 0.5 and other.y0 < band.y1
-                   and other.x1 > band.x0 and other.x0 < band.x1]
-        if printed:
-            band.y1 = min(printed) - 1
+        #
+        # Tested on the line's whole rectangle, not on its top edge. Manitoba
+        # sets a prompt tighter than its caption's own line box -- Form AA-15 p3
+        # runs "(Specify the grounds to be argued...)" from y 312.5 while
+        # "The grounds for the application are:" ends at 313.6 -- so a test on
+        # `y0 > caption.y1` cannot see the very line it is meant to stop at, and
+        # the band opened straight over the government's instruction. A line that
+        # straddles the band's top pushes the top down; one below it sets the
+        # bottom.
+        for other, _t in lines:
+            if other.y1 <= band.y0 + 0.5 or other.y0 >= band.y1:
+                continue
+            if other.x1 <= band.x0 or other.x0 >= band.x1:
+                continue
+            if other.y0 <= band.y0 + 0.5:
+                band.y0 = max(band.y0, other.y1 + 1)
+            else:
+                band.y1 = min(band.y1, other.y0 - 1)
+        if band.y1 <= band.y0:
+            continue
         # A caption set out in the right margin leaves no room for a band under
         # it; the rectangle then comes back empty or inverted, which reaches
         # `check_geometry` as a non-positive size rather than as no field at all.
@@ -1008,12 +1336,15 @@ NARRATIVE_PROMPT = re.compile(
 # paragraph under it, and every box on these forms is about 14pt tall.
 NARRATIVE_MIN = 12.0
 NARRATIVE_MAX = 260.0
+# How close under a box a parenthetical has to sit to be read as its caption
+# rather than as a prompt. Manitoba sets a caption 2-4pt under its blank.
+PROMPT_CAPTION_GAP = 6.0
 # Lines closer together than this are one paragraph. Manitoba's body leading is
 # 12-13pt and its paragraph gap 23pt or more, so the cut has 10pt of clear air.
 PARA_LEADING = 18.0
 
 
-def narrative_prompt_bands(page, placed, cells):
+def narrative_prompt_bands(page, placed, cells, obstacles=()):
     """Answer spaces for a prompt that names no rule, cell or blank of its own.
 
     Guide §6 and §9.5. The band runs from just under the instruction's own line
@@ -1062,8 +1393,24 @@ def narrative_prompt_bands(page, placed, cells):
             continue
         if any(cell.intersects(whole) for cell, _t, _d, _c in cells):
             continue
+        # **A parenthetical printed under a blank is that blank's caption, not a
+        # prompt for the paper below it.** Form CA-2 p1 ends with "person
+        # ______ / (insert name if known)", and the caption matched
+        # `NARRATIVE_PROMPT` on the word "insert", opening a 76pt writing area in
+        # the bottom margin that answers nothing. Manitoba captions from below
+        # throughout, so the box overhead is the whole signal.
+        standalone = text.strip().startswith("(") and text.strip().endswith(")")
+        if standalone and any(
+                0 <= whole.y0 - box.y1 <= PROMPT_CAPTION_GAP
+                and box.x1 > whole.x0 and box.x0 < whole.x1 for box in placed):
+            continue
+        # A box floors the band too, including one that is about to be
+        # deleted -- Form 70Q p1 leaves 75pt between "(List the affidavits ... to
+        # be relied on.)" and the lawyer's signature rule, and the answer space
+        # is the paper above that rule's box, not over it.
         floor = min([other.y0 for other, _t, _l in paragraphs[index + 1:]
                      if other.y1 > last_line.y1 + 1]
+                    + [box.y0 for box in obstacles if box.y0 > last_line.y1 + 1]
                     or [page.rect.height - BAND_FOOTER])
         band = fitz.Rect(left, last_line.y1 + 2, right,
                          min(floor - 1, last_line.y1 + 2 + NARRATIVE_MAX))
@@ -1132,6 +1479,85 @@ def caption_below_blanks(page, placed):
             if page.get_text("text", clip=band).strip():
                 continue
             out.append(band)
+    return out
+
+
+# The role word Manitoba sets against the right margin to close a party's line
+# in the style of cause. It closes with the comma or full stop that punctuates
+# the style of cause, which is what separates it from the same word used as a
+# signature caption ("Respondent" under a signed rule on Form CFS-19 p2).
+STYLE_ROLE = re.compile(
+    r"^(co-)?(petitioner|applicant|respondent)s?(\(s\))?(/(petitioner|applicant|"
+    r"respondent)s?)?\s*[,.]$", re.I)
+# The heading that opens a style of cause. Manitoba letterspaces it on some forms
+# ("B E T W E E N :"), so it is matched on the letters rather than the string.
+STYLE_BETWEEN = re.compile(r"^b\s*e\s*t\s*w\s*e\s*e\s*n\s*:?$", re.I)
+# One line of writing above the role word, and how much clear paper there has to
+# be for it. Measured across the batch: 22-25pt between the line above and the
+# role word, against a 14pt box.
+STYLE_LINE_HEIGHT = 14.0
+STYLE_GAP = 2.0
+STYLE_MIN_HEIGHT = 8.0
+
+
+def style_of_cause_bands(page, placed):
+    """The party lines of a style of cause that has no rule and no caption.
+
+    Rule 70 draws its style of cause as a rule with a `(full name)` note under it
+    (`caption_below_blanks`). The child-protection and adoption forms print
+    neither -- Forms CFS-19, CFS-27 and AA-15 leave bare paper between
+    "BETWEEN:" and a right-aligned "Petitioner," with nothing else on it -- so
+    every other detector here correctly finds nothing and the parties have
+    nowhere to go, on the most important line of the form.
+
+    The role word is the anchor and the band is the clear line above it, from the
+    page's left text measure across to where the role word ends, which is how a
+    filed Manitoba style of cause is actually typed: the name at the left, the
+    role at the right, on consecutive lines.
+
+    `STYLE_BETWEEN` has to appear above it on the same page. Without that guard
+    the same words read as signature captions -- Forms CFS-13 and CFS-19 caption
+    signature rules "Parent" and "Respondent" -- and the punctuation alone is too
+    thin a thread to hang a box on the wrong line of a court document.
+    """
+    lines = []
+    for block in page.get_text("dict")["blocks"]:
+        for line in block.get("lines", []):
+            text = "".join(span["text"] for span in line["spans"]).strip()
+            if text:
+                lines.append((fitz.Rect(line["bbox"]), text))
+    lines.sort(key=lambda pair: (pair[0].y0, pair[0].x0))
+
+    between = [rect.y1 for rect, text in lines if STYLE_BETWEEN.match(text)]
+    if not between:
+        return []
+    opened = min(between)
+
+    left = min((rect.x0 for rect, _t in lines), default=72.0)
+    out = []
+    for rect, text in lines:
+        if rect.y0 < opened or not STYLE_ROLE.match(text):
+            continue
+        band = fitz.Rect(left, rect.y0 - STYLE_GAP - STYLE_LINE_HEIGHT,
+                         rect.x1, rect.y0 - STYLE_GAP)
+        if band.width < MIN_BLANK_WIDTH:
+            continue
+        # Trim to the clear paper rather than refuse it, as `caption_below_blanks`
+        # does: "- and -" is set 22pt above the respondent's role word on several
+        # of these forms, which is a line's worth minus the leading.
+        for other, _t in lines:
+            if other.y1 <= band.y0 or other.y0 >= band.y1:
+                continue
+            if other.x1 <= band.x0 or other.x0 >= band.x1:
+                continue
+            band.y0 = max(band.y0, other.y1 + 1)
+        if band.height < STYLE_MIN_HEIGHT:
+            continue
+        if any(band.intersects(box) for box in placed):
+            continue
+        if page.get_text("text", clip=band).strip():
+            continue
+        out.append(band)
     return out
 
 
@@ -1214,22 +1640,31 @@ def page_boxes(page):
         boxes.append((box, "TextArea" if lines > TEXTAREA_LINES else "TextField"))
         filled_cells.append(rect)
 
-    # Printed writing rules, which are the bulk of these forms. A rule inside a
-    # cell that already got a field is that field seen twice; a rule inside one
-    # that did *not* is a real blank, so the test is against the cells actually
-    # filled rather than against every cell on the page.
-    for box in seat_rules(printed_rules(page, cells), underline_keys(page)):
-        if any(cell.intersects(box) and cell.get_area() > box.get_area()
-               for cell in filled_cells):
-            continue
-        boxes.append((box, "TextField"))
-
     kept = []
     for rect, rule_y, size in underscore_blanks(page):
         if any(cell.intersects(rect) and cell.get_area() > rect.get_area()
                for cell in filled_cells):
             continue
         kept.append((rect, rule_y, size))
+
+    # Printed writing rules, which are the bulk of these forms. A rule inside a
+    # cell that already got a field is that field seen twice; a rule inside one
+    # that did *not* is a real blank, so the test is against the cells actually
+    # filled rather than against every cell on the page.
+    #
+    # **An underscore run is a ceiling too.** The two vocabularies each cap
+    # themselves against their own kind and neither knew about the other, so a
+    # drawn rule seated under an underscore blank ran up into it: Form AA-2's
+    # jurat sets "of ___________ in the province of" as underscores and the line
+    # under it as a drawn rule, 0.2pt apart.
+    ceilings = list(underline_keys(page))
+    ceilings += [(rule_y, rect.x0, rect.x1) for rect, rule_y, _size in kept]
+    for box in seat_rules(printed_rules(page, cells), ceilings):
+        if any(cell.intersects(box) and cell.get_area() > box.get_area()
+               for cell in filled_cells):
+            continue
+        boxes.append((box, "TextField"))
+
     # An underscore blank hangs upward from its own run and is capped by the run
     # above it, exactly as `seat_rules` caps a drawn rule -- the underscore path
     # simply never had the cap, because the financial batch has 3 runs in 31
@@ -1249,12 +1684,34 @@ def page_boxes(page):
         boxes.append((fitz.Rect(rect.x0, bottom - height, rect.x1, bottom),
                       "TextField"))
 
-    placed = [rect for rect, _kind in boxes]
-    for band in caption_below_blanks(page, placed):
+    # **A band is placed against the boxes that will survive, not against every
+    # box found.** A writing area is refused where something already occupies it,
+    # and a signature rule occupies its space right up until `build` deletes it --
+    # so Form 70Q p1's documentary-evidence area was placed by
+    # `narrative_prompt_bands`, vetoed by the lawyer's signature rule sitting in
+    # it, and the rule then dropped, leaving neither. Forms 70G p8 and 70L p1 lose
+    # their "The Applicant's Lawyer is:" and "Consented to:" areas the same way.
+    captions = signature_captions(page)
+    brackets = jurat_brackets(page)
+    lines = name_notes(page)
+
+    def surviving():
+        """What will still be on the page after `build` drops the signatures."""
+        return [rect for rect, _kind
+                in drop_signature_rules(boxes, captions, brackets, lines)[0]]
+
+    def every():
+        """Everything found so far, signature rules included -- a band stops at a
+        signature rule even though it may not be vetoed by one."""
+        return [rect for rect, _kind in boxes]
+
+    for band in caption_below_blanks(page, surviving()):
         boxes.append((band, "TextField"))
-    for band in writing_area_bands(page, [rect for rect, _kind in boxes], cells):
+    for band in style_of_cause_bands(page, surviving()):
+        boxes.append((band, "TextField"))
+    for band in writing_area_bands(page, surviving(), cells, every()):
         boxes.append((band, "TextArea"))
-    for band in narrative_prompt_bands(page, [rect for rect, _kind in boxes], cells):
+    for band in narrative_prompt_bands(page, surviving(), cells, every()):
         boxes.append((band, "TextArea"))
     return clear_of_type(page, dedupe(boxes))
 
@@ -1344,13 +1801,21 @@ def clear_of_type(page, boxes):
                 if -0.5 <= glyph.x0 - right < EDGE_CLEARANCE:
                     right = glyph.x0 - EDGE_CLEARANCE
                     changed = True
-        if right - left >= MIN_BLANK_WIDTH:
+        # **Keep the trim even when it makes the box narrow.** Refusing it at
+        # `MIN_BLANK_WIDTH` does not leave the blank wide -- it leaves the box
+        # *on the type*, which is the thing this function exists to prevent, and
+        # `check_edge_clearance` then fails it. Forms CFS-22A/22B and AA-10/11
+        # print "20___" and "___(time)___" as drawn rules butting straight up
+        # against the "20", so the trim costs 1.3pt out of 16.5 and the whole
+        # trim was being thrown away. The floor is what a box has to keep to
+        # still be worth having, not what a blank has to be to earn one.
+        if right - left >= MIN_TRIMMED_WIDTH:
             rect = fitz.Rect(left, rect.y0, right, rect.y1)
         out.append((rect, kind))
     return out
 
 
-def drop_signature_rules(boxes, captions, brackets):
+def drop_signature_rules(boxes, captions, brackets, lines=()):
     """Guide 5: never put a typeable box on somebody's signature line.
 
     Two ways a Manitoba rule is a signature line.
@@ -1363,6 +1828,12 @@ def drop_signature_rules(boxes, captions, brackets):
     **A jurat bracket column to its left**, which is the case a caption cannot
     reach: Form 70D p1 sets the deponent's signature rule to the right of the
     jurat's ")" column with no caption anywhere near it.
+
+    `lines` are the page's `(full name)` notes, and a caption may not reach back
+    over one. Manitoba's style of cause stacks that note between the party's
+    blank and the role word, so once a bare role word counted as a signature
+    caption (`MB_PARTY_CAPTION`) the role reached over the note and deleted the
+    party's own name blank -- Form 70Z p2 loses both parties that way.
     """
     doomed = set()
     for index, (rect, kind) in enumerate(boxes):
@@ -1379,6 +1850,14 @@ def drop_signature_rules(boxes, captions, brackets):
                 continue
             if not bp.is_signature_box(rect, "", [caption]):
                 continue
+            # Compared on the two captions' **tops**, not on the intervening
+            # line's bottom: Manitoba sets the style of cause's "(full name)"
+            # note and its role word 0.2pt apart vertically on Form 70Z p2, so a
+            # test on `other.y1 < caption.y0` never fires.
+            if any(rect.y1 + 0.5 < other.y0 and other.y0 < caption.y0 - 1.0
+                   and other.x1 > rect.x0 and other.x0 < rect.x1
+                   for other in lines):
+                continue  # something else is printed between them
             gap = caption.y0 - rect.y1
             if best_gap is None or gap < best_gap:
                 best, best_gap = index, gap
@@ -1413,7 +1892,7 @@ def tick_rects(page):
 def signature_rule_rects(page):
     """The boxes this page deliberately does not get, for the verifier to excuse."""
     return drop_signature_rules(page_boxes(page), signature_captions(page),
-                                jurat_brackets(page))[1]
+                                jurat_brackets(page), name_notes(page))[1]
 
 
 def hand_finished(doc_id):
@@ -1455,7 +1934,8 @@ def build(src, promote=False, force=False):
     index = 0
     for number, page in enumerate(doc, start=1):
         kept, dropped = drop_signature_rules(
-            page_boxes(page), signature_captions(page), jurat_brackets(page))
+            page_boxes(page), signature_captions(page), jurat_brackets(page),
+            name_notes(page))
         skipped += len(dropped)
         for rect, kind in kept:
             index += 1

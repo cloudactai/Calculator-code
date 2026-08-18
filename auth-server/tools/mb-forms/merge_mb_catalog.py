@@ -57,7 +57,7 @@ def main():
         doc.close()
         rows.append({
             "title": "Form %s - %s" % (src["formNo"], src["title"]),
-            "shortTitle": "MB KB %s" % src["formNo"],
+            "shortTitle": src.get("shortTitle") or "MB KB %s" % src["formNo"],
             "footerText": manifest[doc_id].get("footerText") or None,
             "status": "active",
             "fileName": "%s.pdf" % doc_id,
@@ -90,8 +90,14 @@ def main():
     for item in merged:
         counts[item["province"]] = counts.get(item["province"], 0) + 1
     print("catalog: %d rows %s" % (len(merged), counts))
+    short = {r["docId"]: s["shortCategory"]
+             for r, s in zip(rows, shipped_sources())}
     for category in CATEGORY_ORDER:
-        group = [r for r in rows if r["category"].endswith(category)]
+        # Matched on the source's own `shortCategory`: the row's category has had
+        # its hyphen swapped for the picker's en dash, so `endswith` on the
+        # written name stopped matching as soon as a batch-2 category
+        # ("Child Protection - Applications") carried one.
+        group = [r for r in rows if short[r["docId"]] == category]
         if not group:
             continue
         print("  %-22s %d" % (category, len(group)))

@@ -112,16 +112,48 @@ def bind_from_below(box, lines):
     return best
 
 
-def bind_for_field(field, lines):
+def bind_from_role_above(box, lines):
+    """The bind from a style-of-cause role word printed under the box, alone.
+
+    Rule 70 always sets a `(full name)` note between the party's blank and the
+    role word, and `bind_from_below` requires it. The child-protection and
+    adoption forms print no note at all -- bare paper closed by "Applicant," or
+    "Respondent(s)." -- which is the layout `style_of_cause_bands` places its box
+    for. The punctuation carries the whole weight: a bare role word with no
+    comma is a signature caption, and binding one would put the client's name on
+    somebody's signature line.
+    """
+    best, best_gap = None, None
+    for text, rect, _right in lines:
+        gap = rect.y0 - box.y1
+        if not 0 <= gap <= mb_binds.STYLE_MAX_GAP:
+            continue
+        if rect.x1 < box.x0 or rect.x0 > box.x1 + mb_binds.ROLE_MAX_OFFSET:
+            continue
+        if not mb_binds.is_style_role(text):
+            continue
+        bind = mb_binds.bind_for_role(text)
+        if bind is None:
+            continue
+        if best_gap is None or gap < best_gap:
+            best, best_gap = bind, gap
+    return best
+
+
+def bind_for_field(field, lines, style_of_cause=True):
     if field["type"] != "TextField":
         return None
     box = fitz.Rect(field["x"], field["y"],
                     field["x"] + field["width"] / SCALE,
                     field["y"] + field["height"] / SCALE)
-    return bind_from_left(box, lines) or bind_from_below(box, lines)
+    found = bind_from_left(box, lines) or bind_from_below(box, lines)
+    if found is None and style_of_cause:
+        found = bind_from_role_above(box, lines)
+    return found
 
 
 def rebind(doc_id, apply_changes):
+    style_of_cause = mb_binds.binds_style_of_cause(doc_id)
     pdf = os.path.join(EXPORT, "%s.pdf" % doc_id)
     mapping = os.path.join(EXPORT, "%s.json" % doc_id)
     fields = json.load(open(mapping))["staticFields"]
@@ -134,7 +166,7 @@ def rebind(doc_id, apply_changes):
 
     added = collections.Counter()
     for field in fields:
-        bind = bind_for_field(field, lines[field["page"]])
+        bind = bind_for_field(field, lines[field["page"]], style_of_cause)
         if bind is None:
             field.pop("bind", None)
             continue

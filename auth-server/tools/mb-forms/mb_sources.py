@@ -1,4 +1,14 @@
-"""Manitoba King's Bench (Family Division) form sources -- Rule 70.
+"""Manitoba form sources -- Rule 70, and the aggregation point for every batch.
+
+This module owns **Rule 70** (everything below) and is also where the whole
+Manitoba source list is assembled: `all_sources()` returns Rule 70 followed by
+each module in `_BATCHES` -- today just `mb_sources_batch2`, the child-protection
+and adoption forms, which Manitoba prescribes by *regulation* rather than by a
+court rule and serves from a different part of the site. Every tool in this
+directory takes its work list from `all_sources()` / `shipped_sources()`, so
+adding a batch is a new `mb_sources_batch*.py` plus one entry in `_BATCHES`.
+
+## Rule 70
 
 Published by Manitoba Justice on the province's own legislation site, which
 serves each form from a stable slug built out of the form number:
@@ -22,6 +32,8 @@ from the government site is worth finding out about early. Only the categories i
 not yet reviewed. Rule 70A (the civil parts) and the probate forms are out of
 scope, matching the Ontario, BC and Saskatchewan catalogues.
 """
+
+import mb_sources_batch2
 
 BASE = "https://web2.gov.mb.ca/laws/rules/%se.pdf"
 
@@ -105,7 +117,7 @@ CATEGORY_ORDER = [
     "Orders & Judgments",
     "Enforcement",
     "Other",
-]
+] + mb_sources_batch2.CATEGORY_ORDER
 
 
 def doc_id(form_no):
@@ -117,7 +129,7 @@ def slug(form_no):
     return form_no.replace(".", "").lower()
 
 
-def all_sources():
+def rule70_sources():
     """Every Rule 70 form as a dict, in catalogue order."""
     out = []
     for form_no, title, category, pages in FORMS:
@@ -128,6 +140,7 @@ def all_sources():
             "court": COURT,
             "category": "King's Bench - " + category,
             "shortCategory": category,
+            "shortTitle": "MB KB %s" % form_no,
             "sourceFile": "%se.pdf" % slug(form_no),
             "expectedPages": pages,
             "url": BASE % slug(form_no),
@@ -136,6 +149,19 @@ def all_sources():
     return out
 
 
+# Batches beyond Rule 70, in catalogue order. Each module exposes `all_sources`
+# and `CATEGORY_ORDER` in the same shape as this one.
+_BATCHES = [mb_sources_batch2]
+
+
+def all_sources():
+    """Every recorded Manitoba source: Rule 70, then each later batch."""
+    out = rule70_sources()
+    for batch in _BATCHES:
+        out.extend(batch.all_sources())
+    return out
+
+
 def shipped_sources():
-    """The forms built, catalogued and bound in this batch."""
+    """The forms built, catalogued and bound -- of every batch."""
     return [s for s in all_sources() if s["shipped"]]

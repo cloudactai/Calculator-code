@@ -85,6 +85,33 @@ ROLE = [
 # read, so a role word standing on its own cannot claim an unrelated rule.
 FULL_NAME = re.compile(r"^\(\s*full name\s*\)\s*,?$", re.I)
 
+# The child-protection and adoption forms print no `(full name)` note: the style
+# of cause is bare paper closed by the role word alone, which is what
+# `build_mb_forms.style_of_cause_bands` places its box above. The **trailing
+# comma or full stop is required** -- it is the whole difference between the
+# style of cause and the signature caption printed with the same word, and
+# `build_mb_forms.MB_PARTY_CAPTION` reads it the same way from the other side.
+STYLE_ROLE = re.compile(r"^(co-)?(petitioner|applicant|respondent)s?(\(s\))?"
+                        r"(/(petitioner|applicant|respondent)s?)?\s*[,.]$", re.I)
+# How far above the role word its blank may sit. `style_of_cause_bands` sets a
+# 14pt box 2pt clear of the word, and trims the top where "- and -" is close.
+STYLE_MAX_GAP = 20.0
+
+# Prefixes whose style of cause is **not** bound, and why.
+#
+# **Child protection (`MBCFS_`, `MBCA_`).** The petitioner on a Form CFS-19
+# petition is the child and family services agency and the respondents are the
+# parents -- the reverse of every other form in the catalogue, where the party
+# who starts the case is the matter's client. The matter has no field for the
+# agency, so binding the style of cause here would print the client's name as
+# the agency bringing a protection proceeding against them, and their own name
+# would be missing from the respondent line where it belongs. Which side the
+# client is on is a fact about the retainer that the matter does not record.
+#
+# Adoption (`MBAD_`, `MBFA_`) is bound: the applicant is the person seeking to
+# adopt, which is the client, on the same assumption Rule 70 already makes.
+UNBOUND_STYLE_PREFIXES = ("MBCFS_", "MBCA_")
+
 # How far left of a box its caption may be printed, and how far off the box's own
 # line. Measured on the file-number line: the caption ends around x 440 and the
 # rule starts at 449, so the gap is small, but Form 70U sets the same line with a
@@ -128,3 +155,13 @@ def bind_for_role(role):
 
 def is_full_name_note(text):
     return bool(FULL_NAME.match(normalise(text)))
+
+
+def is_style_role(text):
+    """A style-of-cause role word, which closes a party's line and is punctuated."""
+    return bool(STYLE_ROLE.match(re.sub(r"\s+", " ", (text or "").strip())))
+
+
+def binds_style_of_cause(doc_id):
+    """Whether this form's style of cause names the matter's own parties."""
+    return not doc_id.startswith(UNBOUND_STYLE_PREFIXES)
