@@ -493,8 +493,6 @@ const CalculationReport = forwardRef<HTMLDivElement, CalculationReportProps>(
             <style>{`
               .calc-report .tax-profile-table {
                 margin-top: 14px;
-                page-break-inside: avoid;
-                break-inside: avoid;
               }
               .calc-report .tax-profile-table td,
               .calc-report .tax-profile-table th {
@@ -503,12 +501,14 @@ const CalculationReport = forwardRef<HTMLDivElement, CalculationReportProps>(
               }
               .calc-report .tax-section-row td {
                 font-weight: bold;
-                background: #eef2f7;
+                background: #fff;
                 font-size: 10px;
+                border: none;
+                padding-top: 10px;
+                padding-bottom: 4px;
               }
               .calc-report .tax-total-row td {
                 font-weight: bold;
-                border-top: 2px solid #999;
               }
             `}</style>
             {(() => {
@@ -516,24 +516,44 @@ const CalculationReport = forwardRef<HTMLDivElement, CalculationReportProps>(
               const p = (profile: any, key: string): number => safeNumber(profile?.[key]);
               const fmtP = (profile: any, key: string): string => fmt(Math.round(p(profile, key)));
 
+              // Spousal support display: payor shows negative (paid), recipient shows positive (received)
+              const fmtSS = (profile: any): string => {
+                const paid = p(profile, "deductible_support_paid");
+                const received = p(profile, "support_received");
+                if (paid > 0) return `(${fmt(Math.round(paid))})`;
+                if (received > 0) return fmt(Math.round(received));
+                return "$0";
+              };
+
               // Tax profile row helper
-              const tpRow = (label: string, key: string, negate: boolean = false) => (
+              const tpRow = (label: string, key: string) => (
                 <tr>
                   <td className="lbl">{label}</td>
-                  <td className="val">{negate ? fmt(Math.round(-p(tp.party1Low, key))) : fmtP(tp.party1Low, key)}</td>
-                  <td className="val">{negate ? fmt(Math.round(-p(tp.party1Mid, key))) : fmtP(tp.party1Mid, key)}</td>
-                  <td className="val">{negate ? fmt(Math.round(-p(tp.party1High, key))) : fmtP(tp.party1High, key)}</td>
-                  <td className="val">{negate ? fmt(Math.round(-p(tp.party2Low, key))) : fmtP(tp.party2Low, key)}</td>
-                  <td className="val">{negate ? fmt(Math.round(-p(tp.party2Mid, key))) : fmtP(tp.party2Mid, key)}</td>
-                  <td className="val">{negate ? fmt(Math.round(-p(tp.party2High, key))) : fmtP(tp.party2High, key)}</td>
+                  <td className="val">{fmtP(tp.party1Low, key)}</td>
+                  <td className="val">{fmtP(tp.party1Mid, key)}</td>
+                  <td className="val">{fmtP(tp.party1High, key)}</td>
+                  <td className="val">{fmtP(tp.party2Low, key)}</td>
+                  <td className="val">{fmtP(tp.party2Mid, key)}</td>
+                  <td className="val">{fmtP(tp.party2High, key)}</td>
+                </tr>
+              );
+
+              // Row with custom per-cell values
+              const tpRowCustom = (label: string, vals: number[]) => (
+                <tr>
+                  <td className="lbl">{label}</td>
+                  {vals.map((v, i) => <td key={i} className="val">{fmt(Math.round(v))}</td>)}
                 </tr>
               );
 
               const sectionRow = (label: string) => (
                 <tr className="tax-section-row">
-                  <td colSpan={7}>{label}</td>
+                  <td colSpan={7}><strong>{label}</strong></td>
                 </tr>
               );
+
+              // CPP Deductions = cpp_enhanced - cpp2 (first additional CPP)
+              const cppDeductions = (profile: any) => p(profile, "cpp_enhanced") - p(profile, "cpp2");
 
               return (
                 <table className="tax-profile-table">
@@ -543,59 +563,77 @@ const CalculationReport = forwardRef<HTMLDivElement, CalculationReportProps>(
                     </tr>
                     <tr>
                       <th className="lbl"></th>
-                      <th colSpan={3} className="scenario-hdr">{party1Name || "Party 1"}</th>
-                      <th colSpan={3} className="scenario-hdr">{party2Name || "Party 2"}</th>
+                      <th className="scenario-hdr">{party1Name || "Party 1"}</th>
+                      <th className="scenario-hdr">{party1Name || "Party 1"}</th>
+                      <th className="scenario-hdr">{party1Name || "Party 1"}</th>
+                      <th className="scenario-hdr">{party2Name || "Party 2"}</th>
+                      <th className="scenario-hdr">{party2Name || "Party 2"}</th>
+                      <th className="scenario-hdr">{party2Name || "Party 2"}</th>
                     </tr>
                     <tr className="sub-hdr">
                       <td className="lbl"></td>
                       <td>Low</td>
-                      <td>Mid</td>
+                      <td>Med</td>
                       <td>High</td>
                       <td>Low</td>
-                      <td>Mid</td>
+                      <td>Med</td>
                       <td>High</td>
                     </tr>
                   </thead>
                   <tbody>
-                    {/* Income */}
-                    {sectionRow("Income")}
-                    {tpRow("Gross income", "gross_income")}
-                    {tpRow("Taxable income", "taxable_income")}
+                    {/* ── Income ── */}
+                    {tpRow("Employment", "employed_income")}
+                    {tpRow("Self Employment", "self_employed_income")}
+                    <tr>
+                      <td className="lbl">Spousal Support</td>
+                      <td className="val">{fmtSS(tp.party1Low)}</td>
+                      <td className="val">{fmtSS(tp.party1Mid)}</td>
+                      <td className="val">{fmtSS(tp.party1High)}</td>
+                      <td className="val">{fmtSS(tp.party2Low)}</td>
+                      <td className="val">{fmtSS(tp.party2Mid)}</td>
+                      <td className="val">{fmtSS(tp.party2High)}</td>
+                    </tr>
 
-                    {/* Deductions */}
+                    {/* ── Deductions ── */}
                     {sectionRow("Deductions")}
-                    {tpRow("CPP/EI deductions", "cpp_ei_deductions")}
-                    {tpRow("CPP enhanced", "cpp_enhanced")}
+                    {tpRowCustom("CPP Deductions", [
+                      cppDeductions(tp.party1Low), cppDeductions(tp.party1Mid), cppDeductions(tp.party1High),
+                      cppDeductions(tp.party2Low), cppDeductions(tp.party2Mid), cppDeductions(tp.party2High),
+                    ])}
+                    {tpRow("Second Additional CPP Employed", "cpp2")}
+                    {tpRowCustom("Second Additional CPP Self Employed", [0, 0, 0, 0, 0, 0])}
+                    {tpRow("Child Care Expenses", "child_care_expenses")}
+                    {tpRow("Additional based on user input", "other_deductions")}
+                    {tpRow("Taxable Income", "taxable_income")}
 
-                    {/* Federal Credits */}
+                    {/* ── Federal Credits ── */}
                     {sectionRow("Federal Credits")}
-                    {tpRow("Basic personal amount", "basic_personal_amount_fed")}
-                    {tpRow("Age amount", "age_amount_fed")}
-                    {tpRow("Eligible dependent", "eligible_dependent_credit_fed")}
-                    {tpRow("CPP/EI credit", "cpp_ei_credit")}
-                    {tpRow("Canada employment", "canada_employment_credit")}
-                    {tpRow("Disability credit", "disability_credit_fed")}
+                    {tpRow("Basic Personal Amount", "basic_personal_amount_fed")}
+                    {tpRow("Age Amount", "age_amount_fed")}
+                    {tpRow("Eligible Dependent", "eligible_dependent_credit_fed")}
+                    {tpRow("CPP", "cpp_base")}
+                    {tpRow("EI", "ei")}
+                    {tpRow("Canada Employment", "canada_employment_credit")}
+                    {tpRowCustom("Additional based on user input", [0, 0, 0, 0, 0, 0])}
+                    {tpRow("Disability Amount (Self)", "disability_credit_fed")}
 
-                    {/* Provincial Credits */}
+                    {/* ── Provincial Credits ── */}
                     {sectionRow("Provincial Credits")}
-                    {tpRow("Basic personal amount", "basic_personal_amount_prov")}
-                    {tpRow("Eligible dependent", "eligible_dependent_credit_prov")}
-                    {tpRow("Age amount", "age_amount_prov")}
-                    {tpRow("Disability credit", "disability_credit_prov")}
+                    {tpRow("Basic Personal Amount", "basic_personal_amount_prov")}
+                    {tpRow("Eligible Dependent", "eligible_dependent_credit_prov")}
+                    {tpRow("LIFT", "ontario_lift_credit")}
+                    {tpRowCustom("Additional Based on user Input", [0, 0, 0, 0, 0, 0])}
+                    {tpRow("Disability Amount (Self).. Ontario", "disability_credit_prov")}
 
-                    {/* Taxes and Deductions */}
+                    {/* ── Taxes And Deductions ── */}
                     {sectionRow("Taxes And Deductions")}
-                    {tpRow("Federal tax", "federal_tax")}
-                    {tpRow("Provincial tax", "provincial_tax")}
-                    {tpRow("Ontario health premium", "ontario_health_premium")}
-                    {tpRow("Ontario surtax", "ontario_surtax")}
-                    {tpRow("Ontario tax reduction", "ontario_tax_reduction", true)}
-                    {tpRow("Ontario LIFT credit", "ontario_lift_credit", true)}
-                    {tpRow("BC tax reduction", "bc_tax_reduction", true)}
-                    {tpRow("CPP/EI deductions", "cpp_ei_deductions")}
-                    {tpRow("Canada workers benefit", "canada_workers_benefit", true)}
+                    {tpRow("Federal Tax", "federal_tax")}
+                    {tpRow("Ontario Tax", "provincial_tax")}
+                    {tpRow("CPP and EI for Employed", "cpp_ei_deductions")}
+                    {tpRowCustom("CPP and EI for Self Employed", [0, 0, 0, 0, 0, 0])}
+                    {tpRowCustom("Provincial Credits", [0, 0, 0, 0, 0, 0])}
                     <tr className="tax-total-row">
-                      <td className="lbl">Total taxes</td>
+                      <td className="lbl">Total</td>
                       <td className="val">{fmtP(tp.party1Low, "total_taxes")}</td>
                       <td className="val">{fmtP(tp.party1Mid, "total_taxes")}</td>
                       <td className="val">{fmtP(tp.party1High, "total_taxes")}</td>
@@ -604,15 +642,17 @@ const CalculationReport = forwardRef<HTMLDivElement, CalculationReportProps>(
                       <td className="val">{fmtP(tp.party2High, "total_taxes")}</td>
                     </tr>
 
-                    {/* Benefits */}
+                    {/* ── Benefits ── */}
                     {sectionRow("Benefits")}
-                    {tpRow("Canada child benefit", "canada_child_benefit")}
-                    {tpRow("GST/HST benefit", "gst_hst_benefit")}
-                    {tpRow("Provincial child benefit", "provincial_child_benefit")}
-                    {tpRow("Provincial sales tax credit", "provincial_sales_tax_credit")}
+                    {tpRow("Canada Child Benefit", "canada_child_benefit")}
+                    {tpRowCustom("Child Disability", [0, 0, 0, 0, 0, 0])}
                     {tpRow("Climate action incentive", "climate_action_incentive")}
+                    {tpRow("Canada Workers Benefit", "canada_workers_benefit")}
+                    {tpRow("GST/HST Benefit", "gst_hst_benefit")}
+                    {tpRow("Ontario Child Benefit", "provincial_child_benefit")}
+                    {tpRow("Ontario Sales Tax Credit", "provincial_sales_tax_credit")}
                     <tr className="tax-total-row">
-                      <td className="lbl">Total benefits</td>
+                      <td className="lbl">Total</td>
                       <td className="val">{fmtP(tp.party1Low, "total_benefits")}</td>
                       <td className="val">{fmtP(tp.party1Mid, "total_benefits")}</td>
                       <td className="val">{fmtP(tp.party1High, "total_benefits")}</td>

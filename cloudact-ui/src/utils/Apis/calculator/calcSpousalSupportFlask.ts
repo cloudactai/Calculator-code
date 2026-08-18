@@ -23,6 +23,15 @@ export type SpousalSupportFlaskPayload = {
 };
 
 export type TaxProfileData = {
+  // Input values
+  employed_income: number;
+  self_employed_income: number;
+  other_income: number;
+  deductible_support_paid: number;
+  support_received: number;
+  child_care_expenses: number;
+  other_deductions: number;
+  // Computed values
   gross_income: number;
   taxable_income: number;
   basic_personal_amount_fed: number;

@@ -462,7 +462,17 @@ def _compute_net_indi(
         "indi": indi,
         "total_taxes": result["total_taxes"],
         "total_benefits": result["total_benefits"],
-        "tax_profile": result,  # full tax breakdown for reporting
+        "tax_profile": {
+            **result,
+            # Input values needed for Tax Profile report table
+            "employed_income": gross_income,
+            "self_employed_income": self_employed_income,
+            "other_income": other_income,
+            "deductible_support_paid": ss_paid_annual,
+            "support_received": ss_received_annual,
+            "child_care_expenses": child_care_expenses,
+            "other_deductions": other_deductions,
+        },
     }
 
 
