@@ -1612,6 +1612,58 @@ const Screen4 = ({
               gap: "8px",
             }}
             onClick={async () => {
+              // Debug: log tax profile data on Download Report click
+              const _tp = screen2.taxProfileFromApi;
+              if (!_tp) { console.log("[Tax Profile] No tax profile data available"); }
+              else {
+                const _logProfile = (label: string, p: any) => {
+                  if (!p) { console.log(`[Tax Profile] ${label}: null`); return; }
+                  console.log(`[Tax Profile] ${label}:`, {
+                    employed_income: p.employed_income,
+                    self_employed_income: p.self_employed_income,
+                    other_income: p.other_income,
+                    spousal_support_paid: p.deductible_support_paid,
+                    spousal_support_received: p.support_received,
+                    cpp_enhanced: p.cpp_enhanced,
+                    cpp2: p.cpp2,
+                    cpp_deductions_first_additional: p.cpp_enhanced != null && p.cpp2 != null ? p.cpp_enhanced - p.cpp2 : null,
+                    child_care_expenses: p.child_care_expenses,
+                    other_deductions: p.other_deductions,
+                    taxable_income: p.taxable_income,
+                    cpp_ei_deductions: p.cpp_ei_deductions,
+                    basic_personal_amount_fed: p.basic_personal_amount_fed,
+                    age_amount_fed: p.age_amount_fed,
+                    eligible_dependent_credit_fed: p.eligible_dependent_credit_fed,
+                    cpp_base: p.cpp_base,
+                    ei: p.ei,
+                    canada_employment_credit: p.canada_employment_credit,
+                    disability_credit_fed: p.disability_credit_fed,
+                    cpp_ei_credit: p.cpp_ei_credit,
+                    total_federal_credits: p.total_federal_credits,
+                    basic_personal_amount_prov: p.basic_personal_amount_prov,
+                    eligible_dependent_credit_prov: p.eligible_dependent_credit_prov,
+                    ontario_lift_credit: p.ontario_lift_credit,
+                    disability_credit_prov: p.disability_credit_prov,
+                    total_provincial_credits: p.total_provincial_credits,
+                    federal_tax: p.federal_tax,
+                    provincial_tax: p.provincial_tax,
+                    total_taxes: p.total_taxes,
+                    canada_child_benefit: p.canada_child_benefit,
+                    climate_action_incentive: p.climate_action_incentive,
+                    canada_workers_benefit: p.canada_workers_benefit,
+                    gst_hst_benefit: p.gst_hst_benefit,
+                    provincial_child_benefit: p.provincial_child_benefit,
+                    provincial_sales_tax_credit: p.provincial_sales_tax_credit,
+                    total_benefits: p.total_benefits,
+                  });
+                };
+                _logProfile("Party 1 Low", _tp.party1Low);
+                _logProfile("Party 1 Mid", _tp.party1Mid);
+                _logProfile("Party 1 High", _tp.party1High);
+                _logProfile("Party 2 Low", _tp.party2Low);
+                _logProfile("Party 2 Mid", _tp.party2Mid);
+                _logProfile("Party 2 High", _tp.party2High);
+              }
               if (!reportRef.current) return;
               const reportContainer = reportRef.current.parentElement;
               const origLeft = reportContainer?.style.left;

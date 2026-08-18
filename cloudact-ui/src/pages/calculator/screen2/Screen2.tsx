@@ -907,6 +907,13 @@ const Screen2 = ({
     party1Low: 0, party1Mid: 0, party1High: 0,
     party2Low: 0, party2Mid: 0, party2High: 0,
   });
+  const taxProfileFromApiRef = useRef<{
+    party1Low: any; party1Mid: any; party1High: any;
+    party2Low: any; party2Mid: any; party2High: any;
+  }>({
+    party1Low: null, party1Mid: null, party1High: null,
+    party2Low: null, party2Mid: null, party2High: null,
+  });
 
   // Stores the Flask-determined spousal payor direction so
   // spousalSupportGivenTo() works even when amounts are $0.
@@ -2048,6 +2055,7 @@ const Screen2 = ({
       disposableIncome: disposableIncomeRef.current,
       taxesFromApi: taxesFromApiRef.current,
       benefitsFromApi: benefitsFromApiRef.current,
+      taxProfileFromApi: taxProfileFromApiRef.current,
 
       // ── Report fields needed by reports5, reports6, reports10 ──
       includeLumpsum,
@@ -2570,6 +2578,7 @@ const Screen2 = ({
       disposableIncome: disposableIncomeRef.current,
       taxesFromApi: taxesFromApiRef.current,
       benefitsFromApi: benefitsFromApiRef.current,
+      taxProfileFromApi: taxProfileFromApiRef.current,
     };
 
     syncUpParty1Deduction(specialExpensesArr, "21400");
@@ -5782,6 +5791,14 @@ const Screen2 = ({
             party2Mid: flaskResult.recipient_benefits_mid ?? 0,
             party2High: flaskResult.recipient_benefits_high ?? 0,
           };
+          taxProfileFromApiRef.current = {
+            party1Low: flaskResult.payor_tax_profile_low ?? null,
+            party1Mid: flaskResult.payor_tax_profile_mid ?? null,
+            party1High: flaskResult.payor_tax_profile_high ?? null,
+            party2Low: flaskResult.recipient_tax_profile_low ?? null,
+            party2Mid: flaskResult.recipient_tax_profile_mid ?? null,
+            party2High: flaskResult.recipient_tax_profile_high ?? null,
+          };
         } else {
           taxesFromApiRef.current = {
             party1Low: flaskResult.recipient_taxes_low ?? 0,
@@ -5798,6 +5815,14 @@ const Screen2 = ({
             party2Low: flaskResult.payor_benefits_low ?? 0,
             party2Mid: flaskResult.payor_benefits_mid ?? 0,
             party2High: flaskResult.payor_benefits_high ?? 0,
+          };
+          taxProfileFromApiRef.current = {
+            party1Low: flaskResult.recipient_tax_profile_low ?? null,
+            party1Mid: flaskResult.recipient_tax_profile_mid ?? null,
+            party1High: flaskResult.recipient_tax_profile_high ?? null,
+            party2Low: flaskResult.payor_tax_profile_low ?? null,
+            party2Mid: flaskResult.payor_tax_profile_mid ?? null,
+            party2High: flaskResult.payor_tax_profile_high ?? null,
           };
         }
       } else {

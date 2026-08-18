@@ -137,6 +137,14 @@ export interface calculatorScreen2State {
     party2Mid: number;
     party2High: number;
   };
+  taxProfileFromApi?: {
+    party1Low: any;
+    party1Mid: any;
+    party1High: any;
+    party2Low: any;
+    party2Mid: any;
+    party2High: any;
+  };
 }
 
 export const getCalculatorIdFromQuery = (value: Object) => {
