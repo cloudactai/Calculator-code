@@ -339,6 +339,7 @@ export default function SpousalSupportChatPanel({
         calculationType: "spousal_support",
         label: `${cr.payor_name || cr.party1_name || "Party 1"} v ${cr.recipient_name || cr.party2_name || "Party 2"} - Spousal Support`,
         inputData: {
+          _calcResult: cr,
           party1_name: cr.party1_name,
           party2_name: cr.party2_name,
           party1_gross_income: cr.party1_gross_income,

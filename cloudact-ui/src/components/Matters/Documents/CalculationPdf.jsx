@@ -74,8 +74,144 @@ export default function CalculationPDf({ matterId }) {
     return () => clearTimeout(timer);
   }, [renderReport]);
 
+  /**
+   * Build a _fullState-like object from the AI chat backend's _calcResult,
+   * so CalculationReport can render the same styled PDF as the manual calculator.
+   */
+  const buildFullStateFromCalcResult = (cr, calculationType) => {
+    const n = (v) => (typeof v === "number" ? v : Number(v) || 0);
+    const isSpousal = calculationType === "spousal_support";
+    const p1Income = n(cr.party1_income) || n(cr.party1_gross_income);
+    const p2Income = n(cr.party2_income) || n(cr.party2_gross_income);
+    const party1IsPayor = p1Income >= p2Income;
+    const csMonthly = n(cr.monthly_cs_paid) || n(cr.child_support_paid) || 0;
+
+    // Determine who receives child support
+    const csGivenTo = party1IsPayor ? cr.party2_name : cr.party1_name;
+
+    // Build children info from the saved children array
+    const childrenArr = cr.children || [];
+    const childrenInfo = childrenArr.map((c) => ({
+      name: c.name || "",
+      dateOfBirth: c.dob || c.date_of_birth || "",
+      custodyArrangement: c.custody_arrangement || "",
+      CSGTable: "Yes",
+    }));
+    const party1Kids = childrenArr.filter((c) => c.custody_arrangement === "Party 1").length;
+    const party2Kids = childrenArr.filter((c) => c.custody_arrangement === "Party 2").length;
+
+    return {
+      background: {
+        party1FirstName: cr.party1_name || "Party 1",
+        party1LastName: "",
+        party2FirstName: cr.party2_name || "Party 2",
+        party2LastName: "",
+        party1province: cr.party1_province || "ON",
+        party2province: cr.party2_province || "ON",
+        // Approximate DOBs from ages (used for age display only)
+        party1DateOfBirth: cr.party1_age ? approximateDOB(n(cr.party1_age)) : "",
+        party2DateOfBirth: cr.party2_age ? approximateDOB(n(cr.party2_age)) : "",
+      },
+      aboutTheChildren: {
+        childrenInfo: childrenInfo,
+        count: { party1: party1Kids, party2: party2Kids },
+      },
+      aboutTheRelationship: {
+        dateOfMarriage: cr.date_of_marriage || "",
+        dateOfSeparation: cr.date_of_separation || "",
+      },
+      screen2: {
+        totalIncomeParty1: p1Income,
+        totalIncomeParty2: p2Income,
+        tax_year: cr.tax_year || new Date().getFullYear(),
+        childSupport: {
+          childSupport1: party1IsPayor ? csMonthly : 0,
+          childSupport2: !party1IsPayor ? csMonthly : 0,
+          givenTo: csGivenTo,
+        },
+        taxesFromApi: {
+          party1Low: n(cr.party1_taxes_low),
+          party1Mid: n(cr.party1_taxes_mid),
+          party1High: n(cr.party1_taxes_high),
+          party2Low: n(cr.party2_taxes_low),
+          party2Mid: n(cr.party2_taxes_mid),
+          party2High: n(cr.party2_taxes_high),
+        },
+        benefitsFromApi: {
+          party1Low: n(cr.party1_benefits_low),
+          party1Mid: n(cr.party1_benefits_mid),
+          party1High: n(cr.party1_benefits_high),
+          party2Low: n(cr.party2_benefits_low),
+          party2Mid: n(cr.party2_benefits_mid),
+          party2High: n(cr.party2_benefits_high),
+        },
+        disposableIncome: {
+          party1Low: n(cr.party1_indi_low),
+          party1Mid: n(cr.party1_indi_mid),
+          party1High: n(cr.party1_indi_high),
+          party2Low: n(cr.party2_indi_low),
+          party2Mid: n(cr.party2_indi_mid),
+          party2High: n(cr.party2_indi_high),
+        },
+        specialExpenses: { specialExpensesLow1: 0, specialExpensesLow2: 0 },
+      },
+      supportQuantum: isSpousal ? {
+        support1: {
+          spousalSupport: n(cr.spousal_low_monthly) || n(cr.monthly_low),
+          childSupport: csMonthly,
+          childSpecialExpense: 0,
+          spousalSupportGivenTo: cr.recipient || csGivenTo,
+          childSupportGivenTo: csGivenTo,
+          childSupportSpecialExpenses: 0,
+          totalSupport: 0,
+        },
+        support2: {
+          spousalSupport: n(cr.spousal_mid_monthly) || n(cr.monthly_mid),
+          childSupport: csMonthly,
+          childSpecialExpense: 0,
+          spousalSupportGivenTo: cr.recipient || csGivenTo,
+          childSupportGivenTo: csGivenTo,
+          childSupportSpecialExpenses: 0,
+          totalSupport: 0,
+        },
+        support3: {
+          spousalSupport: n(cr.spousal_high_monthly) || n(cr.monthly_high),
+          childSupport: csMonthly,
+          childSpecialExpense: 0,
+          spousalSupportGivenTo: cr.recipient || csGivenTo,
+          childSupportGivenTo: csGivenTo,
+          childSupportSpecialExpenses: 0,
+          totalSupport: 0,
+        },
+        spousalSupportDurationRange: cr.duration_label || "",
+        loading: false,
+        supportGivenTo: csGivenTo,
+      } : {
+        // Child support only — no spousal amounts
+        support1: { spousalSupport: 0, childSupport: csMonthly, childSpecialExpense: 0, childSupportGivenTo: csGivenTo, childSupportSpecialExpenses: 0, totalSupport: 0 },
+        support2: { spousalSupport: 0, childSupport: csMonthly, childSpecialExpense: 0, childSupportGivenTo: csGivenTo, childSupportSpecialExpenses: 0, totalSupport: 0 },
+        support3: { spousalSupport: 0, childSupport: csMonthly, childSpecialExpense: 0, childSupportGivenTo: csGivenTo, childSupportSpecialExpenses: 0, totalSupport: 0 },
+        spousalSupportDurationRange: "",
+        loading: false,
+        supportGivenTo: csGivenTo,
+      },
+      calculator_type: isSpousal ? "SPOUSAL" : "CHILD",
+    };
+  };
+
+  /** Approximate a date-of-birth string from an age (years ago from today). */
+  const approximateDOB = (age) => {
+    const d = new Date();
+    d.setFullYear(d.getFullYear() - age);
+    return d.toISOString().split("T")[0];
+  };
+
   const handleDownloadPdf = (report) => {
-    const fullState = report.inputData?._fullState;
+    // Try _fullState first (manual calculator), then build from _calcResult (AI chat)
+    let fullState = report.inputData?._fullState;
+    if (!fullState && report.inputData?._calcResult) {
+      fullState = buildFullStateFromCalcResult(report.inputData._calcResult, report.calculationType);
+    }
     if (!fullState) {
       alert("This report was saved without the data needed to regenerate a PDF. Please re-run the calculation and save again.");
       return;
