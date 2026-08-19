@@ -245,8 +245,8 @@ def _spousal_html(data: dict) -> str:
     # ── Tax Profile page ──
     tax_profile_html = _build_tax_profile_page(data, p1, p2, p1_is_payor)
 
-    # ── Terms of Use page ──
-    terms_html = _build_terms_of_use_page()
+    # Terms of Use page removed per request
+    terms_html = ""
 
     # Landscape letter: 792pt wide, 8mm margins each side = ~747pt usable
     # All widths must stay under 740px total
