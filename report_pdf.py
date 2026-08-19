@@ -178,7 +178,12 @@ def _spousal_html(data: dict) -> str:
             csg = c.get("csg_table", "Yes")
             child_trs += f"""<tr><td class="lbl">{label}</td><td class="val">{custody}</td><td class="val">{csg}</td></tr>"""
         children_rows = f"""
-            <table style="margin-top: 8px;">
+            <table style="margin-top: 8px; width: 440px;">
+              <colgroup>
+                <col style="width: 200px;" />
+                <col style="width: 130px;" />
+                <col style="width: 110px;" />
+              </colgroup>
               <thead><tr>
                 <th style="font-weight:bold;">Children</th><th>Lives with</th><th>CSG Table</th>
               </tr></thead>
@@ -278,12 +283,11 @@ def _spousal_html(data: dict) -> str:
     margin: 12px 0 4px 0;
   }}
   .calc-report table {{
-    width: 100%;
     border-collapse: collapse;
     margin-bottom: 2px;
   }}
   .calc-report td, .calc-report th {{
-    padding: 4px 8px;
+    padding: 4px 6px;
     font-size: 11px;
     border: 1px solid #d0d0d0;
   }}
@@ -323,11 +327,10 @@ def _spousal_html(data: dict) -> str:
 <div class="calc-report">
   <div class="report-title">CLOUDACT FAMILY LAW TOOLS</div>
 
-  <!-- TOP ROW -->
-  <table style="width:100%;border:none;"><tr style="border:none;">
-    <td style="width:50%;vertical-align:top;border:none;padding:0 10px 0 0;">
+  <!-- TOP ROW: use float divs instead of nested tables (xhtml2pdf bug with nested tables) -->
+  <div style="width:460px; float:left; margin-right:20px;">
       <div class="section-header">Calculation Input</div>
-      <table>
+      <table style="width:460px;">
         <thead>
           <tr><th></th><th>{p1}</th><th>{p2}</th></tr>
           <tr><td></td><td class="val" style="font-weight:bold;">{"Payor" if p1_is_payor else "Recipient"}</td><td class="val" style="font-weight:bold;">{"Recipient" if p1_is_payor else "Payor"}</td></tr>
@@ -340,21 +343,21 @@ def _spousal_html(data: dict) -> str:
         </tbody>
       </table>
       {children_rows}
-    </td>
-    <td style="width:50%;vertical-align:top;border:none;padding:0 0 0 10px;">
+  </div>
+  <div style="width:460px; float:left;">
       <div class="section-header">Important dates</div>
-      <table><tbody>{dates_rows}</tbody></table>
-    </td>
-  </tr></table>
+      <table style="width:460px;"><tbody>{dates_rows}</tbody></table>
+  </div>
+  <div style="clear:both;"></div>
 
   <!-- RESULT -->
-  <div style="width:50%;">
+  <div style="width:470px;">
     <div class="section-header result-header">Result</div>
-    <table><tbody>{result_rows}</tbody></table>
+    <table style="width:450px;"><tbody>{result_rows}</tbody></table>
   </div>
 
   <!-- CALCULATION DETAILS -->
-  <table class="details-table" style="margin-top:14px;">
+  <table class="details-table" style="margin-top:14px; width:960px;">
     <thead>
       <tr><th colspan="7" class="section-header" style="text-align:left;margin:0;">Calculation details</th></tr>
       <tr>
