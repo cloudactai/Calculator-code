@@ -331,6 +331,7 @@ export default function ChildSupportChatPanel({
         calculationType: "child_support",
         label: `${cr.party1_name || "Party 1"} v ${cr.party2_name || "Party 2"} - Child Support`,
         inputData: {
+          _calcResult: cr,
           party1_name: cr.party1_name,
           party2_name: cr.party2_name,
           party1_income: cr.party1_income,
