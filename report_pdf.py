@@ -80,17 +80,21 @@ def _age_from_dob(dob_str):
 
 
 # ─────────────────────────────────────────────────────────────────────────────
-# Spousal Support Report — HTML template matching CalculationReport.tsx
+# Spousal Support Report — HTML template matching the manual calculator's
+# multi-page CalculationReport layout (Reports.tsx pages)
 # ─────────────────────────────────────────────────────────────────────────────
 
 def _spousal_html(data: dict) -> str:
-    """Build the exact same HTML as CalculationReport.tsx produces."""
+    """Build multi-page HTML matching the manual calculator's report layout."""
     p1 = data.get("party1_name", "Party 1")
     p2 = data.get("party2_name", "Party 2")
     p1_income = float(data.get("party1_income", 0))
     p2_income = float(data.get("party2_income", 0))
     payor = data.get("payor", "")
+    recipient = data.get("recipient", "")
     p1_is_payor = (p1 == payor) if payor else (p1_income > p2_income)
+    payor_name = p1 if p1_is_payor else p2
+    recip_name = p2 if p1_is_payor else p1
 
     p1_age = data.get("party1_age", "")
     p2_age = data.get("party2_age", "")
@@ -98,6 +102,7 @@ def _spousal_html(data: dict) -> str:
     p2_prov = data.get("party2_province", "")
     p1_claims = data.get("party1_claims_dependent", "")
     p2_claims = data.get("party2_claims_dependent", "")
+    formula = data.get("formula", "")
 
     # Children
     children_raw = data.get("children", [])
@@ -111,8 +116,10 @@ def _spousal_html(data: dict) -> str:
     date_of_marriage = data.get("date_of_marriage", "")
     date_of_separation = data.get("date_of_separation", "")
     years = data.get("years_married", data.get("years", 0))
+    years_float = float(years) if years else 0
     recipient_age = data.get("recipient_age", "")
     tax_year = data.get("tax_year", "") or date.today().year
+    calc_date = data.get("calculation_date", "") or date.today().isoformat()
 
     # Support
     cs_monthly = float(data.get("monthly_cs_paid", data.get("child_support_paid", 0)))
@@ -124,6 +131,11 @@ def _spousal_html(data: dict) -> str:
     has_child_support = has_children and cs_monthly > 0
     has_spousal = (monthly_low != 0 or monthly_mid != 0 or monthly_high != 0
                    or date_of_marriage or date_of_separation)
+
+    # SSAG percentages (no-children formula)
+    pct_low = float(data.get("pct_low", 0))
+    pct_med = float(data.get("pct_med", 0))
+    pct_high = float(data.get("pct_high", 0))
 
     # Helper to get party-oriented values
     def _g(key, fb, default=0):
@@ -155,7 +167,7 @@ def _spousal_html(data: dict) -> str:
     se2 = float(data.get("special_expenses_party2", 0))
 
     cs_annual = round(cs_monthly * 12)
-    cs_recipient_is_p2 = p1_is_payor  # payor pays CS, so recipient gets it
+    cs_recipient_is_p2 = p1_is_payor
 
     # Youngest child age
     youngest_yrs = 0
@@ -165,85 +177,545 @@ def _spousal_html(data: dict) -> str:
         if child_ages:
             youngest_yrs = max(0, 18 - min(child_ages))
 
-    # ── Build HTML ──
-    children_rows = ""
+    # Gross income difference (for SSAG quantum)
+    gross_diff = abs(p1_income - p2_income)
+
+    # ── PAGE 1: Cover ──
+    report_type_label = "Child and Spousal Support" if has_children else "Spousal Support"
+    cover_page = f"""
+    <div class="page cover-page">
+      <div class="cover-content">
+        <div class="cover-title">
+          Report on {report_type_label} for {p1} and {p2} on {_format_date_str(calc_date)}.
+        </div>
+        <div class="cover-subtitle">
+          Results and calculation details drawn from Cloud Act online calculator.
+        </div>
+      </div>
+    </div>"""
+
+    # ── PAGE 2: Calculation Input ──
+    # Party 1 info table
+    p1_role = "Payor" if p1_is_payor else "Recipient"
+    p2_role = "Recipient" if p1_is_payor else "Payor"
+
+    # Children table
+    children_section = ""
     if has_children:
         child_trs = ""
         for c in children_list:
             name = c.get("name", "")
             dob = c.get("date_of_birth", c.get("dob", ""))
-            age = _age_from_dob(dob)
-            label = f"{name} / {age} yrs" if age > 0 else name
+            dob_display = _format_date_str(dob)
             custody = c.get("custody_arrangement", c.get("custodyArrangement", ""))
-            csg = c.get("csg_table", "Yes")
-            child_trs += f"""<tr><td class="lbl">{label}</td><td class="val">{custody}</td><td class="val">{csg}</td></tr>"""
-        children_rows = f"""
-            <table style="margin-top: 8px; width: 440px;">
-              <colgroup>
-                <col style="width: 200px;" />
-                <col style="width: 130px;" />
-                <col style="width: 110px;" />
-              </colgroup>
-              <thead><tr>
-                <th style="font-weight:bold;">Children</th><th>Lives with</th><th>CSG Table</th>
-              </tr></thead>
-              <tbody>{child_trs}</tbody>
-            </table>"""
-
-    # Important dates rows
-    dates_rows = ""
-    if date_of_marriage or date_of_separation:
-        if date_of_marriage:
-            dates_rows += f'<tr><td class="lbl">Date of Marriage/Cohabitation</td><td class="val">{_format_date_str(date_of_marriage)}</td></tr>'
-        if date_of_separation:
-            dates_rows += f'<tr><td class="lbl">Date of separation</td><td class="val">{_format_date_str(date_of_separation)}</td></tr>'
-        if years:
-            dates_rows += f'<tr><td class="lbl">Length of marriage</td><td class="val">{int(float(years))} years</td></tr>'
-        if recipient_age:
-            dates_rows += f'<tr><td class="lbl">Recipient age at separation</td><td class="val">{int(float(recipient_age))} years old</td></tr>'
-    if has_children and youngest_yrs >= 0:
-        dates_rows += f'<tr><td class="lbl">Years till youngest child finishes school</td><td class="val">{youngest_yrs} years</td></tr>'
-    dates_rows += f'<tr><td class="lbl">Tax year</td><td class="val">{tax_year}</td></tr>'
-
-    # Result rows
-    result_rows = ""
-    if has_child_support:
-        result_rows += f'<tr class="bold-row"><td class="lbl" style="font-weight:bold;">Child Support (monthly)</td><td class="val result-val">{_fmt(round(cs_monthly))}</td></tr>'
-    if has_spousal:
-        result_rows += f'<tr><td class="lbl" colspan="2" style="font-weight:bold;">Spousal Support (monthly)</td></tr>'
-        result_rows += f'<tr><td class="lbl" style="padding-left:20px;">Low</td><td class="val result-val">{_fmt(round(monthly_low))}</td></tr>'
-        result_rows += f'<tr><td class="lbl" style="padding-left:20px;">Mid</td><td class="val result-val">{_fmt(round(monthly_mid))}</td></tr>'
-        result_rows += f'<tr><td class="lbl" style="padding-left:20px;">High</td><td class="val result-val">{_fmt(round(monthly_high))}</td></tr>'
-        if duration_label:
-            result_rows += f'<tr class="bold-row"><td class="lbl" style="font-weight:bold;">Duration</td><td class="val">{duration_label}</td></tr>'
-
-    # Child support detail rows
-    cs_detail_rows = ""
-    if has_child_support:
-        cs_p1 = _fmt(-cs_annual) if cs_recipient_is_p2 else ""
-        cs_p2 = _fmt(-cs_annual) if not cs_recipient_is_p2 else ""
-        not_p1 = _fmt(-cs_annual) if not cs_recipient_is_p2 else ""
-        not_p2 = _fmt(-cs_annual) if cs_recipient_is_p2 else ""
-        cs_detail_rows = f"""
-            <tr><td class="lbl">Child Support</td>
-                <td class="val">{cs_p1}</td><td class="val">{cs_p2}</td>
-                <td class="val">{cs_p1}</td><td class="val">{cs_p2}</td>
-                <td class="val">{cs_p1}</td><td class="val">{cs_p2}</td></tr>
-            <tr><td class="lbl">Notional child support</td>
-                <td class="val">{not_p1}</td><td class="val">{not_p2}</td>
-                <td class="val">{not_p1}</td><td class="val">{not_p2}</td>
-                <td class="val">{not_p1}</td><td class="val">{not_p2}</td></tr>"""
-
-    # Spousal annual row
-    spousal_annual_row = ""
-    if has_spousal:
-        spousal_annual_row = f"""
-            <tr class="bold-row">
-              <td class="lbl" style="font-weight:bold;">Spousal Support (annual)</td>
-              <td class="val" colspan="2" style="text-align:center;font-weight:bold;">{_fmt(round(monthly_low * 12))}</td>
-              <td class="val" colspan="2" style="text-align:center;font-weight:bold;">{_fmt(round(monthly_mid * 12))}</td>
-              <td class="val" colspan="2" style="text-align:center;font-weight:bold;">{_fmt(round(monthly_high * 12))}</td>
+            csg = c.get("csg_table", c.get("CSGTable", "Yes"))
+            child_trs += f"""<tr>
+              <td>{name}</td>
+              <td>{dob_display}</td>
+              <td>{custody}</td>
+              <td>{csg}</td>
+              <td>None</td>
             </tr>"""
+        children_section = f"""
+        <div class="table-wrapper" style="margin-top: 20px;">
+          <table style="width: 700px;">
+            <thead><tr>
+              <th>Children</th><th>Date Of Birth</th><th>Lives With</th><th>CSG Table Applicable</th><th>Other</th>
+            </tr></thead>
+            <tbody>{child_trs}</tbody>
+          </table>
+        </div>"""
+
+    # Important Dates section
+    dates_items = ""
+    if date_of_marriage:
+        dates_items += f"""<div class="kv-row">
+          <span class="kv-label">Date of Marriage / Cohabitation</span>
+          <span class="kv-value">{_format_date_str(date_of_marriage)}</span>
+        </div>"""
+    if date_of_separation:
+        dates_items += f"""<div class="kv-row">
+          <span class="kv-label">Date of Separation</span>
+          <span class="kv-value">{_format_date_str(date_of_separation)}</span>
+        </div>"""
+    if has_children and youngest_yrs >= 0:
+        starts_school = max(0, 6 - min(child_ages)) if child_ages else 0
+        finishes_school = max(0, 18 - min(child_ages)) if child_ages else 0
+        dates_items += f"""<div class="kv-row">
+          <span class="kv-label">Estimated No of years until youngest child starts full time school</span>
+          <span class="kv-value">{starts_school}</span>
+        </div>"""
+        dates_items += f"""<div class="kv-row">
+          <span class="kv-label">Estimated No of years until youngest child finishes high school</span>
+          <span class="kv-value">{finishes_school}</span>
+        </div>"""
+    dates_items += f"""<div class="kv-row">
+      <span class="kv-label">Tax Year</span>
+      <span class="kv-value">{tax_year}</span>
+    </div>"""
+
+    input_page = f"""
+    <div class="page">
+      <div class="page-heading">CALCULATION INPUT</div>
+      <div class="body-text" style="margin: 10px 0;">
+        The tables below set out the information on which this report is based,
+        and with which support is calculated in this report. Changing these
+        inputs will change the support calculation. All inputs should be
+        verified for accuracy.
+      </div>
+
+      <div class="body-text party-heading">
+        <strong>{p1}, {p1_role}, Resident of {p1_prov if p1_prov else "N/A"}</strong>
+      </div>
+      <div class="table-wrapper">
+        <table style="width: 700px;">
+          <tbody>
+            <tr><td><strong>Employment Income</strong></td><td style="text-align:right;">{_fmt(p1_income)}</td></tr>
+            <tr><td><strong>Guideline Income</strong></td><td style="text-align:right;">{_fmt(p1_income)}</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="body-text party-heading" style="margin-top: 20px;">
+        <strong>{p2}, {p2_role}, Resident of {p2_prov if p2_prov else "N/A"}</strong>
+      </div>
+      <div class="table-wrapper">
+        <table style="width: 700px;">
+          <tbody>
+            <tr><td><strong>Employment Income</strong></td><td style="text-align:right;">{_fmt(p2_income)}</td></tr>
+            <tr><td><strong>Guideline Income</strong></td><td style="text-align:right;">{_fmt(p2_income)}</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      {children_section}
+
+      <div style="margin-top: 20px;">
+        {dates_items}
+      </div>
+    </div>"""
+
+    # ── PAGE 3: Result Summary ──
+    result_text_items = ""
+    if has_child_support:
+        result_text_items += f"""<div class="result-block">
+          <span class="result-label">Child Support</span>
+          <span class="body-text">{payor_name} pays {recip_name} a basic Table amount of child support of {_fmt(round(cs_monthly))} per month (Per CSG-Table Amount).</span>
+        </div>"""
+    if has_spousal:
+        formula_type = "without" if formula == "no_children" else "with"
+        result_text_items += f"""<div class="result-block">
+          <span class="result-label">Spousal Support</span>
+          <span class="body-text">If entitlement is established, {payor_name} pays {recip_name} spousal support between {_fmt(round(monthly_low))} to {_fmt(round(monthly_high))} per month (midpoint of {_fmt(round(monthly_mid))}) for an undetermined period from the date of separation (Per SSAG- {formula_type} Child support Formula).</span>
+        </div>"""
+
+    # Scenario blocks
+    scenario_blocks = ""
+    scenarios = [
+        ("1-Low", monthly_low),
+        ("2-Mid", monthly_mid),
+        ("3-High", monthly_high),
+    ]
+    for label, spousal_amt in scenarios:
+        scenario_items = ""
+        if has_child_support:
+            scenario_items += f"""<div class="scenario-line">Child Support {_fmt(round(cs_monthly))}</div>"""
+        if has_spousal:
+            scenario_items += f"""<div class="scenario-line">Spousal Support {_fmt(round(spousal_amt))}</div>"""
+        scenario_blocks += f"""
+        <div class="scenario-box">
+          <div class="scenario-title">Scenario {label}</div>
+          <div class="scenario-flow">
+            <span class="party-name">{p1}</span>
+            <span class="flow-arrow">
+              {scenario_items}
+              <span class="arrow-symbol">&#8594;</span>
+            </span>
+            <span class="party-name">{p2}</span>
+          </div>
+        </div>"""
+
+    result_page = f"""
+    <div class="page">
+      <div class="page-heading">RESULT SUMMARY</div>
+      {result_text_items}
+      {scenario_blocks}
+    </div>"""
+
+    # ── PAGE 4: Calculation Details - Spousal Support ──
+
+    # For no_children formula: SSAG Quantum table (years, %, applicable %, gross diff, range, support)
+    # For with_children formula: Full INDI table (guideline income, taxes, benefits, CS, spousal) × Low/Mid/High
+    if formula == "no_children":
+        # Applicable percentages (capped at 50%)
+        applicable_low = min(pct_low, 0.50) if pct_low else (0.015 * years_float)
+        applicable_med = min(pct_med, 0.50) if pct_med else (0.0175 * years_float)
+        applicable_high = min(pct_high, 0.50) if pct_high else (0.02 * years_float)
+        applicable_low = min(applicable_low, 0.50)
+        applicable_med = min(applicable_med, 0.50)
+        applicable_high = min(applicable_high, 0.50)
+
+        ssag_range_low = gross_diff * applicable_low
+        ssag_range_med = gross_diff * applicable_med
+        ssag_range_high = gross_diff * applicable_high
+
+        cap_row = ""
+        if applicable_high >= 0.50:
+            cap_row = f"""<tr>
+              <td><strong>50% Recipient NDI cap on range</strong></td>
+              <td></td><td></td>
+              <td style="text-align:right;">{_fmt(round(monthly_high * 12))}</td>
+            </tr>"""
+
+        quantum_heading = "Without Child" if formula == "no_children" else "With Child"
+
+        spousal_details_page = f"""
+    <div class="page">
+      <div class="page-heading">CALCULATION DETAILS - SPOUSAL SUPPORT</div>
+      <div class="body-text sub-heading">A. SPOUSAL SUPPORT QUANTUM</div>
+      <div class="info-box">
+        The {quantum_heading} support formula: The range here is 1.5-2%, times the
+        income difference between the spouse's gross income, times the years of
+        cohabitation to a maximum of 50% of that income difference.
+      </div>
+      <div class="body-text" style="margin: 8px 0;">
+        Calculation details (Annual) for each of the low, mid and high spousal
+        support scenario are set out in the table below.
+      </div>
+      <div class="table-wrapper" style="margin-top: 10px;">
+        <table style="width: 700px;">
+          <thead>
+            <tr>
+              <th style="text-align:left;"></th>
+              <th>Low</th>
+              <th>Mid</th>
+              <th>High</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>Years of marriage/cohabitation</strong></td>
+              <td style="text-align:right;">{int(years_float)}</td>
+              <td style="text-align:right;">{int(years_float)}</td>
+              <td style="text-align:right;">{int(years_float)}</td>
+            </tr>
+            <tr>
+              <td><strong>Percent per year of marriage/cohabitation</strong></td>
+              <td style="text-align:right;">1.5%</td>
+              <td style="text-align:right;">1.75%</td>
+              <td style="text-align:right;">2.0%</td>
+            </tr>
+            <tr>
+              <td><strong>Applicable percentage</strong></td>
+              <td style="text-align:right;">{applicable_low * 100:.2f}%</td>
+              <td style="text-align:right;">{applicable_med * 100:.2f}%</td>
+              <td style="text-align:right;">{applicable_high * 100:.2f}%</td>
+            </tr>
+            <tr>
+              <td><strong>Gross Income Differential</strong></td>
+              <td style="text-align:right;">{_fmt(round(gross_diff))}</td>
+              <td style="text-align:right;">{_fmt(round(gross_diff))}</td>
+              <td style="text-align:right;">{_fmt(round(gross_diff))}</td>
+            </tr>
+            <tr>
+              <td><strong>SSAG range as calculated</strong></td>
+              <td style="text-align:right;">{_fmt(round(ssag_range_low))}</td>
+              <td style="text-align:right;">{_fmt(round(ssag_range_med))}</td>
+              <td style="text-align:right;">{_fmt(round(ssag_range_high))}</td>
+            </tr>
+            {cap_row}
+            <tr>
+              <td><strong>Spousal Support</strong></td>
+              <td style="text-align:right;">{_fmt(round(monthly_low * 12))}</td>
+              <td style="text-align:right;">{_fmt(round(monthly_mid * 12))}</td>
+              <td style="text-align:right;">{_fmt(round(monthly_high * 12))}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>"""
+    else:
+        # With children: full INDI table
+        cs_p1_val = _fmt(-cs_annual) if p1_is_payor else ""
+        cs_p2_val = _fmt(-cs_annual) if not p1_is_payor else ""
+        not_p1_val = _fmt(-cs_annual) if not p1_is_payor else ""
+        not_p2_val = _fmt(-cs_annual) if p1_is_payor else ""
+
+        spousal_details_page = f"""
+    <div class="page">
+      <div class="page-heading">CALCULATION DETAILS - SPOUSAL SUPPORT</div>
+      <div class="body-text sub-heading">C. SPOUSAL SUPPORT QUANTUM</div>
+      <div class="info-box">
+        The With Child support formula: Spousal support calculated below is based on a
+        percentage of individual net disposable income. Support payments in the low, mid
+        and high scenario will ensure the recipient a minimum of 40%, 43% and 46% of
+        the total net disposable income respectively.
+      </div>
+      <div class="body-text" style="margin: 8px 0;">
+        Calculation details (Annual) for each of the low, mid and high spousal
+        support scenario are set out in the table below.
+      </div>
+      <div class="table-wrapper" style="margin-top: 10px;">
+        <table style="width: 700px;">
+          <thead>
+            <tr>
+              <th style="text-align:left;"></th>
+              <th colspan="2">Low</th>
+              <th colspan="2">Mid</th>
+              <th colspan="2">High</th>
+            </tr>
+            <tr>
+              <th style="text-align:left;"></th>
+              <th>{p1}</th><th>{p2}</th>
+              <th>{p1}</th><th>{p2}</th>
+              <th>{p1}</th><th>{p2}</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>Guideline Income</strong></td>
+              <td class="val">{_fmt(p1_income)}</td><td class="val">{_fmt(p2_income)}</td>
+              <td class="val">{_fmt(p1_income)}</td><td class="val">{_fmt(p2_income)}</td>
+              <td class="val">{_fmt(p1_income)}</td><td class="val">{_fmt(p2_income)}</td>
+            </tr>
+            <tr>
+              <td><strong>Taxes and deductions</strong></td>
+              <td class="val">{_fmt2(tax_low_1)}</td><td class="val">{_fmt2(tax_low_2)}</td>
+              <td class="val">{_fmt2(tax_mid_1)}</td><td class="val">{_fmt2(tax_mid_2)}</td>
+              <td class="val">{_fmt2(tax_high_1)}</td><td class="val">{_fmt2(tax_high_2)}</td>
+            </tr>
+            <tr>
+              <td><strong>Benefits and credits</strong></td>
+              <td class="val">{_fmt2(ben_low_1)}</td><td class="val">{_fmt2(ben_low_2)}</td>
+              <td class="val">{_fmt2(ben_mid_1)}</td><td class="val">{_fmt2(ben_mid_2)}</td>
+              <td class="val">{_fmt2(ben_high_1)}</td><td class="val">{_fmt2(ben_high_2)}</td>
+            </tr>
+            <tr>
+              <td><strong>Child Support</strong></td>
+              <td class="val">{cs_p1_val}</td><td class="val">{cs_p2_val}</td>
+              <td class="val">{cs_p1_val}</td><td class="val">{cs_p2_val}</td>
+              <td class="val">{cs_p1_val}</td><td class="val">{cs_p2_val}</td>
+            </tr>
+            <tr>
+              <td><strong>Notional Child Support</strong></td>
+              <td class="val">{not_p1_val}</td><td class="val">{not_p2_val}</td>
+              <td class="val">{not_p1_val}</td><td class="val">{not_p2_val}</td>
+              <td class="val">{not_p1_val}</td><td class="val">{not_p2_val}</td>
+            </tr>
+            <tr>
+              <td><strong>Special Expenses paid</strong></td>
+              <td class="val">{_fmt(se1)}</td><td class="val">{_fmt(se2)}</td>
+              <td class="val">{_fmt(se1)}</td><td class="val">{_fmt(se2)}</td>
+              <td class="val">{_fmt(se1)}</td><td class="val">{_fmt(se2)}</td>
+            </tr>
+            <tr>
+              <td><strong>Percentage</strong></td>
+              <td class="val">40%</td><td class="val">40%</td>
+              <td class="val">43%</td><td class="val">43%</td>
+              <td class="val">46%</td><td class="val">46%</td>
+            </tr>
+            <tr class="bold-row">
+              <td><strong>Spousal Support</strong></td>
+              <td class="val">{_fmt(round(monthly_low * 12))}</td><td class="val"></td>
+              <td class="val">{_fmt(round(monthly_mid * 12))}</td><td class="val"></td>
+              <td class="val">{_fmt(round(monthly_high * 12))}</td><td class="val"></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>"""
+
+    # Duration section (same for both formulas)
+    duration_years = int(years_float) if years_float else 0
+    rule_of_65 = "No"
+    if years_float and recipient_age:
+        recip_age_val = float(recipient_age)
+        if years_float >= 20 or (years_float + recip_age_val >= 65):
+            rule_of_65 = "Yes"
+    over_20 = "Yes" if years_float > 20 else "No"
+
+    duration_section_label = "B" if formula == "no_children" else "D"
+
+    spousal_details_page += f"""
+      <div class="info-box" style="margin-top: 20px;">
+        <div class="sub-heading">{duration_section_label}. SPOUSAL SUPPORT DURATION</div>
+        This report also provides a range of the intended duration of spousal
+        support from the date of separation. The time period for which spousal
+        support is payable is calculated based on the duration of relationship,
+        age of parties and the age of the children (if any).
+      </div>
+
+      <div class="kv-row" style="margin-top: 10px;">
+        <span class="kv-label">Duration of Relationship</span>
+        <span class="kv-value">{duration_years} years</span>
+      </div>
+      <div class="kv-row">
+        <span class="kv-label">Age of recipient at separation</span>
+        <span class="kv-value">{int(float(recipient_age)) if recipient_age else "N/A"} years</span>
+      </div>"""
+
+    if has_children:
+        starts_school_val = max(0, 6 - min(child_ages)) if child_ages else "Not applicable"
+        finishes_school_val = max(0, 18 - min(child_ages)) if child_ages else "Not applicable"
+        spousal_details_page += f"""
+      <div class="kv-row">
+        <span class="kv-label">Years Until Full Time School</span>
+        <span class="kv-value">{starts_school_val}</span>
+      </div>
+      <div class="kv-row">
+        <span class="kv-label">Years Until End of School</span>
+        <span class="kv-value">{finishes_school_val}</span>
+      </div>"""
+    else:
+        spousal_details_page += f"""
+      <div class="kv-row">
+        <span class="kv-label">Years Until Full Time School</span>
+        <span class="kv-value">Not applicable</span>
+      </div>
+      <div class="kv-row">
+        <span class="kv-label">Years Until End of School</span>
+        <span class="kv-value">Not applicable</span>
+      </div>"""
+
+    spousal_details_page += f"""
+      <div class="kv-row">
+        <span class="kv-label">Over 20 year Relationship?</span>
+        <span class="kv-value">{over_20}</span>
+      </div>
+      <div class="kv-row">
+        <span class="kv-label">Rule of 65 applies?</span>
+        <span class="kv-value">{rule_of_65}</span>
+      </div>
+      <div class="kv-row">
+        <span class="kv-label">Duration of Support</span>
+        <span class="kv-value">{duration_label if duration_label else "N/A"}</span>
+      </div>
+    </div>"""
+
+    # ── PAGE 5: Net Cashflow Analysis ──
+    cashflow_page = f"""
+    <div class="page">
+      <div class="page-heading">NET CASHFLOW ANALYSIS</div>
+      <div class="body-text" style="margin: 10px 0;">
+        The net after tax cash budget below is intended to be a reference point
+        to assist the parties in understanding the cash that would be available
+        to budget with on a monthly and annual basis.
+      </div>
+      <div class="table-wrapper" style="margin-top: 10px;">
+        <table style="width: 700px;">
+          <thead>
+            <tr>
+              <th style="text-align:left;"></th>
+              <th colspan="2">Low</th>
+              <th colspan="2">Mid</th>
+              <th colspan="2">High</th>
+            </tr>
+            <tr>
+              <th style="text-align:left;"></th>
+              <th>{p1}</th><th>{p2}</th>
+              <th>{p1}</th><th>{p2}</th>
+              <th>{p1}</th><th>{p2}</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>Guideline income</strong></td>
+              <td class="val">{_fmt(p1_income)}</td><td class="val">{_fmt(p2_income)}</td>
+              <td class="val">{_fmt(p1_income)}</td><td class="val">{_fmt(p2_income)}</td>
+              <td class="val">{_fmt(p1_income)}</td><td class="val">{_fmt(p2_income)}</td>
+            </tr>
+            <tr>
+              <td><strong>Taxes and deductions</strong></td>
+              <td class="val">{_fmt2(tax_low_1)}</td><td class="val">{_fmt2(tax_low_2)}</td>
+              <td class="val">{_fmt2(tax_mid_1)}</td><td class="val">{_fmt2(tax_mid_2)}</td>
+              <td class="val">{_fmt2(tax_high_1)}</td><td class="val">{_fmt2(tax_high_2)}</td>
+            </tr>
+            <tr>
+              <td><strong>Benefits and credits</strong></td>
+              <td class="val">{_fmt2(ben_low_1)}</td><td class="val">{_fmt2(ben_low_2)}</td>
+              <td class="val">{_fmt2(ben_mid_1)}</td><td class="val">{_fmt2(ben_mid_2)}</td>
+              <td class="val">{_fmt2(ben_high_1)}</td><td class="val">{_fmt2(ben_high_2)}</td>
+            </tr>"""
+
+    if has_child_support:
+        cs_p1_val = _fmt(-cs_annual) if p1_is_payor else ""
+        cs_p2_val = _fmt(-cs_annual) if not p1_is_payor else ""
+        cashflow_page += f"""
+            <tr>
+              <td><strong>Child Support</strong></td>
+              <td class="val">{cs_p1_val}</td><td class="val">{cs_p2_val}</td>
+              <td class="val">{cs_p1_val}</td><td class="val">{cs_p2_val}</td>
+              <td class="val">{cs_p1_val}</td><td class="val">{cs_p2_val}</td>
+            </tr>"""
+
+    cashflow_page += f"""
+            <tr>
+              <td><strong>Special expenses paid</strong></td>
+              <td class="val">{_fmt(se1)}</td><td class="val">{_fmt(se2)}</td>
+              <td class="val">{_fmt(se1)}</td><td class="val">{_fmt(se2)}</td>
+              <td class="val">{_fmt(se1)}</td><td class="val">{_fmt(se2)}</td>
+            </tr>
+            <tr class="bold-row">
+              <td><strong>Spousal Support (annual)</strong></td>
+              <td class="val" colspan="2" style="text-align:center;">{_fmt(round(monthly_low * 12))}</td>
+              <td class="val" colspan="2" style="text-align:center;">{_fmt(round(monthly_mid * 12))}</td>
+              <td class="val" colspan="2" style="text-align:center;">{_fmt(round(monthly_high * 12))}</td>
+            </tr>
+            <tr class="bold-row">
+              <td><strong>Total disposable income</strong></td>
+              <td class="val">{_fmt2(disp_low_1)}</td><td class="val">{_fmt2(disp_low_2)}</td>
+              <td class="val">{_fmt2(disp_mid_1)}</td><td class="val">{_fmt2(disp_mid_2)}</td>
+              <td class="val">{_fmt2(disp_high_1)}</td><td class="val">{_fmt2(disp_high_2)}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>"""
+
+    # ── PAGE 6: Terms of Use ──
+    terms_page = """
+    <div class="page">
+      <div class="page-heading">TERMS OF USE</div>
+      <div class="body-text" style="margin: 10px 0;">
+        This support report was created using the Cloud Act support calculator.
+        Please visit Cloud Act to learn more, or to perform your own support
+        calculations.
+      </div>
+      <div class="body-text">
+        Calculations are current based on the laws and regulations in force as
+        of the date the report was calculated. The Calculator applies the federal
+        Child Support Guidelines ("CSG"), which are legally binding in most
+        provinces in Canada, and the federal Spousal Support Advisory Guidelines
+        ("SSAG"), which are not legally binding but are widely used on an advisory
+        basis. Note that actual taxes and benefits may vary based on
+        interpretations and calculations performed by the Canada Revenue Agency
+        or relevant provincial or territorial authorities.
+      </div>
+      <div class="body-text" style="margin-top: 10px;">
+        This calculation is only as reliable as the inputs provided by the user:
+        if income, expenses, taxes or benefits are different than set out in the
+        calculation input page, the amount of support should be recalculated to
+        reflect reality.
+      </div>
+      <div class="body-text" style="margin-top: 10px;">
+        Although the Calculator generates child and spousal support amounts,
+        support is not automatically payable in all circumstances. Family law is
+        extremely complex and there are many other factors and legal issues not
+        considered by this Calculator that could dramatically affect child and
+        spousal support.
+      </div>
+      <div class="body-text" style="margin-top: 10px;">
+        This report does not contain legal advice or establish a lawyer-client
+        relationship. By using or referencing this report in any way, you agree
+        to indemnify CloudAct for any loss, damages, costs, or expenses incurred
+        by you or any third parties in relation to this report, howsoever arising,
+        regardless of theory of liability.
+      </div>
+    </div>"""
+
+    # ── Assemble full HTML ──
+    # Count pages for footer
+    page_count = 5  # cover, input, result, spousal details, terms
+    if has_spousal and (disp_low_1 or disp_low_2):
+        page_count = 6  # add cashflow page
 
     html = f"""<!DOCTYPE html>
 <html>
@@ -251,162 +723,171 @@ def _spousal_html(data: dict) -> str:
 <meta charset="utf-8">
 <style>
   @page {{
-    size: letter landscape;
-    margin: 10mm 5mm 10mm 5mm;
+    size: letter;
+    margin: 15mm 15mm 20mm 15mm;
   }}
   body {{
-    margin: 0;
-    padding: 0;
-  }}
-  .calc-report {{
     font-family: Calibri, 'Segoe UI', Arial, sans-serif;
     font-size: 11px;
     color: #333;
-    padding: 20px 30px;
-    background: #fff;
-    width: 960px;
+    margin: 0;
+    padding: 0;
   }}
-  .calc-report .report-title {{
-    font-size: 16px;
+  .page {{
+    padding: 20px 10px;
+    page-break-after: always;
+    min-height: 600px;
+  }}
+  .page:last-child {{
+    page-break-after: auto;
+  }}
+
+  /* Cover page */
+  .cover-page {{
+    display: block;
+    padding-top: 280px;
+    text-align: center;
+  }}
+  .cover-content {{
+    margin: 0 auto;
+    width: 500px;
+  }}
+  .cover-title {{
+    font-size: 18px;
     font-weight: bold;
     color: #1a1a2e;
     margin-bottom: 16px;
+  }}
+  .cover-subtitle {{
+    font-size: 12px;
+    color: #555;
+  }}
+
+  /* Page headings */
+  .page-heading {{
+    font-size: 14px;
+    font-weight: bold;
+    color: #1a1a2e;
     padding-bottom: 6px;
     border-bottom: 2px solid #2d5aa0;
+    margin-bottom: 10px;
   }}
-  .calc-report .section-header {{
+
+  /* Body text */
+  .body-text {{
+    font-size: 11px;
+    color: #333;
+    line-height: 1.5;
+    margin: 4px 0;
+  }}
+  .sub-heading {{
     font-weight: bold;
     font-size: 12px;
-    background: #d9e2f3;
-    color: #1a1a2e;
-    padding: 5px 10px;
-    margin: 12px 0 4px 0;
+    margin: 10px 0 4px 0;
   }}
-  .calc-report table {{
+  .party-heading {{
+    margin: 20px 0 6px 10px;
+    font-size: 11px;
+  }}
+
+  /* Info box (grey background) */
+  .info-box {{
+    background: #eee;
+    padding: 8px 10px;
+    font-size: 11px;
+    line-height: 1.5;
+    margin: 6px 0;
+  }}
+
+  /* Tables */
+  .table-wrapper {{
+    margin: 4px 0;
+  }}
+  table {{
     border-collapse: collapse;
     margin-bottom: 2px;
   }}
-  .calc-report td, .calc-report th {{
-    padding: 4px 6px;
+  td, th {{
+    padding: 5px 8px;
     font-size: 11px;
     border: 1px solid #d0d0d0;
   }}
-  .calc-report th {{
+  th {{
     background: #eef2f7;
     font-weight: bold;
     text-align: center;
   }}
-  .calc-report .lbl {{ text-align: left; }}
-  .calc-report .val {{ text-align: right; }}
-  .calc-report .bold-row td {{ font-weight: bold; }}
-  .calc-report .result-header {{ background: #c5d9a4 !important; }}
-  .calc-report .result-val {{
-    font-size: 13px;
-    font-weight: bold;
-    color: #1a1a2e;
+  .val {{
+    text-align: right;
   }}
-  .calc-report .details-table td,
-  .calc-report .details-table th {{
-    font-size: 10px;
-    padding: 3px 6px;
-  }}
-  .calc-report .scenario-hdr {{
-    text-align: center;
+  .bold-row td {{
     font-weight: bold;
+  }}
+
+  /* Key-value rows (for Important Dates, Duration) */
+  .kv-row {{
+    border-bottom: 1px solid #d0d0d0;
+    padding: 5px 8px;
     font-size: 11px;
   }}
-  .calc-report .sub-hdr td {{
-    text-align: center;
+  .kv-label {{
     font-weight: bold;
-    font-size: 10px;
-    background: #f5f5f5;
+  }}
+  .kv-value {{
+    float: right;
+  }}
+
+  /* Result summary */
+  .result-block {{
+    margin: 12px 0;
+  }}
+  .result-label {{
+    font-weight: bold;
+    font-size: 12px;
+    display: block;
+    margin-bottom: 4px;
+  }}
+
+  /* Scenario blocks */
+  .scenario-box {{
+    margin: 16px 0;
+    text-align: center;
+  }}
+  .scenario-title {{
+    font-weight: bold;
+    font-size: 12px;
+    margin-bottom: 6px;
+  }}
+  .scenario-flow {{
+    margin: 0 auto;
+    width: 500px;
+  }}
+  .party-name {{
+    font-weight: bold;
+    font-size: 12px;
+  }}
+  .flow-arrow {{
+    display: inline;
+    margin: 0 20px;
+  }}
+  .arrow-symbol {{
+    font-size: 14px;
+    margin-left: 10px;
+  }}
+  .scenario-line {{
+    font-size: 11px;
+    display: inline;
+    margin: 0 6px;
   }}
 </style>
 </head>
 <body>
-<div class="calc-report">
-  <div class="report-title">CLOUDACT FAMILY LAW TOOLS</div>
-
-  <!-- TOP ROW: use float divs instead of nested tables (xhtml2pdf bug with nested tables) -->
-  <div style="width:460px; float:left; margin-right:20px;">
-      <div class="section-header">Calculation Input</div>
-      <table style="width:460px;">
-        <thead>
-          <tr><th></th><th>{p1}</th><th>{p2}</th></tr>
-          <tr><td></td><td class="val" style="font-weight:bold;">{"Payor" if p1_is_payor else "Recipient"}</td><td class="val" style="font-weight:bold;">{"Recipient" if p1_is_payor else "Payor"}</td></tr>
-        </thead>
-        <tbody>
-          <tr><td class="lbl">Age</td><td class="val">{p1_age if p1_age else ""}</td><td class="val">{p2_age if p2_age else ""}</td></tr>
-          <tr><td class="lbl">Province</td><td class="val">{p1_prov}</td><td class="val">{p2_prov}</td></tr>
-          <tr><td class="lbl">Employment income</td><td class="val">{_fmt(p1_income)}</td><td class="val">{_fmt(p2_income)}</td></tr>
-          <tr><td class="lbl">Claims dependent credit</td><td class="val">{p1_claims or "No"}</td><td class="val">{p2_claims or "No"}</td></tr>
-        </tbody>
-      </table>
-      {children_rows}
-  </div>
-  <div style="width:460px; float:left;">
-      <div class="section-header">Important dates</div>
-      <table style="width:460px;"><tbody>{dates_rows}</tbody></table>
-  </div>
-  <div style="clear:both;"></div>
-
-  <!-- RESULT -->
-  <div style="width:470px;">
-    <div class="section-header result-header">Result</div>
-    <table style="width:450px;"><tbody>{result_rows}</tbody></table>
-  </div>
-
-  <!-- CALCULATION DETAILS -->
-  <table class="details-table" style="margin-top:14px; width:960px;">
-    <thead>
-      <tr><th colspan="7" class="section-header" style="text-align:left;margin:0;">Calculation details</th></tr>
-      <tr>
-        <th class="lbl"></th>
-        <th colspan="2" class="scenario-hdr">LOW</th>
-        <th colspan="2" class="scenario-hdr">MID</th>
-        <th colspan="2" class="scenario-hdr">HIGH</th>
-      </tr>
-      <tr class="sub-hdr">
-        <td class="lbl"></td><td>Party 1</td><td>Party 2</td>
-        <td>Party 1</td><td>Party 2</td><td>Party 1</td><td>Party 2</td>
-      </tr>
-    </thead>
-    <tbody>
-      <tr>
-        <td class="lbl">Guideline income</td>
-        <td class="val">{_fmt(p1_income)}</td><td class="val">{_fmt(p2_income)}</td>
-        <td class="val">{_fmt(p1_income)}</td><td class="val">{_fmt(p2_income)}</td>
-        <td class="val">{_fmt(p1_income)}</td><td class="val">{_fmt(p2_income)}</td>
-      </tr>
-      <tr>
-        <td class="lbl">Taxes and deductions</td>
-        <td class="val">{_fmt2(tax_low_1)}</td><td class="val">{_fmt2(tax_low_2)}</td>
-        <td class="val">{_fmt2(tax_mid_1)}</td><td class="val">{_fmt2(tax_mid_2)}</td>
-        <td class="val">{_fmt2(tax_high_1)}</td><td class="val">{_fmt2(tax_high_2)}</td>
-      </tr>
-      <tr>
-        <td class="lbl">Benefits and credits</td>
-        <td class="val">{_fmt2(ben_low_1)}</td><td class="val">{_fmt2(ben_low_2)}</td>
-        <td class="val">{_fmt2(ben_mid_1)}</td><td class="val">{_fmt2(ben_mid_2)}</td>
-        <td class="val">{_fmt2(ben_high_1)}</td><td class="val">{_fmt2(ben_high_2)}</td>
-      </tr>
-      {cs_detail_rows}
-      <tr>
-        <td class="lbl">Special expenses paid</td>
-        <td class="val">{_fmt(se1)}</td><td class="val">{_fmt(se2)}</td>
-        <td class="val">{_fmt(se1)}</td><td class="val">{_fmt(se2)}</td>
-        <td class="val">{_fmt(se1)}</td><td class="val">{_fmt(se2)}</td>
-      </tr>
-      <tr class="bold-row">
-        <td class="lbl" style="font-weight:bold;">Total disposable income</td>
-        <td class="val">{_fmt2(disp_low_1)}</td><td class="val">{_fmt2(disp_low_2)}</td>
-        <td class="val">{_fmt2(disp_mid_1)}</td><td class="val">{_fmt2(disp_mid_2)}</td>
-        <td class="val">{_fmt2(disp_high_1)}</td><td class="val">{_fmt2(disp_high_2)}</td>
-      </tr>
-      {spousal_annual_row}
-    </tbody>
-  </table>
-</div>
+{cover_page}
+{input_page}
+{result_page}
+{spousal_details_page}
+{cashflow_page}
+{terms_page}
 </body>
 </html>"""
     return html
