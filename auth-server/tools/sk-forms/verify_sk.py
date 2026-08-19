@@ -38,11 +38,18 @@ STAGE = B.STAGE
 # Characters a field box is entitled to cover: its own printed rule, the `$` it
 # is anchored to, and the punctuation the form sets against a blank.
 IGNORABLE = set("_$ \t.,;:()")
-# Narrower than this is a sliver worth justifying. The smallest legitimate blank
-# in the whole 40-form set is 21.2pt: Saskatchewan prints the year as "2 _____"
-# and that run holds the last two digits (Form 15-78 p2, and the same slot in
-# every jurat). The floor sits just under it rather than at a round number.
-MIN_FIELD_WIDTH = 20.0
+# Narrower than this is a sliver worth justifying. Part 15's smallest legitimate
+# blank is 21.2pt: Saskatchewan prints the year as "2 _____" and that run holds
+# the last two digits (Form 15-78 p2, and the same slot in every jurat). The
+# adoption consolidation sets the identical slot as "20____" at 17.4pt -- 16 of
+# the 20 forms carry one in the "Dated at ... this __ day of ____, 20__" line --
+# and Form H's "Honourable____ Justice" prints a 17.7pt rule for the judge's
+# name. Smaller still are the date slots the three Orders of Adoption set as
+# "The_ __ day of______, 20_ _": a 15.2pt day and a 10.9pt year, and the year
+# becomes 9.4pt once edge clearance moves it off its own "0". The floor sits just
+# under the smallest of those rather than at a round number, so a 3pt stray still
+# has to justify itself.
+MIN_FIELD_WIDTH = 9.0
 
 
 def box_of(field):
@@ -76,7 +83,11 @@ def check_checkbox_marks(doc, fields, problems):
     """Every checkbox must sit on a printed square, and one square per control."""
     for number in sorted({f["page"] for f in fields}):
         page = doc[number - 1]
-        marks = B.checkboxes(page)
+        # Both option vocabularies: the stroked 9x9 square Part 15 and the
+        # child-protection forms draw, and the U+F07E glyph the adoption
+        # consolidation types instead of drawing. Still re-derived from the page
+        # rather than taken from the builder, so a control has to land on real ink.
+        marks = B.checkboxes(page) + B.glyph_checkboxes(page)
         ticks = B.tick_rects(page)
         taken = {}
         for field in [f for f in fields if f["page"] == number and f["type"] == "CheckBox"]:

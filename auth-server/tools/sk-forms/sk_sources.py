@@ -11,7 +11,14 @@ clear of Ontario's FormNN and BC's BCSC_/BCPC_.
 
 Part 16 (probate and estates) and the civil parts are deliberately out of scope:
 this catalogue is family law, matching the Ontario and BC sets.
+
+Part 15 prescribes no child-protection and no adoption form -- those run under
+The Child and Family Services Act and The Adoption Act, 1998, whose regulations
+carry their own appendices of forms. `sk_sources_cp.py` records that scope, and
+`all_sources()` below returns both families together.
 """
+
+from sk_sources_cp import CP_CATEGORY_ORDER, all_cp_sources
 
 BASE = "https://publications.saskatchewan.ca/api/v1/products/%d/formats/%d/download"
 
@@ -61,7 +68,7 @@ FORMS = [
     ("15-138", "15-138", "Warrant of Committal for Contempt for Failure to Comply with a Maintenance Order", "Enforcement", 114647, 129524, "KBForm15-138.pdf", 2),
 ]
 
-CATEGORY_ORDER = [
+PART15_CATEGORY_ORDER = [
     'Financial',
     'Pleadings',
     'Applications',
@@ -77,7 +84,7 @@ def doc_id(form_no):
     return "SKKB_" + form_no.replace("-", "_")
 
 
-def all_sources():
+def part15_sources():
     """Every Part 15 form as a dict, in catalogue order."""
     out = []
     for form_no, rule, title, category, product, fmt, src, pages in FORMS:
@@ -88,8 +95,23 @@ def all_sources():
             "title": title,
             "court": COURT,
             "category": "King's Bench - " + category,
+            "shortTitle": "SK KB %s" % form_no,
             "sourceFile": src,
             "expectedPages": pages,
             "url": BASE % (product, fmt),
         })
     return out
+
+
+def all_sources():
+    """Every Saskatchewan family-law form: Part 15, child protection, adoption.
+
+    One list, so the fetcher, builder, verifier, binder and catalogue tool each
+    cover the whole province without growing a second code path. Part 15 keeps
+    the head of the list, so its rows keep the sortOrder they already have.
+    """
+    return part15_sources() + all_cp_sources()
+
+
+# The picker's group order for the whole province.
+CATEGORY_ORDER = PART15_CATEGORY_ORDER + CP_CATEGORY_ORDER

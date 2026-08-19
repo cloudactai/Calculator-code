@@ -20,6 +20,7 @@ import sys
 import fitz
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import sk_reg_cut  # noqa: E402
 from sk_sources import all_sources  # noqa: E402
 
 STAGE = os.path.join(
@@ -51,10 +52,33 @@ def classify(path):
     return pages, n_fields, is_xfa, text, footer
 
 
+# The adoption consolidation sets its form numbers with a non-breaking hyphen
+# (U+2011), so "FORM C-1" searched for with an ASCII hyphen finds nothing and a
+# correctly cut form would be flagged as the wrong one.
+DASHES = dict.fromkeys(map(ord, "‐‑‒–—"), "-")
+
+
 def title_present(src, text):
-    """The form prints its own number as "Form 15-47" on page 1."""
-    flat = re.sub(r"\s+", " ", text).lower()
+    """The form prints its own number as "Form 15-47" / "FORM C-1" on page 1."""
+    flat = re.sub(r"\s+", " ", text.translate(DASHES)).lower()
     return re.search(r"form\s*%s\b" % re.escape(src["formNo"].lower()), flat) is not None
+
+
+def obtain(src, dest):
+    """Put this form's source PDF at `dest`.
+
+    Most forms are their own product and are downloaded whole. The adoption forms
+    are cut out of one consolidation, which is downloaded once and shared -- see
+    `sk_reg_cut.py` for why they cannot be downloaded individually.
+    """
+    cut = src.get("cut")
+    if not cut:
+        download(src["url"], dest)
+        return
+    consolidation = os.path.join(STAGE, src["sourceFile"])
+    if not os.path.exists(consolidation) or os.path.getsize(consolidation) == 0:
+        download(src["url"], consolidation)
+    sk_reg_cut.cut(consolidation, cut["formNo"], cut["window"], dest)
 
 
 def main():
@@ -64,10 +88,10 @@ def main():
         dest = os.path.join(STAGE, "%s_source.pdf" % src["docId"])
         if not os.path.exists(dest) or os.path.getsize(dest) == 0:
             try:
-                download(src["url"], dest)
-            except subprocess.CalledProcessError as exc:
-                print("DOWNLOAD FAIL %s: %s" % (src["docId"], exc))
-                manifest.append(dict(src, ok=False, error="download failed"))
+                obtain(src, dest)
+            except (subprocess.CalledProcessError, LookupError) as exc:
+                print("SOURCE FAIL %s: %s" % (src["docId"], exc))
+                manifest.append(dict(src, ok=False, error="source failed: %s" % exc))
                 continue
         raw = open(dest, "rb").read()
         entry = dict(src)

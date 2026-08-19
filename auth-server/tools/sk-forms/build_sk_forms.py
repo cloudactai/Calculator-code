@@ -61,8 +61,25 @@ RULE_INSET_RATIO = 0.175
 RULE_CLEARANCE = 1.3
 # A blank is one line of writing; the height follows the font it was set in.
 LINE_RATIO = 1.3
-# Shorter than this is a stray, not a blank anyone can type in.
+# Shorter than this is a stray, not a blank anyone can type in. Applies to a
+# ruled cell and to a drawn writing box.
 MIN_BLANK_WIDTH = 16.0
+# A printed underscore run gets a lower floor than a cell does. Part 15 alone
+# supported 16pt for both, but the adoption consolidation sets its date slots
+# tighter: the three Orders of Adoption print "The_ __ day of______, 20_ _" with
+# a 15.2pt day slot and a 10.9pt year slot, so the order's own date was
+# unfillable. Those, plus Form K's 13.9pt commission-expiry year, are the *only*
+# underscore runs in the whole 76-form set between 8 and 16pt, and every one is a
+# real day or year box. The floor is 9, not 10, because of what edge clearance
+# leaves: the year slot prints as "20_ _" flush against its own "0", so the
+# 10.9pt run becomes a 9.4pt box once it is moved off the type, and a 10pt floor
+# threw that trim away and shipped the box sitting on the digit.
+#
+# Kept separate from MIN_BLANK_WIDTH rather than lowering that, because the same
+# constant also floors the *cell* detector: dropping it to 10 admitted thirteen
+# narrow table cells on Form 15-47, which would have moved a template that has
+# already been reviewed and shipped.
+MIN_RUN_WIDTH = 9.0
 # Room left between a blank and a letter printed hard against it, and between a
 # box and the rule of the blank above. Both exist because the viewer draws a
 # bordered control inside the rectangle we store.
@@ -83,6 +100,17 @@ CELL_MIN_WIDTH, CELL_MIN_HEIGHT, CELL_MAX_HEIGHT = 8.0, 12.0, 200.0
 # Saskatchewan sets that glyph in Wingdings, so it arrives as U+F0FC in the
 # private use area -- matching only the Unicode check marks finds nothing.
 TICK_GLYPHS = set("\u2713\u2714\u221a\uf0fc")
+# An option box the form types rather than draws. U+F07E is WP-MathA's open
+# square and is the only one in the set; the Unicode ballot boxes are listed with
+# it so a form that ever uses one is not silently missed. See glyph_checkboxes().
+BOX_GLYPHS = set("\uf07e\u2610\u25a1\u274f\u2751\u2752")
+# Zoom for measuring one glyph's ink, and the grey it has to beat to count as ink.
+GLYPH_ZOOM = 8.0
+GLYPH_INK_BELOW = 200
+# How far past a printed `$` a drawn rule may start and still be that `$`'s
+# amount line. Form K's five totals set the rule 4.0-4.6pt after the glyph; the
+# ceiling is kept tight so a table border further along the row cannot claim it.
+DOLLAR_RULE_GAP = 12.0
 # Columns narrower than this are grid furniture (row numbers, schedule
 # numbers) and are classified as a group rather than one at a time.
 NARROW_COLUMN = 40.0
@@ -126,6 +154,36 @@ SK_SIG_EXCLUDE = re.compile(r"date of signature", re.I)
 # as a caption -- that sentence is what an unanchored match would catch.
 SK_ROLE_CAPTION = re.compile(
     r"^\s*\(?\s*(deputy\s+)?(local\s+)?(registrar|judge|justice|clerk)\s*\)?\s*$", re.I)
+
+# The child-protection and adoption forms sign off by naming the signatory, and
+# they name more offices than Part 15 does and at more length: "Officer",
+# "Director", "Clerk of the Court/Local Registrar", "Minister of Community
+# Resources and Employment", "(witness)", "(parent)". None matches
+# SK_ROLE_CAPTION, which is a *bare* office and nothing else, so all of these
+# signature rules were being filled -- Form P alone closes with four of them.
+#
+# Matching the vocabulary alone is not enough, because two of these words also
+# caption an ordinary name blank: Form F heads "To:_______" with "(parent)"
+# under it, and that is somewhere the filer writes. What separates them is the
+# rule, not the caption -- a signature rule is *bare*, alone on its line, while a
+# name blank is preceded on its own line by the words that ask for it ("To:",
+# "I,"). So a caption in this vocabulary only condemns a rule that has nothing
+# else printed on its line. That also keeps it off "(Name and birth date of
+# child)", which sits below a bare rule on Form A but is not a role at all.
+SK_OFFICE_CAPTION = re.compile(
+    r"^\s*\(?\s*(?:officer|director|witness"
+    r"|parents?(?:\s+or\s+person)?"
+    r"|minister\b.*|clerk\b.*|(?:deputy\s+|local\s+)*registrar\b.*)\s*\)?\s*$", re.I)
+# Not in that list, deliberately: "applicant" and "guardian". An applicant who
+# signs is captioned "(Signature of applicant)", which SK_SIG_CAPTION already
+# catches, so the word earns nothing here -- and it costs: adoption Form H heads
+# a block of four addressees "TO:____ (applicant) / ____ (applicant) / ____
+# (director for __ region) / ____ (agency, if applicable)", where the second
+# addressee is a bare rule captioned "(applicant)" and is somewhere the filer
+# writes. Including the word deleted it. "guardian" matches nothing in the set at
+# all.
+# How far below a rule its caption may sit, and still be its caption.
+CAPTION_GAP = 24.0
 
 # The government left these two answer lines as bare whitespace: there is no
 # underscore, cell, or rectangle for the general detectors to measure.  Their
@@ -185,16 +243,43 @@ def line_chars(page):
 
 def signature_captions(page):
     """Rects of the captions that mark a rule as somebody's signature line."""
-    out = []
+    lines = []
     for block in page.get_text("dict")["blocks"]:
         for line in block.get("lines", []):
-            text = "".join(span["text"] for span in line["spans"])
-            if SK_SIG_EXCLUDE.search(text):
-                continue
-            if (SK_SIG_CAPTION.search(text) or SK_COMMISSIONER.search(text)
-                    or SK_ROLE_CAPTION.match(text)):
-                out.append(fitz.Rect(line["bbox"]))
+            lines.append((fitz.Rect(line["bbox"]),
+                          "".join(span["text"] for span in line["spans"])))
+    lines.sort(key=lambda pair: pair[0].y0)
+
+    out = []
+    for rect, text in lines:
+        if SK_SIG_EXCLUDE.search(text):
+            continue
+        if (SK_SIG_CAPTION.search(text) or SK_COMMISSIONER.search(text)
+                or SK_ROLE_CAPTION.match(text)):
+            out.append(rect)
+        elif SK_OFFICE_CAPTION.match(text) and _over_a_bare_rule(rect, lines):
+            out.append(rect)
     return out
+
+
+def _is_bare_rule(text):
+    """A line that prints a rule and nothing else -- no words asking for a name."""
+    return "_" in text and not any(ch.isalnum() for ch in text)
+
+
+def _over_a_bare_rule(caption, lines):
+    """Is the line this caption sits under a bare rule? See SK_OFFICE_CAPTION."""
+    # Compared by the top of each line, not its bottom: a rule's line box hangs
+    # below the caption's own top -- Form A sets the rule at y 428.6-443.7 and
+    # "Officer" at 441.3, a 2.4pt overlap -- so a "strictly above" test on the
+    # bottom edge finds no rule at all and every one of these was kept.
+    above = [(rect, text) for rect, text in lines
+             if rect.y0 < caption.y0 - 2 and caption.y0 - rect.y0 < CAPTION_GAP
+             and rect.x1 > caption.x0 and rect.x0 < caption.x1]
+    if not above:
+        return False
+    nearest = max(above, key=lambda pair: pair[0].y0)
+    return _is_bare_rule(nearest[1])
 
 
 def underscore_blanks(page):
@@ -219,7 +304,7 @@ def underscore_blanks(page):
             rect = fitz.Rect(boxes[start])
             for box in boxes[start:end]:
                 rect |= box
-            if rect.width < MIN_BLANK_WIDTH:
+            if rect.width < MIN_RUN_WIDTH:
                 continue
             size = max(sizes[start:end])
             # A blank set hard against a printed letter must not start *on* it.
@@ -234,13 +319,59 @@ def underscore_blanks(page):
                 left += EDGE_CLEARANCE
             if end < len(text) and text[end] not in " \t":
                 right -= EDGE_CLEARANCE
-            if right - left >= MIN_BLANK_WIDTH:
+            if right - left >= MIN_RUN_WIDTH:
                 rect = fitz.Rect(left, rect.y0, right, rect.y1)
             blanks.append((rect, rect.y1 - size * RULE_INSET_RATIO, size))
     return blanks
 
 
-def seat_blanks(blanks):
+def dollar_rule_blanks(page):
+    """Amount blanks whose rule is *drawn* rather than typed as underscores.
+
+    Adoption Form K sets its itemised rows as `$_______________` -- an underscore
+    run, which `underscore_blanks` reads -- but sets its five totals (Total
+    Income, Net Income, Total Expenses, Total Assets, Total Debts) as a `$`
+    followed by a stroked horizontal line. Same anchor to the reader, different
+    vocabulary to the detector, so all five totals of a financial statement
+    shipped with the rule printed and nothing to type on.
+
+    Deliberately narrow. The set is full of drawn horizontal rules -- every table
+    border on every Part 15 form is one -- so this fires only on a rule whose left
+    end sits just past a `$` printed on the same line, which is the government's
+    own marker for "write a figure here". Grid borders never carry a `$`, and a
+    rule that some other box already covers is left alone. Returned in the shape
+    `underscore_blanks` uses, so the seating, the stacking pitch and the
+    one-line-TextField rule are shared rather than reimplemented.
+    """
+    dollars = []
+    for text, boxes, sizes in line_chars(page):
+        for index, char in enumerate(text):
+            if char == "$":
+                dollars.append((fitz.Rect(boxes[index]), sizes[index]))
+    if not dollars:
+        return []
+
+    blanks = []
+    for drawing in page.get_drawings():
+        if drawing["type"] != "s":
+            continue
+        rect = drawing["rect"]
+        if rect.height > 2 or rect.width < MIN_BLANK_WIDTH:
+            continue
+        for glyph, size in dollars:
+            # On the same line as the `$`, and starting just after it.
+            if not (glyph.y0 - size < rect.y0 < glyph.y1 + size):
+                continue
+            if not (0 <= rect.x0 - glyph.x1 < DOLLAR_RULE_GAP):
+                continue
+            blanks.append((fitz.Rect(rect.x0 + EDGE_CLEARANCE, rect.y0 - size,
+                                     rect.x1, rect.y0),
+                           rect.y0, size))
+            break
+    return blanks
+
+
+def seat_blanks(blanks, obstacles=()):
     """Turn each blank into its box, never overlapping the blank above it.
 
     A blank's box hangs *upward* from its own rule, one line deep. Where the form
@@ -249,6 +380,14 @@ def seat_blanks(blanks):
     couple of points and the viewer renders them as a crushed stack of borders.
     The pitch is readable: it is the distance to the rule of the nearest blank
     above that shares any of this one's width.
+
+    `obstacles` are the page's option boxes. A blank clears those too, because a
+    checkbox is not a blank and so is invisible to the pitch rule above: child-
+    protection Forms H and O set an option ("NOTICE OF ADJOURNMENT", "prepaid
+    certified mail") directly over the `Re:____` line beneath it, and the blank's
+    box rose 0.7pt into the checkbox. Only a real collision moves anything -- the
+    box is seated first and pushed down only if it actually lands on one -- so a
+    checkbox merely sitting somewhere above a blank changes nothing.
     """
     seated = []
     for rect, rule_y, size in blanks:
@@ -261,8 +400,64 @@ def seat_blanks(blanks):
             height = min(height, rule_y - max(above) - STACK_GAP)
         if height < 6:
             continue
-        seated.append(fitz.Rect(rect.x0, bottom - height, rect.x1, bottom))
+        box = fitz.Rect(rect.x0, bottom - height, rect.x1, bottom)
+        for mark in obstacles:
+            if mark.x1 > box.x0 and mark.x0 < box.x1 and box.y0 < mark.y1 <= bottom:
+                box = fitz.Rect(box.x0, mark.y1 + STACK_GAP, box.x1, bottom)
+        if box.height < 6:
+            continue
+        seated.append(box)
     return seated
+
+
+def glyph_checkboxes(page):
+    """Option boxes the form *types* instead of drawing.
+
+    Part 15 and the child-protection forms draw every option as a 9x9 stroked
+    square, which `checkboxes()` reads off `get_drawings()`. The Adoption
+    Regulations consolidation draws none: it sets its options as the glyph U+F07E
+    in WP-MathA (WordPerfect's Math A), on pages where `get_drawings()` returns
+    nothing whatsoever. The square detector therefore found no option on any of
+    the 20 adoption forms, and Form C-1's "birth mother / birth father /
+    guardian" shipped with nothing to tick -- the same private-use trick the
+    Wingdings check glyph plays in `TICK_GLYPHS`.
+
+    The glyph's *character* box is not the box: set at 20pt it measures
+    14.94 x 23.34, while the square printed inside it is 13.5 x 13.4 and sits low
+    in the character cell. Seating a control on the character box would put one
+    half again too tall straddling the line above. So the ink is measured off a
+    render, the way cell shading already is, rather than derived from the font
+    size -- a form set at another size then still lands right.
+    """
+    out = []
+    for text, boxes, _sizes in line_chars(page):
+        for index, box in enumerate(boxes):
+            if text[index] not in BOX_GLYPHS:
+                continue
+            ink = _glyph_ink(page, box)
+            if ink is None:
+                continue
+            if CB_MIN < ink.width < CB_MAX and CB_MIN < ink.height < CB_MAX:
+                out.append(ink)
+    return out
+
+
+def _glyph_ink(page, box):
+    """The drawn extent of one glyph inside its character box, or None if blank."""
+    pix = page.get_pixmap(clip=box, matrix=fitz.Matrix(GLYPH_ZOOM, GLYPH_ZOOM),
+                          colorspace=fitz.csGRAY)
+    xs, ys = [], []
+    for y in range(pix.height):
+        for x in range(pix.width):
+            if pix.pixel(x, y)[0] < GLYPH_INK_BELOW:
+                xs.append(x)
+                ys.append(y)
+    if not xs:
+        return None
+    return fitz.Rect(box.x0 + min(xs) / GLYPH_ZOOM,
+                     box.y0 + min(ys) / GLYPH_ZOOM,
+                     box.x0 + (max(xs) + 1) / GLYPH_ZOOM,
+                     box.y0 + (max(ys) + 1) / GLYPH_ZOOM)
 
 
 def checkboxes(page):
@@ -704,7 +899,7 @@ def total_row_tops(cells):
 
 def page_boxes(page):
     """Every candidate box on one page, as (rect, type), in reading order."""
-    marks = checkboxes(page)
+    marks = checkboxes(page) + glyph_checkboxes(page)
     boxes = [(rect, "CheckBox") for rect in marks]
 
     cells = grid_cells(page)
@@ -781,7 +976,7 @@ def page_boxes(page):
         filled_cells.append(rect)
 
     kept = []
-    for rect, rule_y, size in underscore_blanks(page):
+    for rect, rule_y, size in underscore_blanks(page) + dollar_rule_blanks(page):
         # A blank inside a cell or drawn box that already got a field is that
         # field, seen twice. A blank inside one that did *not* is a real one:
         # Form 15-47 p9 prints "A. Business income... Gross $_____ ...Net" inside
@@ -791,7 +986,7 @@ def page_boxes(page):
                for cell in filled_cells):
             continue
         kept.append((rect, rule_y, size))
-    for box in seat_blanks(kept):
+    for box in seat_blanks(kept, marks):
         boxes.append((box, "TextField"))
 
     for band in writing_area_bands(page, [rect for rect, _kind in boxes]):
@@ -829,7 +1024,11 @@ def clear_of_type(page, boxes):
                 left = glyph.x1 + EDGE_CLEARANCE
             if -0.5 <= glyph.x0 - right < EDGE_CLEARANCE:
                 right = glyph.x0 - EDGE_CLEARANCE
-        if right - left >= MIN_BLANK_WIDTH:
+        # MIN_RUN_WIDTH, not MIN_BLANK_WIDTH: the trim is only *applied* if what
+        # survives is still usable, and at a 16pt floor the three Orders of
+        # Adoption kept their 15.2pt day slot untrimmed and flush against the "e"
+        # of "The", which is the one thing this function exists to prevent.
+        if right - left >= MIN_RUN_WIDTH:
             rect = fitz.Rect(left, rect.y0, right, rect.y1)
         out.append((rect, kind))
     return out
