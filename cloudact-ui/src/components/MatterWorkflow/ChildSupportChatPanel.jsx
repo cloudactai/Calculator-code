@@ -287,6 +287,23 @@ export default function ChildSupportChatPanel({
         body: JSON.stringify({ messages: nextMessages }),
       });
       const data = await res.json();
+      console.log("[ChildChat] === API RESPONSE DEBUG ===");
+      console.log("[ChildChat] Response status:", res.status);
+      console.log("[ChildChat] Response data keys:", Object.keys(data));
+      console.log("[ChildChat] data.reply length:", data.reply?.length || 0);
+      console.log("[ChildChat] data.calculationResult:", data.calculationResult ? "PRESENT" : "MISSING");
+      if (data.calculationResult) {
+        const cr = data.calculationResult;
+        console.log("[ChildChat] calculationResult keys:", Object.keys(cr));
+        console.log("[ChildChat] pdf_base64:", cr.pdf_base64 ? `PRESENT (${cr.pdf_base64.length} chars)` : "MISSING");
+        console.log("[ChildChat] pdf_filename:", cr.pdf_filename || "MISSING");
+        console.log("[ChildChat] party1_name:", cr.party1_name);
+        console.log("[ChildChat] party2_name:", cr.party2_name);
+        console.log("[ChildChat] scenario:", cr.scenario);
+        console.log("[ChildChat] net_monthly:", cr.net_monthly);
+      }
+      console.log("[ChildChat] data.reply (first 300 chars):", data.reply?.substring(0, 300));
+      console.log("[ChildChat] === END API RESPONSE DEBUG ===");
 
       if (data.error) {
         setBubbles((b) => [
@@ -323,9 +340,17 @@ export default function ChildSupportChatPanel({
   }
 
   async function saveToMatter() {
-    if (!lastCalcResult || !matterId) return;
+    console.log("[ChildChat] === SAVE TO MATTER DEBUG ===");
+    console.log("[ChildChat] lastCalcResult:", lastCalcResult ? "PRESENT" : "NULL");
+    console.log("[ChildChat] matterId:", matterId || "MISSING");
+    if (!lastCalcResult || !matterId) {
+      console.warn("[ChildChat] saveToMatter aborted: lastCalcResult=", !!lastCalcResult, "matterId=", !!matterId);
+      return;
+    }
     setSavingToMatter(true);
     const cr = lastCalcResult;
+    console.log("[ChildChat] Saving with _calcResult keys:", Object.keys(cr));
+    console.log("[ChildChat] pdf_base64 in save payload:", cr.pdf_base64 ? `PRESENT (${cr.pdf_base64.length} chars)` : "MISSING");
     try {
       await dataAxios.post(`matters/${matterId}/reports`, {
         calculationType: "child_support",
@@ -352,10 +377,12 @@ export default function ChildSupportChatPanel({
         pdfBase64: cr.pdf_base64 || null,
         pdfFilename: cr.pdf_filename || null,
       });
-      console.log("[ChildChat] Report saved to DB");
+      console.log("[ChildChat] Report saved to DB successfully");
+      console.log("[ChildChat] === END SAVE TO MATTER DEBUG ===");
       setSavedToMatter(true);
     } catch (err) {
-      console.warn("[ChildChat] Failed to save report:", err);
+      console.error("[ChildChat] Failed to save report:", err);
+      console.error("[ChildChat] Error response:", err.response?.data);
       alert("Failed to save to matter. Please try again.");
     } finally {
       setSavingToMatter(false);
@@ -437,23 +464,44 @@ export default function ChildSupportChatPanel({
                   <button
                     className="mw-download-btn"
                     onClick={() => {
+                      console.log("[ChildChat] === DOWNLOAD BUTTON CLICKED ===");
+                      console.log("[ChildChat] lastCalcResult:", lastCalcResult ? "PRESENT" : "NULL");
+                      console.log("[ChildChat] lastCalcResult keys:", lastCalcResult ? Object.keys(lastCalcResult) : "N/A");
+                      console.log("[ChildChat] pdf_base64:", lastCalcResult?.pdf_base64 ? `PRESENT (${lastCalcResult.pdf_base64.length} chars)` : "MISSING");
+                      console.log("[ChildChat] pdf_filename:", lastCalcResult?.pdf_filename || "MISSING");
                       if (lastCalcResult.pdf_base64) {
-                        const byteChars = atob(lastCalcResult.pdf_base64);
-                        const byteArray = new Uint8Array(byteChars.length);
-                        for (let j = 0; j < byteChars.length; j++) byteArray[j] = byteChars.charCodeAt(j);
-                        const blob = new Blob([byteArray], { type: "application/pdf" });
-                        const url = URL.createObjectURL(blob);
-                        const a = document.createElement("a");
-                        a.href = url;
-                        a.download = lastCalcResult.pdf_filename || "child_support_report.pdf";
-                        document.body.appendChild(a);
-                        a.click();
-                        a.remove();
-                        URL.revokeObjectURL(url);
+                        try {
+                          console.log("[ChildChat] Attempting atob decode...");
+                          const byteChars = atob(lastCalcResult.pdf_base64);
+                          console.log("[ChildChat] atob succeeded, byteChars length:", byteChars.length);
+                          const byteArray = new Uint8Array(byteChars.length);
+                          for (let j = 0; j < byteChars.length; j++) byteArray[j] = byteChars.charCodeAt(j);
+                          const blob = new Blob([byteArray], { type: "application/pdf" });
+                          console.log("[ChildChat] Blob created, size:", blob.size);
+                          const url = URL.createObjectURL(blob);
+                          console.log("[ChildChat] Object URL created:", url);
+                          const a = document.createElement("a");
+                          a.href = url;
+                          a.download = lastCalcResult.pdf_filename || "child_support_report.pdf";
+                          document.body.appendChild(a);
+                          a.click();
+                          a.remove();
+                          URL.revokeObjectURL(url);
+                          console.log("[ChildChat] Download triggered successfully");
+                        } catch (err) {
+                          console.error("[ChildChat] PDF download error:", err);
+                          console.error("[ChildChat] pdf_base64 first 100 chars:", lastCalcResult.pdf_base64?.substring(0, 100));
+                          alert("Failed to download PDF: " + err.message);
+                        }
                       } else {
+                        console.log("[ChildChat] No pdf_base64, falling back to extractDownloadUrl");
                         const serverUrl = extractDownloadUrl(b.text);
+                        console.log("[ChildChat] extractDownloadUrl result:", serverUrl || "NULL - no URL found");
+                        console.log("[ChildChat] bubble text (first 200 chars):", b.text?.substring(0, 200));
                         if (serverUrl) window.open(serverUrl, "_blank");
+                        else console.warn("[ChildChat] NO DOWNLOAD PATH AVAILABLE - both pdf_base64 and extractDownloadUrl failed");
                       }
+                      console.log("[ChildChat] === END DOWNLOAD DEBUG ===");
                     }}
                   >
                     Download PDF Report
