@@ -298,6 +298,7 @@ export default function SpousalSupportChatPanel({
         console.log("[SpousalChat] calculationResult keys:", Object.keys(cr));
         console.log("[SpousalChat] pdf_base64:", cr.pdf_base64 ? `PRESENT (${cr.pdf_base64.length} chars)` : "MISSING");
         console.log("[SpousalChat] pdf_filename:", cr.pdf_filename || "MISSING");
+        if (cr._pdf_error) console.error("[SpousalChat] BACKEND PDF ERROR:", cr._pdf_error);
         console.log("[SpousalChat] payor_name:", cr.payor_name);
         console.log("[SpousalChat] recipient_name:", cr.recipient_name);
         console.log("[SpousalChat] monthly_low:", cr.monthly_low);

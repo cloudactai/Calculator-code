@@ -524,7 +524,10 @@ def run_calc_tool(tool_input):
                 calc_result["pdf_base64"] = base64.b64encode(f.read()).decode("ascii")
             calc_result["pdf_filename"] = filename
     except Exception as e:
+        import traceback
         print(f"[child-support] PDF generation error: {e}", flush=True)
+        print(f"[child-support] PDF error traceback:\n{traceback.format_exc()}", flush=True)
+        calc_result["_pdf_error"] = str(e)
 
     return calc_result
 
@@ -570,7 +573,8 @@ def chat():
                 # Include the calculation result so the frontend can persist it
                 if last_calc_result:
                     has_pdf = "pdf_base64" in last_calc_result
-                    print(f"[child-chat] Returning calculationResult to frontend (has_pdf={has_pdf}, keys={list(last_calc_result.keys())})", flush=True)
+                    pdf_error = last_calc_result.get("_pdf_error", None)
+                    print(f"[child-chat] Returning calculationResult to frontend (has_pdf={has_pdf}, pdf_error={pdf_error}, keys={list(last_calc_result.keys())})", flush=True)
                     resp["calculationResult"] = last_calc_result
                 else:
                     print("[child-chat] No calculation result in this response", flush=True)
@@ -2650,7 +2654,10 @@ def run_spousal_calc_tool(tool_input: dict) -> dict:
                     calc_result["pdf_base64"] = base64.b64encode(f.read()).decode("ascii")
                 calc_result["pdf_filename"] = filename
         except Exception as e:
-            print(f"[spousal] PDF generation error: {e}", flush=True)
+            import traceback
+        print(f"[spousal] PDF generation error: {e}", flush=True)
+        print(f"[spousal] PDF error traceback:\n{traceback.format_exc()}", flush=True)
+        calc_result["_pdf_error"] = str(e)
         return calc_result
 
     # ── PATH B: with children (iterative) ────────────────────────────────────
@@ -2757,7 +2764,10 @@ def run_spousal_calc_tool(tool_input: dict) -> dict:
                     calc_result["pdf_base64"] = base64.b64encode(f.read()).decode("ascii")
                 calc_result["pdf_filename"] = filename
         except Exception as e:
-            print(f"[spousal] PDF generation error: {e}", flush=True)
+            import traceback
+        print(f"[spousal] PDF generation error: {e}", flush=True)
+        print(f"[spousal] PDF error traceback:\n{traceback.format_exc()}", flush=True)
+        calc_result["_pdf_error"] = str(e)
         return calc_result
 
     # Determine payor/recipient by gross income to label the result
@@ -2913,7 +2923,10 @@ def run_spousal_calc_tool(tool_input: dict) -> dict:
                 calc_result["pdf_base64"] = base64.b64encode(f.read()).decode("ascii")
             calc_result["pdf_filename"] = filename
     except Exception as e:
+        import traceback
         print(f"[spousal] PDF generation error: {e}", flush=True)
+        print(f"[spousal] PDF error traceback:\n{traceback.format_exc()}", flush=True)
+        calc_result["_pdf_error"] = str(e)
 
     return calc_result
 
@@ -2955,7 +2968,8 @@ def spousal_chat():
                 resp = {"reply": reply, "messages": messages}
                 if last_calc_result:
                     has_pdf = isinstance(last_calc_result, dict) and "pdf_base64" in last_calc_result
-                    print(f"[spousal-chat] Returning calculationResult to frontend (has_pdf={has_pdf})", flush=True)
+                    pdf_error = last_calc_result.get("_pdf_error", None) if isinstance(last_calc_result, dict) else None
+                    print(f"[spousal-chat] Returning calculationResult to frontend (has_pdf={has_pdf}, pdf_error={pdf_error}, keys={list(last_calc_result.keys()) if isinstance(last_calc_result, dict) else 'not dict'})", flush=True)
                     resp["calculationResult"] = last_calc_result
                 else:
                     print("[spousal-chat] No calculation result in this response", flush=True)
