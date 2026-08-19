@@ -1,11 +1,13 @@
 import React, { useEffect, useRef, useState } from "react";
 import { CALCULATOR_API } from "../../config";
 import dataAxios from "../../utils/dataAxios";
+import { fetchRequest } from "../../utils/fetchRequest";
 import {
   getAllUserInfo,
   getCurrentUserFromCookies,
   getCompanyInfo,
   getUserProvince,
+  getUserSID,
 } from "../../utils/helpers";
 import { matterProvinceCode } from "../../utils/matterProvince";
 import { normalizeStoredIntakeData, SECTION_LABELS } from "./matterIntakeContext";
@@ -390,6 +392,130 @@ export default function SpousalSupportChatPanel({
         pdfFilename: cr.pdf_filename || null,
       });
       console.log("[SpousalChat] Report saved to DB successfully");
+
+      // ── Save form data to matter DB sections (mirrors manual calculator) ──
+      const sid = getUserSID();
+      const party1Name = cr.party1_name || cr.payor_name || "";
+      const party2Name = cr.party2_name || cr.recipient_name || "";
+      // Merge with existing matter data so intake-only fields aren't lost
+      const rawBg = matterData?.background || [];
+      const rawClientBg = (Array.isArray(rawBg) ? rawBg : []).find((r) => r.role === "Client") || {};
+      const rawOpposingBg = (Array.isArray(rawBg) ? rawBg : []).find((r) => r.role === "Opposing Party") || {};
+      const rawChildren = matterData?.children || [];
+      const rawRel = (Array.isArray(matterData?.relationship) ? matterData.relationship[0] : matterData?.relationship) || {};
+
+      // 1) Save background (party names, DOBs, provinces)
+      const province = cr.province || cr.party1_province || matterData?.province || "";
+      fetchRequest("post", `update_matter/${sid}/${matterId}/background`, [
+        {
+          ...rawClientBg,
+          id: 1,
+          role: "Client",
+          name: party1Name || rawClientBg.name || "",
+          dateOfBirth: cr.party1_dob || cr.party1_date_of_birth || rawClientBg.dateOfBirth || "",
+          province: cr.party1_province || province || rawClientBg.province || "",
+        },
+        {
+          ...rawOpposingBg,
+          id: 2,
+          role: "Opposing Party",
+          name: party2Name || rawOpposingBg.name || "",
+          dateOfBirth: cr.party2_dob || cr.party2_date_of_birth || rawOpposingBg.dateOfBirth || "",
+          province: cr.party2_province || province || rawOpposingBg.province || "",
+        },
+      ]).catch((err) => console.warn("[SpousalChat] Failed to save background:", err));
+
+      // 2) Save children details (spousal with-children formula includes children)
+      const childrenArr = Array.isArray(cr.children) ? cr.children : [];
+      if (childrenArr.length > 0) {
+        const childrenRows = childrenArr.map((child, i) => {
+          const rawChild = (Array.isArray(rawChildren) ? rawChildren : [])[i] || {};
+          return {
+            ...rawChild,
+            id: i + 1,
+            childName: child.name || child.childName || rawChild.childName || "",
+            dateOfBirth: child.dateOfBirth || child.dob || rawChild.dateOfBirth || "",
+            livesWith: child.custodyArrangement || child.livesWith || child.nowLivesWith || rawChild.livesWith || "",
+            childOfRelationship: child.childOfRelationship || rawChild.childOfRelationship || "Yes",
+          };
+        });
+        fetchRequest("post", `update_matter/${sid}/${matterId}/children`, childrenRows)
+          .catch((err) => console.warn("[SpousalChat] Failed to save children:", err));
+      }
+
+      // 3) Save relationship details (marriage/separation dates and duration)
+      fetchRequest("post", `update_matter/${sid}/${matterId}/relationship`, [{
+        ...rawRel,
+        id: 1,
+        dateOfMarriage: cr.date_of_marriage || cr.marriage_date || rawRel.dateOfMarriage || "",
+        dateOfSeparation: cr.date_of_separation || cr.separation_date || rawRel.dateOfSeparation || "",
+      }]).catch((err) => console.warn("[SpousalChat] Failed to save relationship:", err));
+
+      // 4) Save income to incomeBenefits section
+      const buildIncomeRows = (income, roleLabel) => {
+        const amt = parseFloat(income || "0");
+        if (!amt) return [];
+        return [{
+          type: "Employment Income",
+          yearlyAmount: String(amt),
+          monthlyAmount: String(Math.round(amt / 12)),
+          role: roleLabel,
+          incomeBenefit: "income",
+        }];
+      };
+      const party1Income = cr.party1_gross_income || cr.party1_income || 0;
+      const party2Income = cr.party2_gross_income || cr.party2_income || 0;
+      const rawIncomeBenefits = matterData?.income_benefits || [];
+      const clientBenefitRows = (Array.isArray(rawIncomeBenefits) ? rawIncomeBenefits : [])
+        .filter((r) => r.role === "Client" && r.incomeBenefit === "benefit");
+      const opposingBenefitRows = (Array.isArray(rawIncomeBenefits) ? rawIncomeBenefits : [])
+        .filter((r) => (r.role === "Opposing Party" || r.role === "opposingParty") && r.incomeBenefit === "benefit");
+      fetchRequest("post", `update_matter/${sid}/${matterId}/incomeBenefits`, {
+        incomeBenefits: {
+          client: {
+            income: buildIncomeRows(party1Income, "Client"),
+            benefit: clientBenefitRows,
+          },
+          opposingParty: {
+            income: buildIncomeRows(party2Income, "Opposing Party"),
+            benefit: opposingBenefitRows,
+          },
+        },
+      }).catch((err) => console.warn("[SpousalChat] Failed to save incomeBenefits:", err));
+
+      // 5) Save calculator state so the manual calculator can restore it
+      const calcState = {
+        calculator_type: "spousal_support",
+        background: {
+          party1FirstName: (party1Name).split(" ")[0] || "",
+          party1LastName: (party1Name).split(" ").slice(1).join(" ") || "",
+          party2FirstName: (party2Name).split(" ")[0] || "",
+          party2LastName: (party2Name).split(" ").slice(1).join(" ") || "",
+          party1DateOfBirth: cr.party1_dob || cr.party1_date_of_birth || "",
+          party2DateOfBirth: cr.party2_dob || cr.party2_date_of_birth || "",
+          party1province: cr.party1_province || province || "",
+          party2province: cr.party2_province || province || "",
+        },
+        aboutTheChildren: {
+          numberOfChildren: childrenArr.length,
+          childrenInfo: childrenArr.map((child) => ({
+            name: child.name || child.childName || "",
+            dateOfBirth: child.dateOfBirth || child.dob || "",
+            custodyArrangement: child.custodyArrangement || child.livesWith || child.nowLivesWith || "",
+          })),
+        },
+        aboutTheRelationship: {
+          dateOfMarriage: cr.date_of_marriage || cr.marriage_date || "",
+          dateOfSeparation: cr.date_of_separation || cr.separation_date || "",
+        },
+        income: {
+          party1: party1Income ? [{ label: "Employment Income", amount: String(party1Income), value: "10100" }] : [],
+          party2: party2Income ? [{ label: "Employment Income", amount: String(party2Income), value: "10100" }] : [],
+        },
+      };
+      fetchRequest("post", `update_matter/${sid}/${matterId}/calculatorState`, [calcState])
+        .catch((err) => console.warn("[SpousalChat] Failed to save calculatorState:", err));
+
       console.log("[SpousalChat] === END SAVE TO MATTER DEBUG ===");
       setSavedToMatter(true);
     } catch (err) {
