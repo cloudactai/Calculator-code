@@ -297,6 +297,7 @@ export default function ChildSupportChatPanel({
         console.log("[ChildChat] calculationResult keys:", Object.keys(cr));
         console.log("[ChildChat] pdf_base64:", cr.pdf_base64 ? `PRESENT (${cr.pdf_base64.length} chars)` : "MISSING");
         console.log("[ChildChat] pdf_filename:", cr.pdf_filename || "MISSING");
+        if (cr._pdf_error) console.error("[ChildChat] BACKEND PDF ERROR:", cr._pdf_error);
         console.log("[ChildChat] party1_name:", cr.party1_name);
         console.log("[ChildChat] party2_name:", cr.party2_name);
         console.log("[ChildChat] scenario:", cr.scenario);
