@@ -31,8 +31,25 @@ export default function CalculationPDf({ matterId }) {
     dataAxios
       .get(`matters/${matterId}/reports`)
       .then((res) => {
+        console.log("[CalculationPdf] === REPORTS LOADED DEBUG ===");
+        console.log("[CalculationPdf] Raw response:", JSON.stringify(res.data).substring(0, 500));
         const body = res.data?.data?.body ?? res.data?.data ?? [];
-        if (active) setReports(Array.isArray(body) ? body : []);
+        const reports = Array.isArray(body) ? body : [];
+        console.log("[CalculationPdf] Number of reports:", reports.length);
+        reports.forEach((r, i) => {
+          console.log(`[CalculationPdf] Report ${i}: id=${r.id}, type=${r.calculationType}, label=${r.label}`);
+          console.log(`[CalculationPdf]   inputData keys:`, r.inputData ? Object.keys(r.inputData) : "NO inputData");
+          console.log(`[CalculationPdf]   has _fullState:`, !!r.inputData?._fullState);
+          console.log(`[CalculationPdf]   has _calcResult:`, !!r.inputData?._calcResult);
+          if (r.inputData?._calcResult) {
+            console.log(`[CalculationPdf]   _calcResult keys:`, Object.keys(r.inputData._calcResult));
+          }
+          console.log(`[CalculationPdf]   resultData keys:`, r.resultData ? Object.keys(r.resultData) : "NO resultData");
+          console.log(`[CalculationPdf]   pdfBase64:`, r.pdfBase64 ? `PRESENT (${r.pdfBase64.length} chars)` : "MISSING");
+          console.log(`[CalculationPdf]   pdfFilename:`, r.pdfFilename || "MISSING");
+        });
+        console.log("[CalculationPdf] === END REPORTS LOADED DEBUG ===");
+        if (active) setReports(reports);
       })
       .catch(() => {
         if (active) setError("Could not load calculation reports.");
@@ -48,7 +65,15 @@ export default function CalculationPDf({ matterId }) {
     if (!renderReport || !reportRef.current) return;
 
     const generatePdf = async () => {
+      console.log("[CalculationPdf] === PDF GENERATION DEBUG ===");
+      console.log("[CalculationPdf] reportRef.current:", reportRef.current ? "PRESENT" : "NULL");
+      console.log("[CalculationPdf] reportRef innerHTML length:", reportRef.current?.innerHTML?.length || 0);
+      console.log("[CalculationPdf] reportRef innerHTML (first 500 chars):", reportRef.current?.innerHTML?.substring(0, 500));
+      console.log("[CalculationPdf] renderReport.filename:", renderReport.filename);
+      console.log("[CalculationPdf] renderReport.typeOfCalculatorSelected:", renderReport.typeOfCalculatorSelected);
+      console.log("[CalculationPdf] renderReport.background:", JSON.stringify(renderReport.background));
       try {
+        console.log("[CalculationPdf] Starting html2pdf generation...");
         await html2pdf()
           .set({
             margin: [10, 5, 10, 5],
@@ -60,10 +85,13 @@ export default function CalculationPDf({ matterId }) {
           })
           .from(reportRef.current)
           .save();
+        console.log("[CalculationPdf] html2pdf generation SUCCEEDED");
       } catch (err) {
-        console.error("[CalculationPdf] PDF generation failed:", err);
+        console.error("[CalculationPdf] PDF generation FAILED:", err);
+        console.error("[CalculationPdf] Error stack:", err.stack);
         alert("Could not generate PDF.");
       } finally {
+        console.log("[CalculationPdf] === END PDF GENERATION DEBUG ===");
         setRenderReport(null);
         setGeneratingId(null);
       }
@@ -207,12 +235,42 @@ export default function CalculationPDf({ matterId }) {
   };
 
   const handleDownloadPdf = (report) => {
+    console.log("[CalculationPdf] === DOWNLOAD PDF DEBUG ===");
+    console.log("[CalculationPdf] Report id:", report.id);
+    console.log("[CalculationPdf] Report calculationType:", report.calculationType);
+    console.log("[CalculationPdf] Report label:", report.label);
+    console.log("[CalculationPdf] inputData:", report.inputData ? "PRESENT" : "MISSING");
+    console.log("[CalculationPdf] inputData keys:", report.inputData ? Object.keys(report.inputData) : "N/A");
+    console.log("[CalculationPdf] has _fullState:", !!report.inputData?._fullState);
+    console.log("[CalculationPdf] has _calcResult:", !!report.inputData?._calcResult);
+    if (report.inputData?._calcResult) {
+      console.log("[CalculationPdf] _calcResult keys:", Object.keys(report.inputData._calcResult));
+      console.log("[CalculationPdf] _calcResult.party1_name:", report.inputData._calcResult.party1_name);
+      console.log("[CalculationPdf] _calcResult.party1_income:", report.inputData._calcResult.party1_income);
+      console.log("[CalculationPdf] _calcResult.party1_gross_income:", report.inputData._calcResult.party1_gross_income);
+    }
+    console.log("[CalculationPdf] resultData:", report.resultData ? "PRESENT" : "MISSING");
+    console.log("[CalculationPdf] pdfBase64:", report.pdfBase64 ? `PRESENT (${report.pdfBase64.length} chars)` : "MISSING");
+
     // Try _fullState first (manual calculator), then build from _calcResult (AI chat)
     let fullState = report.inputData?._fullState;
+    if (fullState) {
+      console.log("[CalculationPdf] Using _fullState (manual calculator path)");
+      console.log("[CalculationPdf] _fullState keys:", Object.keys(fullState));
+    }
     if (!fullState && report.inputData?._calcResult) {
+      console.log("[CalculationPdf] No _fullState, building from _calcResult (AI chat path)");
       fullState = buildFullStateFromCalcResult(report.inputData._calcResult, report.calculationType);
+      console.log("[CalculationPdf] Built fullState keys:", Object.keys(fullState));
+      console.log("[CalculationPdf] Built fullState.background:", JSON.stringify(fullState.background));
+      console.log("[CalculationPdf] Built fullState.screen2.totalIncomeParty1:", fullState.screen2?.totalIncomeParty1);
+      console.log("[CalculationPdf] Built fullState.screen2.totalIncomeParty2:", fullState.screen2?.totalIncomeParty2);
+      console.log("[CalculationPdf] Built fullState.supportQuantum:", JSON.stringify(fullState.supportQuantum).substring(0, 500));
+      console.log("[CalculationPdf] Built fullState.calculator_type:", fullState.calculator_type);
     }
     if (!fullState) {
+      console.error("[CalculationPdf] FAILED: No _fullState and no _calcResult — cannot generate PDF");
+      console.error("[CalculationPdf] Full inputData dump:", JSON.stringify(report.inputData).substring(0, 1000));
       alert("This report was saved without the data needed to regenerate a PDF. Please re-run the calculation and save again.");
       return;
     }
@@ -277,7 +335,7 @@ export default function CalculationPDf({ matterId }) {
       }
     }
 
-    setRenderReport({
+    const renderData = {
       background: bg,
       aboutTheChildren: fullState.aboutTheChildren,
       aboutTheRelationship: fullState.aboutTheRelationship,
@@ -285,7 +343,19 @@ export default function CalculationPDf({ matterId }) {
       typeOfCalculatorSelected: fullState.calculator_type,
       supportQuantum: sq,
       filename: report.pdfFilename || `${report.label || "calculation_report"}.pdf`,
-    });
+    };
+    console.log("[CalculationPdf] === RENDER REPORT DATA ===");
+    console.log("[CalculationPdf] background:", JSON.stringify(renderData.background));
+    console.log("[CalculationPdf] aboutTheChildren:", JSON.stringify(renderData.aboutTheChildren));
+    console.log("[CalculationPdf] aboutTheRelationship:", JSON.stringify(renderData.aboutTheRelationship));
+    console.log("[CalculationPdf] screen2 keys:", renderData.screen2 ? Object.keys(renderData.screen2) : "MISSING");
+    console.log("[CalculationPdf] screen2.totalIncomeParty1:", renderData.screen2?.totalIncomeParty1);
+    console.log("[CalculationPdf] screen2.totalIncomeParty2:", renderData.screen2?.totalIncomeParty2);
+    console.log("[CalculationPdf] typeOfCalculatorSelected:", renderData.typeOfCalculatorSelected);
+    console.log("[CalculationPdf] supportQuantum:", JSON.stringify(renderData.supportQuantum).substring(0, 500));
+    console.log("[CalculationPdf] filename:", renderData.filename);
+    console.log("[CalculationPdf] === END RENDER REPORT DATA ===");
+    setRenderReport(renderData);
   };
 
   const handleDelete = async (report) => {

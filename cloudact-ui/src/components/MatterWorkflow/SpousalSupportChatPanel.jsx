@@ -288,7 +288,24 @@ export default function SpousalSupportChatPanel({
         body: JSON.stringify({ messages: nextMessages }),
       });
       const data = await res.json();
-
+      console.log("[SpousalChat] === API RESPONSE DEBUG ===");
+      console.log("[SpousalChat] Response status:", res.status);
+      console.log("[SpousalChat] Response data keys:", Object.keys(data));
+      console.log("[SpousalChat] data.reply length:", data.reply?.length || 0);
+      console.log("[SpousalChat] data.calculationResult:", data.calculationResult ? "PRESENT" : "MISSING");
+      if (data.calculationResult) {
+        const cr = data.calculationResult;
+        console.log("[SpousalChat] calculationResult keys:", Object.keys(cr));
+        console.log("[SpousalChat] pdf_base64:", cr.pdf_base64 ? `PRESENT (${cr.pdf_base64.length} chars)` : "MISSING");
+        console.log("[SpousalChat] pdf_filename:", cr.pdf_filename || "MISSING");
+        console.log("[SpousalChat] payor_name:", cr.payor_name);
+        console.log("[SpousalChat] recipient_name:", cr.recipient_name);
+        console.log("[SpousalChat] monthly_low:", cr.monthly_low);
+        console.log("[SpousalChat] monthly_mid:", cr.monthly_mid);
+        console.log("[SpousalChat] monthly_high:", cr.monthly_high);
+      }
+      console.log("[SpousalChat] data.reply (first 300 chars):", data.reply?.substring(0, 300));
+      console.log("[SpousalChat] === END API RESPONSE DEBUG ===");
 
       if (data.error) {
         setBubbles((b) => [
@@ -304,8 +321,11 @@ export default function SpousalSupportChatPanel({
 
         // Store the calculation result for manual save via button
         if (data.calculationResult) {
+          console.log("[SpousalChat] Storing calculationResult in state");
           setLastCalcResult(data.calculationResult);
           setSavedToMatter(false);
+        } else {
+          console.log("[SpousalChat] No calculationResult in this response — buttons will NOT show unless a previous result exists");
         }
       }
     } catch {
@@ -331,9 +351,17 @@ export default function SpousalSupportChatPanel({
   }
 
   async function saveToMatter() {
-    if (!lastCalcResult || !matterId) return;
+    console.log("[SpousalChat] === SAVE TO MATTER DEBUG ===");
+    console.log("[SpousalChat] lastCalcResult:", lastCalcResult ? "PRESENT" : "NULL");
+    console.log("[SpousalChat] matterId:", matterId || "MISSING");
+    if (!lastCalcResult || !matterId) {
+      console.warn("[SpousalChat] saveToMatter aborted: lastCalcResult=", !!lastCalcResult, "matterId=", !!matterId);
+      return;
+    }
     setSavingToMatter(true);
     const cr = lastCalcResult;
+    console.log("[SpousalChat] Saving with _calcResult keys:", Object.keys(cr));
+    console.log("[SpousalChat] pdf_base64 in save payload:", cr.pdf_base64 ? `PRESENT (${cr.pdf_base64.length} chars)` : "MISSING");
     try {
       await dataAxios.post(`matters/${matterId}/reports`, {
         calculationType: "spousal_support",
@@ -360,8 +388,12 @@ export default function SpousalSupportChatPanel({
         pdfBase64: cr.pdf_base64 || null,
         pdfFilename: cr.pdf_filename || null,
       });
+      console.log("[SpousalChat] Report saved to DB successfully");
+      console.log("[SpousalChat] === END SAVE TO MATTER DEBUG ===");
       setSavedToMatter(true);
     } catch (err) {
+      console.error("[SpousalChat] Failed to save report:", err);
+      console.error("[SpousalChat] Error response:", err.response?.data);
       alert("Failed to save to matter. Please try again.");
     } finally {
       setSavingToMatter(false);
@@ -436,23 +468,44 @@ export default function SpousalSupportChatPanel({
                   <button
                     className="mw-download-btn"
                     onClick={() => {
+                      console.log("[SpousalChat] === DOWNLOAD BUTTON CLICKED ===");
+                      console.log("[SpousalChat] lastCalcResult:", lastCalcResult ? "PRESENT" : "NULL");
+                      console.log("[SpousalChat] lastCalcResult keys:", lastCalcResult ? Object.keys(lastCalcResult) : "N/A");
+                      console.log("[SpousalChat] pdf_base64:", lastCalcResult?.pdf_base64 ? `PRESENT (${lastCalcResult.pdf_base64.length} chars)` : "MISSING");
+                      console.log("[SpousalChat] pdf_filename:", lastCalcResult?.pdf_filename || "MISSING");
                       if (lastCalcResult.pdf_base64) {
-                        const byteChars = atob(lastCalcResult.pdf_base64);
-                        const byteArray = new Uint8Array(byteChars.length);
-                        for (let j = 0; j < byteChars.length; j++) byteArray[j] = byteChars.charCodeAt(j);
-                        const blob = new Blob([byteArray], { type: "application/pdf" });
-                        const url = URL.createObjectURL(blob);
-                        const a = document.createElement("a");
-                        a.href = url;
-                        a.download = lastCalcResult.pdf_filename || "spousal_support_report.pdf";
-                        document.body.appendChild(a);
-                        a.click();
-                        a.remove();
-                        URL.revokeObjectURL(url);
+                        try {
+                          console.log("[SpousalChat] Attempting atob decode...");
+                          const byteChars = atob(lastCalcResult.pdf_base64);
+                          console.log("[SpousalChat] atob succeeded, byteChars length:", byteChars.length);
+                          const byteArray = new Uint8Array(byteChars.length);
+                          for (let j = 0; j < byteChars.length; j++) byteArray[j] = byteChars.charCodeAt(j);
+                          const blob = new Blob([byteArray], { type: "application/pdf" });
+                          console.log("[SpousalChat] Blob created, size:", blob.size);
+                          const url = URL.createObjectURL(blob);
+                          console.log("[SpousalChat] Object URL created:", url);
+                          const a = document.createElement("a");
+                          a.href = url;
+                          a.download = lastCalcResult.pdf_filename || "spousal_support_report.pdf";
+                          document.body.appendChild(a);
+                          a.click();
+                          a.remove();
+                          URL.revokeObjectURL(url);
+                          console.log("[SpousalChat] Download triggered successfully");
+                        } catch (err) {
+                          console.error("[SpousalChat] PDF download error:", err);
+                          console.error("[SpousalChat] pdf_base64 first 100 chars:", lastCalcResult.pdf_base64?.substring(0, 100));
+                          alert("Failed to download PDF: " + err.message);
+                        }
                       } else {
+                        console.log("[SpousalChat] No pdf_base64, falling back to extractDownloadUrl");
                         const serverUrl = extractDownloadUrl(b.text);
+                        console.log("[SpousalChat] extractDownloadUrl result:", serverUrl || "NULL - no URL found");
+                        console.log("[SpousalChat] bubble text (first 200 chars):", b.text?.substring(0, 200));
                         if (serverUrl) window.open(serverUrl, "_blank");
+                        else console.warn("[SpousalChat] NO DOWNLOAD PATH AVAILABLE - both pdf_base64 and extractDownloadUrl failed");
                       }
+                      console.log("[SpousalChat] === END DOWNLOAD DEBUG ===");
                     }}
                   >
                     Download PDF Report
