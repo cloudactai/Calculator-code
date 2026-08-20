@@ -672,3 +672,40 @@ caption is one the builder left alone on purpose -- a signature line, a heading'
 underline (whose text starts at the left edge, so its span is not interior), or a
 ruled narrative line that already has a writing area over it. Without that filter
 the first pass proposed 16 boxes, six of them on exactly those.
+
+### Moving the caption under the rule instead
+
+```
+python3 caption_under_rule.py --only MBCFS_22A [--check]
+```
+
+Boxing a rule either side of its caption leaves the caption sitting between two
+controls and the writing space cut in half. This takes it off the line instead:
+the glyphs are redacted out of the background and redrawn *underneath* the rule
+at a fraction of the size, and the rule -- clear end to end now -- gets **one**
+box across the whole of it. Ten captions on 22A.
+
+The size is per caption, not fixed, because the room under a rule is not: 5.5pt
+where there is space, down to 3.8pt under "(name)" and "(dated)" on page 1, where
+the next line of the same sentence starts 4.0pt below the rule. It is the largest
+size whose ascender and descender fit the measured gap.
+
+Moving a caption can make a rule fillable that never was. 22A's "which
+___(is/are)___ returnable on" left 3.5pt and 4.7pt either side of the caption,
+both under `MIN_BLANK_WIDTH`, so it had no box at all; clearing the caption makes
+the whole 41.8pt rule writable and it gets one.
+
+> **This is the one place the pipeline rewrites the government's page.** Every
+> other Manitoba background ships byte-identical to the King's Printer's file,
+> which is the property that lets a re-fetch be diffed against what we ship. That
+> is not true of a form this has touched, and it is a layout change to a
+> prescribed court form: the instruction still reads, in the same words, at the
+> same point in the sentence, but small and below the line rather than on it.
+> Whether that is acceptable is a decision about the form, not about the code.
+>
+> `build_mb_forms.py` copies the source PDF over the promoted one, so **a rebuild
+> reverts this** and it has to be re-run afterwards. It is idempotent: a caption
+> already moved is no longer on its rule, so there is nothing left to find.
+
+Not handled: a caption that spans a line break. 22A's "(name of person served/
+name of person and agency served)" runs across two lines and is left where it is.
