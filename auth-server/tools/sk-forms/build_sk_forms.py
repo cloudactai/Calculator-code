@@ -282,21 +282,45 @@ def _over_a_bare_rule(caption, lines):
     return _is_bare_rule(nearest[1])
 
 
+def _span_width(boxes, start, end):
+    """Printed width of one run of characters."""
+    rect = fitz.Rect(boxes[start])
+    for box in boxes[start:end]:
+        rect |= box
+    return rect.width
+
+
 def underscore_blanks(page):
     """Every printed `______` blank on the page, as (rect, rule_y).
 
-    Two runs separated by nothing but whitespace are one blank: the forms set a
-    blank as `_ ______________` (a lone underscore, a space, then the run) often
-    enough that treating the pair as two fields would put a 3pt box in front of
-    every one of them. Two runs separated by a *word* stay separate -- the "of"
-    in `______ of ______` is a real caption between two real blanks.
+    Two runs separated by nothing but whitespace can be one blank: the forms set
+    a blank as `_ ______________` (a lone underscore, a space, then the run)
+    often enough that treating the pair as two fields would put a 3pt box in
+    front of every one of them. Two runs separated by a *word* always stay
+    separate -- the "of" in `______ of ______` is a real caption between two real
+    blanks.
+
+    But whitespace alone does not make two runs one blank, and reading the pages
+    is what shows it: Saskatchewan sets a date of birth as three tab-separated
+    rules captioned `(month) (day) (year)` underneath, and adoption Form L prints
+    two of those. Merging on whitespace gave each a single 315pt box spanning all
+    three, so a filer typing a date got one field where the form asks for three.
+    The same shape is on the birth line of adoption Forms C-1 through C-6.
+
+    So the merge is only for a **fragment** -- a run too narrow to be a blank on
+    its own, which is exactly the case the rule was written for. If both runs
+    could stand as their own blank, they are two blanks and stay two. That also
+    keeps the year of `20_ _` attached to its own day slot, since both of those
+    pieces are fragments.
     """
     blanks = []
     for text, boxes, sizes in line_chars(page):
         runs = [m.span() for m in UNDERSCORE_RUN.finditer(text)]
         merged = []
         for start, end in runs:
-            if merged and not text[merged[-1][1]:start].strip():
+            if (merged and not text[merged[-1][1]:start].strip()
+                    and min(_span_width(boxes, *merged[-1]),
+                            _span_width(boxes, start, end)) < MIN_RUN_WIDTH):
                 merged[-1] = (merged[-1][0], end)
                 continue
             merged.append((start, end))

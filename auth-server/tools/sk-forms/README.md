@@ -187,7 +187,7 @@ either flags every correctly-placed box for the underscores it is supposed to si
 on, or — once underscores are excused — waves through a box that really has
 covered the caption glued to them.
 
-Current state: **76 forms, 3,859 fields, zero findings**, and the build is
+Current state: **76 forms, 3,880 fields, zero findings**, and the build is
 idempotent (two runs produce byte-identical maps). The 40 Part 15 templates are
 byte-identical to what they were before the other two families were added, which
 is asserted directly rather than assumed -- the floors that had to move to fit
@@ -333,7 +333,24 @@ Five defect classes came out of it, all now fixed and all re-checked by
 4. **A blank seated into the checkbox above it.** The stacking pitch only knew
    about other blanks, so on Forms H and O an option printed directly over the
    `Re:____` beneath it left the blank's box 0.7pt inside the checkbox.
-5. **Date slots dropped for being narrow.** The three Orders of Adoption print
+5. **A date of birth typed into one box instead of three.** Two runs separated
+   by nothing but whitespace were merged into one blank. That rule was written
+   for a *fragment* -- the forms set a blank as `_ ______________`, and treating
+   the lone underscore as its own field would put a 3pt box in front of every one
+   of them -- but it also glued together runs that are separately captioned.
+   Saskatchewan sets a date of birth as three tab-separated rules with `(month)
+   (day) (year)` printed underneath, and adoption Form L prints two of those, so
+   a filer got a single 315pt box where the form asks for three entries. The same
+   shape is on the birth line of Forms C-1 to C-6 and the Orders of Adoption. The
+   merge is now only for a run too narrow to stand as a blank on its own; if both
+   sides could, they stay two. 14 forms gained boxes, and no Part 15 template
+   moved -- its one merged pair is Form 15-48B's witness/signature line, which is
+   dropped as a signature rule whether it is read as one rule or two.
+
+   Where the government prints *one* rule under two captions -- Form C-6 sets
+   `(month) (day)` under a single 138pt rule -- it stays one box. Splitting that
+   would mean inventing a boundary the form does not print.
+6. **Date slots dropped for being narrow.** The three Orders of Adoption print
    `The_ __ day of______, 20_ _`, whose day slot measures 15.2pt and year slot
    10.9pt, so the order's own date could not be typed. See `MIN_RUN_WIDTH`.
 
