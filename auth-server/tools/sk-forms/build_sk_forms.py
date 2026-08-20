@@ -59,6 +59,23 @@ SCALE = bp.SCALE
 RULE_INSET_RATIO = 0.175
 # A box sits just clear of its own rule rather than on it (guide 9.1).
 RULE_CLEARANCE = 1.3
+# ...and is then nudged back down onto it, for the child-protection and adoption
+# forms only. RULE_CLEARANCE leaves the stored rectangle's bottom edge 0.75pt
+# above the top of the printed rule's ink, measured on SKCFS_A where all nine
+# blanks on page 1 report the identical 0.75pt float over a rule 0.42pt thick.
+# The viewer draws its own bordered control inside the rectangle, so that float
+# reads on screen as a control hovering above the line it belongs to.
+#
+# 1.0pt is measured, not guessed: rendered at 26x against every candidate from
+# 0.75 to 2.0, it is the largest shift that still hides the printed rule *behind*
+# the control's bottom border. At 0.75 the rule still shows beneath the border;
+# from 1.25 up the rule reappears *inside* the box, above the border, which is
+# worse than the float it was meant to fix. 1.0 puts the edge mid-ink.
+#
+# Part 15 has the identical 0.75pt float and is deliberately left alone: those 40
+# templates are reviewed and shipped, and this is a cosmetic seating preference,
+# not a defect. Widening it to them is a one-line change to CP_AND_ADOPTION_ONLY.
+RULE_NUDGE = 1.0
 # A blank is one line of writing; the height follows the font it was set in.
 LINE_RATIO = 1.3
 # Shorter than this is a stray, not a blank anyone can type in. Applies to a
@@ -129,6 +146,10 @@ TEXTAREA_LINES = 1.75
 # get_drawings(); guide 6c does the same for rasterised pages.
 SHADED_BELOW = 248
 SHADE_ZOOM = 2.0
+
+# The two families this build treats as unreviewed and still tunable; Part 15 is
+# reviewed and shipped and is not to move. See RULE_NUDGE.
+CP_AND_ADOPTION_ONLY = ("SKCFS_", "SKAD_")
 
 UNDERSCORE_RUN = re.compile(r"_+")
 # Saskatchewan shades its section-heading rows *and* its totals rows the same
@@ -1112,6 +1133,22 @@ def signature_rule_rects(page):
     return drop_signature_rules(page_boxes(page), signature_captions(page))[1]
 
 
+def nudge_onto_rules(doc_id, fields):
+    """Drop every writing box onto its printed rule. See RULE_NUDGE.
+
+    Checkboxes are excluded and must be: they are seated on a printed square,
+    which the nudge would walk them off. Applied after seating rather than inside
+    it, so the stacking and obstacle rules still reason about the geometry the
+    page actually prints, and so verify_sk.py -- which re-derives every check
+    from the page -- is the thing that decides whether the result is sound.
+    """
+    if not doc_id.startswith(CP_AND_ADOPTION_ONLY):
+        return
+    for field in fields:
+        if field["type"] != "CheckBox":
+            field["y"] = round(field["y"] + RULE_NUDGE, 2)
+
+
 def build(src, promote=False):
     doc_id = src["docId"]
     source = os.path.join(STAGE, "%s_source.pdf" % doc_id)
@@ -1135,6 +1172,7 @@ def build(src, promote=False):
         fields.append(field)
     doc.close()
 
+    nudge_onto_rules(doc_id, fields)
     bp.clamp_to_page(fields, page_sizes)
     problems = bp.check_geometry(fields, page_sizes)
     overlaps = bp.check_overlap(source, fields)

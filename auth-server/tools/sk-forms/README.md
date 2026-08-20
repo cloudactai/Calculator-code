@@ -250,6 +250,33 @@ Unchanged from BC and Ontario. `field.x` = box left in points, `field.y` = box
 top in points (y down), `width`/`height` = points × 1.5. `FillPdf.savePdf` stamps
 `y = pageH − field.y − height/1.5`.
 
+### Seating a box on its rule
+
+`RULE_CLEARANCE` leaves the stored rectangle's bottom edge **0.75pt above** the
+top of the printed rule's ink, which is 0.42pt thick. The viewer draws its own
+bordered control inside that rectangle, so the float reads on screen as a control
+hovering above the line it belongs to, with the printed rule showing as a second
+line beneath it. `RULE_NUDGE` puts it back down.
+
+**1.0pt, and the value is measured rather than picked.** Rendered at 26x against
+every candidate from 0.75 to 2.0 on SKCFS_A, whose nine page-1 blanks all report
+the identical float: 0.75 leaves the rule still visible beneath the border, and
+from 1.25 up the rule reappears *inside* the box above the border -- worse than
+the float it was meant to fix. 1.0 lands the edge mid-ink, so the border covers
+the rule exactly.
+
+Applied to the child-protection and adoption forms only (`CP_AND_ADOPTION_ONLY`),
+and to text boxes only -- a checkbox is seated on a printed square and the nudge
+would walk it off, so 712 text fields move and all 73 option boxes stay put.
+**Part 15 has the identical 0.75pt float and is deliberately left alone**: those
+40 templates are reviewed and shipped, and this is a seating preference, not a
+defect. Widening it to them is a one-line change.
+
+The nudge is applied *after* seating, not inside it, so the stacking and obstacle
+rules still reason about the geometry the page actually prints -- and so
+`verify_sk.py`, which re-derives every check from the page, is what decides
+whether the result is sound rather than the builder asserting it.
+
 The one measured constant specific to Saskatchewan: the printed rule is the
 underscore glyph's own ink, which sits above the bottom of its character box.
 Measured on Form 15-47 p1 at 10pt — char box 139.40–154.48, ink 152.23–152.73 —
