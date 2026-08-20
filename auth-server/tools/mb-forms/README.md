@@ -709,3 +709,113 @@ the whole 41.8pt rule writable and it gets one.
 
 Not handled: a caption that spans a line break. 22A's "(name of person served/
 name of person and agency served)" runs across two lines and is left where it is.
+
+## Product-review regressions to check on Manitoba forms (2026-08-20)
+
+The following defects were found while reviewing Manitoba child-protection,
+adoption, child-abuse and family-income forms in the viewer. They are recurring
+layout patterns, not isolated coordinate fixes. Apply these checks to the whole
+form and to repeated structures on the same page.
+
+### Checkboxes can be symbol-font text
+
+Do not look only for Unicode checkbox characters or vector squares. Manitoba
+source PDFs also encode printed check marks as ordinary-looking text in symbol
+fonts:
+
+- CFS-19 page 2 and CFS-20 page 2 use the literal character `9` in
+  `WP-IconicSymbolsA`.
+- FA-1 pages 1 and 2 use the literal character `G` in
+  `WPTypographicSymbols`.
+
+When the page says "check appropriate box(es)" or "check only one", visually
+account for every printed box. Measure the rendered ink, not the symbol font's
+full character box, and create a `CheckBox` with `shape: "square"`. Mapping
+width and height remain rendered points multiplied by 1.5. Check every option;
+finding one box does not prove the group is complete.
+
+### Blank party bands around `-and-` need separate fields
+
+Style-of-cause pages often have large blank bands whose only nearby text is a
+right-aligned role caption. Examples include CFS-13, CFS-14, CFS-15 and AD-10,
+AD-11, AD-13 and AD-14_1. Captions seen in this review include:
+
+- `("the agency")`, `("the parent or parents")`,
+  `("the guardian or guardians")` and `("the mother")`
+- `(prospective adoptive parent)` and `(birth parent/guardian)`
+- bare `Applicant` and `Respondent`
+
+Add one single-line `TextField` in the clear band immediately above each role
+caption, including both parties separated by `-and-`. Do not cover the whole
+style-of-cause area with one `TextArea`; AD-10 demonstrated that this prevents
+the applicant and respondent from being entered independently.
+
+AD-16 and AD-17 have the related child/application pattern: the child's given
+names and birth-registration number and the applicant are two distinct blank
+bands and require two distinct single-line fields.
+
+### Context decides whether a ruled blank is a signature
+
+A parenthesised caption is not automatically a signature caption. CFS-12's
+`(judge)` blank occurs in the sentence structure `___ of ___ of ___` alongside
+court and jurisdiction information, so it is a data field. Read the sentence
+and surrounding labels before suppressing it.
+
+Conversely, do not place an input on a line explicitly labelled `Signature`.
+For repeated witness/signature rows, add inputs to every line labelled
+`Witness` and leave every corresponding signature line untouched. AD-5 page 2
+has two such rows; checking only the first row caused both a missing witness
+field and an erroneous signature field.
+
+### Match field type to the printed writing structure
+
+- Use separate single-line `TextField`s for separate printed rules. CFS-22A
+  page 2 originally had one large `TextArea` spanning three writing lines; each
+  rule needs its own field.
+- Use a `TextArea` only for a genuinely open narrative region. AD-4 page 1 had
+  an erroneous large area above existing Name, Address and Occupation lines;
+  AD-4 page 2 and AD-5 page 2 had erroneous areas under `IN THE PRESENCE OF`.
+  Those areas must be removed, with the actual witness lines handled separately.
+- A `TO:` or name-and-address block can require multiple single-line fields even
+  when OCR sees one blank region. CFS-11 page 2 uses two fields in the available
+  band, following the structure visible in CFS-12.
+
+### A labelled table cell can still contain writable space
+
+Do not classify an entire table cell as non-writable merely because its label is
+printed inside it. CA-1 page 2 exposed this failure across almost the whole page.
+The blank space below the label still needs an input for alleged-abuser names,
+known names, address, city/town, province, phone numbers, dates, agency fields
+and the abuse co-ordinator. Segment the label area from the answer area. Its
+large Section B information block is the contrasting case: it is a genuine
+`TextArea`, ending above the printed instruction to attach more pages.
+
+### Bold and total rows still need inputs
+
+Bold text, shading and the word `Total` are not reasons to suppress numeric
+cells. CFS-10 and FA-1 both lost all three fields in these rows:
+
+- page 3: `Total Deductions from Annual Family Income`
+- page 4: `Total Adjusted Annual Family Income`
+
+These are three single-line money fields per row (both Applicant columns and
+the Total column), not text areas. Audit every numeric column. Normalized PDF
+text may remove spaces or merge bold runs, so total-row matching must tolerate
+those extraction differences.
+
+### Required regression pass
+
+For every Manitoba mapping repair:
+
+1. Inspect the entire affected page, not only the reported location. Count all
+   checkbox options, party bands, ruled lines, repeated witness rows and table
+   columns.
+2. Render the overlay and verify that controls sit on the intended printed ink
+   without covering labels or signature lines.
+3. Validate unique IDs, positive dimensions, page bounds and printed-text
+   overlap, then dry-run the importer for every affected `docId`.
+4. Update `form-template-export/audit.json` whenever a mapping's field count
+   changes. When removing a false field, assert that its ID and type are gone.
+5. Put the fix in the builder/repair source when possible. If a promoted mapping
+   is deliberately hand-finished, document that exception because rebuilding
+   can overwrite it.
