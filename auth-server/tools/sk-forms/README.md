@@ -252,25 +252,36 @@ top in points (y down), `width`/`height` = points × 1.5. `FillPdf.savePdf` stam
 
 ### Seating a box on its rule
 
-`RULE_CLEARANCE` leaves the stored rectangle's bottom edge **0.75pt above** the
-top of the printed rule's ink, which is 0.42pt thick. The viewer draws its own
-bordered control inside that rectangle, so the float reads on screen as a control
-hovering above the line it belongs to, with the printed rule showing as a second
-line beneath it. `RULE_NUDGE` puts it back down.
+`RULE_CLEARANCE` is derived from `RULE_INSET_RATIO` -- where the underscore's
+ink sits inside its character box, 0.175 of the font size, measured on Part 15's
+font. That leaves the stored rectangle's bottom edge floating above the printed
+rule. The viewer draws its own bordered control inside the rectangle, so the
+float reads on screen as a control hovering above the line it belongs to, with
+the rule showing as a second line beneath it. `RULE_NUDGE` puts it back down.
 
-**1.0pt, and the value is measured rather than picked.** Rendered at 26x against
-every candidate from 0.75 to 2.0 on SKCFS_A, whose nine page-1 blanks all report
-the identical float: 0.75 leaves the rule still visible beneath the border, and
-from 1.25 up the rule reappears *inside* the box above the border -- worse than
-the float it was meant to fix. 1.0 lands the edge mid-ink, so the border covers
-the rule exactly.
+**The two families need different amounts, because they are set in different
+fonts.** The child-protection forms are the King's Printer's own form PDFs; the
+adoption forms are cut out of the consolidation, whose font seats the underscore
+lower in its character box, so one ratio cannot serve both. A single 1.0pt nudge
+seated the child-protection boxes correctly and left every adoption box still
+0.64pt clear of its rule -- which is exactly what it looked like in the viewer.
 
-Applied to the child-protection and adoption forms only (`CP_AND_ADOPTION_ONLY`),
-and to text boxes only -- a checkbox is seated on a printed square and the nudge
-would walk it off, so 712 text fields move and all 73 option boxes stay put.
-**Part 15 has the identical 0.75pt float and is deliberately left alone**: those
-40 templates are reviewed and shipped, and this is a seating preference, not a
-defect. Widening it to them is a one-line change.
+| Family | Nudge | Result, measured over every text box |
+| --- | --- | --- |
+| `SKCFS_` | 1.0pt | bottom edge 0.21pt into the ink, 317/317 on the line |
+| `SKAD_` | 1.95pt | bottom edge 0.29pt into the ink, 388/388 on the line |
+
+Each value lands the edge mid-ink for its own family. Rendered at 26x against
+every candidate from 0.75 to 2.0: too little and the rule still shows beneath the
+border, too much and it reappears *inside* the box above the border, which is
+worse than the float it was meant to fix. The usable window is about half a point
+either side.
+
+Text boxes only -- a checkbox is seated on a printed square and the nudge would
+walk it off, so 712 text fields move and all 73 option boxes stay put. **Part 15
+has the same float and is deliberately left alone**: those 40 templates are
+reviewed and shipped, and this is a seating preference, not a defect. Widening it
+to them is one more entry in `RULE_NUDGE`.
 
 The nudge is applied *after* seating, not inside it, so the stacking and obstacle
 rules still reason about the geometry the page actually prints -- and so

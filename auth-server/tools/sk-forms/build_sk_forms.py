@@ -60,22 +60,32 @@ RULE_INSET_RATIO = 0.175
 # A box sits just clear of its own rule rather than on it (guide 9.1).
 RULE_CLEARANCE = 1.3
 # ...and is then nudged back down onto it, for the child-protection and adoption
-# forms only. RULE_CLEARANCE leaves the stored rectangle's bottom edge 0.75pt
-# above the top of the printed rule's ink, measured on SKCFS_A where all nine
-# blanks on page 1 report the identical 0.75pt float over a rule 0.42pt thick.
-# The viewer draws its own bordered control inside the rectangle, so that float
-# reads on screen as a control hovering above the line it belongs to.
+# forms only. RULE_CLEARANCE is derived from RULE_INSET_RATIO, which is where the
+# underscore's ink sits inside its character box -- 0.175 of the font size,
+# measured on Part 15's font. That leaves the stored rectangle's bottom edge
+# floating above the printed rule, and the viewer draws its own bordered control
+# inside the rectangle, so the float reads on screen as a control hovering above
+# the line it belongs to with the rule showing as a second line beneath.
 #
-# 1.0pt is measured, not guessed: rendered at 26x against every candidate from
-# 0.75 to 2.0, it is the largest shift that still hides the printed rule *behind*
-# the control's bottom border. At 0.75 the rule still shows beneath the border;
-# from 1.25 up the rule reappears *inside* the box, above the border, which is
-# worse than the float it was meant to fix. 1.0 puts the edge mid-ink.
+# **The two families need different amounts, because they are set in different
+# fonts.** The child-protection forms are the King's Printer's own form PDFs; the
+# adoption forms are cut out of the consolidation, whose font seats the underscore
+# lower in its character box, so the one ratio under-shoots it. Measured over
+# every text box in each family -- 317 and 388 of them -- the ink top sits 0.75pt
+# below the box bottom on the child-protection forms and 0.69pt on the adoption
+# forms, but the adoption rule is reached from further away: after a 1.0pt nudge
+# the child-protection boxes land 0.21-0.29pt into their ink while the adoption
+# boxes were still 0.64pt clear of theirs.
 #
-# Part 15 has the identical 0.75pt float and is deliberately left alone: those 40
-# templates are reviewed and shipped, and this is a cosmetic seating preference,
-# not a defect. Widening it to them is a one-line change to CP_AND_ADOPTION_ONLY.
-RULE_NUDGE = 1.0
+# Each value lands the edge mid-ink for its own family. Rendered at 26x against
+# every candidate from 0.75 to 2.0: too little and the rule still shows beneath
+# the border, too much and it reappears *inside* the box above the border, which
+# is worse than the float it was meant to fix. The usable window is about half a
+# point wide either side of these.
+#
+# Part 15 has the same float and is deliberately left alone: those 40 templates
+# are reviewed and shipped, and this is a seating preference, not a defect.
+RULE_NUDGE = {"SKCFS_": 1.0, "SKAD_": 1.95}
 # A blank is one line of writing; the height follows the font it was set in.
 LINE_RATIO = 1.3
 # Shorter than this is a stray, not a blank anyone can type in. Applies to a
@@ -146,10 +156,6 @@ TEXTAREA_LINES = 1.75
 # get_drawings(); guide 6c does the same for rasterised pages.
 SHADED_BELOW = 248
 SHADE_ZOOM = 2.0
-
-# The two families this build treats as unreviewed and still tunable; Part 15 is
-# reviewed and shipped and is not to move. See RULE_NUDGE.
-CP_AND_ADOPTION_ONLY = ("SKCFS_", "SKAD_")
 
 UNDERSCORE_RUN = re.compile(r"_+")
 # Saskatchewan shades its section-heading rows *and* its totals rows the same
@@ -1142,11 +1148,13 @@ def nudge_onto_rules(doc_id, fields):
     page actually prints, and so verify_sk.py -- which re-derives every check
     from the page -- is the thing that decides whether the result is sound.
     """
-    if not doc_id.startswith(CP_AND_ADOPTION_ONLY):
+    nudge = next((v for prefix, v in RULE_NUDGE.items()
+                  if doc_id.startswith(prefix)), None)
+    if nudge is None:
         return
     for field in fields:
         if field["type"] != "CheckBox":
-            field["y"] = round(field["y"] + RULE_NUDGE, 2)
+            field["y"] = round(field["y"] + nudge, 2)
 
 
 def build(src, promote=False):
