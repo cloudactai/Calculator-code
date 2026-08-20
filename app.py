@@ -2609,14 +2609,41 @@ def run_spousal_calc_tool(tool_input: dict) -> dict:
             years=years,
             recipient_age=recipient_age,
         )
+        # Compute tax profiles for the no-children path
+        p1_gross_nc = float(tool_input["party1_gross_income"])
+        p2_gross_nc = float(tool_input["party2_gross_income"])
+        p1_age_nc = int(tool_input.get("party1_age", 0))
+        p2_age_nc = int(tool_input.get("party2_age", 0))
+        province_nc = tool_input.get("party1_province", "ON")
+        year_nc = int(tool_input.get("tax_year", 0)) or date.today().year
+        p1_is_payor_nc = p1_gross_nc >= p2_gross_nc
+        payor_gross_nc = p1_gross_nc if p1_is_payor_nc else p2_gross_nc
+        recip_gross_nc = p2_gross_nc if p1_is_payor_nc else p1_gross_nc
+        payor_age_nc = p1_age_nc if p1_is_payor_nc else p2_age_nc
+        recip_age_nc = p2_age_nc if p1_is_payor_nc else p1_age_nc
+        try:
+            nc_profiles = _compute_no_children_tax_profiles(
+                payor_gross=payor_gross_nc,
+                recipient_gross=recip_gross_nc,
+                payor_age=payor_age_nc if payor_age_nc > 0 else 35,
+                recipient_age=recip_age_nc if recip_age_nc > 0 else 35,
+                ss_low=result.annual_low,
+                ss_mid=result.annual_med,
+                ss_high=result.annual_high,
+                province=province_nc,
+                year=year_nc,
+            )
+        except Exception:
+            nc_profiles = {}
+
         calc_result = {
             "formula":        "no_children",
             "party1_name":    p1_name,
             "party2_name":    p2_name,
-            "party1_income":  float(tool_input["party1_gross_income"]),
-            "party2_income":  float(tool_input["party2_gross_income"]),
-            "party1_age":     int(tool_input.get("party1_age", 0)),
-            "party2_age":     int(tool_input.get("party2_age", 0)),
+            "party1_income":  p1_gross_nc,
+            "party2_income":  p2_gross_nc,
+            "party1_age":     p1_age_nc,
+            "party2_age":     p2_age_nc,
             "party1_province": tool_input.get("party1_province", ""),
             "party2_province": tool_input.get("party2_province", ""),
             "payor":          result.payor,
@@ -2644,6 +2671,7 @@ def run_spousal_calc_tool(tool_input: dict) -> dict:
             "duration_label": result.duration_label,
             "children":       [],
             "child_support_paid": 0,
+            **nc_profiles,
         }
         try:
             filename = generate_spousal_support_report(calc_result)
@@ -2655,9 +2683,9 @@ def run_spousal_calc_tool(tool_input: dict) -> dict:
                 calc_result["pdf_filename"] = filename
         except Exception as e:
             import traceback
-        print(f"[spousal] PDF generation error: {e}", flush=True)
-        print(f"[spousal] PDF error traceback:\n{traceback.format_exc()}", flush=True)
-        calc_result["_pdf_error"] = str(e)
+            print(f"[spousal] PDF generation error: {e}", flush=True)
+            print(f"[spousal] PDF error traceback:\n{traceback.format_exc()}", flush=True)
+            calc_result["_pdf_error"] = str(e)
         return calc_result
 
     # ── PATH B: with children (iterative) ────────────────────────────────────
@@ -2718,6 +2746,29 @@ def run_spousal_calc_tool(tool_input: dict) -> dict:
             years=years,
             recipient_age=float(r_age),
         )
+        # Compute tax profiles for the adult-children no-children fallback
+        province_ac = tool_input.get("party1_province", "ON")
+        year_ac = int(tool_input.get("tax_year", 0)) or today.year
+        p1_is_payor_ac = p1_gross >= p2_gross
+        payor_gross_ac = p1_gross if p1_is_payor_ac else p2_gross
+        recip_gross_ac = p2_gross if p1_is_payor_ac else p1_gross
+        payor_age_ac = p1_age if p1_is_payor_ac else p2_age
+        recip_age_ac = p2_age if p1_is_payor_ac else p1_age
+        try:
+            ac_profiles = _compute_no_children_tax_profiles(
+                payor_gross=payor_gross_ac,
+                recipient_gross=recip_gross_ac,
+                payor_age=payor_age_ac if payor_age_ac > 0 else 35,
+                recipient_age=recip_age_ac if recip_age_ac > 0 else 35,
+                ss_low=result.annual_low,
+                ss_mid=result.annual_med,
+                ss_high=result.annual_high,
+                province=province_ac,
+                year=year_ac,
+            )
+        except Exception:
+            ac_profiles = {}
+
         calc_result = {
             "formula":        "no_children",
             "note":           "All children are 18 or older and are considered adults. Spousal support calculated using the without-children formula.",
@@ -2754,6 +2805,7 @@ def run_spousal_calc_tool(tool_input: dict) -> dict:
             "duration_label": result.duration_label,
             "children":       [],
             "child_support_paid": 0,
+            **ac_profiles,
         }
         try:
             filename = generate_spousal_support_report(calc_result)
@@ -2765,9 +2817,9 @@ def run_spousal_calc_tool(tool_input: dict) -> dict:
                 calc_result["pdf_filename"] = filename
         except Exception as e:
             import traceback
-        print(f"[spousal] PDF generation error: {e}", flush=True)
-        print(f"[spousal] PDF error traceback:\n{traceback.format_exc()}", flush=True)
-        calc_result["_pdf_error"] = str(e)
+            print(f"[spousal] PDF generation error: {e}", flush=True)
+            print(f"[spousal] PDF error traceback:\n{traceback.format_exc()}", flush=True)
+            calc_result["_pdf_error"] = str(e)
         return calc_result
 
     # Determine payor/recipient by gross income to label the result
@@ -2912,6 +2964,13 @@ def run_spousal_calc_tool(tool_input: dict) -> dict:
         "duration_label":       f"{result.duration_low} – {result.duration_high} years",
         "approximate":          has_approx,
         "children":             [{"name": c.get("name", ""), "dob": c["date_of_birth"], "custody_arrangement": c["custody_arrangement"]} for c in children_raw],
+        # Tax profile dicts for detailed Tax Profile page in PDF
+        "payor_tax_profile_low":      _serialize_tax_profile(result.payor_tax_profile_low),
+        "payor_tax_profile_mid":      _serialize_tax_profile(result.payor_tax_profile_mid),
+        "payor_tax_profile_high":     _serialize_tax_profile(result.payor_tax_profile_high),
+        "recipient_tax_profile_low":  _serialize_tax_profile(result.recipient_tax_profile_low),
+        "recipient_tax_profile_mid":  _serialize_tax_profile(result.recipient_tax_profile_mid),
+        "recipient_tax_profile_high": _serialize_tax_profile(result.recipient_tax_profile_high),
     }
 
     try:

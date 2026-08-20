@@ -457,6 +457,7 @@ def _tp_val(profile, key, default=0):
 
 def _build_tax_profile_page(data, p1, p2, p1_is_payor):
     """Build the Tax Profile page HTML (page 2).
+    Matches the detailed format of CalculationReport.tsx from the manual calculator.
     Uses tax profile dicts if available in data, otherwise skips."""
     # Try to get tax profile dicts
     if p1_is_payor:
@@ -491,18 +492,72 @@ def _build_tax_profile_page(data, p1, p2, p1_is_payor):
             <td width="98" class="val">{vals[3]}</td><td width="98" class="val">{vals[4]}</td><td width="98" class="val">{vals[5]}</td>
         </tr>"""
 
+    def _row_custom(label, vals):
+        """Row with explicit per-cell values."""
+        cells = "".join(f'<td width="98" class="val">{_fmt(v)}</td>' for v in vals)
+        return f"""<tr>
+            <td width="140" class="lbl">{label}</td>
+            {cells}
+        </tr>"""
+
+    def _row_bold(label, key):
+        vals = []
+        for tp in [tp1_low, tp1_mid, tp1_high, tp2_low, tp2_mid, tp2_high]:
+            vals.append(_fmt(_tp_val(tp, key)))
+        return f"""<tr style="font-weight:bold;">
+            <td width="140" class="lbl" style="font-weight:bold;">{label}</td>
+            <td width="98" class="val">{vals[0]}</td><td width="98" class="val">{vals[1]}</td><td width="98" class="val">{vals[2]}</td>
+            <td width="98" class="val">{vals[3]}</td><td width="98" class="val">{vals[4]}</td><td width="98" class="val">{vals[5]}</td>
+        </tr>"""
+
+    def _spousal_support_row():
+        """Spousal support row: payor shows negative (paid), recipient shows positive (received)."""
+        vals = []
+        for tp in [tp1_low, tp1_mid, tp1_high, tp2_low, tp2_mid, tp2_high]:
+            paid = _tp_val(tp, "deductible_support_paid")
+            received = _tp_val(tp, "support_received")
+            if paid > 0:
+                vals.append(f"(${paid:,.0f})")
+            elif received > 0:
+                vals.append(_fmt(round(received)))
+            else:
+                vals.append("$0")
+        cells = "".join(f'<td width="98" class="val">{v}</td>' for v in vals)
+        return f"""<tr>
+            <td width="140" class="lbl">Spousal Support</td>
+            {cells}
+        </tr>"""
+
+    def _cpp_deductions_row():
+        """CPP Deductions = cpp_enhanced - cpp2 (first additional CPP)."""
+        vals = []
+        for tp in [tp1_low, tp1_mid, tp1_high, tp2_low, tp2_mid, tp2_high]:
+            cpp_enhanced = _tp_val(tp, "cpp_enhanced")
+            cpp2 = _tp_val(tp, "cpp2")
+            vals.append(round(cpp_enhanced - cpp2))
+        return _row_custom("CPP Deductions", vals)
+
     def _section_hdr(label):
         return f"""<tr>
-            <td width="140" style="font-weight:bold;background:#f0f0f0;padding:4px 6px;border:1px solid #d0d0d0;">{label}</td>
-            <td width="98" style="background:#f0f0f0;border:1px solid #d0d0d0;"></td>
-            <td width="98" style="background:#f0f0f0;border:1px solid #d0d0d0;"></td>
-            <td width="98" style="background:#f0f0f0;border:1px solid #d0d0d0;"></td>
-            <td width="98" style="background:#f0f0f0;border:1px solid #d0d0d0;"></td>
-            <td width="98" style="background:#f0f0f0;border:1px solid #d0d0d0;"></td>
-            <td width="98" style="background:#f0f0f0;border:1px solid #d0d0d0;"></td>
+            <td width="140" style="font-weight:bold;background:#fff;padding:8px 6px 3px 6px;border:none;font-size:9px;">{label}</td>
+            <td width="98" style="background:#fff;border:none;"></td>
+            <td width="98" style="background:#fff;border:none;"></td>
+            <td width="98" style="background:#fff;border:none;"></td>
+            <td width="98" style="background:#fff;border:none;"></td>
+            <td width="98" style="background:#fff;border:none;"></td>
+            <td width="98" style="background:#fff;border:none;"></td>
         </tr>"""
 
     province = data.get("party1_province", "Ontario")
+    # Map province codes to display names
+    prov_names = {
+        "ON": "Ontario", "BC": "British Columbia", "AB": "Alberta",
+        "SK": "Saskatchewan", "MB": "Manitoba", "QC": "Quebec",
+        "NB": "New Brunswick", "NS": "Nova Scotia", "PE": "Prince Edward Island",
+        "NL": "Newfoundland and Labrador", "YT": "Yukon",
+        "NT": "Northwest Territories", "NU": "Nunavut",
+    }
+    prov_display = prov_names.get(province, province) if len(province) <= 2 else province
 
     return f"""
 <!-- ═══════════════════════════════════════════════════════════════════════ -->
@@ -512,11 +567,6 @@ def _build_tax_profile_page(data, p1, p2, p1_is_payor):
 <div class="calc-report">
   <div class="report-title">CLOUDACT FAMILY LAW TOOLS</div>
   <div class="section-header">Tax Profile</div>
-  <div style="font-size:10px;margin:4px 0 8px 0;color:#333;">
-    The taxes paid and benefits received by each party will vary depending
-    on the amount of spousal support that is paid. Detailed tax profiles for
-    each party and each scenario are set out below.
-  </div>
   <table class="details-table" width="728">
     <tr>
       <td width="140" class="lbl" style="background-color:#eef2f7;font-weight:bold;border:1px solid #d0d0d0;"></td>
@@ -532,26 +582,52 @@ def _build_tax_profile_page(data, p1, p2, p1_is_payor):
       <td width="98">Low</td><td width="98">Med</td><td width="98">High</td>
       <td width="98">Low</td><td width="98">Med</td><td width="98">High</td>
     </tr>
-      {_section_hdr("Income")}
       {_row("Employment", "employed_income")}
       {_row("Self Employment", "self_employed_income")}
-      {_row("Spousal Support", "deductible_support_paid", negate=True)}
+      {_spousal_support_row()}
+
       {_section_hdr("Deductions")}
-      {_row("CPP Deductions", "cpp_deductions")}
+      {_cpp_deductions_row()}
+      {_row("Second Additional CPP Employed", "cpp2")}
+      {_row_custom("Second Additional CPP Self Employed", [0, 0, 0, 0, 0, 0])}
       {_row("Child Care Expenses", "child_care_expenses")}
+      {_row("Additional based on user input", "other_deductions")}
+      {_row("Taxable Income", "taxable_income")}
+
       {_section_hdr("Federal Credits")}
-      {_row("Basic Personal Amount", "basic_personal_amount_federal")}
-      {_row("CPP", "cpp_credit")}
-      {_row("EI", "ei_credit")}
+      {_row("Basic Personal Amount", "basic_personal_amount_fed")}
+      {_row("Age Amount", "age_amount_fed")}
+      {_row("Eligible Dependent", "eligible_dependent_credit_fed")}
+      {_row("CPP", "cpp_base")}
+      {_row("EI", "ei")}
       {_row("Canada Employment", "canada_employment_credit")}
-      {_section_hdr("Taxes and Deductions")}
+      {_row_custom("Additional based on user input", [0, 0, 0, 0, 0, 0])}
+      {_row("Disability Amount (Self)", "disability_credit_fed")}
+
+      {_section_hdr("Provincial Credits")}
+      {_row("Basic Personal Amount", "basic_personal_amount_prov")}
+      {_row("Eligible Dependent", "eligible_dependent_credit_prov")}
+      {_row("LIFT", "ontario_lift_credit")}
+      {_row_custom("Additional Based on user Input", [0, 0, 0, 0, 0, 0])}
+      {_row(f"Disability Amount (Self).. {prov_display}", "disability_credit_prov")}
+
+      {_section_hdr("Taxes And Deductions")}
       {_row("Federal Tax", "federal_tax")}
-      {_row(f"{province} Tax", "provincial_tax")}
-      {_row("CPP and EI", "cpp_ei_total")}
+      {_row(f"{prov_display} Tax", "provincial_tax")}
+      {_row("CPP and EI for Employed", "cpp_ei_deductions")}
+      {_row_custom("CPP and EI for Self Employed", [0, 0, 0, 0, 0, 0])}
+      {_row_custom("Provincial Credits", [0, 0, 0, 0, 0, 0])}
+      {_row_bold("Total", "total_taxes")}
+
       {_section_hdr("Benefits")}
       {_row("Canada Child Benefit", "canada_child_benefit")}
-      {_row("Climate Action Incentive", "climate_action_incentive")}
+      {_row_custom("Child Disability", [0, 0, 0, 0, 0, 0])}
+      {_row("Climate action incentive", "climate_action_incentive")}
+      {_row("Canada Workers Benefit", "canada_workers_benefit")}
       {_row("GST/HST Benefit", "gst_hst_benefit")}
+      {_row(f"{prov_display} Child Benefit", "provincial_child_benefit")}
+      {_row(f"{prov_display} Sales Tax Credit", "provincial_sales_tax_credit")}
+      {_row_bold("Total", "total_benefits")}
   </table>
 </div>"""
 
