@@ -543,13 +543,22 @@ export default function SpousalSupportChatPanel({
     setSavingToMatter(true);
     const cr = lastCalcResult;
     console.log("[SpousalChat] Saving with _calcResult keys:", Object.keys(cr));
-    console.log("[SpousalChat] pdf_base64 in save payload:", cr.pdf_base64 ? `PRESENT (${cr.pdf_base64.length} chars)` : "MISSING");
     try {
+      const reportData = buildReportData(cr);
+      const label = `${cr.payor_name || cr.party1_name || "Party 1"} v ${cr.recipient_name || cr.party2_name || "Party 2"} - Spousal Support`;
       await dataAxios.post(`matters/${matterId}/reports`, {
         calculationType: "spousal_support",
-        label: `${cr.payor_name || cr.party1_name || "Party 1"} v ${cr.recipient_name || cr.party2_name || "Party 2"} - Spousal Support`,
+        label,
         inputData: {
           _calcResult: cr,
+          _fullState: {
+            background: reportData.background,
+            aboutTheChildren: reportData.aboutTheChildren,
+            aboutTheRelationship: reportData.aboutTheRelationship,
+            screen2: reportData.screen2,
+            calculator_type: "SPOUSAL",
+            supportQuantum: reportData.supportQuantum,
+          },
           party1_name: cr.party1_name,
           party2_name: cr.party2_name,
           party1_gross_income: cr.party1_gross_income,
@@ -567,8 +576,7 @@ export default function SpousalSupportChatPanel({
           annual_high: cr.annual_high,
           duration_label: cr.duration_label,
         },
-        pdfBase64: cr.pdf_base64 || null,
-        pdfFilename: cr.pdf_filename || null,
+        pdfFilename: `${label}.pdf`,
       });
       console.log("[SpousalChat] Report saved to DB successfully");
 

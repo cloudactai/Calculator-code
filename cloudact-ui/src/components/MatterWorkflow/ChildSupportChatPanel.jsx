@@ -510,13 +510,21 @@ export default function ChildSupportChatPanel({
     setSavingToMatter(true);
     const cr = lastCalcResult;
     console.log("[ChildChat] Saving with _calcResult keys:", Object.keys(cr));
-    console.log("[ChildChat] pdf_base64 in save payload:", cr.pdf_base64 ? `PRESENT (${cr.pdf_base64.length} chars)` : "MISSING");
     try {
+      const reportData = buildReportData(cr);
       await dataAxios.post(`matters/${matterId}/reports`, {
         calculationType: "child_support",
         label: `${cr.party1_name || "Party 1"} v ${cr.party2_name || "Party 2"} - Child Support`,
         inputData: {
           _calcResult: cr,
+          _fullState: {
+            background: reportData.background,
+            aboutTheChildren: reportData.aboutTheChildren,
+            aboutTheRelationship: reportData.aboutTheRelationship,
+            screen2: reportData.screen2,
+            calculator_type: "CHILD",
+            supportQuantum: reportData.supportQuantum,
+          },
           party1_name: cr.party1_name,
           party2_name: cr.party2_name,
           party1_income: cr.party1_income,
@@ -534,8 +542,7 @@ export default function ChildSupportChatPanel({
           net_monthly: cr.net_monthly,
           net_annual: cr.net_annual,
         },
-        pdfBase64: cr.pdf_base64 || null,
-        pdfFilename: cr.pdf_filename || null,
+        pdfFilename: `${cr.party1_name || "Party 1"} v ${cr.party2_name || "Party 2"} - Child Support.pdf`,
       });
       console.log("[ChildChat] Report saved to DB successfully");
 
