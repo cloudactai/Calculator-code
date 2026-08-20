@@ -422,8 +422,10 @@ patch.
 
 Still open, recorded rather than guessed at: Form 70D.1 p3's two "(Name and
 address of…)" captions have no writing area and no twin in the batch to take a
-column from. Form CFS-11 p2 and Form AA-15 p3's "TO: (name and address of each
-respondent)" are the same shape, and the same decision.
+column from. Form AA-15 p3's "TO: (name and address of each respondent)" is the
+same shape and needs the same decision. Form CFS-11 p2 was resolved by product
+review on 2026-08-20: two text lines fill the available band before the
+"APPLICATION" heading, matching the adjacent CFS-12 form's control treatment.
 
 **Three Rule 70 items closed on 2026-08-18**, while building batch 2:
 
