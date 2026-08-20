@@ -707,8 +707,22 @@ the whole 41.8pt rule writable and it gets one.
 > reverts this** and it has to be re-run afterwards. It is idempotent: a caption
 > already moved is no longer on its rule, so there is nothing left to find.
 
-Not handled: a caption that spans a line break. 22A's "(name of person served/
-name of person and agency served)" runs across two lines and is left where it is.
+**A caption that spans a line break** is handled too. 22A sets "(name of person
+served/ name of person and agency served)" across two lines: the opening half on
+the rule that ends one line, the closing half on the rule that starts the next.
+Neither half reads as a caption on its own, so both were skipped and both rules
+stayed unfillable. The whole caption goes under the *first* of the two rules --
+at this size it fits on one line -- and both rules are then cleared and boxed.
+
+Sized to fit the rule it goes under as well as the gap beneath it: joined, the
+caption is 56 characters and would overrun the 122pt rule at 5.5pt, so it steps
+down until it fits (5.0pt here).
+
+The caption ends at its bracket, and this matters: the form sets the sentence's
+comma hard against it -- "...agency served) ," -- so the comma falls in the same
+glyph run. Carried along, it was redacted off the line it punctuates and
+reappeared inside the caption, leaving line 2 reading " with a true copy of".
+Everything after the closing bracket stays where the form put it.
 
 ## Product-review regressions to check on Manitoba forms (2026-08-20)
 
