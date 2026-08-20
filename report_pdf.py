@@ -678,6 +678,11 @@ def _build_terms_of_use_page():
 </div>"""
 
 
+def generate_unified_report(data: dict) -> str:
+    """Generate a unified PDF report (child, spousal, or both)."""
+    return generate_spousal_support_report(data)
+
+
 def generate_spousal_support_report(data: dict) -> str:
     """
     Generate a spousal support PDF report using the same HTML/CSS
