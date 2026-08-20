@@ -24,7 +24,7 @@ from intake_chat_guard import (
 )
 from spousal_support import calculate_spousal_support_no_children, calculate_spousal_support_with_children, SpousalSupportResult, calculate_spousal_support_iterative
 from tax import ChildInfo as TaxChildInfo
-from report_pdf import generate_child_support_report, generate_spousal_support_report, REPORTS_DIR
+from report_pdf import generate_child_support_report, generate_spousal_support_report, generate_unified_report, REPORTS_DIR
 
 CURRENT_YEAR = date.today().year
 
@@ -269,6 +269,14 @@ PROVINCE
 PARTIES
 - Name of each party (optional — ask once, move on if they skip it)
 - Annual guideline income for Party 1 and Party 2 (in CAD)
+- Age of each party (needed for the tax profile in the report)
+- Province of residence for each party (use the same province codes: ON, BC, AB, SK, MB).
+  If both parties live in the same province, ask once.
+- Does either party claim the eligible dependent tax credit? (Yes/No for each)
+  Default to "No" if the user does not know or does not answer.
+
+TAX YEAR
+- What tax year to use for the calculation (default to the current year if not specified)
 
 CHILDREN
 For each child:
@@ -330,6 +338,46 @@ CALC_TOOL = {
             "party2_income": {
                 "type": "number",
                 "description": "Party 2 annual guideline income in CAD"
+            },
+
+            # Ages — needed for the tax profile in the PDF report
+            "party1_age": {
+                "type": "integer",
+                "description": "Age of Party 1"
+            },
+            "party2_age": {
+                "type": "integer",
+                "description": "Age of Party 2"
+            },
+
+            # Province per party — may differ
+            "party1_province": {
+                "type": "string",
+                "enum": ["ON", "BC", "AB", "SK", "MB"],
+                "description": "Province of residence for Party 1"
+            },
+            "party2_province": {
+                "type": "string",
+                "enum": ["ON", "BC", "AB", "SK", "MB"],
+                "description": "Province of residence for Party 2"
+            },
+
+            # Tax year for the report
+            "tax_year": {
+                "type": "integer",
+                "description": "Tax year for the calculation (defaults to current year)"
+            },
+
+            # Eligible dependent tax credit
+            "party1_claims_dependent": {
+                "type": "string",
+                "enum": ["Yes", "No"],
+                "description": "Does Party 1 claim the eligible dependent tax credit? Defaults to No."
+            },
+            "party2_claims_dependent": {
+                "type": "string",
+                "enum": ["Yes", "No"],
+                "description": "Does Party 2 claim the eligible dependent tax credit? Defaults to No."
             },
 
             # Children — array, one object per child
@@ -409,6 +457,13 @@ CS_REPORT_TOOL = {
                     "party2_annual":  {"type": "number"},
                 }
             },
+            "party1_age":              {"type": "integer", "description": "Age of Party 1"},
+            "party2_age":              {"type": "integer", "description": "Age of Party 2"},
+            "party1_province":         {"type": "string", "description": "Province of Party 1"},
+            "party2_province":         {"type": "string", "description": "Province of Party 2"},
+            "tax_year":                {"type": "integer", "description": "Tax year"},
+            "party1_claims_dependent": {"type": "string", "description": "Does Party 1 claim dependent credit (Yes/No)"},
+            "party2_claims_dependent": {"type": "string", "description": "Does Party 2 claim dependent credit (Yes/No)"},
         }
     }
 }
@@ -417,7 +472,7 @@ CS_REPORT_TOOL = {
 def run_cs_report_tool(tool_input: dict) -> dict:
     """Generate a child support PDF report and return the download URL."""
     try:
-        filename = generate_child_support_report(tool_input)
+        filename = generate_unified_report(tool_input)
         return {
             "status": "success",
             "download_url": f"/download-report/{filename}",
@@ -491,12 +546,46 @@ def run_calc_tool(tool_input):
     else:
         net_payer, net_monthly = None, 0
 
+    p1_income = float(tool_input["party1_income"])
+    p2_income = float(tool_input["party2_income"])
+    p1_is_payor = p1_income >= p2_income
+    p1_age = int(tool_input.get("party1_age", 0)) or 35
+    p2_age = int(tool_input.get("party2_age", 0)) or 35
+    p1_prov = tool_input.get("party1_province") or province
+    p2_prov = tool_input.get("party2_province") or province
+    tax_year = int(tool_input.get("tax_year", 0)) or date.today().year
+    payor_gross = p1_income if p1_is_payor else p2_income
+    recip_gross = p2_income if p1_is_payor else p1_income
+    payor_age = p1_age if p1_is_payor else p2_age
+    recip_age = p2_age if p1_is_payor else p1_age
+
+    try:
+        cs_profiles = _compute_no_children_tax_profiles(
+            payor_gross=payor_gross,
+            recipient_gross=recip_gross,
+            payor_age=payor_age,
+            recipient_age=recip_age,
+            ss_low=0, ss_mid=0, ss_high=0,
+            province=p1_prov,
+            year=tax_year,
+        )
+    except Exception:
+        cs_profiles = {}
+
     calc_result = {
         "scenario":          type_of_splitting,
         "party1_name":       p1_name,
         "party2_name":       p2_name,
         "party1_income":     tool_input["party1_income"],
         "party2_income":     tool_input["party2_income"],
+        "party1_age":        p1_age,
+        "party2_age":        p2_age,
+        "party1_province":   p1_prov,
+        "party2_province":   p2_prov,
+        "party1_claims_dependent": tool_input.get("party1_claims_dependent", "No"),
+        "party2_claims_dependent": tool_input.get("party2_claims_dependent", "No"),
+        "tax_year":          tax_year,
+        "payor":             p1_name if p1_is_payor else p2_name,
         "party1_monthly":    result["party1"],
         "party1_annual":     result["party1"] * 12,
         "party2_monthly":    result["party2"],
@@ -510,12 +599,14 @@ def run_calc_tool(tool_input):
         "net_payer":         net_payer,
         "net_monthly":       net_monthly,
         "net_annual":        net_monthly * 12,
+        "monthly_cs_paid":   net_monthly,
         "children":          tool_input.get("children", []),
+        **cs_profiles,
     }
 
-    # Auto-generate PDF report
+    # Auto-generate PDF report using the unified (spousal-style) format
     try:
-        filename = generate_child_support_report(calc_result)
+        filename = generate_unified_report(calc_result)
         calc_result["download_url"] = f"/download-report/{filename}"
         # Include base64-encoded PDF bytes for persistence to the auth-server
         pdf_path = os.path.join(REPORTS_DIR, filename)
