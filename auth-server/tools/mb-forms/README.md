@@ -585,3 +585,49 @@ The measured constant specific to Manitoba: the printed rule is a filled
 rectangle 0.72–0.84pt thick, and the box is seated 1.3pt above its centre. The
 next thicker filled rect on any of these pages is a 9pt shading band, so the
 `RULE_MAX_THICK = 1.6` cut has 8pt of clear air in it.
+
+## Seating boxes on their printed rules
+
+```
+python3 seat_mb_on_rules.py [--check]
+```
+
+`RULE_CLEARANCE` seats a box's bottom edge *above* the rule it belongs to. The
+viewer draws its own bordered control inside the rectangle we store, so that
+clearance reads on screen as a control hovering above its line, with the printed
+rule showing as a second line beneath it. Not one of the 1,427 text boxes in the
+four child-protection and adoption families was on its line.
+
+**It measures each box rather than nudging them all by a constant.**
+Saskatchewan's two families each floated by a single value -- 0.75pt and 0.69pt,
+identical across every box -- so `sk-forms` seats them with one constant per
+family, which there is exactly equivalent to measuring. Manitoba does not behave
+that way: within one family the float ranges 1.25-1.62pt (MBCFS) and 0.95-2.40pt
+(MBAD), because Manitoba draws its blanks two different ways -- underscore runs
+*and* line-art segments -- and mixes font sizes on a page. A constant would seat
+the bulk and leave the rest floating, which is the defect it was meant to fix.
+Reading each box's own rule off the rendered page self-corrects for both.
+
+| Family | Boxes | Shift applied | Result |
+| --- | --- | --- | --- |
+| `MBAD_` | 562 | median +1.34pt | 562/562 on the line |
+| `MBCA_` | 68 | median +1.61pt | 68/68 |
+| `MBCFS_` | 648 | median +1.61pt | 648/649 |
+| `MBFA_` | 148 | median +1.92pt | 148/148 |
+
+The one box left is one with no measurable rule beneath it; a box whose rule
+cannot be found is left exactly where the builder put it, as are the 61 writing
+areas that sit in blank space. Checkboxes are excluded and must be -- they are
+seated on a printed mark, which the shift would walk them off.
+
+**It repairs in place rather than rebuilding**, for the reason in guide 1 and in
+`hand_finished()`: every one of these forms is promoted and bound, and
+`--promote` is an `os.replace` that would destroy that. So it writes back the `y`
+key alone, asserting every other key is byte-identical first, the way
+`rebind_mb_forms.py` writes back only `bind`. Idempotent -- a box already seated
+measures a zero shift. Rule 70 (`MBKB_`) has the same float and is deliberately
+left alone: those 43 templates are reviewed and shipped, and this is a seating
+preference rather than a defect.
+
+Verified against a HEAD baseline rather than in isolation: `verify_mb.py` reports
+the identical findings before and after, so the shift introduces none.
