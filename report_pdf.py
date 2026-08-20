@@ -266,36 +266,36 @@ def _spousal_html(data: dict) -> str:
     margin: 0;
     padding: 0;
     font-family: Helvetica, Arial, sans-serif;
-    font-size: 9px;
+    font-size: 11px;
     color: #333;
   }}
   .calc-report {{
-    padding: 10px 5px;
+    padding: 15px 20px;
   }}
   .report-title {{
-    font-size: 14px;
+    font-size: 16px;
     font-weight: bold;
     color: #1a1a2e;
-    margin-bottom: 8px;
-    padding-bottom: 3px;
+    margin-bottom: 16px;
+    padding-bottom: 6px;
     border-bottom: 2px solid #2d5aa0;
   }}
   .section-header {{
     font-weight: bold;
-    font-size: 10px;
+    font-size: 12px;
     background-color: #d9e2f3;
     color: #1a1a2e;
-    padding: 3px 6px;
-    margin: 6px 0 1px 0;
+    padding: 5px 10px;
+    margin: 12px 0 4px 0;
   }}
   table {{
     border-collapse: collapse;
-    margin-bottom: 1px;
+    margin-bottom: 2px;
   }}
   td, th {{
-    padding: 2px 4px;
-    font-size: 8px;
-    border: 1px solid #ccc;
+    padding: 4px 8px;
+    font-size: 11px;
+    border: 1px solid #d0d0d0;
   }}
   th {{
     background-color: #eef2f7;
@@ -307,24 +307,39 @@ def _spousal_html(data: dict) -> str:
   .bold-row td {{ font-weight: bold; }}
   .result-header {{ background-color: #c5d9a4; }}
   .result-val {{
-    font-size: 10px;
+    font-size: 13px;
     font-weight: bold;
     color: #1a1a2e;
   }}
   .details-table td, .details-table th {{
-    font-size: 8px;
-    padding: 2px 3px;
+    font-size: 10px;
+    padding: 3px 6px;
   }}
   .scenario-hdr {{
     text-align: center;
     font-weight: bold;
-    font-size: 9px;
+    font-size: 11px;
   }}
   .sub-hdr td {{
     text-align: center;
     font-weight: bold;
-    font-size: 8px;
+    font-size: 10px;
     background-color: #f5f5f5;
+  }}
+  .tax-profile-table td, .tax-profile-table th {{
+    font-size: 9.5px;
+    padding: 2px 5px;
+  }}
+  .tax-section-row td {{
+    font-weight: bold;
+    background: #fff;
+    font-size: 10px;
+    border: none;
+    padding-top: 10px;
+    padding-bottom: 4px;
+  }}
+  .tax-total-row td {{
+    font-weight: bold;
   }}
   .page-break {{
     page-break-before: always;
@@ -411,15 +426,15 @@ def _spousal_html(data: dict) -> str:
     </tr>
     <tr>
       <td width="140" class="lbl">Taxes and deductions</td>
-      <td width="98" class="val">{_fmt(tax_low_1)}</td><td width="98" class="val">{_fmt(tax_low_2)}</td>
-      <td width="98" class="val">{_fmt(tax_mid_1)}</td><td width="98" class="val">{_fmt(tax_mid_2)}</td>
-      <td width="98" class="val">{_fmt(tax_high_1)}</td><td width="98" class="val">{_fmt(tax_high_2)}</td>
+      <td width="98" class="val">{_fmt2(tax_low_1)}</td><td width="98" class="val">{_fmt2(tax_low_2)}</td>
+      <td width="98" class="val">{_fmt2(tax_mid_1)}</td><td width="98" class="val">{_fmt2(tax_mid_2)}</td>
+      <td width="98" class="val">{_fmt2(tax_high_1)}</td><td width="98" class="val">{_fmt2(tax_high_2)}</td>
     </tr>
     <tr>
       <td width="140" class="lbl">Benefits and credits</td>
-      <td width="98" class="val">{_fmt(ben_low_1)}</td><td width="98" class="val">{_fmt(ben_low_2)}</td>
-      <td width="98" class="val">{_fmt(ben_mid_1)}</td><td width="98" class="val">{_fmt(ben_mid_2)}</td>
-      <td width="98" class="val">{_fmt(ben_high_1)}</td><td width="98" class="val">{_fmt(ben_high_2)}</td>
+      <td width="98" class="val">{_fmt2(ben_low_1)}</td><td width="98" class="val">{_fmt2(ben_low_2)}</td>
+      <td width="98" class="val">{_fmt2(ben_mid_1)}</td><td width="98" class="val">{_fmt2(ben_mid_2)}</td>
+      <td width="98" class="val">{_fmt2(ben_high_1)}</td><td width="98" class="val">{_fmt2(ben_high_2)}</td>
     </tr>
     {cs_detail_rows}
     <tr>
@@ -430,9 +445,9 @@ def _spousal_html(data: dict) -> str:
     </tr>
     <tr class="bold-row">
       <td width="140" class="lbl" style="font-weight:bold;">Total disposable income</td>
-      <td width="98" class="val">{_fmt(disp_low_1)}</td><td width="98" class="val">{_fmt(disp_low_2)}</td>
-      <td width="98" class="val">{_fmt(disp_mid_1)}</td><td width="98" class="val">{_fmt(disp_mid_2)}</td>
-      <td width="98" class="val">{_fmt(disp_high_1)}</td><td width="98" class="val">{_fmt(disp_high_2)}</td>
+      <td width="98" class="val">{_fmt2(disp_low_1)}</td><td width="98" class="val">{_fmt2(disp_low_2)}</td>
+      <td width="98" class="val">{_fmt2(disp_mid_1)}</td><td width="98" class="val">{_fmt2(disp_mid_2)}</td>
+      <td width="98" class="val">{_fmt2(disp_high_1)}</td><td width="98" class="val">{_fmt2(disp_high_2)}</td>
     </tr>
     {spousal_annual_row}
   </table>
@@ -504,8 +519,8 @@ def _build_tax_profile_page(data, p1, p2, p1_is_payor):
         vals = []
         for tp in [tp1_low, tp1_mid, tp1_high, tp2_low, tp2_mid, tp2_high]:
             vals.append(_fmt(_tp_val(tp, key)))
-        return f"""<tr style="font-weight:bold;">
-            <td width="140" class="lbl" style="font-weight:bold;">{label}</td>
+        return f"""<tr class="tax-total-row">
+            <td width="140" class="lbl">{label}</td>
             <td width="98" class="val">{vals[0]}</td><td width="98" class="val">{vals[1]}</td><td width="98" class="val">{vals[2]}</td>
             <td width="98" class="val">{vals[3]}</td><td width="98" class="val">{vals[4]}</td><td width="98" class="val">{vals[5]}</td>
         </tr>"""
@@ -538,14 +553,14 @@ def _build_tax_profile_page(data, p1, p2, p1_is_payor):
         return _row_custom("CPP Deductions", vals)
 
     def _section_hdr(label):
-        return f"""<tr>
-            <td width="140" style="font-weight:bold;background:#fff;padding:8px 6px 3px 6px;border:none;font-size:9px;">{label}</td>
-            <td width="98" style="background:#fff;border:none;"></td>
-            <td width="98" style="background:#fff;border:none;"></td>
-            <td width="98" style="background:#fff;border:none;"></td>
-            <td width="98" style="background:#fff;border:none;"></td>
-            <td width="98" style="background:#fff;border:none;"></td>
-            <td width="98" style="background:#fff;border:none;"></td>
+        return f"""<tr class="tax-section-row">
+            <td width="140"><strong>{label}</strong></td>
+            <td width="98"></td>
+            <td width="98"></td>
+            <td width="98"></td>
+            <td width="98"></td>
+            <td width="98"></td>
+            <td width="98"></td>
         </tr>"""
 
     province = data.get("party1_province", "Ontario")
@@ -567,7 +582,7 @@ def _build_tax_profile_page(data, p1, p2, p1_is_payor):
 <div class="calc-report">
   <div class="report-title">CLOUDACT FAMILY LAW TOOLS</div>
   <div class="section-header">Tax Profile</div>
-  <table class="details-table" width="728">
+  <table class="tax-profile-table" width="728">
     <tr>
       <td width="140" class="lbl" style="background-color:#eef2f7;font-weight:bold;border:1px solid #d0d0d0;"></td>
       <td width="98" class="scenario-hdr" style="background-color:#eef2f7;border:1px solid #d0d0d0;">{p1}</td>
