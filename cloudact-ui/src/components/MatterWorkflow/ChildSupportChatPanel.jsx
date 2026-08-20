@@ -13,6 +13,8 @@ import { matterProvinceCode } from "../../utils/matterProvince";
 import { normalizeStoredIntakeData, SECTION_LABELS } from "./matterIntakeContext";
 import "./MatterWorkflow.css";
 import refreshIcon from "../../assets/images/refresh-icon.png";
+import html2pdf from "html2pdf.js";
+import CalculationReport from "../../pages/freeCalculatorApi/reports/CalculationReport.tsx";
 
 /**
  * Full-page inline child support AI chat panel.
@@ -240,6 +242,156 @@ export default function ChildSupportChatPanel({
 
   const windowRef = useRef(null);
   const inputRef = useRef(null);
+  const reportRef = useRef(null);
+  const [renderReport, setRenderReport] = useState(null);
+  const [generatingPdf, setGeneratingPdf] = useState(false);
+
+  // Build the data shape CalculationReport.tsx expects from AI chat calc result
+  function buildReportData(cr) {
+    const n = (v) => (typeof v === "number" ? v : Number(v) || 0);
+    const p1Income = n(cr.party1_income);
+    const p2Income = n(cr.party2_income);
+    const party1IsPayor = p1Income >= p2Income;
+    const csMonthly = n(cr.monthly_cs_paid) || n(cr.child_support_paid) || n(cr.net_monthly) || 0;
+    const csGivenTo = party1IsPayor ? cr.party2_name : cr.party1_name;
+
+    const childrenArr = cr.children || [];
+    const childrenInfo = childrenArr.map((c) => ({
+      name: c.name || "",
+      dateOfBirth: c.dob || c.date_of_birth || "",
+      custodyArrangement: c.custody_arrangement || "",
+      CSGTable: "Yes",
+    }));
+    const party1Kids = childrenArr.filter((c) => c.custody_arrangement === "Party 1").length;
+    const party2Kids = childrenArr.filter((c) => c.custody_arrangement === "Party 2").length;
+
+    const approximateDOB = (age) => {
+      const d = new Date();
+      d.setFullYear(d.getFullYear() - age);
+      return d.toISOString().split("T")[0];
+    };
+
+    // Map payor/recipient tax profiles → party1/party2
+    const mapTaxProfiles = () => {
+      const get = (key) => cr[key] || null;
+      if (party1IsPayor) {
+        return {
+          party1Low: get("payor_tax_profile_low"),
+          party1Mid: get("payor_tax_profile_mid"),
+          party1High: get("payor_tax_profile_high"),
+          party2Low: get("recipient_tax_profile_low"),
+          party2Mid: get("recipient_tax_profile_mid"),
+          party2High: get("recipient_tax_profile_high"),
+        };
+      }
+      return {
+        party1Low: get("recipient_tax_profile_low"),
+        party1Mid: get("recipient_tax_profile_mid"),
+        party1High: get("recipient_tax_profile_high"),
+        party2Low: get("payor_tax_profile_low"),
+        party2Mid: get("payor_tax_profile_mid"),
+        party2High: get("payor_tax_profile_high"),
+      };
+    };
+
+    const tp = mapTaxProfiles();
+    const hasTaxProfile = !!(tp.party1Low || tp.party1Mid || tp.party1High);
+
+    // Extract summary taxes/benefits/INDI from tax profiles
+    const taxVal = (profile, key) => (profile && typeof profile === "object" ? n(profile[key]) : 0);
+
+    return {
+      background: {
+        party1FirstName: cr.party1_name || "Party 1",
+        party1LastName: "",
+        party2FirstName: cr.party2_name || "Party 2",
+        party2LastName: "",
+        party1province: cr.party1_province || "ON",
+        party2province: cr.party2_province || "ON",
+        party1DateOfBirth: cr.party1_age ? approximateDOB(n(cr.party1_age)) : "",
+        party2DateOfBirth: cr.party2_age ? approximateDOB(n(cr.party2_age)) : "",
+      },
+      aboutTheChildren: {
+        childrenInfo,
+        count: { party1: party1Kids, party2: party2Kids },
+      },
+      aboutTheRelationship: {
+        dateOfMarriage: cr.date_of_marriage || "",
+        dateOfSeparation: cr.date_of_separation || "",
+      },
+      screen2: {
+        totalIncomeParty1: p1Income,
+        totalIncomeParty2: p2Income,
+        tax_year: cr.tax_year || new Date().getFullYear(),
+        childSupport: {
+          childSupport1: party1IsPayor ? csMonthly : 0,
+          childSupport2: !party1IsPayor ? csMonthly : 0,
+          givenTo: csGivenTo,
+        },
+        taxesFromApi: {
+          party1Low: hasTaxProfile ? taxVal(tp.party1Low, "total_taxes") : n(cr.party1_taxes_low),
+          party1Mid: hasTaxProfile ? taxVal(tp.party1Mid, "total_taxes") : n(cr.party1_taxes_mid),
+          party1High: hasTaxProfile ? taxVal(tp.party1High, "total_taxes") : n(cr.party1_taxes_high),
+          party2Low: hasTaxProfile ? taxVal(tp.party2Low, "total_taxes") : n(cr.party2_taxes_low),
+          party2Mid: hasTaxProfile ? taxVal(tp.party2Mid, "total_taxes") : n(cr.party2_taxes_mid),
+          party2High: hasTaxProfile ? taxVal(tp.party2High, "total_taxes") : n(cr.party2_taxes_high),
+        },
+        benefitsFromApi: {
+          party1Low: hasTaxProfile ? taxVal(tp.party1Low, "total_benefits") : n(cr.party1_benefits_low),
+          party1Mid: hasTaxProfile ? taxVal(tp.party1Mid, "total_benefits") : n(cr.party1_benefits_mid),
+          party1High: hasTaxProfile ? taxVal(tp.party1High, "total_benefits") : n(cr.party1_benefits_high),
+          party2Low: hasTaxProfile ? taxVal(tp.party2Low, "total_benefits") : n(cr.party2_benefits_low),
+          party2Mid: hasTaxProfile ? taxVal(tp.party2Mid, "total_benefits") : n(cr.party2_benefits_mid),
+          party2High: hasTaxProfile ? taxVal(tp.party2High, "total_benefits") : n(cr.party2_benefits_high),
+        },
+        disposableIncome: {
+          party1Low: n(cr.party1_indi_low),
+          party1Mid: n(cr.party1_indi_mid),
+          party1High: n(cr.party1_indi_high),
+          party2Low: n(cr.party2_indi_low),
+          party2Mid: n(cr.party2_indi_mid),
+          party2High: n(cr.party2_indi_high),
+        },
+        specialExpenses: { specialExpensesLow1: 0, specialExpensesLow2: 0 },
+        ...(hasTaxProfile ? { taxProfileFromApi: tp } : {}),
+      },
+      supportQuantum: {
+        support1: { spousalSupport: 0, childSupport: csMonthly, childSpecialExpense: 0, childSupportGivenTo: csGivenTo, childSupportSpecialExpenses: 0, totalSupport: 0 },
+        support2: { spousalSupport: 0, childSupport: csMonthly, childSpecialExpense: 0, childSupportGivenTo: csGivenTo, childSupportSpecialExpenses: 0, totalSupport: 0 },
+        support3: { spousalSupport: 0, childSupport: csMonthly, childSpecialExpense: 0, childSupportGivenTo: csGivenTo, childSupportSpecialExpenses: 0, totalSupport: 0 },
+        spousalSupportDurationRange: "",
+        loading: false,
+        supportGivenTo: csGivenTo,
+      },
+    };
+  }
+
+  // Generate PDF once the hidden CalculationReport has rendered
+  useEffect(() => {
+    if (!renderReport || !reportRef.current) return;
+    const timer = setTimeout(async () => {
+      try {
+        await html2pdf()
+          .set({
+            margin: [10, 5, 10, 5],
+            filename: renderReport.filename || "child_support_report.pdf",
+            image: { type: "jpeg", quality: 0.95 },
+            html2canvas: { scale: 2, useCORS: true, width: 1100, windowWidth: 1100 },
+            jsPDF: { unit: "mm", format: "letter", orientation: "landscape" },
+            pagebreak: { mode: ["css", "legacy"] },
+          })
+          .from(reportRef.current)
+          .save();
+      } catch (err) {
+        console.error("[ChildChat] PDF generation failed:", err);
+        alert("Could not generate PDF.");
+      } finally {
+        setRenderReport(null);
+        setGeneratingPdf(false);
+      }
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [renderReport]);
 
   // Auto-scroll on new messages
   useEffect(() => {
@@ -582,48 +734,18 @@ export default function ChildSupportChatPanel({
                 <div className="mw-action-buttons">
                   <button
                     className="mw-download-btn"
+                    disabled={generatingPdf}
                     onClick={() => {
-                      console.log("[ChildChat] === DOWNLOAD BUTTON CLICKED ===");
-                      console.log("[ChildChat] lastCalcResult:", lastCalcResult ? "PRESENT" : "NULL");
-                      console.log("[ChildChat] lastCalcResult keys:", lastCalcResult ? Object.keys(lastCalcResult) : "N/A");
-                      console.log("[ChildChat] pdf_base64:", lastCalcResult?.pdf_base64 ? `PRESENT (${lastCalcResult.pdf_base64.length} chars)` : "MISSING");
-                      console.log("[ChildChat] pdf_filename:", lastCalcResult?.pdf_filename || "MISSING");
-                      if (lastCalcResult.pdf_base64) {
-                        try {
-                          console.log("[ChildChat] Attempting atob decode...");
-                          const byteChars = atob(lastCalcResult.pdf_base64);
-                          console.log("[ChildChat] atob succeeded, byteChars length:", byteChars.length);
-                          const byteArray = new Uint8Array(byteChars.length);
-                          for (let j = 0; j < byteChars.length; j++) byteArray[j] = byteChars.charCodeAt(j);
-                          const blob = new Blob([byteArray], { type: "application/pdf" });
-                          console.log("[ChildChat] Blob created, size:", blob.size);
-                          const url = URL.createObjectURL(blob);
-                          console.log("[ChildChat] Object URL created:", url);
-                          const a = document.createElement("a");
-                          a.href = url;
-                          a.download = lastCalcResult.pdf_filename || "child_support_report.pdf";
-                          document.body.appendChild(a);
-                          a.click();
-                          a.remove();
-                          URL.revokeObjectURL(url);
-                          console.log("[ChildChat] Download triggered successfully");
-                        } catch (err) {
-                          console.error("[ChildChat] PDF download error:", err);
-                          console.error("[ChildChat] pdf_base64 first 100 chars:", lastCalcResult.pdf_base64?.substring(0, 100));
-                          alert("Failed to download PDF: " + err.message);
-                        }
-                      } else {
-                        console.log("[ChildChat] No pdf_base64, falling back to extractDownloadUrl");
-                        const serverUrl = extractDownloadUrl(b.text);
-                        console.log("[ChildChat] extractDownloadUrl result:", serverUrl || "NULL - no URL found");
-                        console.log("[ChildChat] bubble text (first 200 chars):", b.text?.substring(0, 200));
-                        if (serverUrl) window.open(serverUrl, "_blank");
-                        else console.warn("[ChildChat] NO DOWNLOAD PATH AVAILABLE - both pdf_base64 and extractDownloadUrl failed");
-                      }
-                      console.log("[ChildChat] === END DOWNLOAD DEBUG ===");
+                      if (!lastCalcResult) return;
+                      setGeneratingPdf(true);
+                      const data = buildReportData(lastCalcResult);
+                      setRenderReport({
+                        ...data,
+                        filename: lastCalcResult.pdf_filename || "child_support_report.pdf",
+                      });
                     }}
                   >
-                    Download PDF Report
+                    {generatingPdf ? "Generating…" : "Download PDF Report"}
                   </button>
                   {matterId && (
                     <button
@@ -704,6 +826,31 @@ export default function ChildSupportChatPanel({
           />
         </button>
       </div>
+
+      {/* Hidden CalculationReport for client-side PDF generation */}
+      {renderReport && (
+        <div
+          style={{
+            position: "absolute",
+            left: "-9999px",
+            top: 0,
+            width: "1100px",
+            pointerEvents: "none",
+            overflow: "visible",
+            background: "#fff",
+          }}
+        >
+          <CalculationReport
+            ref={reportRef}
+            background={renderReport.background}
+            aboutTheChildren={renderReport.aboutTheChildren}
+            aboutTheRelationship={renderReport.aboutTheRelationship}
+            screen2={renderReport.screen2}
+            typeOfCalculatorSelected="CHILD"
+            supportQuantum={renderReport.supportQuantum}
+          />
+        </div>
+      )}
     </div>
   );
 }

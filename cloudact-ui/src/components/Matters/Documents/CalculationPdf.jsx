@@ -128,6 +128,32 @@ export default function CalculationPDf({ matterId }) {
     const party1Kids = childrenArr.filter((c) => c.custody_arrangement === "Party 1").length;
     const party2Kids = childrenArr.filter((c) => c.custody_arrangement === "Party 2").length;
 
+    // Map payor/recipient tax profiles → party1/party2 for the Tax Profile page
+    const mapTaxProfiles = () => {
+      const get = (key) => cr[key] || null;
+      if (party1IsPayor) {
+        return {
+          party1Low: get("payor_tax_profile_low"),
+          party1Mid: get("payor_tax_profile_mid"),
+          party1High: get("payor_tax_profile_high"),
+          party2Low: get("recipient_tax_profile_low"),
+          party2Mid: get("recipient_tax_profile_mid"),
+          party2High: get("recipient_tax_profile_high"),
+        };
+      }
+      return {
+        party1Low: get("recipient_tax_profile_low"),
+        party1Mid: get("recipient_tax_profile_mid"),
+        party1High: get("recipient_tax_profile_high"),
+        party2Low: get("payor_tax_profile_low"),
+        party2Mid: get("payor_tax_profile_mid"),
+        party2High: get("payor_tax_profile_high"),
+      };
+    };
+    const tp = mapTaxProfiles();
+    const hasTaxProfile = !!(tp.party1Low || tp.party1Mid || tp.party1High);
+    const taxVal = (profile, key) => (profile && typeof profile === "object" ? n(profile[key]) : 0);
+
     return {
       background: {
         party1FirstName: cr.party1_name || "Party 1",
@@ -136,7 +162,6 @@ export default function CalculationPDf({ matterId }) {
         party2LastName: "",
         party1province: cr.party1_province || "ON",
         party2province: cr.party2_province || "ON",
-        // Approximate DOBs from ages (used for age display only)
         party1DateOfBirth: cr.party1_age ? approximateDOB(n(cr.party1_age)) : "",
         party2DateOfBirth: cr.party2_age ? approximateDOB(n(cr.party2_age)) : "",
       },
@@ -158,20 +183,20 @@ export default function CalculationPDf({ matterId }) {
           givenTo: csGivenTo,
         },
         taxesFromApi: {
-          party1Low: n(cr.party1_taxes_low),
-          party1Mid: n(cr.party1_taxes_mid),
-          party1High: n(cr.party1_taxes_high),
-          party2Low: n(cr.party2_taxes_low),
-          party2Mid: n(cr.party2_taxes_mid),
-          party2High: n(cr.party2_taxes_high),
+          party1Low: hasTaxProfile ? taxVal(tp.party1Low, "total_taxes") : n(cr.party1_taxes_low),
+          party1Mid: hasTaxProfile ? taxVal(tp.party1Mid, "total_taxes") : n(cr.party1_taxes_mid),
+          party1High: hasTaxProfile ? taxVal(tp.party1High, "total_taxes") : n(cr.party1_taxes_high),
+          party2Low: hasTaxProfile ? taxVal(tp.party2Low, "total_taxes") : n(cr.party2_taxes_low),
+          party2Mid: hasTaxProfile ? taxVal(tp.party2Mid, "total_taxes") : n(cr.party2_taxes_mid),
+          party2High: hasTaxProfile ? taxVal(tp.party2High, "total_taxes") : n(cr.party2_taxes_high),
         },
         benefitsFromApi: {
-          party1Low: n(cr.party1_benefits_low),
-          party1Mid: n(cr.party1_benefits_mid),
-          party1High: n(cr.party1_benefits_high),
-          party2Low: n(cr.party2_benefits_low),
-          party2Mid: n(cr.party2_benefits_mid),
-          party2High: n(cr.party2_benefits_high),
+          party1Low: hasTaxProfile ? taxVal(tp.party1Low, "total_benefits") : n(cr.party1_benefits_low),
+          party1Mid: hasTaxProfile ? taxVal(tp.party1Mid, "total_benefits") : n(cr.party1_benefits_mid),
+          party1High: hasTaxProfile ? taxVal(tp.party1High, "total_benefits") : n(cr.party1_benefits_high),
+          party2Low: hasTaxProfile ? taxVal(tp.party2Low, "total_benefits") : n(cr.party2_benefits_low),
+          party2Mid: hasTaxProfile ? taxVal(tp.party2Mid, "total_benefits") : n(cr.party2_benefits_mid),
+          party2High: hasTaxProfile ? taxVal(tp.party2High, "total_benefits") : n(cr.party2_benefits_high),
         },
         disposableIncome: {
           party1Low: n(cr.party1_indi_low),
@@ -182,6 +207,7 @@ export default function CalculationPDf({ matterId }) {
           party2High: n(cr.party2_indi_high),
         },
         specialExpenses: { specialExpensesLow1: 0, specialExpensesLow2: 0 },
+        ...(hasTaxProfile ? { taxProfileFromApi: tp } : {}),
       },
       supportQuantum: isSpousal ? {
         support1: {
