@@ -178,41 +178,45 @@ def _spousal_html(data: dict) -> str:
             csg = c.get("csg_table", "Yes")
             child_trs += f"""<tr><td class="lbl">{label}</td><td class="val">{custody}</td><td class="val">{csg}</td></tr>"""
         children_rows = f"""
-            <table width="355" style="margin-top: 4px;">
-              <tr>
-                <th width="155" style="font-weight:bold;">Children</th>
-                <th width="100">Lives with</th>
-                <th width="100">CSG Table</th>
-              </tr>
-              {child_trs}
+            <table style="margin-top: 8px;">
+              <thead>
+                <tr>
+                  <th style="font-weight:bold;">Children</th>
+                  <th>Lives with</th>
+                  <th>CSG Table</th>
+                </tr>
+              </thead>
+              <tbody>
+                {child_trs}
+              </tbody>
             </table>"""
 
     # Important dates rows
     dates_rows = ""
     if date_of_marriage or date_of_separation:
         if date_of_marriage:
-            dates_rows += f'<tr><td width="230" class="lbl">Date of Marriage/Cohabitation</td><td width="125" class="val">{_format_date_str(date_of_marriage)}</td></tr>'
+            dates_rows += f'<tr><td class="lbl">Date of Marriage/Cohabitation</td><td class="val">{_format_date_str(date_of_marriage)}</td></tr>'
         if date_of_separation:
-            dates_rows += f'<tr><td width="230" class="lbl">Date of separation</td><td width="125" class="val">{_format_date_str(date_of_separation)}</td></tr>'
+            dates_rows += f'<tr><td class="lbl">Date of separation</td><td class="val">{_format_date_str(date_of_separation)}</td></tr>'
         if years:
-            dates_rows += f'<tr><td width="230" class="lbl">Length of marriage</td><td width="125" class="val">{int(float(years))} years</td></tr>'
+            dates_rows += f'<tr><td class="lbl">Length of marriage</td><td class="val">{int(float(years))} years</td></tr>'
         if recipient_age:
-            dates_rows += f'<tr><td width="230" class="lbl">Recipient age at separation</td><td width="125" class="val">{int(float(recipient_age))} years old</td></tr>'
+            dates_rows += f'<tr><td class="lbl">Recipient age at separation</td><td class="val">{int(float(recipient_age))} years old</td></tr>'
     if has_children and youngest_yrs >= 0:
-        dates_rows += f'<tr><td width="230" class="lbl">Years till youngest child finishes school</td><td width="125" class="val">{youngest_yrs} years</td></tr>'
-    dates_rows += f'<tr><td width="230" class="lbl">Tax year</td><td width="125" class="val">{tax_year}</td></tr>'
+        dates_rows += f'<tr><td class="lbl">Years till youngest child finishes school</td><td class="val">{youngest_yrs} years</td></tr>'
+    dates_rows += f'<tr><td class="lbl">Tax year</td><td class="val">{tax_year}</td></tr>'
 
     # Result rows
     result_rows = ""
     if has_child_support:
-        result_rows += f'<tr class="bold-row"><td width="210" class="lbl" style="font-weight:bold;">Child Support (monthly)</td><td width="145" class="val result-val">{_fmt(round(cs_monthly))}</td></tr>'
+        result_rows += f'<tr class="bold-row"><td class="lbl" style="font-weight:bold;">Child Support (monthly)</td><td class="val result-val">{_fmt(round(cs_monthly))}</td></tr>'
     if has_spousal:
-        result_rows += f'<tr><td width="210" class="lbl" style="font-weight:bold;">Spousal Support (monthly)</td><td width="145"></td></tr>'
-        result_rows += f'<tr><td width="210" class="lbl" style="padding-left:20px;">Low</td><td width="145" class="val result-val">{_fmt(round(monthly_low))}</td></tr>'
-        result_rows += f'<tr><td width="210" class="lbl" style="padding-left:20px;">Mid</td><td width="145" class="val result-val">{_fmt(round(monthly_mid))}</td></tr>'
-        result_rows += f'<tr><td width="210" class="lbl" style="padding-left:20px;">High</td><td width="145" class="val result-val">{_fmt(round(monthly_high))}</td></tr>'
+        result_rows += f'<tr><td class="lbl" colspan="2" style="font-weight:bold;">Spousal Support (monthly)</td></tr>'
+        result_rows += f'<tr><td class="lbl" style="padding-left:20px;">Low</td><td class="val result-val">{_fmt(round(monthly_low))}</td></tr>'
+        result_rows += f'<tr><td class="lbl" style="padding-left:20px;">Mid</td><td class="val result-val">{_fmt(round(monthly_mid))}</td></tr>'
+        result_rows += f'<tr><td class="lbl" style="padding-left:20px;">High</td><td class="val result-val">{_fmt(round(monthly_high))}</td></tr>'
         if duration_label:
-            result_rows += f'<tr class="bold-row"><td width="210" class="lbl" style="font-weight:bold;">Duration</td><td width="145" class="val">{duration_label}</td></tr>'
+            result_rows += f'<tr class="bold-row"><td class="lbl" style="font-weight:bold;">Duration</td><td class="val">{duration_label}</td></tr>'
 
     # Child support detail rows
     cs_detail_rows = ""
@@ -222,37 +226,45 @@ def _spousal_html(data: dict) -> str:
         not_p1 = _fmt(-cs_annual) if not cs_recipient_is_p2 else ""
         not_p2 = _fmt(-cs_annual) if cs_recipient_is_p2 else ""
         cs_detail_rows = f"""
-            <tr><td width="140" class="lbl">Child Support</td>
-                <td width="98" class="val">{cs_p1}</td><td width="98" class="val">{cs_p2}</td>
-                <td width="98" class="val">{cs_p1}</td><td width="98" class="val">{cs_p2}</td>
-                <td width="98" class="val">{cs_p1}</td><td width="98" class="val">{cs_p2}</td></tr>
-            <tr><td width="140" class="lbl">Notional child support</td>
-                <td width="98" class="val">{not_p1}</td><td width="98" class="val">{not_p2}</td>
-                <td width="98" class="val">{not_p1}</td><td width="98" class="val">{not_p2}</td>
-                <td width="98" class="val">{not_p1}</td><td width="98" class="val">{not_p2}</td></tr>"""
+            <tr><td class="lbl">Child Support</td>
+                <td class="val">{cs_p1}</td><td class="val">{cs_p2}</td>
+                <td class="val">{cs_p1}</td><td class="val">{cs_p2}</td>
+                <td class="val">{cs_p1}</td><td class="val">{cs_p2}</td></tr>
+            <tr><td class="lbl">Notional child support</td>
+                <td class="val">{not_p1}</td><td class="val">{not_p2}</td>
+                <td class="val">{not_p1}</td><td class="val">{not_p2}</td>
+                <td class="val">{not_p1}</td><td class="val">{not_p2}</td></tr>"""
 
     # Spousal annual row
     spousal_annual_row = ""
     if has_spousal:
         spousal_annual_row = f"""
             <tr class="bold-row">
-              <td width="140" class="lbl" style="font-weight:bold;">Spousal Support (annual)</td>
-              <td width="98" class="val">{_fmt(round(monthly_low * 12))}</td><td width="98" class="val"></td>
-              <td width="98" class="val">{_fmt(round(monthly_mid * 12))}</td><td width="98" class="val"></td>
-              <td width="98" class="val">{_fmt(round(monthly_high * 12))}</td><td width="98" class="val"></td>
+              <td class="lbl" style="font-weight:bold;">Spousal Support (annual)</td>
+              <td class="val" colspan="2" style="text-align:center;font-weight:bold;">{_fmt(round(monthly_low * 12))}</td>
+              <td class="val" colspan="2" style="text-align:center;font-weight:bold;">{_fmt(round(monthly_mid * 12))}</td>
+              <td class="val" colspan="2" style="text-align:center;font-weight:bold;">{_fmt(round(monthly_high * 12))}</td>
             </tr>"""
+
+    # Province display name for labels
+    prov_names = {
+        "ON": "Ontario", "BC": "British Columbia", "AB": "Alberta",
+        "SK": "Saskatchewan", "MB": "Manitoba", "QC": "Quebec",
+        "NB": "New Brunswick", "NS": "Nova Scotia", "PE": "Prince Edward Island",
+        "NL": "Newfoundland and Labrador", "YT": "Yukon",
+        "NT": "Northwest Territories", "NU": "Nunavut",
+    }
+    prov_code = p1_prov or data.get("party1_province", "Ontario")
+    prov_display = prov_names.get(prov_code, prov_code) if len(str(prov_code)) <= 2 else prov_code
+
+    p1_prov_display = prov_names.get(p1_prov, p1_prov) if p1_prov and len(str(p1_prov)) <= 2 else p1_prov
+    p2_prov_display = prov_names.get(p2_prov, p2_prov) if p2_prov and len(str(p2_prov)) <= 2 else p2_prov
 
     # ── Tax Profile page ──
     tax_profile_html = _build_tax_profile_page(data, p1, p2, p1_is_payor)
 
-    # Terms of Use page removed per request
-    terms_html = ""
-
-    # Landscape letter: 792pt wide, 8mm margins each side = ~747pt usable
-    # All widths must stay under 740px total
-    # Two-column top: 355px + 15px gap + 355px = 725px
-    # 7-col table: 140px label + 6 × 98px data = 728px
-
+    # CSS copied from CalculationReport.tsx — adapted for xhtml2pdf
+    # (flex → table layout for top row; everything else is a direct copy)
     html = f"""<!DOCTYPE html>
 <html>
 <head>
@@ -265,14 +277,15 @@ def _spousal_html(data: dict) -> str:
   body {{
     margin: 0;
     padding: 0;
-    font-family: Helvetica, Arial, sans-serif;
-    font-size: 11px;
-    color: #333;
   }}
   .calc-report {{
-    padding: 15px 20px;
+    font-family: 'Calibri', 'Segoe UI', Helvetica, Arial, sans-serif;
+    font-size: 11px;
+    color: #333;
+    padding: 20px 30px 0 30px;
+    background: #fff;
   }}
-  .report-title {{
+  .calc-report .report-title {{
     font-size: 16px;
     font-weight: bold;
     color: #1a1a2e;
@@ -280,57 +293,60 @@ def _spousal_html(data: dict) -> str:
     padding-bottom: 6px;
     border-bottom: 2px solid #2d5aa0;
   }}
-  .section-header {{
+  .calc-report .section-header {{
     font-weight: bold;
     font-size: 12px;
-    background-color: #d9e2f3;
+    background: #d9e2f3;
     color: #1a1a2e;
     padding: 5px 10px;
     margin: 12px 0 4px 0;
   }}
-  table {{
+  .calc-report table {{
+    width: 100%;
     border-collapse: collapse;
     margin-bottom: 2px;
   }}
-  td, th {{
+  .calc-report td, .calc-report th {{
     padding: 4px 8px;
     font-size: 11px;
     border: 1px solid #d0d0d0;
   }}
-  th {{
-    background-color: #eef2f7;
+  .calc-report th {{
+    background: #eef2f7;
     font-weight: bold;
     text-align: center;
   }}
-  .lbl {{ text-align: left; }}
-  .val {{ text-align: right; }}
-  .bold-row td {{ font-weight: bold; }}
-  .result-header {{ background-color: #c5d9a4; }}
-  .result-val {{
+  .calc-report .lbl {{ text-align: left; }}
+  .calc-report .val {{ text-align: right; }}
+  .calc-report .bold-row td {{ font-weight: bold; }}
+  .calc-report .result-header {{ background: #c5d9a4; }}
+  .calc-report .result-val {{
     font-size: 13px;
     font-weight: bold;
     color: #1a1a2e;
   }}
-  .details-table td, .details-table th {{
+  .calc-report .details-table td,
+  .calc-report .details-table th {{
     font-size: 10px;
     padding: 3px 6px;
   }}
-  .scenario-hdr {{
+  .calc-report .scenario-hdr {{
     text-align: center;
     font-weight: bold;
     font-size: 11px;
   }}
-  .sub-hdr td {{
+  .calc-report .sub-hdr td {{
     text-align: center;
     font-weight: bold;
     font-size: 10px;
-    background-color: #f5f5f5;
+    background: #f5f5f5;
   }}
-  .tax-profile-table td, .tax-profile-table th {{
+  .calc-report .tax-profile-table td,
+  .calc-report .tax-profile-table th {{
     font-size: 9.5px;
     padding: 2px 5px;
   }}
-  .tax-section-row td {{
+  .calc-report .tax-section-row td {{
     font-weight: bold;
     background: #fff;
     font-size: 10px;
@@ -338,27 +354,11 @@ def _spousal_html(data: dict) -> str:
     padding-top: 10px;
     padding-bottom: 4px;
   }}
-  .tax-total-row td {{
+  .calc-report .tax-total-row td {{
     font-weight: bold;
   }}
   .page-break {{
     page-break-before: always;
-  }}
-  .terms-page {{
-    font-family: Helvetica, Arial, sans-serif;
-    font-size: 9px;
-    color: #333;
-    padding: 20px 30px;
-  }}
-  .terms-title {{
-    font-size: 12px;
-    font-weight: bold;
-    color: #1a1a2e;
-    margin-bottom: 12px;
-  }}
-  .terms-text {{
-    font-size: 9px;
-    line-height: 1.5;
   }}
 </style>
 </head>
@@ -368,94 +368,128 @@ def _spousal_html(data: dict) -> str:
 <div class="calc-report">
   <div class="report-title">CLOUDACT FAMILY LAW TOOLS</div>
 
-  <!-- TOP ROW: side-by-side using outer table (xhtml2pdf doesn't support float) -->
-  <table width="728" style="border:0;">
+  <!-- TOP ROW: Calculation Input (left) + Important Dates (right) -->
+  <!-- xhtml2pdf does not support flexbox, so we use a borderless table -->
+  <table style="border:0;width:100%;">
     <tr>
-      <td width="355" style="vertical-align:top;border:0;padding:0 8px 0 0;">
+      <td style="vertical-align:top;border:0;padding:0 10px 0 0;width:50%;">
         <div class="section-header">Calculation Input</div>
-        <table width="355">
-          <tr><th width="135"></th><th width="110">{p1}</th><th width="110">{p2}</th></tr>
-          <tr><td width="135"></td><td width="110" class="val" style="font-weight:bold;">{"Payor" if p1_is_payor else "Recipient"}</td><td width="110" class="val" style="font-weight:bold;">{"Recipient" if p1_is_payor else "Payor"}</td></tr>
-          <tr><td width="135" class="lbl">Age</td><td width="110" class="val">{p1_age if p1_age else ""}</td><td width="110" class="val">{p2_age if p2_age else ""}</td></tr>
-          <tr><td width="135" class="lbl">Province</td><td width="110" class="val">{p1_prov}</td><td width="110" class="val">{p2_prov}</td></tr>
-          <tr><td width="135" class="lbl">Employment income</td><td width="110" class="val">{_fmt(p1_income)}</td><td width="110" class="val">{_fmt(p2_income)}</td></tr>
-          <tr><td width="135" class="lbl">Claims dep. credit</td><td width="110" class="val">{p1_claims or "No"}</td><td width="110" class="val">{p2_claims or "No"}</td></tr>
+        <table>
+          <thead>
+            <tr>
+              <th></th>
+              <th>{p1}</th>
+              <th>{p2}</th>
+            </tr>
+            <tr>
+              <td></td>
+              <td class="val" style="font-weight:bold;">{"Payor" if p1_is_payor else "Recipient"}</td>
+              <td class="val" style="font-weight:bold;">{"Recipient" if p1_is_payor else "Payor"}</td>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="lbl">Age</td>
+              <td class="val">{p1_age if p1_age else ""}</td>
+              <td class="val">{p2_age if p2_age else ""}</td>
+            </tr>
+            <tr>
+              <td class="lbl">Province</td>
+              <td class="val">{p1_prov_display or ""}</td>
+              <td class="val">{p2_prov_display or ""}</td>
+            </tr>
+            <tr>
+              <td class="lbl">Employment income</td>
+              <td class="val">{_fmt(p1_income)}</td>
+              <td class="val">{_fmt(p2_income)}</td>
+            </tr>
+            <tr>
+              <td class="lbl">Claims dependent credit</td>
+              <td class="val">{p1_claims or "No"}</td>
+              <td class="val">{p2_claims or "No"}</td>
+            </tr>
+          </tbody>
         </table>
         {children_rows}
       </td>
-      <td width="355" style="vertical-align:top;border:0;padding:0;">
+      <td style="vertical-align:top;border:0;padding:0;width:50%;">
         <div class="section-header">Important dates</div>
-        <table width="355">
-          {dates_rows}
+        <table>
+          <tbody>
+            {dates_rows}
+          </tbody>
         </table>
       </td>
     </tr>
   </table>
 
-  <!-- RESULT -->
-  <div style="width:360px;">
+  <!-- RESULT SECTION - same width as top-left -->
+  <div style="width:50%;">
     <div class="section-header result-header">Result</div>
-    <table width="355">
-      {result_rows}
+    <table>
+      <tbody>
+        {result_rows}
+      </tbody>
     </table>
   </div>
 
-  <!-- CALCULATION DETAILS — 7 columns, no colspan (xhtml2pdf breaks with colspan) -->
-  <div class="section-header" style="margin-top:6px;">Calculation details</div>
-  <table class="details-table" width="728">
-    <tr>
-      <td width="140" class="lbl" style="background-color:#eef2f7;font-weight:bold;"></td>
-      <td width="98" class="scenario-hdr" style="background-color:#eef2f7;">LOW</td>
-      <td width="98" class="scenario-hdr" style="background-color:#eef2f7;">LOW</td>
-      <td width="98" class="scenario-hdr" style="background-color:#eef2f7;">MID</td>
-      <td width="98" class="scenario-hdr" style="background-color:#eef2f7;">MID</td>
-      <td width="98" class="scenario-hdr" style="background-color:#eef2f7;">HIGH</td>
-      <td width="98" class="scenario-hdr" style="background-color:#eef2f7;">HIGH</td>
-    </tr>
-    <tr class="sub-hdr">
-      <td width="140" class="lbl"></td>
-      <td width="98">{p1}</td><td width="98">{p2}</td>
-      <td width="98">{p1}</td><td width="98">{p2}</td>
-      <td width="98">{p1}</td><td width="98">{p2}</td>
-    </tr>
-    <tr>
-      <td width="140" class="lbl">Guideline income</td>
-      <td width="98" class="val">{_fmt(p1_income)}</td><td width="98" class="val">{_fmt(p2_income)}</td>
-      <td width="98" class="val">{_fmt(p1_income)}</td><td width="98" class="val">{_fmt(p2_income)}</td>
-      <td width="98" class="val">{_fmt(p1_income)}</td><td width="98" class="val">{_fmt(p2_income)}</td>
-    </tr>
-    <tr>
-      <td width="140" class="lbl">Taxes and deductions</td>
-      <td width="98" class="val">{_fmt2(tax_low_1)}</td><td width="98" class="val">{_fmt2(tax_low_2)}</td>
-      <td width="98" class="val">{_fmt2(tax_mid_1)}</td><td width="98" class="val">{_fmt2(tax_mid_2)}</td>
-      <td width="98" class="val">{_fmt2(tax_high_1)}</td><td width="98" class="val">{_fmt2(tax_high_2)}</td>
-    </tr>
-    <tr>
-      <td width="140" class="lbl">Benefits and credits</td>
-      <td width="98" class="val">{_fmt2(ben_low_1)}</td><td width="98" class="val">{_fmt2(ben_low_2)}</td>
-      <td width="98" class="val">{_fmt2(ben_mid_1)}</td><td width="98" class="val">{_fmt2(ben_mid_2)}</td>
-      <td width="98" class="val">{_fmt2(ben_high_1)}</td><td width="98" class="val">{_fmt2(ben_high_2)}</td>
-    </tr>
-    {cs_detail_rows}
-    <tr>
-      <td width="140" class="lbl">Special expenses paid</td>
-      <td width="98" class="val">{_fmt(se1)}</td><td width="98" class="val">{_fmt(se2)}</td>
-      <td width="98" class="val">{_fmt(se1)}</td><td width="98" class="val">{_fmt(se2)}</td>
-      <td width="98" class="val">{_fmt(se1)}</td><td width="98" class="val">{_fmt(se2)}</td>
-    </tr>
-    <tr class="bold-row">
-      <td width="140" class="lbl" style="font-weight:bold;">Total disposable income</td>
-      <td width="98" class="val">{_fmt2(disp_low_1)}</td><td width="98" class="val">{_fmt2(disp_low_2)}</td>
-      <td width="98" class="val">{_fmt2(disp_mid_1)}</td><td width="98" class="val">{_fmt2(disp_mid_2)}</td>
-      <td width="98" class="val">{_fmt2(disp_high_1)}</td><td width="98" class="val">{_fmt2(disp_high_2)}</td>
-    </tr>
-    {spousal_annual_row}
+  <!-- CALCULATION DETAILS - full width below result -->
+  <table class="details-table" style="margin-top:14px;">
+    <thead>
+      <tr>
+        <th colspan="7" class="section-header" style="text-align:left;margin:0;">Calculation details</th>
+      </tr>
+      <tr>
+        <th class="lbl"></th>
+        <th colspan="2" class="scenario-hdr">LOW</th>
+        <th colspan="2" class="scenario-hdr">MID</th>
+        <th colspan="2" class="scenario-hdr">HIGH</th>
+      </tr>
+      <tr class="sub-hdr">
+        <td class="lbl"></td>
+        <td>{p1}</td><td>{p2}</td>
+        <td>{p1}</td><td>{p2}</td>
+        <td>{p1}</td><td>{p2}</td>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td class="lbl">Guideline income</td>
+        <td class="val">{_fmt(p1_income)}</td><td class="val">{_fmt(p2_income)}</td>
+        <td class="val">{_fmt(p1_income)}</td><td class="val">{_fmt(p2_income)}</td>
+        <td class="val">{_fmt(p1_income)}</td><td class="val">{_fmt(p2_income)}</td>
+      </tr>
+      <tr>
+        <td class="lbl">Taxes and deductions</td>
+        <td class="val">{_fmt2(tax_low_1)}</td><td class="val">{_fmt2(tax_low_2)}</td>
+        <td class="val">{_fmt2(tax_mid_1)}</td><td class="val">{_fmt2(tax_mid_2)}</td>
+        <td class="val">{_fmt2(tax_high_1)}</td><td class="val">{_fmt2(tax_high_2)}</td>
+      </tr>
+      <tr>
+        <td class="lbl">Benefits and credits</td>
+        <td class="val">{_fmt2(ben_low_1)}</td><td class="val">{_fmt2(ben_low_2)}</td>
+        <td class="val">{_fmt2(ben_mid_1)}</td><td class="val">{_fmt2(ben_mid_2)}</td>
+        <td class="val">{_fmt2(ben_high_1)}</td><td class="val">{_fmt2(ben_high_2)}</td>
+      </tr>
+      {cs_detail_rows}
+      <tr>
+        <td class="lbl">Special expenses paid</td>
+        <td class="val">{_fmt(se1)}</td><td class="val">{_fmt(se2)}</td>
+        <td class="val">{_fmt(se1)}</td><td class="val">{_fmt(se2)}</td>
+        <td class="val">{_fmt(se1)}</td><td class="val">{_fmt(se2)}</td>
+      </tr>
+      <tr class="bold-row">
+        <td class="lbl" style="font-weight:bold;">Total disposable income</td>
+        <td class="val">{_fmt2(disp_low_1)}</td><td class="val">{_fmt2(disp_low_2)}</td>
+        <td class="val">{_fmt2(disp_mid_1)}</td><td class="val">{_fmt2(disp_mid_2)}</td>
+        <td class="val">{_fmt2(disp_high_1)}</td><td class="val">{_fmt2(disp_high_2)}</td>
+      </tr>
+      {spousal_annual_row}
+    </tbody>
   </table>
 </div>
 
 {tax_profile_html}
-
-{terms_html}
 
 </body>
 </html>"""
