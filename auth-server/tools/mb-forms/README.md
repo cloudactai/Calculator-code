@@ -631,3 +631,44 @@ preference rather than a defect.
 
 Verified against a HEAD baseline rather than in isolation: `verify_mb.py` reports
 the identical findings before and after, so the shift introduces none.
+
+## A caption printed inside the rule
+
+```
+python3 split_caption_rules.py --only MBCFS_22A [--check]
+```
+
+Manitoba draws its blanks as line art, and some forms print the instruction
+*inside* the rule rather than under it:
+
+    On ________(date)________, 20___, at ____(time)____, I personally served
+    I served ________(identify person served)________ by leaving a copy ...
+
+The builder boxes the stretch of rule after the caption and drops what is in
+front of it. On Form 22A that gave the filer a 44pt box on a 113pt rule, and
+where both halves were narrow it gave nothing at all -- "I served ___(identify
+person served)___" and "her at ___(state address where the person was served)___"
+had nowhere to type on the whole of page 2.
+
+This finds each drawn rule, subtracts the glyphs actually printed on it, and adds
+a field on every clear stretch wide enough to write in. It only ever **adds**, so
+the seating `seat_mb_on_rules.py` applied is preserved and a stretch that already
+has a box is skipped. Idempotent.
+
+Two things it has to get right, both found by it reporting the wrong answer first:
+
+- **Only boxes seated on *this* rule can serve it.** Testing a stretch against
+  every field on the page lets a full-width writing area elsewhere on the sheet
+  mask all of them, and the first run reported nothing to do at all.
+- **A glyph belongs to a rule only if it is printed on it.** Measured on 22A, a
+  glyph sitting on a rule has its box bottom 0.4-0.5pt below it while the line
+  above sits 10.5-12pt higher. Opened to a line's height, the window swallowed
+  the wrapped text above ("...re: transfer proceeding under s" over the "the
+  hearing set for ___(date)___" rule) and read that rule as having no clear space.
+
+And one it deliberately refuses: a rule is only touched if a **parenthesised
+caption is printed in its interior**. A rule with clear space and no interior
+caption is one the builder left alone on purpose -- a signature line, a heading's
+underline (whose text starts at the left edge, so its span is not interior), or a
+ruled narrative line that already has a writing area over it. Without that filter
+the first pass proposed 16 boxes, six of them on exactly those.
