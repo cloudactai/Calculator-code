@@ -4,7 +4,8 @@ import { CALCULATOR_API } from "../../config";
 import { patchMatterIntake } from "../../utils/Apis/matters/saveMatterInformation/saveMattersActions";
 import refreshIcon from "../../assets/images/refresh-icon.png";
 import useLawyerAddressBook from "../../utils/Apis/lawyers/useLawyerAddressBook";
-import { getCurrentUserFromCookies } from "../../utils/helpers";
+import { fetchRequest } from "../../utils/fetchRequest";
+import { getCurrentUserFromCookies, getUserSID } from "../../utils/helpers";
 import { matterProvinceCode } from "../../utils/matterProvince";
 import {
   SECTION_LABELS,
@@ -97,6 +98,65 @@ export default function MatterIntakeChatPanel({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [matterData, contextSent, lawyersLoading]);
 
+  // Build a calculatorState from saved matter data and push it to the backend
+  // so the manual calculator can load intake values without re-entry.
+  function syncCalculatorState(matter) {
+    if (!matter || !matterId) return;
+    const bg = Array.isArray(matter.background) ? matter.background : [];
+    const clientBg = bg.find((r) => r.role === "Client") || {};
+    const opposingBg = bg.find((r) => r.role === "Opposing Party") || {};
+    const rel = Array.isArray(matter.relationship) ? matter.relationship[0] : (matter.relationship || {});
+    const children = Array.isArray(matter.children) ? matter.children : [];
+    const incomeBenefits = Array.isArray(matter.income_benefits) ? matter.income_benefits : [];
+
+    // Only sync if we have at least some meaningful data
+    if (!clientBg.name && !opposingBg.name && children.length === 0) return;
+
+    const clientIncomeRows = incomeBenefits.filter((r) => r.role === "Client" && r.incomeBenefit === "income");
+    const opposingIncomeRows = incomeBenefits.filter(
+      (r) => (r.role === "Opposing Party" || r.role === "opposingParty") && r.incomeBenefit === "income"
+    );
+    const toCalcItems = (rows) =>
+      rows.map((r) => ({
+        label: r.type || "Employment Income",
+        amount: r.yearlyAmount || r.monthlyAmount || "0",
+        value: "10100",
+      }));
+
+    const calcState = {
+      background: {
+        party1FirstName: (clientBg.name || "").split(" ")[0] || "",
+        party1LastName: (clientBg.name || "").split(" ").slice(1).join(" ") || "",
+        party2FirstName: (opposingBg.name || "").split(" ")[0] || "",
+        party2LastName: (opposingBg.name || "").split(" ").slice(1).join(" ") || "",
+        party1DateOfBirth: clientBg.dateOfBirth || "",
+        party2DateOfBirth: opposingBg.dateOfBirth || "",
+        party1province: clientBg.province || "",
+        party2province: opposingBg.province || "",
+      },
+      aboutTheChildren: {
+        numberOfChildren: children.length,
+        childrenInfo: children.map((c) => ({
+          name: c.childName || "",
+          dateOfBirth: c.dateOfBirth || "",
+          custodyArrangement: c.livesWith || c.nowLivesWith || "",
+        })),
+      },
+      aboutTheRelationship: {
+        dateOfMarriage: rel.dateOfMarriage || "",
+        dateOfSeparation: rel.dateOfSeparation || "",
+      },
+      income: {
+        party1: toCalcItems(clientIncomeRows),
+        party2: toCalcItems(opposingIncomeRows),
+      },
+    };
+
+    const sid = getUserSID();
+    fetchRequest("post", `update_matter/${sid}/${matterId}/calculatorState`, [calcState])
+      .catch((err) => console.warn("[IntakeChat] Failed to sync calculatorState:", err));
+  }
+
   // Persist only the changes returned in this response. The AI route applies these
   // as non-destructive patches; the manual forms retain full-section save semantics.
   async function persistSections(sections) {
@@ -111,6 +171,11 @@ export default function MatterIntakeChatPanel({
     patches.forEach(({ section }) => { capturedSectionsRef.current[section] = true; });
     setSavedSections(Object.keys(capturedSectionsRef.current));
     if (result?.matter && onSaved) onSaved(result.matter);
+
+    // Sync calculator state from the saved matter data so the manual calculator
+    // can load values entered via AI intake.
+    syncCalculatorState(result?.matter);
+
     return result;
   }
 
@@ -224,7 +289,7 @@ export default function MatterIntakeChatPanel({
         {bubbles.map((b, i) => (
           <div key={i} className={`mw-chat-row mw-chat-row--${b.role}`}>
             <div className="mw-chat-row__label">
-              {b.role === "user" ? "You" : "AI Assistant"}
+              {b.role === "user" ? "You" : "CloudAct"}
             </div>
             <div
               className="mw-chat-bubble"
@@ -235,7 +300,7 @@ export default function MatterIntakeChatPanel({
 
         {loading && (
           <div className="mw-chat-row mw-chat-row--assistant">
-            <div className="mw-chat-row__label">AI Assistant</div>
+            <div className="mw-chat-row__label">CloudAct</div>
             <div className="mw-chat-bubble mw-chat-bubble--typing">
               {warming ? (
                 "Warming up the server — first reply can take ~30s…"

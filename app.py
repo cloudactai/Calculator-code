@@ -24,7 +24,7 @@ from intake_chat_guard import (
 )
 from spousal_support import calculate_spousal_support_no_children, calculate_spousal_support_with_children, SpousalSupportResult, calculate_spousal_support_iterative
 from tax import ChildInfo as TaxChildInfo
-from report_pdf import generate_child_support_report, generate_spousal_support_report, REPORTS_DIR
+from report_pdf import REPORTS_DIR
 
 CURRENT_YEAR = date.today().year
 
@@ -215,7 +215,12 @@ def calculate():
 # ── /chat ─────────────────────────────────────────────────────────────────────
 
 CHAT_SYSTEM = """
-You are a child support intake assistant for CloudAct.
+You ARE CloudAct — a child support calculator built for Canadian family lawyers.
+Never refer to yourself as "AI", "assistant", "AI assistant", or a separate entity.
+Speak as CloudAct directly: use "I" to mean CloudAct. For example, say
+"I've calculated the child support" — never "As an AI, I've calculated…"
+or "The AI has determined…". Do not mention being powered by AI or any
+underlying model.
 
 Your job is to collect all the information needed to calculate child support
 by asking the user questions one at a time, then pass everything to the
@@ -237,11 +242,29 @@ Treat it as information you already have on file.
 
 When the first message contains matter data:
 1. Extract ALL relevant data from it — names, incomes, children info, etc.
+
+   INCOME EXTRACTION:
+   Income is listed as individual line items under "Party 1 income:" / "Party 2 income:"
+   (e.g. "Employment income (before deductions): $85,000",
+   "Self-employment income: $12,000"). SUM all income line items for each party
+   to get their total annual guideline income. For example, if Party 1 has
+   Employment income $80,000 and Self-employment income $5,000, their total
+   annual guideline income is $85,000. Use this total as party1_income / party2_income.
+
+   CHILDREN — CUSTODY / RESIDENCE:
+   The children data includes a "lives with" field (e.g. "lives with: Party 1",
+   "lives with: Party 2", "lives with: Shared"). Map this directly to the
+   custody_arrangement for the child:
+   - "lives with: Party 1" or "lives with: Client" → custody_arrangement = "Party 1"
+   - "lives with: Party 2" or "lives with: Opposing Party" → custody_arrangement = "Party 2"
+   - "lives with: Shared" or "lives with: Both" → custody_arrangement = "Shared"
+
 2. Summarize what you found in a brief confirmation message, e.g.:
    "Based on the matter file, I have the following on record:
     - Party 1: John Smith, income $85,000/yr
     - Party 2: Jane Smith, income $52,000/yr
     - 2 children: Emma (12, lives with Party 2), Lucas (9, lives with Party 2)
+    - Province: Ontario
 
     Is this correct, or would you like to change anything?"
 3. If the user confirms or says nothing needs changing, proceed to
@@ -269,6 +292,14 @@ PROVINCE
 PARTIES
 - Name of each party (optional — ask once, move on if they skip it)
 - Annual guideline income for Party 1 and Party 2 (in CAD)
+- Age of each party (needed for the tax profile in the report)
+- Province of residence for each party (use the same province codes: ON, BC, AB, SK, MB).
+  If both parties live in the same province, ask once.
+- Does either party claim the eligible dependent tax credit? (Yes/No for each)
+  Default to "No" if the user does not know or does not answer.
+
+TAX YEAR
+- What tax year to use for the calculation (default to the current year if not specified)
 
 CHILDREN
 For each child:
@@ -332,6 +363,46 @@ CALC_TOOL = {
                 "description": "Party 2 annual guideline income in CAD"
             },
 
+            # Ages — needed for the tax profile in the PDF report
+            "party1_age": {
+                "type": "integer",
+                "description": "Age of Party 1"
+            },
+            "party2_age": {
+                "type": "integer",
+                "description": "Age of Party 2"
+            },
+
+            # Province per party — may differ
+            "party1_province": {
+                "type": "string",
+                "enum": ["ON", "BC", "AB", "SK", "MB"],
+                "description": "Province of residence for Party 1"
+            },
+            "party2_province": {
+                "type": "string",
+                "enum": ["ON", "BC", "AB", "SK", "MB"],
+                "description": "Province of residence for Party 2"
+            },
+
+            # Tax year for the report
+            "tax_year": {
+                "type": "integer",
+                "description": "Tax year for the calculation (defaults to current year)"
+            },
+
+            # Eligible dependent tax credit
+            "party1_claims_dependent": {
+                "type": "string",
+                "enum": ["Yes", "No"],
+                "description": "Does Party 1 claim the eligible dependent tax credit? Defaults to No."
+            },
+            "party2_claims_dependent": {
+                "type": "string",
+                "enum": ["Yes", "No"],
+                "description": "Does Party 2 claim the eligible dependent tax credit? Defaults to No."
+            },
+
             # Children — array, one object per child
             "children": {
                 "type": "array",
@@ -370,61 +441,7 @@ CALC_TOOL = {
     }
 }
 
-CS_REPORT_TOOL = {
-    "name": "generate_report",
-    "description": "Generate a PDF report of the child support calculation results for the user to download.",
-    "input_schema": {
-        "type": "object",
-        "required": ["party1_name", "party2_name", "party1_income", "party2_income",
-                      "children", "scenario", "net_payer", "net_monthly", "net_annual"],
-        "properties": {
-            "party1_name":    {"type": "string", "description": "Name of Party 1"},
-            "party2_name":    {"type": "string", "description": "Name of Party 2"},
-            "party1_income":  {"type": "number", "description": "Party 1 annual guideline income"},
-            "party2_income":  {"type": "number", "description": "Party 2 annual guideline income"},
-            "children": {
-                "type": "array",
-                "description": "List of children with their details",
-                "items": {
-                    "type": "object",
-                    "properties": {
-                        "name":                {"type": "string"},
-                        "dob":                 {"type": "string"},
-                        "custody_arrangement":  {"type": "string"},
-                        "is_adult":            {"type": "boolean"},
-                    }
-                }
-            },
-            "scenario":       {"type": "string", "description": "Type of splitting scenario"},
-            "net_payer":      {"type": "string", "description": "Who pays child support"},
-            "net_monthly":    {"type": "number", "description": "Net monthly child support amount"},
-            "net_annual":     {"type": "number", "description": "Net annual child support amount"},
-            "child_support_ref": {
-                "type": "object",
-                "description": "Per-party child support breakdown (optional)",
-                "properties": {
-                    "party1_monthly": {"type": "number"},
-                    "party2_monthly": {"type": "number"},
-                    "party1_annual":  {"type": "number"},
-                    "party2_annual":  {"type": "number"},
-                }
-            },
-        }
-    }
-}
 
-
-def run_cs_report_tool(tool_input: dict) -> dict:
-    """Generate a child support PDF report and return the download URL."""
-    try:
-        filename = generate_child_support_report(tool_input)
-        return {
-            "status": "success",
-            "download_url": f"/download-report/{filename}",
-            "message": "PDF report generated successfully.",
-        }
-    except Exception as e:
-        return {"status": "error", "message": str(e)}
 
 
 def run_calc_tool(tool_input):
@@ -491,12 +508,46 @@ def run_calc_tool(tool_input):
     else:
         net_payer, net_monthly = None, 0
 
+    p1_income = float(tool_input["party1_income"])
+    p2_income = float(tool_input["party2_income"])
+    p1_is_payor = p1_income >= p2_income
+    p1_age = int(tool_input.get("party1_age", 0)) or 35
+    p2_age = int(tool_input.get("party2_age", 0)) or 35
+    p1_prov = tool_input.get("party1_province") or province
+    p2_prov = tool_input.get("party2_province") or province
+    tax_year = int(tool_input.get("tax_year", 0)) or date.today().year
+    payor_gross = p1_income if p1_is_payor else p2_income
+    recip_gross = p2_income if p1_is_payor else p1_income
+    payor_age = p1_age if p1_is_payor else p2_age
+    recip_age = p2_age if p1_is_payor else p1_age
+
+    try:
+        cs_profiles = _compute_no_children_tax_profiles(
+            payor_gross=payor_gross,
+            recipient_gross=recip_gross,
+            payor_age=payor_age,
+            recipient_age=recip_age,
+            ss_low=0, ss_mid=0, ss_high=0,
+            province=p1_prov,
+            year=tax_year,
+        )
+    except Exception:
+        cs_profiles = {}
+
     calc_result = {
         "scenario":          type_of_splitting,
         "party1_name":       p1_name,
         "party2_name":       p2_name,
         "party1_income":     tool_input["party1_income"],
         "party2_income":     tool_input["party2_income"],
+        "party1_age":        p1_age,
+        "party2_age":        p2_age,
+        "party1_province":   p1_prov,
+        "party2_province":   p2_prov,
+        "party1_claims_dependent": tool_input.get("party1_claims_dependent", "No"),
+        "party2_claims_dependent": tool_input.get("party2_claims_dependent", "No"),
+        "tax_year":          tax_year,
+        "payor":             p1_name if p1_is_payor else p2_name,
         "party1_monthly":    result["party1"],
         "party1_annual":     result["party1"] * 12,
         "party2_monthly":    result["party2"],
@@ -510,22 +561,12 @@ def run_calc_tool(tool_input):
         "net_payer":         net_payer,
         "net_monthly":       net_monthly,
         "net_annual":        net_monthly * 12,
+        "monthly_cs_paid":   net_monthly,
         "children":          tool_input.get("children", []),
+        **cs_profiles,
     }
 
-    # Auto-generate PDF report
-    try:
-        filename = generate_child_support_report(calc_result)
-        calc_result["download_url"] = f"/download-report/{filename}"
-        # Include base64-encoded PDF bytes for persistence to the auth-server
-        pdf_path = os.path.join(REPORTS_DIR, filename)
-        if os.path.isfile(pdf_path):
-            with open(pdf_path, "rb") as f:
-                calc_result["pdf_base64"] = base64.b64encode(f.read()).decode("ascii")
-            calc_result["pdf_filename"] = filename
-    except Exception as e:
-        print(f"[child-support] PDF generation error: {e}", flush=True)
-
+    # PDF is generated client-side using CalculationReport.tsx + html2pdf.js
     return calc_result
 
 
@@ -569,11 +610,8 @@ def chat():
                 resp = {"reply": reply, "messages": messages}
                 # Include the calculation result so the frontend can persist it
                 if last_calc_result:
-                    has_pdf = "pdf_base64" in last_calc_result
-                    print(f"[child-chat] Returning calculationResult to frontend (has_pdf={has_pdf}, keys={list(last_calc_result.keys())})", flush=True)
+                    print(f"[child-chat] Returning calculationResult to frontend (keys={list(last_calc_result.keys())})", flush=True)
                     resp["calculationResult"] = last_calc_result
-                else:
-                    print("[child-chat] No calculation result in this response", flush=True)
                 return jsonify(resp)
 
             # Claude called the tool — run the calculator and feed the result back
@@ -583,8 +621,7 @@ def chat():
                     result = run_calc_tool(block["input"])
                     last_calc_result = result
                     print(f"[child-chat] Calc tool executed, result keys: {list(result.keys())}", flush=True)
-                    # Strip pdf_base64 from tool result sent to Claude (it can't use it)
-                    tool_content = {k: v for k, v in result.items() if k != "pdf_base64"}
+                    tool_content = result
                     tool_results.append({
                         "type":        "tool_result",
                         "tool_use_id": block["id"],
@@ -602,7 +639,10 @@ def chat():
 # ── /intake-chat ────────────────────────────────────────────────────────────────
 
 INTAKE_INTRO = """
-You are a matter-intake assistant for CloudAct, an Ontario family-law platform.
+You ARE CloudAct — a family-law platform built for Canadian lawyers.
+Never refer to yourself as "AI", "assistant", "AI assistant", or a separate entity.
+Speak as CloudAct directly: use "I" to mean CloudAct. Do not mention being
+powered by AI or any underlying model.
 
 Your job is to collect a family-law client's intake information through
 conversation and save it, section by section, exactly as the manual 5-step intake
@@ -1468,8 +1508,12 @@ def update_chat():
 # ── /t1-extract ─────────────────────────────────────────────────────────────────
 
 T1_EXTRACT_SYSTEM = """
-You are a document-extraction assistant for CloudAct, an Ontario family-law
-platform. You are given one uploaded file that should be a Canadian T1 Income
+You ARE CloudAct — a family-law platform built for Canadian lawyers.
+Never refer to yourself as "AI", "assistant", "AI assistant", or a separate entity.
+Speak as CloudAct directly: use "I" to mean CloudAct. Do not mention being
+powered by AI or any underlying model.
+
+You are given one uploaded file that should be a Canadian T1 Income
 Tax and Benefit Return (it may be a scan or photo). Read it and record the
 intake-relevant data by calling the record_t1_data tool exactly once.
 
@@ -1879,7 +1923,10 @@ def spousal_calculate():
 # ── /tax-chat ─────────────────────────────────────────────────────────────────
 
 TAX_CHAT_SYSTEM = """
-You are a Canadian income tax intake assistant for CloudAct (Ontario).
+You ARE CloudAct — a Canadian income tax calculator built for family lawyers.
+Never refer to yourself as "AI", "assistant", "AI assistant", or a separate entity.
+Speak as CloudAct directly: use "I" to mean CloudAct. Do not mention being
+powered by AI or any underlying model.
 
 Your job is to collect all the information needed to calculate a user's Ontario
 income taxes and benefits by asking questions one at a time, then call the
@@ -2218,7 +2265,12 @@ def tax_chat():
 
 
 SPOUSAL_CHAT_SYSTEM = """
-You are a spousal support intake assistant for CloudAct.
+You ARE CloudAct — a spousal support calculator built for Canadian family lawyers.
+Never refer to yourself as "AI", "assistant", "AI assistant", or a separate entity.
+Speak as CloudAct directly: use "I" to mean CloudAct. For example, say
+"I've calculated the spousal support ranges" — never "As an AI, I've calculated…"
+or "The AI has determined…". Do not mention being powered by AI or any
+underlying model.
 
 Your job is to collect all the information needed to calculate SSAG
 spousal support by asking questions one at a time, then call the
@@ -2235,12 +2287,30 @@ Treat it as information you already have on file.
 When the first message contains matter data:
 1. Extract ALL relevant data from it — names, incomes, children info,
    relationship dates, ages, etc.
+
+   INCOME EXTRACTION:
+   Income is listed as individual line items under "Party 1 income:" / "Party 2 income:"
+   (e.g. "Employment income (before deductions): $85,000",
+   "Self-employment income: $12,000"). SUM all income line items for each party
+   to get their total annual gross income. For example, if Party 1 has
+   Employment income $80,000 and Self-employment income $5,000, their total
+   annual gross income is $85,000.
+
+   CHILDREN — CUSTODY / RESIDENCE:
+   The children data includes a "lives with" field (e.g. "lives with: Party 1",
+   "lives with: Party 2", "lives with: Shared"). Map this directly to the
+   custody arrangement for the child:
+   - "lives with: Party 1" or "lives with: Client" → custody = "Party 1"
+   - "lives with: Party 2" or "lives with: Opposing Party" → custody = "Party 2"
+   - "lives with: Shared" or "lives with: Both" → custody = "Shared"
+
 2. Summarize what you found in a brief confirmation message, e.g.:
    "Based on the matter file, I have the following on record:
     - Party 1: John Smith, age 45, income $85,000/yr
     - Party 2: Jane Smith, age 42, income $52,000/yr
     - Married: 2005-06-15, Separated: 2023-01-10 (17.5 years)
     - 2 children: Emma (12), Lucas (9), both live with Party 2
+    - Province: Ontario
 
     Is this correct, or would you like to change anything?"
 3. If the user confirms or says nothing needs changing, proceed to
@@ -2339,26 +2409,36 @@ contributions, child care expenses, union dues, or other deductions?"
 Set children=true. Call the tool once you have everything.
 
 ───────────────────────────────────────────────
-RESULT FORMAT (always include after the tool returns)
+RESULT FORMAT — MANDATORY (always include after the tool returns)
 ───────────────────────────────────────────────
-After the result, explain in plain language who pays and why, then show:
+After the tool returns results, present them in EXACTLY this format
+every single time. Do NOT omit any of the three ranges. Do NOT
+combine them into a single line or summarize. Always show all three
+(Low, Mid, High) as separate lines.
 
-Payor:              [name]
-Recipient:          [name]
+Start with a brief plain-language explanation of who pays and why,
+then show the following block exactly:
+
+**Payor:** [name]
+**Recipient:** [name]
 
 If the children path was used, show child support first:
-Child support:      $X,XXX / month
+**Child Support:** $X,XXX / month
 
-Then show all three spousal support scenarios separately:
-Low (40%):          $X,XXX / month   ($X,XXX / year)
-Mid (43%):          $X,XXX / month   ($X,XXX / year)
-High (46%):         $X,XXX / month   ($X,XXX / year)
+**Spousal Support Ranges:**
+**Low (40%):**  $X,XXX / month  ($XX,XXX / year)
+**Mid (43%):**  $X,XXX / month  ($XX,XXX / year)
+**High (46%):** $X,XXX / month  ($XX,XXX / year)
 
-Duration:           [label]
+**Duration:** [label]
 
 If the children path was used, also show:
-Payor INDI (mid):   $X,XXX / year
-Recipient INDI (mid): $X,XXX / year
+**Payor INDI (mid):** $XX,XXX / year
+**Recipient INDI (mid):** $XX,XXX / year
+
+IMPORTANT: You MUST always display all three spousal support ranges
+(Low, Mid, High) as three separate lines. Never skip any range.
+Never merge them. This is critical for the user's legal analysis.
 
 Supports Ontario (ON), British Columbia (BC), Alberta (AB), Saskatchewan (SK), and Manitoba (MB).
 Politely decline questions about provinces other than ON, BC, AB, SK, or MB.
@@ -2570,18 +2650,6 @@ SPOUSAL_REPORT_TOOL = {
 }
 
 
-def run_spousal_report_tool(tool_input: dict) -> dict:
-    """Generate a spousal support PDF report and return the download URL."""
-    try:
-        filename = generate_spousal_support_report(tool_input)
-        return {
-            "status": "success",
-            "download_url": f"/download-report/{filename}",
-            "message": "PDF report generated successfully.",
-        }
-    except Exception as e:
-        return {"status": "error", "message": str(e)}
-
 
 def run_spousal_calc_tool(tool_input: dict) -> dict:
     """
@@ -2605,14 +2673,41 @@ def run_spousal_calc_tool(tool_input: dict) -> dict:
             years=years,
             recipient_age=recipient_age,
         )
+        # Compute tax profiles for the no-children path
+        p1_gross_nc = float(tool_input["party1_gross_income"])
+        p2_gross_nc = float(tool_input["party2_gross_income"])
+        p1_age_nc = int(tool_input.get("party1_age", 0))
+        p2_age_nc = int(tool_input.get("party2_age", 0))
+        province_nc = tool_input.get("party1_province", "ON")
+        year_nc = int(tool_input.get("tax_year", 0)) or date.today().year
+        p1_is_payor_nc = p1_gross_nc >= p2_gross_nc
+        payor_gross_nc = p1_gross_nc if p1_is_payor_nc else p2_gross_nc
+        recip_gross_nc = p2_gross_nc if p1_is_payor_nc else p1_gross_nc
+        payor_age_nc = p1_age_nc if p1_is_payor_nc else p2_age_nc
+        recip_age_nc = p2_age_nc if p1_is_payor_nc else p1_age_nc
+        try:
+            nc_profiles = _compute_no_children_tax_profiles(
+                payor_gross=payor_gross_nc,
+                recipient_gross=recip_gross_nc,
+                payor_age=payor_age_nc if payor_age_nc > 0 else 35,
+                recipient_age=recip_age_nc if recip_age_nc > 0 else 35,
+                ss_low=result.annual_low,
+                ss_mid=result.annual_med,
+                ss_high=result.annual_high,
+                province=province_nc,
+                year=year_nc,
+            )
+        except Exception:
+            nc_profiles = {}
+
         calc_result = {
             "formula":        "no_children",
             "party1_name":    p1_name,
             "party2_name":    p2_name,
-            "party1_income":  float(tool_input["party1_gross_income"]),
-            "party2_income":  float(tool_input["party2_gross_income"]),
-            "party1_age":     int(tool_input.get("party1_age", 0)),
-            "party2_age":     int(tool_input.get("party2_age", 0)),
+            "party1_income":  p1_gross_nc,
+            "party2_income":  p2_gross_nc,
+            "party1_age":     p1_age_nc,
+            "party2_age":     p2_age_nc,
             "party1_province": tool_input.get("party1_province", ""),
             "party2_province": tool_input.get("party2_province", ""),
             "payor":          result.payor,
@@ -2640,17 +2735,9 @@ def run_spousal_calc_tool(tool_input: dict) -> dict:
             "duration_label": result.duration_label,
             "children":       [],
             "child_support_paid": 0,
+            **nc_profiles,
         }
-        try:
-            filename = generate_spousal_support_report(calc_result)
-            calc_result["download_url"] = f"/download-report/{filename}"
-            pdf_path = os.path.join(REPORTS_DIR, filename)
-            if os.path.isfile(pdf_path):
-                with open(pdf_path, "rb") as f:
-                    calc_result["pdf_base64"] = base64.b64encode(f.read()).decode("ascii")
-                calc_result["pdf_filename"] = filename
-        except Exception as e:
-            print(f"[spousal] PDF generation error: {e}", flush=True)
+        # PDF is generated client-side using CalculationReport.tsx + html2pdf.js
         return calc_result
 
     # ── PATH B: with children (iterative) ────────────────────────────────────
@@ -2711,6 +2798,29 @@ def run_spousal_calc_tool(tool_input: dict) -> dict:
             years=years,
             recipient_age=float(r_age),
         )
+        # Compute tax profiles for the adult-children no-children fallback
+        province_ac = tool_input.get("party1_province", "ON")
+        year_ac = int(tool_input.get("tax_year", 0)) or today.year
+        p1_is_payor_ac = p1_gross >= p2_gross
+        payor_gross_ac = p1_gross if p1_is_payor_ac else p2_gross
+        recip_gross_ac = p2_gross if p1_is_payor_ac else p1_gross
+        payor_age_ac = p1_age if p1_is_payor_ac else p2_age
+        recip_age_ac = p2_age if p1_is_payor_ac else p1_age
+        try:
+            ac_profiles = _compute_no_children_tax_profiles(
+                payor_gross=payor_gross_ac,
+                recipient_gross=recip_gross_ac,
+                payor_age=payor_age_ac if payor_age_ac > 0 else 35,
+                recipient_age=recip_age_ac if recip_age_ac > 0 else 35,
+                ss_low=result.annual_low,
+                ss_mid=result.annual_med,
+                ss_high=result.annual_high,
+                province=province_ac,
+                year=year_ac,
+            )
+        except Exception:
+            ac_profiles = {}
+
         calc_result = {
             "formula":        "no_children",
             "note":           "All children are 18 or older and are considered adults. Spousal support calculated using the without-children formula.",
@@ -2747,17 +2857,9 @@ def run_spousal_calc_tool(tool_input: dict) -> dict:
             "duration_label": result.duration_label,
             "children":       [],
             "child_support_paid": 0,
+            **ac_profiles,
         }
-        try:
-            filename = generate_spousal_support_report(calc_result)
-            calc_result["download_url"] = f"/download-report/{filename}"
-            pdf_path = os.path.join(REPORTS_DIR, filename)
-            if os.path.isfile(pdf_path):
-                with open(pdf_path, "rb") as f:
-                    calc_result["pdf_base64"] = base64.b64encode(f.read()).decode("ascii")
-                calc_result["pdf_filename"] = filename
-        except Exception as e:
-            print(f"[spousal] PDF generation error: {e}", flush=True)
+        # PDF is generated client-side using CalculationReport.tsx + html2pdf.js
         return calc_result
 
     # Determine payor/recipient by gross income to label the result
@@ -2902,19 +3004,16 @@ def run_spousal_calc_tool(tool_input: dict) -> dict:
         "duration_label":       f"{result.duration_low} – {result.duration_high} years",
         "approximate":          has_approx,
         "children":             [{"name": c.get("name", ""), "dob": c["date_of_birth"], "custody_arrangement": c["custody_arrangement"]} for c in children_raw],
+        # Tax profile dicts for detailed Tax Profile page in PDF
+        "payor_tax_profile_low":      _serialize_tax_profile(result.payor_tax_profile_low),
+        "payor_tax_profile_mid":      _serialize_tax_profile(result.payor_tax_profile_mid),
+        "payor_tax_profile_high":     _serialize_tax_profile(result.payor_tax_profile_high),
+        "recipient_tax_profile_low":  _serialize_tax_profile(result.recipient_tax_profile_low),
+        "recipient_tax_profile_mid":  _serialize_tax_profile(result.recipient_tax_profile_mid),
+        "recipient_tax_profile_high": _serialize_tax_profile(result.recipient_tax_profile_high),
     }
 
-    try:
-        filename = generate_spousal_support_report(calc_result)
-        calc_result["download_url"] = f"/download-report/{filename}"
-        pdf_path = os.path.join(REPORTS_DIR, filename)
-        if os.path.isfile(pdf_path):
-            with open(pdf_path, "rb") as f:
-                calc_result["pdf_base64"] = base64.b64encode(f.read()).decode("ascii")
-            calc_result["pdf_filename"] = filename
-    except Exception as e:
-        print(f"[spousal] PDF generation error: {e}", flush=True)
-
+    # PDF is generated client-side using CalculationReport.tsx + html2pdf.js
     return calc_result
 
 @app.route("/spousal-chat", methods=["POST"])
@@ -2954,11 +3053,8 @@ def spousal_chat():
                     print(f"[spousal-chat] Reply (last 200 chars): ...{reply[-200:]}", flush=True)
                 resp = {"reply": reply, "messages": messages}
                 if last_calc_result:
-                    has_pdf = isinstance(last_calc_result, dict) and "pdf_base64" in last_calc_result
-                    print(f"[spousal-chat] Returning calculationResult to frontend (has_pdf={has_pdf})", flush=True)
+                    print(f"[spousal-chat] Returning calculationResult to frontend (keys={list(last_calc_result.keys()) if isinstance(last_calc_result, dict) else 'not dict'})", flush=True)
                     resp["calculationResult"] = last_calc_result
-                else:
-                    print("[spousal-chat] No calculation result in this response", flush=True)
                 return jsonify(resp)
 
             tool_results = []
@@ -2968,7 +3064,7 @@ def spousal_chat():
                     result = run_spousal_calc_tool(block["input"])
                     last_calc_result = result
                     print(f"[spousal-chat] Calc tool executed, result keys: {list(result.keys()) if isinstance(result, dict) else 'not dict'}", flush=True)
-                    tool_content = {k: v for k, v in result.items() if k != "pdf_base64"} if isinstance(result, dict) else result
+                    tool_content = result
                     tool_results.append({
                         "type":        "tool_result",
                         "tool_use_id": block["id"],

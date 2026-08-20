@@ -179,10 +179,16 @@ def _spousal_html(data: dict) -> str:
             child_trs += f"""<tr><td class="lbl">{label}</td><td class="val">{custody}</td><td class="val">{csg}</td></tr>"""
         children_rows = f"""
             <table style="margin-top: 8px;">
-              <thead><tr>
-                <th style="font-weight:bold;">Children</th><th>Lives with</th><th>CSG Table</th>
-              </tr></thead>
-              <tbody>{child_trs}</tbody>
+              <thead>
+                <tr>
+                  <th style="font-weight:bold;">Children</th>
+                  <th>Lives with</th>
+                  <th>CSG Table</th>
+                </tr>
+              </thead>
+              <tbody>
+                {child_trs}
+              </tbody>
             </table>"""
 
     # Important dates rows
@@ -240,6 +246,25 @@ def _spousal_html(data: dict) -> str:
               <td class="val" colspan="2" style="text-align:center;font-weight:bold;">{_fmt(round(monthly_high * 12))}</td>
             </tr>"""
 
+    # Province display name for labels
+    prov_names = {
+        "ON": "Ontario", "BC": "British Columbia", "AB": "Alberta",
+        "SK": "Saskatchewan", "MB": "Manitoba", "QC": "Quebec",
+        "NB": "New Brunswick", "NS": "Nova Scotia", "PE": "Prince Edward Island",
+        "NL": "Newfoundland and Labrador", "YT": "Yukon",
+        "NT": "Northwest Territories", "NU": "Nunavut",
+    }
+    prov_code = p1_prov or data.get("party1_province", "Ontario")
+    prov_display = prov_names.get(prov_code, prov_code) if len(str(prov_code)) <= 2 else prov_code
+
+    p1_prov_display = prov_names.get(p1_prov, p1_prov) if p1_prov and len(str(p1_prov)) <= 2 else p1_prov
+    p2_prov_display = prov_names.get(p2_prov, p2_prov) if p2_prov and len(str(p2_prov)) <= 2 else p2_prov
+
+    # ── Tax Profile page ──
+    tax_profile_html = _build_tax_profile_page(data, p1, p2, p1_is_payor)
+
+    # CSS copied from CalculationReport.tsx — adapted for xhtml2pdf
+    # (flex → table layout for top row; everything else is a direct copy)
     html = f"""<!DOCTYPE html>
 <html>
 <head>
@@ -247,19 +272,18 @@ def _spousal_html(data: dict) -> str:
 <style>
   @page {{
     size: letter landscape;
-    margin: 10mm 5mm 10mm 5mm;
+    margin: 8mm 8mm 8mm 8mm;
   }}
   body {{
     margin: 0;
     padding: 0;
   }}
   .calc-report {{
-    font-family: Calibri, 'Segoe UI', Arial, sans-serif;
+    font-family: 'Calibri', 'Segoe UI', Helvetica, Arial, sans-serif;
     font-size: 11px;
     color: #333;
-    padding: 20px 30px;
+    padding: 20px 30px 0 30px;
     background: #fff;
-    width: 960px;
   }}
   .calc-report .report-title {{
     font-size: 16px;
@@ -295,7 +319,7 @@ def _spousal_html(data: dict) -> str:
   .calc-report .lbl {{ text-align: left; }}
   .calc-report .val {{ text-align: right; }}
   .calc-report .bold-row td {{ font-weight: bold; }}
-  .calc-report .result-header {{ background: #c5d9a4 !important; }}
+  .calc-report .result-header {{ background: #c5d9a4; }}
   .calc-report .result-val {{
     font-size: 13px;
     font-weight: bold;
@@ -317,46 +341,104 @@ def _spousal_html(data: dict) -> str:
     font-size: 10px;
     background: #f5f5f5;
   }}
+  .calc-report .tax-profile-table td,
+  .calc-report .tax-profile-table th {{
+    font-size: 9.5px;
+    padding: 2px 5px;
+  }}
+  .calc-report .tax-section-row td {{
+    font-weight: bold;
+    background: #fff;
+    font-size: 10px;
+    border: none;
+    padding-top: 10px;
+    padding-bottom: 4px;
+  }}
+  .calc-report .tax-total-row td {{
+    font-weight: bold;
+  }}
+  .page-break {{
+    page-break-before: always;
+  }}
 </style>
 </head>
 <body>
+
+<!-- PAGE 1: Main Calculation Report -->
 <div class="calc-report">
   <div class="report-title">CLOUDACT FAMILY LAW TOOLS</div>
 
-  <!-- TOP ROW -->
-  <table style="width:100%;border:none;"><tr style="border:none;">
-    <td style="width:50%;vertical-align:top;border:none;padding:0 10px 0 0;">
-      <div class="section-header">Calculation Input</div>
-      <table>
-        <thead>
-          <tr><th></th><th>{p1}</th><th>{p2}</th></tr>
-          <tr><td></td><td class="val" style="font-weight:bold;">{"Payor" if p1_is_payor else "Recipient"}</td><td class="val" style="font-weight:bold;">{"Recipient" if p1_is_payor else "Payor"}</td></tr>
-        </thead>
-        <tbody>
-          <tr><td class="lbl">Age</td><td class="val">{p1_age if p1_age else ""}</td><td class="val">{p2_age if p2_age else ""}</td></tr>
-          <tr><td class="lbl">Province</td><td class="val">{p1_prov}</td><td class="val">{p2_prov}</td></tr>
-          <tr><td class="lbl">Employment income</td><td class="val">{_fmt(p1_income)}</td><td class="val">{_fmt(p2_income)}</td></tr>
-          <tr><td class="lbl">Claims dependent credit</td><td class="val">{p1_claims or "No"}</td><td class="val">{p2_claims or "No"}</td></tr>
-        </tbody>
-      </table>
-      {children_rows}
-    </td>
-    <td style="width:50%;vertical-align:top;border:none;padding:0 0 0 10px;">
-      <div class="section-header">Important dates</div>
-      <table><tbody>{dates_rows}</tbody></table>
-    </td>
-  </tr></table>
+  <!-- TOP ROW: Calculation Input (left) + Important Dates (right) -->
+  <!-- xhtml2pdf does not support flexbox, so we use a borderless table -->
+  <table style="border:0;width:100%;">
+    <tr>
+      <td style="vertical-align:top;border:0;padding:0 10px 0 0;width:50%;">
+        <div class="section-header">Calculation Input</div>
+        <table>
+          <thead>
+            <tr>
+              <th></th>
+              <th>{p1}</th>
+              <th>{p2}</th>
+            </tr>
+            <tr>
+              <td></td>
+              <td class="val" style="font-weight:bold;">{"Payor" if p1_is_payor else "Recipient"}</td>
+              <td class="val" style="font-weight:bold;">{"Recipient" if p1_is_payor else "Payor"}</td>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="lbl">Age</td>
+              <td class="val">{p1_age if p1_age else ""}</td>
+              <td class="val">{p2_age if p2_age else ""}</td>
+            </tr>
+            <tr>
+              <td class="lbl">Province</td>
+              <td class="val">{p1_prov_display or ""}</td>
+              <td class="val">{p2_prov_display or ""}</td>
+            </tr>
+            <tr>
+              <td class="lbl">Employment income</td>
+              <td class="val">{_fmt(p1_income)}</td>
+              <td class="val">{_fmt(p2_income)}</td>
+            </tr>
+            <tr>
+              <td class="lbl">Claims dependent credit</td>
+              <td class="val">{p1_claims or "No"}</td>
+              <td class="val">{p2_claims or "No"}</td>
+            </tr>
+          </tbody>
+        </table>
+        {children_rows}
+      </td>
+      <td style="vertical-align:top;border:0;padding:0;width:50%;">
+        <div class="section-header">Important dates</div>
+        <table>
+          <tbody>
+            {dates_rows}
+          </tbody>
+        </table>
+      </td>
+    </tr>
+  </table>
 
-  <!-- RESULT -->
+  <!-- RESULT SECTION - same width as top-left -->
   <div style="width:50%;">
     <div class="section-header result-header">Result</div>
-    <table><tbody>{result_rows}</tbody></table>
+    <table>
+      <tbody>
+        {result_rows}
+      </tbody>
+    </table>
   </div>
 
-  <!-- CALCULATION DETAILS -->
+  <!-- CALCULATION DETAILS - full width below result -->
   <table class="details-table" style="margin-top:14px;">
     <thead>
-      <tr><th colspan="7" class="section-header" style="text-align:left;margin:0;">Calculation details</th></tr>
+      <tr>
+        <th colspan="7" class="section-header" style="text-align:left;margin:0;">Calculation details</th>
+      </tr>
       <tr>
         <th class="lbl"></th>
         <th colspan="2" class="scenario-hdr">LOW</th>
@@ -364,8 +446,10 @@ def _spousal_html(data: dict) -> str:
         <th colspan="2" class="scenario-hdr">HIGH</th>
       </tr>
       <tr class="sub-hdr">
-        <td class="lbl"></td><td>Party 1</td><td>Party 2</td>
-        <td>Party 1</td><td>Party 2</td><td>Party 1</td><td>Party 2</td>
+        <td class="lbl"></td>
+        <td>{p1}</td><td>{p2}</td>
+        <td>{p1}</td><td>{p2}</td>
+        <td>{p1}</td><td>{p2}</td>
       </tr>
     </thead>
     <tbody>
@@ -404,9 +488,248 @@ def _spousal_html(data: dict) -> str:
     </tbody>
   </table>
 </div>
+
+{tax_profile_html}
+
 </body>
 </html>"""
     return html
+
+
+def _tp_val(profile, key, default=0):
+    """Safely get a value from a tax profile dict."""
+    if not profile or not isinstance(profile, dict):
+        return default
+    v = profile.get(key, default)
+    return float(v) if v is not None else default
+
+
+def _build_tax_profile_page(data, p1, p2, p1_is_payor):
+    """Build the Tax Profile page HTML (page 2).
+    Matches the detailed format of CalculationReport.tsx from the manual calculator.
+    Uses tax profile dicts if available in data, otherwise skips."""
+    # Try to get tax profile dicts
+    if p1_is_payor:
+        tp1_low = data.get("party1_tax_profile_low", data.get("payor_tax_profile_low"))
+        tp1_mid = data.get("party1_tax_profile_mid", data.get("payor_tax_profile_mid"))
+        tp1_high = data.get("party1_tax_profile_high", data.get("payor_tax_profile_high"))
+        tp2_low = data.get("party2_tax_profile_low", data.get("recipient_tax_profile_low"))
+        tp2_mid = data.get("party2_tax_profile_mid", data.get("recipient_tax_profile_mid"))
+        tp2_high = data.get("party2_tax_profile_high", data.get("recipient_tax_profile_high"))
+    else:
+        tp1_low = data.get("party1_tax_profile_low", data.get("recipient_tax_profile_low"))
+        tp1_mid = data.get("party1_tax_profile_mid", data.get("recipient_tax_profile_mid"))
+        tp1_high = data.get("party1_tax_profile_high", data.get("recipient_tax_profile_high"))
+        tp2_low = data.get("party2_tax_profile_low", data.get("payor_tax_profile_low"))
+        tp2_mid = data.get("party2_tax_profile_mid", data.get("payor_tax_profile_mid"))
+        tp2_high = data.get("party2_tax_profile_high", data.get("payor_tax_profile_high"))
+
+    # If no tax profile data available, skip this page
+    if not any([tp1_low, tp1_mid, tp1_high, tp2_low, tp2_mid, tp2_high]):
+        return ""
+
+    def _row(label, key, negate=False):
+        vals = []
+        for tp in [tp1_low, tp1_mid, tp1_high, tp2_low, tp2_mid, tp2_high]:
+            v = _tp_val(tp, key)
+            if negate:
+                v = -abs(v) if v != 0 else 0
+            vals.append(_fmt(v))
+        return f"""<tr>
+            <td width="140" class="lbl">{label}</td>
+            <td width="98" class="val">{vals[0]}</td><td width="98" class="val">{vals[1]}</td><td width="98" class="val">{vals[2]}</td>
+            <td width="98" class="val">{vals[3]}</td><td width="98" class="val">{vals[4]}</td><td width="98" class="val">{vals[5]}</td>
+        </tr>"""
+
+    def _row_custom(label, vals):
+        """Row with explicit per-cell values."""
+        cells = "".join(f'<td width="98" class="val">{_fmt(v)}</td>' for v in vals)
+        return f"""<tr>
+            <td width="140" class="lbl">{label}</td>
+            {cells}
+        </tr>"""
+
+    def _row_bold(label, key):
+        vals = []
+        for tp in [tp1_low, tp1_mid, tp1_high, tp2_low, tp2_mid, tp2_high]:
+            vals.append(_fmt(_tp_val(tp, key)))
+        return f"""<tr class="tax-total-row">
+            <td width="140" class="lbl">{label}</td>
+            <td width="98" class="val">{vals[0]}</td><td width="98" class="val">{vals[1]}</td><td width="98" class="val">{vals[2]}</td>
+            <td width="98" class="val">{vals[3]}</td><td width="98" class="val">{vals[4]}</td><td width="98" class="val">{vals[5]}</td>
+        </tr>"""
+
+    def _spousal_support_row():
+        """Spousal support row: payor shows negative (paid), recipient shows positive (received)."""
+        vals = []
+        for tp in [tp1_low, tp1_mid, tp1_high, tp2_low, tp2_mid, tp2_high]:
+            paid = _tp_val(tp, "deductible_support_paid")
+            received = _tp_val(tp, "support_received")
+            if paid > 0:
+                vals.append(f"(${paid:,.0f})")
+            elif received > 0:
+                vals.append(_fmt(round(received)))
+            else:
+                vals.append("$0")
+        cells = "".join(f'<td width="98" class="val">{v}</td>' for v in vals)
+        return f"""<tr>
+            <td width="140" class="lbl">Spousal Support</td>
+            {cells}
+        </tr>"""
+
+    def _cpp_deductions_row():
+        """CPP Deductions = cpp_enhanced - cpp2 (first additional CPP)."""
+        vals = []
+        for tp in [tp1_low, tp1_mid, tp1_high, tp2_low, tp2_mid, tp2_high]:
+            cpp_enhanced = _tp_val(tp, "cpp_enhanced")
+            cpp2 = _tp_val(tp, "cpp2")
+            vals.append(round(cpp_enhanced - cpp2))
+        return _row_custom("CPP Deductions", vals)
+
+    def _section_hdr(label):
+        return f"""<tr class="tax-section-row">
+            <td width="140"><strong>{label}</strong></td>
+            <td width="98"></td>
+            <td width="98"></td>
+            <td width="98"></td>
+            <td width="98"></td>
+            <td width="98"></td>
+            <td width="98"></td>
+        </tr>"""
+
+    province = data.get("party1_province", "Ontario")
+    # Map province codes to display names
+    prov_names = {
+        "ON": "Ontario", "BC": "British Columbia", "AB": "Alberta",
+        "SK": "Saskatchewan", "MB": "Manitoba", "QC": "Quebec",
+        "NB": "New Brunswick", "NS": "Nova Scotia", "PE": "Prince Edward Island",
+        "NL": "Newfoundland and Labrador", "YT": "Yukon",
+        "NT": "Northwest Territories", "NU": "Nunavut",
+    }
+    prov_display = prov_names.get(province, province) if len(province) <= 2 else province
+
+    return f"""
+<!-- ═══════════════════════════════════════════════════════════════════════ -->
+<!-- PAGE 2: Tax Profile                                                    -->
+<!-- ═══════════════════════════════════════════════════════════════════════ -->
+<div class="page-break"></div>
+<div class="calc-report">
+  <div class="report-title">CLOUDACT FAMILY LAW TOOLS</div>
+  <div class="section-header">Tax Profile</div>
+  <table class="tax-profile-table" width="728">
+    <tr>
+      <td width="140" class="lbl" style="background-color:#eef2f7;font-weight:bold;border:1px solid #d0d0d0;"></td>
+      <td width="98" class="scenario-hdr" style="background-color:#eef2f7;border:1px solid #d0d0d0;">{p1}</td>
+      <td width="98" class="scenario-hdr" style="background-color:#eef2f7;border:1px solid #d0d0d0;">{p1}</td>
+      <td width="98" class="scenario-hdr" style="background-color:#eef2f7;border:1px solid #d0d0d0;">{p1}</td>
+      <td width="98" class="scenario-hdr" style="background-color:#eef2f7;border:1px solid #d0d0d0;">{p2}</td>
+      <td width="98" class="scenario-hdr" style="background-color:#eef2f7;border:1px solid #d0d0d0;">{p2}</td>
+      <td width="98" class="scenario-hdr" style="background-color:#eef2f7;border:1px solid #d0d0d0;">{p2}</td>
+    </tr>
+    <tr class="sub-hdr">
+      <td width="140" class="lbl"></td>
+      <td width="98">Low</td><td width="98">Med</td><td width="98">High</td>
+      <td width="98">Low</td><td width="98">Med</td><td width="98">High</td>
+    </tr>
+      {_row("Employment", "employed_income")}
+      {_row("Self Employment", "self_employed_income")}
+      {_spousal_support_row()}
+
+      {_section_hdr("Deductions")}
+      {_cpp_deductions_row()}
+      {_row("Second Additional CPP Employed", "cpp2")}
+      {_row_custom("Second Additional CPP Self Employed", [0, 0, 0, 0, 0, 0])}
+      {_row("Child Care Expenses", "child_care_expenses")}
+      {_row("Additional based on user input", "other_deductions")}
+      {_row("Taxable Income", "taxable_income")}
+
+      {_section_hdr("Federal Credits")}
+      {_row("Basic Personal Amount", "basic_personal_amount_fed")}
+      {_row("Age Amount", "age_amount_fed")}
+      {_row("Eligible Dependent", "eligible_dependent_credit_fed")}
+      {_row("CPP", "cpp_base")}
+      {_row("EI", "ei")}
+      {_row("Canada Employment", "canada_employment_credit")}
+      {_row_custom("Additional based on user input", [0, 0, 0, 0, 0, 0])}
+      {_row("Disability Amount (Self)", "disability_credit_fed")}
+
+      {_section_hdr("Provincial Credits")}
+      {_row("Basic Personal Amount", "basic_personal_amount_prov")}
+      {_row("Eligible Dependent", "eligible_dependent_credit_prov")}
+      {_row("LIFT", "ontario_lift_credit")}
+      {_row_custom("Additional Based on user Input", [0, 0, 0, 0, 0, 0])}
+      {_row(f"Disability Amount (Self).. {prov_display}", "disability_credit_prov")}
+
+      {_section_hdr("Taxes And Deductions")}
+      {_row("Federal Tax", "federal_tax")}
+      {_row(f"{prov_display} Tax", "provincial_tax")}
+      {_row("CPP and EI for Employed", "cpp_ei_deductions")}
+      {_row_custom("CPP and EI for Self Employed", [0, 0, 0, 0, 0, 0])}
+      {_row_custom("Provincial Credits", [0, 0, 0, 0, 0, 0])}
+      {_row_bold("Total", "total_taxes")}
+
+      {_section_hdr("Benefits")}
+      {_row("Canada Child Benefit", "canada_child_benefit")}
+      {_row_custom("Child Disability", [0, 0, 0, 0, 0, 0])}
+      {_row("Climate action incentive", "climate_action_incentive")}
+      {_row("Canada Workers Benefit", "canada_workers_benefit")}
+      {_row("GST/HST Benefit", "gst_hst_benefit")}
+      {_row(f"{prov_display} Child Benefit", "provincial_child_benefit")}
+      {_row(f"{prov_display} Sales Tax Credit", "provincial_sales_tax_credit")}
+      {_row_bold("Total", "total_benefits")}
+  </table>
+</div>"""
+
+
+def _build_terms_of_use_page():
+    """Build the Terms of Use page HTML (last page)."""
+    return """
+<!-- ═══════════════════════════════════════════════════════════════════════ -->
+<!-- LAST PAGE: Terms of Use                                                -->
+<!-- ═══════════════════════════════════════════════════════════════════════ -->
+<div class="page-break"></div>
+<div class="terms-page">
+  <div class="terms-title">TERMS OF USE</div>
+  <div class="terms-text">
+    This support report was created using the Cloud Act support
+    calculator. Please visit Cloud Act to learn more, or to
+    perform your own support calculations.
+    <br /><br />
+    Calculations are current based on the laws and regulations in
+    force as of the date the report was calculated. The Calculator applies
+    the federal Child Support Guidelines ("CSG"), which are legally binding
+    in most provinces in Canada, and the federal Spousal Support Advisory
+    Guidelines ("SSAG"), which are not legally binding but are widely used
+    on an advisory basis. Note that actual taxes and benefits may vary
+    based on interpretations and calculations performed by the Canada
+    Revenue Agency or relevant provincial or territorial authorities.
+    <br /><br />
+    This calculation is only as reliable as the inputs provided
+    by the user: if income, expenses, taxes or benefits are different than
+    set out in page 1, the amount of support should be recalculated to
+    reflect reality.
+    <br /><br />
+    Although the Calculator generates child and spousal support
+    amounts, support is not automatically payable in all circumstances.
+    Family law is extremely complex and there are many other factors and
+    legal issues not considered by this Calculator that could dramatically
+    affect child and spousal support.
+    <br /><br />
+    This report does not contain legal advice or establish a
+    lawyer-client relationship. By using or referencing this report in any
+    way, you agree to indemnify CloudAct for any loss, damages, costs, or
+    expenses incurred by you or any third parties in relation to this
+    report, howsoever arising, regardless of theory of liability.
+    <br /><br />
+    If you have questions or concerns regarding this support
+    calculation, please contact us.
+  </div>
+</div>"""
+
+
+def generate_unified_report(data: dict) -> str:
+    """Generate a unified PDF report (child, spousal, or both)."""
+    return generate_spousal_support_report(data)
 
 
 def generate_spousal_support_report(data: dict) -> str:

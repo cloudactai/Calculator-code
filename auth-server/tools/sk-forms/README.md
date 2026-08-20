@@ -10,9 +10,43 @@ unlike BC, nothing here has to be flattened.
 
 ## Scope
 
-The 40 family-law forms of **Part 15 of The King's Bench Rules**, published by
-the Office of the King's Printer. Part 16 (probate and estates) and the civil
-parts are deliberately out of scope, matching the Ontario and BC catalogues.
+**76 forms across three families**, all published by the Office of the King's
+Printer, matching the breadth Ontario and BC carry:
+
+| Family | Source | Forms | docId |
+| --- | --- | --- | --- |
+| Part 15 of The King's Bench Rules | one product per form | 40 | `SKKB_` |
+| The Child and Family Services Regulations, c C-7.2 Reg 1 | one product per form | 16 (A-P) | `SKCFS_` |
+| The Adoption Regulations, 2003, c A-5.2 Reg 1 | cut from the consolidation | 20 | `SKAD_` |
+
+Part 15 is general family-division procedure and prescribes **no** child
+protection and **no** adoption form -- the same split BC has, where the two
+Family Rules books prescribe neither and batch 3 had to go to the CFCSA and
+Adoption regulations for them. Saskatchewan runs those families under separate
+statutes, and each statute's regulation carries its own appendix of forms.
+`sk_sources_cp.py` records that scope and the reasons for it.
+
+Five adoption forms are prescribed but **repealed**, and are not shipped: Forms
+B and J (SR 114/2017), Form E (SR 99/2004), and Forms N and O (SR 11/2016).
+Forms N and O are the trap -- the King's Printer still serves standalone product
+PDFs for both, because the products were never retired when the regulation
+repealed the forms, so the *regulation's appendix* decides the scope here and not
+the product list.
+
+Part 16 (probate and estates) and the civil parts remain deliberately out of
+scope, matching the Ontario and BC catalogues.
+
+### Why adoption is cut from the consolidation
+
+22 of the 25 adoption forms do have their own product PDFs, and they are
+unusable: their fonts carry no ToUnicode map, so `get_text()` on Form A-1 returns
+the running head and nothing else, and on Form C-5 returns mojibake. This builder
+reads every box off a printed anchor, so a source with no text layer builds an
+empty form. The consolidation's text layer is clean for the identical pages, so
+`sk_reg_cut.py` cuts each form out of it at the forms' own enacting headings --
+including the headings of the repealed forms, which are what bound the bottom of
+the form printed above them. (BC hit the mirror image in batch 3, where the
+consolidation's images were broken and the standalone PDFs were clean.)
 
 ## 1. Fetch and verify sources (gates A, B)
 
@@ -40,7 +74,7 @@ re-fetched verbatim and diffed against what we ship.
 python3 build_sk_forms.py [--only SKKB_15_47] [--category Financial] [--promote]
 ```
 
-**All 40 sources are static PDFs — no widgets, no XFA.** There is no government
+**All 76 sources are static PDFs — no widgets, no XFA.** There is no government
 rectangle to copy, so every box is read off a printed anchor. The whole 40-form
 set uses exactly three vocabularies and no others:
 
@@ -49,6 +83,26 @@ set uses exactly three vocabularies and no others:
 | A run of underscores | 1,590 | a text field seated on the run's own measured ink |
 | A 9×9 stroked square | 457 | a checkbox (there is no second size, and no glyph variant) |
 | A ruled grid | — | a field per empty cell |
+| A **U+F07E glyph** in WP-MathA | 21 | a checkbox, seated on the glyph's measured ink |
+| A **drawn rule after a `$`** | 5 | a one-line amount field |
+
+The last two are the adoption consolidation's own vocabulary and are the reason
+the first build of it shipped 20 forms with no option boxes at all:
+
+- **The option box is typed, not drawn.** `get_drawings()` returns *nothing* on
+  those pages -- the options are the glyph U+F07E set in WP-MathA (WordPerfect's
+  Math A), the same private-use trick the Wingdings check glyph plays in the tick
+  column. The glyph's *character* box is not the box: at 20pt it measures
+  14.94 × 23.34 while the square printed inside it is 13.5 × 13.4 and sits low in
+  the cell, so the ink is measured off a render rather than taken from the font
+  size.
+- **An amount rule can be line art.** Adoption Form K sets its itemised rows as
+  `$_______________` but its five totals (Total Income, Net Income, Total
+  Expenses, Total Assets, Total Debts) as a `$` followed by a stroked line — so
+  every total of a financial statement had a printed rule and nothing to type on.
+  The detector is deliberately narrow: a rule only counts if its left end sits
+  within 12pt of a `$` printed on the same line, because every table border in the
+  set is also a drawn horizontal rule and none of them carries a `$`.
 
 **The background PDF ships byte-identical to the government's file.** BC and
 Ontario had to rewrite theirs — strip a widget layer, flatten XFA, redact dotted
@@ -133,8 +187,11 @@ either flags every correctly-placed box for the underscores it is supposed to si
 on, or — once underscores are excused — waves through a box that really has
 covered the caption glued to them.
 
-Current state: **40 forms, 3,087 fields, zero findings**, and the build is
-idempotent (two runs produce byte-identical maps).
+Current state: **76 forms, 3,859 fields, zero findings**, and the build is
+idempotent (two runs produce byte-identical maps). The 40 Part 15 templates are
+byte-identical to what they were before the other two families were added, which
+is asserted directly rather than assumed -- the floors that had to move to fit
+the adoption forms are scoped so that nothing already reviewed and shipped moves.
 
 ## 4. Catalog
 
@@ -143,8 +200,11 @@ python3 merge_sk_catalog.py
 cd ../.. && npm run forms:validate-export
 ```
 
-Rewrites the SK block of `catalog.json` (sortOrder from 301, clear of Ontario's
-1–135 and BC's 101–288) and regenerates `audit.json`.
+Rewrites the SK block of `catalog.json` and regenerates `audit.json`. The block
+start is **derived from what the other provinces currently occupy**, not written
+down: SK now lands at 801–876, above Manitoba's 701–786. `TITLE_OVERRIDE` is
+keyed by docId rather than form number, because a form number is only unique
+within its family and there is now a Form L under both regulations.
 
 ## 5. Prefill binds
 
@@ -156,9 +216,20 @@ Writes back **only** the `bind` key, asserting every other key is byte-identical
 first, so it is safe on templates whose geometry is already approved; a second run
 is a no-op. Run it after any rebuild, which drops binds.
 
-39 of the 40 forms open with the same heading, and the caption is printed to the
-**left** of its blank, which is the only place it is read from. 105 fields bind:
-the court file number on 39 forms, the respondent on 37, the applicant on 29.
+39 of the 40 **Part 15** forms open with the same heading, and the caption is
+printed to the **left** of its blank, which is the only place it is read from.
+105 fields bind: the court file number on 39 forms, the respondent on 37, the
+applicant on 29.
+
+**The child-protection and adoption forms bind nothing, by design.** They do not
+print that heading block: they open "Judicial Centre of______" — the one line
+Part 15 also refuses — and name their parties in running prose, labelling them
+*underneath* the rule ("(name(s) of applicant(s))") where this tool does not
+read. Binding from an underneath-caption would be a new rule with its own failure
+mode on documents where a wrong name is worse than a blank: an adoption
+"applicant" is the prospective adoptive parent, and a child-protection proceeding
+is brought by the ministry against a parent, so neither maps onto the matter's
+applicant/respondent the way a petitioner does. Reasons are in `sk_binds.py`.
 
 Deliberately left unbound, with reasons in `sk_binds.py`:
 
@@ -224,3 +295,58 @@ missing box. Both fixes above are hand-measured entries in `MANUAL_FIELDS`, not
 a general rule — the next instance of this shape still needs a human to read
 the page and confirm there's really nowhere printed to answer before adding a
 box.
+
+## What the child-protection and adoption review turned up
+
+The 41 new pages were rendered with the overlay drawn and read one at a time.
+Five defect classes came out of it, all now fixed and all re-checked by
+`verify_sk.py`:
+
+1. **No option boxes at all on the 20 adoption forms** — the U+F07E glyph, above.
+2. **Every total on adoption Form K unfillable** — the drawn amount rule, above.
+3. **Signature rules filled, in a vocabulary Part 15 never used.** Part 15 closes
+   with `(signature of party)`, `A Commissioner for Oaths` or a bare office
+   (`Local Registrar`). These two families name the signatory instead, and at more
+   length: `Officer`, `Director`, `Clerk of the Court/Local Registrar`, `Minister
+   of Community Resources and Employment`, `(witness)`, `(Parents)`, `(Parent or
+   person)`. Nineteen signature rules were being filled, Form P alone closing with
+   four of them.
+
+   Matching that vocabulary is **not** sufficient, and this is the part worth
+   remembering: two of those words also caption an ordinary name blank. Form F
+   heads `To:_______` with `(parent)` under it, and adoption Form H heads a block
+   of four addressees whose second line is a bare rule captioned `(applicant)`.
+   Both are places the filer writes. What separates them is the *rule*, not the
+   caption — a signature rule is **bare**, alone on its line, while a name blank
+   is preceded on its own line by the words that ask for it. So a caption in this
+   vocabulary only condemns a rule with nothing else printed on its line. That
+   also keeps it off `(Name and birth date of child)`, which sits below a bare
+   rule on Form A and is not a role at all. `applicant` and `guardian` were then
+   dropped from the vocabulary outright: an applicant who signs is captioned
+   `(Signature of applicant)`, which the existing rule already catches, so the
+   word earned nothing and cost Form H a real field.
+
+   Comparison is by the **top** of each line, not its bottom: a rule's line box
+   hangs below the caption's own top (Form A sets the rule at y 428.6–443.7 and
+   `Officer` at 441.3, a 2.4pt overlap), so a "strictly above" test on the bottom
+   edge found no rule at all and kept every one of them.
+4. **A blank seated into the checkbox above it.** The stacking pitch only knew
+   about other blanks, so on Forms H and O an option printed directly over the
+   `Re:____` beneath it left the blank's box 0.7pt inside the checkbox.
+5. **Date slots dropped for being narrow.** The three Orders of Adoption print
+   `The_ __ day of______, 20_ _`, whose day slot measures 15.2pt and year slot
+   10.9pt, so the order's own date could not be typed. See `MIN_RUN_WIDTH`.
+
+### Still open
+
+- **Adoption sources are current to 2017.** The consolidation still prints "Court
+  of Queen=s Bench" (with the `=` the King's Printer's own font substitution
+  produces for an apostrophe) where the 2024 child-protection consolidation prints
+  "King's Bench". That is the state of the enacted form and is shipped as
+  published, not silently corrected.
+- **`expectedPages` for the adoption forms is the count our own cut produces**,
+  not one the publications site advertises, so it is a regression guard rather
+  than an independent check. A re-issued consolidation that reflows will change
+  the cut length and stop the fetcher, which is the intent.
+- The two families carry **no prefill binds**; see above for why that is a
+  decision rather than an omission.

@@ -33,10 +33,14 @@ DASH = "–"
 # with the party's name struck off the end; "Affidavit or Respondent" is a
 # typo in the publications catalogue for Form 15-82, whose own first page reads
 # "Affidavit of Petitioner (or Respondent)".
+# Keyed by docId rather than form number: form numbers are only unique *within* a
+# family, and Saskatchewan now ships three. There is a Form L in Part 15's
+# neighbours, a Form L under the child protection regulations and a Form L under
+# the adoption regulations, so a form-number key would retitle all of them.
 TITLE_OVERRIDE = {
-    "15-47": "Financial Statement",
-    "15-49": "Property Statement",
-    "15-82": "Affidavit of Petitioner (or Respondent)",
+    "SKKB_15_47": "Financial Statement",
+    "SKKB_15_49": "Property Statement",
+    "SKKB_15_82": "Affidavit of Petitioner (or Respondent)",
 }
 
 
@@ -63,10 +67,12 @@ def main():
         doc = fitz.open(pdf)
         page_count = doc.page_count
         doc.close()
-        title = TITLE_OVERRIDE.get(src["formNo"], src["title"])
+        title = TITLE_OVERRIDE.get(doc_id, src["title"])
         rows.append({
             "title": "Form %s - %s" % (src["formNo"], title),
-            "shortTitle": "SK KB %s" % src["formNo"],
+            # From the source, not composed here: Saskatchewan now ships three
+            # families and only Part 15 is "SK KB" (see sk_sources_cp.py).
+            "shortTitle": src["shortTitle"],
             "footerText": manifest[doc_id].get("footerText") or None,
             "status": "active",
             "fileName": "%s.pdf" % doc_id,
@@ -99,9 +105,17 @@ def main():
     for item in merged:
         counts[item["province"]] = counts.get(item["province"], 0) + 1
     print("catalog: %d rows %s" % (len(merged), counts))
-    for category in CATEGORY_ORDER:
-        group = [r for r in rows if r["category"].endswith(category)]
-        print("  %-22s %d" % (category, len(group)))
+    # Grouped on the row's whole category, not a suffix of it. Part 15's entries
+    # in CATEGORY_ORDER are bare function names ("Financial"), and now that the
+    # adoption regulations contribute an "Adoption - Financial" the suffix test
+    # counted Form K under Part 15's heading as well as its own.
+    seen = []
+    for row in rows:
+        if row["category"] not in seen:
+            seen.append(row["category"])
+    for category in seen:
+        group = [r for r in rows if r["category"] == category]
+        print("  %-34s %d" % (category, len(group)))
         for row in group:
             print("      %-4d %-13s %s" % (row["sortOrder"], row["docId"], row["title"][:52]))
 

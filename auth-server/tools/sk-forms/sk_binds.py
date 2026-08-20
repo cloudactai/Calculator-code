@@ -32,6 +32,22 @@ document is worse than a blank one.
 "CO-PETITIONERS", and "PETITIONER (1)" / "PETITIONER (2)", none of which say
 which party is the matter's client. Form 15-82's "PETITIONER/RESPONDENT" is
 ambiguous by construction -- the filer strikes out the one that does not apply.
+
+**The child-protection and adoption forms bind nothing, and that is the expected
+result rather than a gap waiting to be filled.** All 105 binds are on Part 15.
+Neither of the other two families prints that heading block at all: they open
+"Judicial Centre of______" -- the one line Part 15 also refuses -- and then name
+their parties in running prose ("In the matter of an application for the adoption
+of______", "I,______, an officer pursuant to The Child and Family Services Act").
+
+Where those forms do label a party, the label is printed *underneath* the rule,
+as "(name(s) of applicant(s))" or "(name of birth parent or guardian)", and this
+module reads captions from the left only -- deliberately, see above. Binding off
+an underneath-caption would be a new rule with its own failure mode, on documents
+where a wrong name is worse than a blank one: the "applicant" on an adoption
+application is the prospective adoptive parent, and a child-protection proceeding
+is brought by the ministry against a parent, so neither maps onto the matter's
+applicant/respondent the way a petitioner does.
 """
 import re
 

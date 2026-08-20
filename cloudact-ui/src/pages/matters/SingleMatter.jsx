@@ -409,10 +409,10 @@ const SingleMatter = () => {
   // Chat panel titles are shown in the page header (the panels no longer render
   // their own header row).
   const CHAT_TITLES = {
-    intake_chat: "Matter Intake — AI Assistant",
-    child_support: "Child Support Calculator — AI Assistant",
-    spousal_support: "Spousal Support Calculator — AI Assistant",
-    update_information: "Update Information — AI Assistant",
+    intake_chat: "Matter Intake — CloudAct",
+    child_support: "Child Support Calculator — CloudAct",
+    spousal_support: "Spousal Support Calculator — CloudAct",
+    update_information: "Update Information — CloudAct",
   };
 
   // Client / matter identity — shown in the header in every view.
