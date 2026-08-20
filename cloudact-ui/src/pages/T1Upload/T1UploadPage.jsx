@@ -411,7 +411,7 @@ export default function T1UploadPage() {
             <div className="mw-chat-panel__window" ref={windowRef}>
               {/* 1 — assistant welcome */}
               <div className="mw-chat-row mw-chat-row--assistant">
-                <div className="mw-chat-row__label">AI Assistant</div>
+                <div className="mw-chat-row__label">CloudAct</div>
                 <div className="mw-chat-bubble">{WELCOME_TEXT}</div>
               </div>
 
@@ -445,7 +445,7 @@ export default function T1UploadPage() {
               {/* upload / extraction error, followed by a fresh upload box */}
               {uploadError && (
                 <div className="mw-chat-row mw-chat-row--assistant">
-                  <div className="mw-chat-row__label">AI Assistant</div>
+                  <div className="mw-chat-row__label">CloudAct</div>
                   <div className="mw-chat-bubble">
                     <span className="t1-error">{uploadError}</span>
                   </div>
@@ -466,7 +466,7 @@ export default function T1UploadPage() {
               {/* 3 — assistant side: skeleton T1 while scanning */}
               {stage === "scanning" && (
                 <div className="mw-chat-row mw-chat-row--assistant">
-                  <div className="mw-chat-row__label">AI Assistant</div>
+                  <div className="mw-chat-row__label">CloudAct</div>
                   <div className="mw-chat-bubble t1-scan-bubble">
                     <div className="t1-skel" aria-label="Scanning the uploaded T1">
                       <div className="t1-skel__page">
@@ -497,7 +497,7 @@ export default function T1UploadPage() {
               {/* 4 — assistant side: editable extraction + save prompt */}
               {showReview && (
                 <div className="mw-chat-row mw-chat-row--assistant">
-                  <div className="mw-chat-row__label">AI Assistant</div>
+                  <div className="mw-chat-row__label">CloudAct</div>
                   <div className="mw-chat-bubble t1-review">
                     <p className="t1-review__intro">
                       Based on documents provided, we have imputed the following
@@ -663,7 +663,7 @@ export default function T1UploadPage() {
               {/* 5 — outcome */}
               {stage === "saved" && (
                 <div className="mw-chat-row mw-chat-row--assistant">
-                  <div className="mw-chat-row__label">AI Assistant</div>
+                  <div className="mw-chat-row__label">CloudAct</div>
                   <div className="mw-chat-bubble">
                     <span className="t1-success">
                       ✓ Fields populated.
@@ -682,7 +682,7 @@ export default function T1UploadPage() {
 
               {stage === "declined" && (
                 <div className="mw-chat-row mw-chat-row--assistant">
-                  <div className="mw-chat-row__label">AI Assistant</div>
+                  <div className="mw-chat-row__label">CloudAct</div>
                   <div className="mw-chat-bubble">
                     No problem — nothing was saved. Upload another T1 whenever
                     you're ready.

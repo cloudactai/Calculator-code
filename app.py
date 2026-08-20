@@ -24,7 +24,7 @@ from intake_chat_guard import (
 )
 from spousal_support import calculate_spousal_support_no_children, calculate_spousal_support_with_children, SpousalSupportResult, calculate_spousal_support_iterative
 from tax import ChildInfo as TaxChildInfo
-from report_pdf import generate_child_support_report, generate_spousal_support_report, generate_unified_report, REPORTS_DIR
+from report_pdf import REPORTS_DIR
 
 CURRENT_YEAR = date.today().year
 
@@ -215,7 +215,12 @@ def calculate():
 # ── /chat ─────────────────────────────────────────────────────────────────────
 
 CHAT_SYSTEM = """
-You are a child support intake assistant for CloudAct.
+You ARE CloudAct — a child support calculator built for Canadian family lawyers.
+Never refer to yourself as "AI", "assistant", "AI assistant", or a separate entity.
+Speak as CloudAct directly: use "I" to mean CloudAct. For example, say
+"I've calculated the child support" — never "As an AI, I've calculated…"
+or "The AI has determined…". Do not mention being powered by AI or any
+underlying model.
 
 Your job is to collect all the information needed to calculate child support
 by asking the user questions one at a time, then pass everything to the
@@ -418,68 +423,7 @@ CALC_TOOL = {
     }
 }
 
-CS_REPORT_TOOL = {
-    "name": "generate_report",
-    "description": "Generate a PDF report of the child support calculation results for the user to download.",
-    "input_schema": {
-        "type": "object",
-        "required": ["party1_name", "party2_name", "party1_income", "party2_income",
-                      "children", "scenario", "net_payer", "net_monthly", "net_annual"],
-        "properties": {
-            "party1_name":    {"type": "string", "description": "Name of Party 1"},
-            "party2_name":    {"type": "string", "description": "Name of Party 2"},
-            "party1_income":  {"type": "number", "description": "Party 1 annual guideline income"},
-            "party2_income":  {"type": "number", "description": "Party 2 annual guideline income"},
-            "children": {
-                "type": "array",
-                "description": "List of children with their details",
-                "items": {
-                    "type": "object",
-                    "properties": {
-                        "name":                {"type": "string"},
-                        "dob":                 {"type": "string"},
-                        "custody_arrangement":  {"type": "string"},
-                        "is_adult":            {"type": "boolean"},
-                    }
-                }
-            },
-            "scenario":       {"type": "string", "description": "Type of splitting scenario"},
-            "net_payer":      {"type": "string", "description": "Who pays child support"},
-            "net_monthly":    {"type": "number", "description": "Net monthly child support amount"},
-            "net_annual":     {"type": "number", "description": "Net annual child support amount"},
-            "child_support_ref": {
-                "type": "object",
-                "description": "Per-party child support breakdown (optional)",
-                "properties": {
-                    "party1_monthly": {"type": "number"},
-                    "party2_monthly": {"type": "number"},
-                    "party1_annual":  {"type": "number"},
-                    "party2_annual":  {"type": "number"},
-                }
-            },
-            "party1_age":              {"type": "integer", "description": "Age of Party 1"},
-            "party2_age":              {"type": "integer", "description": "Age of Party 2"},
-            "party1_province":         {"type": "string", "description": "Province of Party 1"},
-            "party2_province":         {"type": "string", "description": "Province of Party 2"},
-            "tax_year":                {"type": "integer", "description": "Tax year"},
-            "party1_claims_dependent": {"type": "string", "description": "Does Party 1 claim dependent credit (Yes/No)"},
-            "party2_claims_dependent": {"type": "string", "description": "Does Party 2 claim dependent credit (Yes/No)"},
-        }
-    }
-}
 
-
-def run_cs_report_tool(tool_input: dict) -> dict:
-    """Generate a child support PDF report and return the download URL."""
-    try:
-        filename = generate_unified_report(tool_input)
-        return {
-            "status": "success",
-            "download_url": f"/download-report/{filename}",
-            "message": "PDF report generated successfully.",
-        }
-    except Exception as e:
-        return {"status": "error", "message": str(e)}
 
 
 def run_calc_tool(tool_input):
@@ -604,22 +548,7 @@ def run_calc_tool(tool_input):
         **cs_profiles,
     }
 
-    # Auto-generate PDF report using the unified (spousal-style) format
-    try:
-        filename = generate_unified_report(calc_result)
-        calc_result["download_url"] = f"/download-report/{filename}"
-        # Include base64-encoded PDF bytes for persistence to the auth-server
-        pdf_path = os.path.join(REPORTS_DIR, filename)
-        if os.path.isfile(pdf_path):
-            with open(pdf_path, "rb") as f:
-                calc_result["pdf_base64"] = base64.b64encode(f.read()).decode("ascii")
-            calc_result["pdf_filename"] = filename
-    except Exception as e:
-        import traceback
-        print(f"[child-support] PDF generation error: {e}", flush=True)
-        print(f"[child-support] PDF error traceback:\n{traceback.format_exc()}", flush=True)
-        calc_result["_pdf_error"] = str(e)
-
+    # PDF is generated client-side using CalculationReport.tsx + html2pdf.js
     return calc_result
 
 
@@ -663,12 +592,8 @@ def chat():
                 resp = {"reply": reply, "messages": messages}
                 # Include the calculation result so the frontend can persist it
                 if last_calc_result:
-                    has_pdf = "pdf_base64" in last_calc_result
-                    pdf_error = last_calc_result.get("_pdf_error", None)
-                    print(f"[child-chat] Returning calculationResult to frontend (has_pdf={has_pdf}, pdf_error={pdf_error}, keys={list(last_calc_result.keys())})", flush=True)
+                    print(f"[child-chat] Returning calculationResult to frontend (keys={list(last_calc_result.keys())})", flush=True)
                     resp["calculationResult"] = last_calc_result
-                else:
-                    print("[child-chat] No calculation result in this response", flush=True)
                 return jsonify(resp)
 
             # Claude called the tool — run the calculator and feed the result back
@@ -678,8 +603,7 @@ def chat():
                     result = run_calc_tool(block["input"])
                     last_calc_result = result
                     print(f"[child-chat] Calc tool executed, result keys: {list(result.keys())}", flush=True)
-                    # Strip pdf_base64 from tool result sent to Claude (it can't use it)
-                    tool_content = {k: v for k, v in result.items() if k != "pdf_base64"}
+                    tool_content = result
                     tool_results.append({
                         "type":        "tool_result",
                         "tool_use_id": block["id"],
@@ -697,7 +621,10 @@ def chat():
 # ── /intake-chat ────────────────────────────────────────────────────────────────
 
 INTAKE_INTRO = """
-You are a matter-intake assistant for CloudAct, an Ontario family-law platform.
+You ARE CloudAct — a family-law platform built for Canadian lawyers.
+Never refer to yourself as "AI", "assistant", "AI assistant", or a separate entity.
+Speak as CloudAct directly: use "I" to mean CloudAct. Do not mention being
+powered by AI or any underlying model.
 
 Your job is to collect a family-law client's intake information through
 conversation and save it, section by section, exactly as the manual 5-step intake
@@ -1563,8 +1490,12 @@ def update_chat():
 # ── /t1-extract ─────────────────────────────────────────────────────────────────
 
 T1_EXTRACT_SYSTEM = """
-You are a document-extraction assistant for CloudAct, an Ontario family-law
-platform. You are given one uploaded file that should be a Canadian T1 Income
+You ARE CloudAct — a family-law platform built for Canadian lawyers.
+Never refer to yourself as "AI", "assistant", "AI assistant", or a separate entity.
+Speak as CloudAct directly: use "I" to mean CloudAct. Do not mention being
+powered by AI or any underlying model.
+
+You are given one uploaded file that should be a Canadian T1 Income
 Tax and Benefit Return (it may be a scan or photo). Read it and record the
 intake-relevant data by calling the record_t1_data tool exactly once.
 
@@ -1974,7 +1905,10 @@ def spousal_calculate():
 # ── /tax-chat ─────────────────────────────────────────────────────────────────
 
 TAX_CHAT_SYSTEM = """
-You are a Canadian income tax intake assistant for CloudAct (Ontario).
+You ARE CloudAct — a Canadian income tax calculator built for family lawyers.
+Never refer to yourself as "AI", "assistant", "AI assistant", or a separate entity.
+Speak as CloudAct directly: use "I" to mean CloudAct. Do not mention being
+powered by AI or any underlying model.
 
 Your job is to collect all the information needed to calculate a user's Ontario
 income taxes and benefits by asking questions one at a time, then call the
@@ -2313,7 +2247,12 @@ def tax_chat():
 
 
 SPOUSAL_CHAT_SYSTEM = """
-You are a spousal support intake assistant for CloudAct.
+You ARE CloudAct — a spousal support calculator built for Canadian family lawyers.
+Never refer to yourself as "AI", "assistant", "AI assistant", or a separate entity.
+Speak as CloudAct directly: use "I" to mean CloudAct. For example, say
+"I've calculated the spousal support ranges" — never "As an AI, I've calculated…"
+or "The AI has determined…". Do not mention being powered by AI or any
+underlying model.
 
 Your job is to collect all the information needed to calculate SSAG
 spousal support by asking questions one at a time, then call the
@@ -2434,26 +2373,36 @@ contributions, child care expenses, union dues, or other deductions?"
 Set children=true. Call the tool once you have everything.
 
 ───────────────────────────────────────────────
-RESULT FORMAT (always include after the tool returns)
+RESULT FORMAT — MANDATORY (always include after the tool returns)
 ───────────────────────────────────────────────
-After the result, explain in plain language who pays and why, then show:
+After the tool returns results, present them in EXACTLY this format
+every single time. Do NOT omit any of the three ranges. Do NOT
+combine them into a single line or summarize. Always show all three
+(Low, Mid, High) as separate lines.
 
-Payor:              [name]
-Recipient:          [name]
+Start with a brief plain-language explanation of who pays and why,
+then show the following block exactly:
+
+**Payor:** [name]
+**Recipient:** [name]
 
 If the children path was used, show child support first:
-Child support:      $X,XXX / month
+**Child Support:** $X,XXX / month
 
-Then show all three spousal support scenarios separately:
-Low (40%):          $X,XXX / month   ($X,XXX / year)
-Mid (43%):          $X,XXX / month   ($X,XXX / year)
-High (46%):         $X,XXX / month   ($X,XXX / year)
+**Spousal Support Ranges:**
+**Low (40%):**  $X,XXX / month  ($XX,XXX / year)
+**Mid (43%):**  $X,XXX / month  ($XX,XXX / year)
+**High (46%):** $X,XXX / month  ($XX,XXX / year)
 
-Duration:           [label]
+**Duration:** [label]
 
 If the children path was used, also show:
-Payor INDI (mid):   $X,XXX / year
-Recipient INDI (mid): $X,XXX / year
+**Payor INDI (mid):** $XX,XXX / year
+**Recipient INDI (mid):** $XX,XXX / year
+
+IMPORTANT: You MUST always display all three spousal support ranges
+(Low, Mid, High) as three separate lines. Never skip any range.
+Never merge them. This is critical for the user's legal analysis.
 
 Supports Ontario (ON), British Columbia (BC), Alberta (AB), Saskatchewan (SK), and Manitoba (MB).
 Politely decline questions about provinces other than ON, BC, AB, SK, or MB.
@@ -2665,18 +2614,6 @@ SPOUSAL_REPORT_TOOL = {
 }
 
 
-def run_spousal_report_tool(tool_input: dict) -> dict:
-    """Generate a spousal support PDF report and return the download URL."""
-    try:
-        filename = generate_spousal_support_report(tool_input)
-        return {
-            "status": "success",
-            "download_url": f"/download-report/{filename}",
-            "message": "PDF report generated successfully.",
-        }
-    except Exception as e:
-        return {"status": "error", "message": str(e)}
-
 
 def run_spousal_calc_tool(tool_input: dict) -> dict:
     """
@@ -2764,19 +2701,7 @@ def run_spousal_calc_tool(tool_input: dict) -> dict:
             "child_support_paid": 0,
             **nc_profiles,
         }
-        try:
-            filename = generate_spousal_support_report(calc_result)
-            calc_result["download_url"] = f"/download-report/{filename}"
-            pdf_path = os.path.join(REPORTS_DIR, filename)
-            if os.path.isfile(pdf_path):
-                with open(pdf_path, "rb") as f:
-                    calc_result["pdf_base64"] = base64.b64encode(f.read()).decode("ascii")
-                calc_result["pdf_filename"] = filename
-        except Exception as e:
-            import traceback
-            print(f"[spousal] PDF generation error: {e}", flush=True)
-            print(f"[spousal] PDF error traceback:\n{traceback.format_exc()}", flush=True)
-            calc_result["_pdf_error"] = str(e)
+        # PDF is generated client-side using CalculationReport.tsx + html2pdf.js
         return calc_result
 
     # ── PATH B: with children (iterative) ────────────────────────────────────
@@ -2898,19 +2823,7 @@ def run_spousal_calc_tool(tool_input: dict) -> dict:
             "child_support_paid": 0,
             **ac_profiles,
         }
-        try:
-            filename = generate_spousal_support_report(calc_result)
-            calc_result["download_url"] = f"/download-report/{filename}"
-            pdf_path = os.path.join(REPORTS_DIR, filename)
-            if os.path.isfile(pdf_path):
-                with open(pdf_path, "rb") as f:
-                    calc_result["pdf_base64"] = base64.b64encode(f.read()).decode("ascii")
-                calc_result["pdf_filename"] = filename
-        except Exception as e:
-            import traceback
-            print(f"[spousal] PDF generation error: {e}", flush=True)
-            print(f"[spousal] PDF error traceback:\n{traceback.format_exc()}", flush=True)
-            calc_result["_pdf_error"] = str(e)
+        # PDF is generated client-side using CalculationReport.tsx + html2pdf.js
         return calc_result
 
     # Determine payor/recipient by gross income to label the result
@@ -3064,20 +2977,7 @@ def run_spousal_calc_tool(tool_input: dict) -> dict:
         "recipient_tax_profile_high": _serialize_tax_profile(result.recipient_tax_profile_high),
     }
 
-    try:
-        filename = generate_spousal_support_report(calc_result)
-        calc_result["download_url"] = f"/download-report/{filename}"
-        pdf_path = os.path.join(REPORTS_DIR, filename)
-        if os.path.isfile(pdf_path):
-            with open(pdf_path, "rb") as f:
-                calc_result["pdf_base64"] = base64.b64encode(f.read()).decode("ascii")
-            calc_result["pdf_filename"] = filename
-    except Exception as e:
-        import traceback
-        print(f"[spousal] PDF generation error: {e}", flush=True)
-        print(f"[spousal] PDF error traceback:\n{traceback.format_exc()}", flush=True)
-        calc_result["_pdf_error"] = str(e)
-
+    # PDF is generated client-side using CalculationReport.tsx + html2pdf.js
     return calc_result
 
 @app.route("/spousal-chat", methods=["POST"])
@@ -3117,12 +3017,8 @@ def spousal_chat():
                     print(f"[spousal-chat] Reply (last 200 chars): ...{reply[-200:]}", flush=True)
                 resp = {"reply": reply, "messages": messages}
                 if last_calc_result:
-                    has_pdf = isinstance(last_calc_result, dict) and "pdf_base64" in last_calc_result
-                    pdf_error = last_calc_result.get("_pdf_error", None) if isinstance(last_calc_result, dict) else None
-                    print(f"[spousal-chat] Returning calculationResult to frontend (has_pdf={has_pdf}, pdf_error={pdf_error}, keys={list(last_calc_result.keys()) if isinstance(last_calc_result, dict) else 'not dict'})", flush=True)
+                    print(f"[spousal-chat] Returning calculationResult to frontend (keys={list(last_calc_result.keys()) if isinstance(last_calc_result, dict) else 'not dict'})", flush=True)
                     resp["calculationResult"] = last_calc_result
-                else:
-                    print("[spousal-chat] No calculation result in this response", flush=True)
                 return jsonify(resp)
 
             tool_results = []
@@ -3132,7 +3028,7 @@ def spousal_chat():
                     result = run_spousal_calc_tool(block["input"])
                     last_calc_result = result
                     print(f"[spousal-chat] Calc tool executed, result keys: {list(result.keys()) if isinstance(result, dict) else 'not dict'}", flush=True)
-                    tool_content = {k: v for k, v in result.items() if k != "pdf_base64"} if isinstance(result, dict) else result
+                    tool_content = result
                     tool_results.append({
                         "type":        "tool_result",
                         "tool_use_id": block["id"],
