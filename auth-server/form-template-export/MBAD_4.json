@@ -379,24 +379,6 @@
       "page": 1
     },
     {
-      "id": 1750895794022,
-      "type": "TextArea",
-      "x": 72.02,
-      "y": 480.39,
-      "width": 701.96,
-      "height": 51.62,
-      "value": "",
-      "fontSize": 9,
-      "color": [
-        0,
-        0,
-        0
-      ],
-      "background": "none",
-      "border": "none",
-      "page": 1
-    },
-    {
       "id": 1750895794023,
       "type": "TextField",
       "x": 347.71,
@@ -451,12 +433,30 @@
       "page": 2
     },
     {
-      "id": 1750895794026,
-      "type": "TextArea",
+      "id": 1750895794027,
+      "type": "TextField",
       "x": 72.02,
-      "y": 324.25,
-      "width": 701.96,
-      "height": 42.53,
+      "y": 353.98,
+      "width": 303.51,
+      "height": 19.5,
+      "value": "",
+      "fontSize": 9,
+      "color": [
+        0,
+        0,
+        0
+      ],
+      "background": "none",
+      "border": "none",
+      "page": 2
+    },
+    {
+      "id": 1750895794028,
+      "type": "TextField",
+      "x": 333.07,
+      "y": 353.98,
+      "width": 303.51,
+      "height": 19.5,
       "value": "",
       "fontSize": 9,
       "color": [

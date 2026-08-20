@@ -77,7 +77,7 @@
       "type": "TextField",
       "x": 169.82,
       "y": 275.68,
-      "width": 27.0,
+      "width": 27,
       "height": 18.49,
       "value": "",
       "fontSize": 9,
@@ -217,12 +217,30 @@
       "page": 2
     },
     {
-      "id": 1750228772013,
-      "type": "TextArea",
+      "id": 1750228772014,
+      "type": "TextField",
       "x": 72.02,
-      "y": 461.55,
-      "width": 701.96,
-      "height": 59.63,
+      "y": 502.68,
+      "width": 270.03,
+      "height": 19.5,
+      "value": "",
+      "fontSize": 9,
+      "color": [
+        0,
+        0,
+        0
+      ],
+      "background": "none",
+      "border": "none",
+      "page": 2
+    },
+    {
+      "id": 1750228772015,
+      "type": "TextField",
+      "x": 324.05,
+      "y": 502.68,
+      "width": 324.08,
+      "height": 19.5,
       "value": "",
       "fontSize": 9,
       "color": [

@@ -291,7 +291,7 @@
     {
       "id": 1750720082017,
       "type": "TextField",
-      "x": 63.0,
+      "x": 63,
       "y": 300.64,
       "width": 728.78,
       "height": 16.2,
@@ -309,7 +309,7 @@
     {
       "id": 1750720082018,
       "type": "TextField",
-      "x": 63.0,
+      "x": 63,
       "y": 346.24,
       "width": 728.78,
       "height": 16.2,
@@ -327,7 +327,7 @@
     {
       "id": 1750720082019,
       "type": "TextField",
-      "x": 63.0,
+      "x": 63,
       "y": 82.23,
       "width": 200.25,
       "height": 17.55,
@@ -343,9 +343,85 @@
       "page": 2
     },
     {
+      "id": 1750720082032,
+      "type": "CheckBox",
+      "x": 100.5,
+      "y": 122.75,
+      "width": 14.44,
+      "height": 14.44,
+      "value": "",
+      "fontSize": 9,
+      "color": [
+        0,
+        0,
+        0
+      ],
+      "background": "none",
+      "border": "none",
+      "page": 2,
+      "shape": "square"
+    },
+    {
+      "id": 1750720082033,
+      "type": "CheckBox",
+      "x": 100.5,
+      "y": 144.84,
+      "width": 14.44,
+      "height": 14.44,
+      "value": "",
+      "fontSize": 9,
+      "color": [
+        0,
+        0,
+        0
+      ],
+      "background": "none",
+      "border": "none",
+      "page": 2,
+      "shape": "square"
+    },
+    {
+      "id": 1750720082034,
+      "type": "CheckBox",
+      "x": 100.5,
+      "y": 177.84,
+      "width": 14.44,
+      "height": 14.44,
+      "value": "",
+      "fontSize": 9,
+      "color": [
+        0,
+        0,
+        0
+      ],
+      "background": "none",
+      "border": "none",
+      "page": 2,
+      "shape": "square"
+    },
+    {
+      "id": 1750720082035,
+      "type": "CheckBox",
+      "x": 100.5,
+      "y": 199.8,
+      "width": 14.44,
+      "height": 14.44,
+      "value": "",
+      "fontSize": 9,
+      "color": [
+        0,
+        0,
+        0
+      ],
+      "background": "none",
+      "border": "none",
+      "page": 2,
+      "shape": "square"
+    },
+    {
       "id": 1750720082020,
       "type": "TextField",
-      "x": 120.0,
+      "x": 120,
       "y": 313.59,
       "width": 47.52,
       "height": 17.55,
@@ -399,9 +475,9 @@
     {
       "id": 1750720082023,
       "type": "TextField",
-      "x": 315.0,
+      "x": 315,
       "y": 345.41,
-      "width": 351.0,
+      "width": 351,
       "height": 19.5,
       "value": "",
       "fontSize": 9,
@@ -435,7 +511,7 @@
     {
       "id": 1750720082025,
       "type": "TextField",
-      "x": 312.0,
+      "x": 312,
       "y": 428.29,
       "width": 86.4,
       "height": 17.55,
@@ -507,7 +583,7 @@
     {
       "id": 1750720082029,
       "type": "TextField",
-      "x": 63.0,
+      "x": 63,
       "y": 529.33,
       "width": 139.95,
       "height": 17.55,
@@ -543,7 +619,7 @@
     {
       "id": 1750720082031,
       "type": "TextArea",
-      "x": 63.0,
+      "x": 63,
       "y": 272.24,
       "width": 715.5,
       "height": 59.64,
