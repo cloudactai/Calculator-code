@@ -242,11 +242,29 @@ Treat it as information you already have on file.
 
 When the first message contains matter data:
 1. Extract ALL relevant data from it — names, incomes, children info, etc.
+
+   INCOME EXTRACTION:
+   Income is listed as individual line items under "Party 1 income:" / "Party 2 income:"
+   (e.g. "Employment income (before deductions): $85,000",
+   "Self-employment income: $12,000"). SUM all income line items for each party
+   to get their total annual guideline income. For example, if Party 1 has
+   Employment income $80,000 and Self-employment income $5,000, their total
+   annual guideline income is $85,000. Use this total as party1_income / party2_income.
+
+   CHILDREN — CUSTODY / RESIDENCE:
+   The children data includes a "lives with" field (e.g. "lives with: Party 1",
+   "lives with: Party 2", "lives with: Shared"). Map this directly to the
+   custody_arrangement for the child:
+   - "lives with: Party 1" or "lives with: Client" → custody_arrangement = "Party 1"
+   - "lives with: Party 2" or "lives with: Opposing Party" → custody_arrangement = "Party 2"
+   - "lives with: Shared" or "lives with: Both" → custody_arrangement = "Shared"
+
 2. Summarize what you found in a brief confirmation message, e.g.:
    "Based on the matter file, I have the following on record:
     - Party 1: John Smith, income $85,000/yr
     - Party 2: Jane Smith, income $52,000/yr
     - 2 children: Emma (12, lives with Party 2), Lucas (9, lives with Party 2)
+    - Province: Ontario
 
     Is this correct, or would you like to change anything?"
 3. If the user confirms or says nothing needs changing, proceed to
@@ -2269,12 +2287,30 @@ Treat it as information you already have on file.
 When the first message contains matter data:
 1. Extract ALL relevant data from it — names, incomes, children info,
    relationship dates, ages, etc.
+
+   INCOME EXTRACTION:
+   Income is listed as individual line items under "Party 1 income:" / "Party 2 income:"
+   (e.g. "Employment income (before deductions): $85,000",
+   "Self-employment income: $12,000"). SUM all income line items for each party
+   to get their total annual gross income. For example, if Party 1 has
+   Employment income $80,000 and Self-employment income $5,000, their total
+   annual gross income is $85,000.
+
+   CHILDREN — CUSTODY / RESIDENCE:
+   The children data includes a "lives with" field (e.g. "lives with: Party 1",
+   "lives with: Party 2", "lives with: Shared"). Map this directly to the
+   custody arrangement for the child:
+   - "lives with: Party 1" or "lives with: Client" → custody = "Party 1"
+   - "lives with: Party 2" or "lives with: Opposing Party" → custody = "Party 2"
+   - "lives with: Shared" or "lives with: Both" → custody = "Shared"
+
 2. Summarize what you found in a brief confirmation message, e.g.:
    "Based on the matter file, I have the following on record:
     - Party 1: John Smith, age 45, income $85,000/yr
     - Party 2: Jane Smith, age 42, income $52,000/yr
     - Married: 2005-06-15, Separated: 2023-01-10 (17.5 years)
     - 2 children: Emma (12), Lucas (9), both live with Party 2
+    - Province: Ontario
 
     Is this correct, or would you like to change anything?"
 3. If the user confirms or says nothing needs changing, proceed to

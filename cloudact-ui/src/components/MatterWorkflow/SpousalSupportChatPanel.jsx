@@ -88,13 +88,18 @@ function formatSections(sections) {
       if (!party) return;
       const incItems = Array.isArray(party.income) ? party.income : [];
       const benItems = Array.isArray(party.benefit) ? party.benefit : [];
+      let totalAnnualIncome = 0;
       if (incItems.length) {
         lines.push(`${label} income:`);
         incItems.forEach((item) => {
           const desc = item.type || item.description || "Income";
-          const amt = item.annual || item.monthly || item.amount || "";
-          lines.push(`  ${desc}${amt ? `: $${amt}` : ""}`);
+          const annual = Number(item.annual) || 0;
+          const monthly = Number(item.monthly) || 0;
+          const amt = annual || monthly * 12 || Number(item.amount) || 0;
+          totalAnnualIncome += amt;
+          lines.push(`  ${desc}${amt ? `: $${amt}/yr` : ""}`);
         });
+        lines.push(`  TOTAL ANNUAL INCOME: $${totalAnnualIncome}`);
       }
       if (benItems.length) {
         lines.push(`${label} benefits:`);
@@ -220,7 +225,7 @@ function buildContextMessage(matterData) {
   const closing = "\n\nPlease use this information to help with the calculation. Do not ask for values already listed — only ask about missing details.";
 
   return {
-    display: displayBody.length > 0 ? intro + displayBody : null,
+    display: null,
     ai: intro + aiBody + closing,
   };
 }
