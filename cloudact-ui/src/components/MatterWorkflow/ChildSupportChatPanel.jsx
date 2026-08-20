@@ -724,7 +724,7 @@ export default function ChildSupportChatPanel({
           return (
             <div key={i} className={`mw-chat-row mw-chat-row--${b.role}`}>
               <div className="mw-chat-row__label">
-                {b.role === "user" ? "You" : "AI Assistant"}
+                {b.role === "user" ? "You" : "CloudAct"}
               </div>
               <div
                 className="mw-chat-bubble"
@@ -768,7 +768,7 @@ export default function ChildSupportChatPanel({
 
         {loading && (
           <div className="mw-chat-row mw-chat-row--assistant">
-            <div className="mw-chat-row__label">AI Assistant</div>
+            <div className="mw-chat-row__label">CloudAct</div>
             <div className="mw-chat-bubble mw-chat-bubble--typing">
               {warming ? (
                 "Warming up the server — first reply can take ~30s…"

@@ -103,7 +103,7 @@ test("UPDATE INFORMATION is enabled and opens the update AI chat", async () => {
   // The task row is a real Start action, not the disabled placeholder.
   expect(row.querySelector("button")).not.toBeDisabled();
   expect(await screen.findByText("UPDATE INFORMATION CHAT")).toBeInTheDocument();
-  expect(screen.getByText("Update Information — AI Assistant")).toBeInTheDocument();
+  expect(screen.getByText("Update Information — CloudAct")).toBeInTheDocument();
 });
 
 test("the update chat is given a freshly read database snapshot", async () => {
