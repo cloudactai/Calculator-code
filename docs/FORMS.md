@@ -178,7 +178,10 @@ This is the most likely source of confusion for anyone new to the file:
   convention; the mapping is produced by a server-side extract-from-AcroForm / vector
   pipeline. (See the project's forms-migration and prefill-plan notes for the full
   mapping pipeline and per-form status — the catalogue holds **135 Ontario, 213 BC,
-  40 Saskatchewan and 5 Manitoba** templates. Build tooling is per province, in
+  76 Saskatchewan and 86 Manitoba** templates. A further **99 Saskatchewan and
+  Manitoba sources are recorded and fetched but not built**, so they are verified
+  on every pass and deliberately absent from the catalogue; the two provinces'
+  READMEs have what each still needs. Build tooling is per province, in
   `auth-server/tools/on-forms/`, `auth-server/tools/bc-forms/`,
   `auth-server/tools/sk-forms/` and `auth-server/tools/mb-forms/`.)
 

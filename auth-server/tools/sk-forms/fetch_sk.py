@@ -59,26 +59,82 @@ DASHES = dict.fromkeys(map(ord, "‐‑‒–—"), "-")
 
 
 def title_present(src, text):
-    """The form prints its own number as "Form 15-47" / "FORM C-1" on page 1."""
+    """Does the file we got back identify itself as the form we asked for?
+
+    Part 15 and the two regulation families print their own number ("Form
+    15-47", "FORM C-1"), which is what guards a wrong product id.
+
+    The practice-directive forms do not, consistently: a directive numbers its
+    appendices in its own scheme ("FAM-PD #7-1"), names some in full and leaves
+    Directive 4's four with no marker at all. Those rows carry an explicit
+    `textCheck` phrase instead, matched against the whole directive rather than
+    the cut window -- see `sk_sources_pd._row` for why.
+    """
     flat = re.sub(r"\s+", " ", text.translate(DASHES)).lower()
+    phrase = src.get("textCheck")
+    if phrase:
+        return re.sub(r"\s+", " ", phrase.translate(DASHES)).lower() in flat
     return re.search(r"form\s*%s\b" % re.escape(src["formNo"].lower()), flat) is not None
 
 
 def obtain(src, dest):
     """Put this form's source PDF at `dest`.
 
-    Most forms are their own product and are downloaded whole. The adoption forms
-    are cut out of one consolidation, which is downloaded once and shared -- see
-    `sk_reg_cut.py` for why they cannot be downloaded individually.
+    Most forms are their own product and are downloaded whole. Two families are
+    cut out of a larger document that is downloaded once and shared: the
+    adoption forms out of the regulation's consolidation (`sk_reg_cut.py` has
+    why they cannot be downloaded individually), and the Directive 3-7 forms out
+    of their own practice directive.
     """
     cut = src.get("cut")
     if not cut:
         download(src["url"], dest)
         return
-    consolidation = os.path.join(STAGE, src["sourceFile"])
-    if not os.path.exists(consolidation) or os.path.getsize(consolidation) == 0:
-        download(src["url"], consolidation)
-    sk_reg_cut.cut(consolidation, cut["formNo"], cut["window"], dest)
+    shared = os.path.join(STAGE, src["sourceFile"])
+    if not os.path.exists(shared) or os.path.getsize(shared) == 0:
+        download(src["url"], shared)
+    if "formNo" in cut:
+        # The adoption forms: located inside the consolidation by their own
+        # enacting heading, so a repagination is caught rather than shipped.
+        sk_reg_cut.cut(shared, cut["formNo"], cut["window"], dest)
+        return
+    # A practice-directive appendix, which has no enacting heading to find it
+    # by, so the window is page numbers. Out-of-range is raised rather than
+    # silently clipped: a reissued directive that grew a page would otherwise
+    # produce a short form instead of stopping the fetch.
+    first, last = cut["window"]
+    doc = fitz.open(shared)
+    try:
+        if last > doc.page_count:
+            raise LookupError(
+                "%s wants pages %d-%d of a %d-page document"
+                % (src["docId"], first, last, doc.page_count))
+        out = fitz.open()
+        out.insert_pdf(doc, from_page=first - 1, to_page=last - 1)
+        out.save(dest)
+        out.close()
+    finally:
+        doc.close()
+
+
+def identity_text(src, dest):
+    """The text `title_present` should be asked about.
+
+    For a form cut by page window this is the **whole directive**, not the cut:
+    a directive names its appendices on its own contents page but not always
+    inside them -- Directive 6's memo is titled on page 1 and its form starts on
+    page 2 under a bare "APPENDIX A". The window itself is validated by its
+    bounds in `obtain`.
+    """
+    cut = src.get("cut")
+    if cut and "formNo" not in cut:
+        shared = os.path.join(STAGE, src["sourceFile"])
+        doc = fitz.open(shared)
+        try:
+            return "\n".join(doc[i].get_text() for i in range(doc.page_count))
+        finally:
+            doc.close()
+    return None
 
 
 def main():
@@ -114,7 +170,7 @@ def main():
         entry["acroFields"] = n_fields
         entry["kind"] = "xfa" if is_xfa else ("acroform" if n_fields else "static")
         entry["footerText"] = footer[:120]
-        entry["titleFound"] = title_present(src, text)
+        entry["titleFound"] = title_present(src, identity_text(src, dest) or text)
         entry["pagesMatch"] = pages == src["expectedPages"]
         entry["ok"] = pages > 0 and entry["titleFound"] and entry["pagesMatch"]
         manifest.append(entry)

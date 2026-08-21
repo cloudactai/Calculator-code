@@ -24,7 +24,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(HERE), "bc-forms"))
 
 import bc_pipeline as bp  # noqa: E402
 import sk_binds  # noqa: E402
-from sk_sources import all_sources  # noqa: E402
+from sk_sources import shipped_sources  # noqa: E402
 
 SCALE = bp.SCALE
 EXPORT = os.path.join(os.path.dirname(os.path.dirname(HERE)), "form-template-export")
@@ -108,7 +108,7 @@ def main():
 
     totals = collections.Counter()
     bound_total = 0
-    for src in all_sources():
+    for src in shipped_sources():
         bound, added = rebind(src["docId"], not args.check)
         totals.update(added)
         bound_total += bound

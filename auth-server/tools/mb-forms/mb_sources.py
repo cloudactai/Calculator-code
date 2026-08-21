@@ -2,9 +2,11 @@
 
 This module owns **Rule 70** (everything below) and is also where the whole
 Manitoba source list is assembled: `all_sources()` returns Rule 70 followed by
-each module in `_BATCHES` -- today just `mb_sources_batch2`, the child-protection
-and adoption forms, which Manitoba prescribes by *regulation* rather than by a
-court rule and serves from a different part of the site. Every tool in this
+each module in `_BATCHES`: `mb_sources_batch2`, the child-protection and adoption
+forms Manitoba prescribes by *regulation* rather than by a court rule, and
+`mb_sources_batch3`, the Provincial Court, relocation, brief, FOAEAA, ISO and
+protection-order families, which come from six different hosts in three file
+formats and are recorded but not yet shipped. Every tool in this
 directory takes its work list from `all_sources()` / `shipped_sources()`, so
 adding a batch is a new `mb_sources_batch*.py` plus one entry in `_BATCHES`.
 
@@ -34,6 +36,7 @@ scope, matching the Ontario, BC and Saskatchewan catalogues.
 """
 
 import mb_sources_batch2
+import mb_sources_batch3
 
 BASE = "https://web2.gov.mb.ca/laws/rules/%se.pdf"
 
@@ -117,7 +120,7 @@ CATEGORY_ORDER = [
     "Orders & Judgments",
     "Enforcement",
     "Other",
-] + mb_sources_batch2.CATEGORY_ORDER
+] + mb_sources_batch2.CATEGORY_ORDER + mb_sources_batch3.CATEGORY_ORDER
 
 
 def doc_id(form_no):
@@ -151,7 +154,7 @@ def rule70_sources():
 
 # Batches beyond Rule 70, in catalogue order. Each module exposes `all_sources`
 # and `CATEGORY_ORDER` in the same shape as this one.
-_BATCHES = [mb_sources_batch2]
+_BATCHES = [mb_sources_batch2, mb_sources_batch3]
 
 
 def all_sources():

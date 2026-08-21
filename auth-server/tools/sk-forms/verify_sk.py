@@ -29,7 +29,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(HERE), "bc-forms"))
 
 import bc_pipeline as bp  # noqa: E402
 import build_sk_forms as B  # noqa: E402
-from sk_sources import all_sources  # noqa: E402
+from sk_sources import shipped_sources  # noqa: E402
 
 SCALE = bp.SCALE
 EXPORT = B.EXPORT
@@ -372,7 +372,7 @@ def main():
     args = parser.parse_args()
 
     folder = os.path.join(STAGE, "out") if args.stage else EXPORT
-    sources = all_sources()
+    sources = shipped_sources()
     if args.only:
         sources = [s for s in sources if s["docId"] in set(args.only)]
     if args.category:

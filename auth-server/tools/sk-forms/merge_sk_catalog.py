@@ -20,7 +20,7 @@ import fitz
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
-from sk_sources import CATEGORY_ORDER, all_sources  # noqa: E402
+from sk_sources import CATEGORY_ORDER, shipped_sources  # noqa: E402
 
 EXPORT = os.path.join(os.path.dirname(os.path.dirname(HERE)), "form-template-export")
 SK_BLOCK = 100  # blocks are allocated a round hundred at a time
@@ -61,7 +61,7 @@ def main():
     start = sk_start(keep)
 
     rows = []
-    for offset, src in enumerate(all_sources()):
+    for offset, src in enumerate(shipped_sources()):
         doc_id = src["docId"]
         pdf = os.path.join(EXPORT, "%s.pdf" % doc_id)
         doc = fitz.open(pdf)

@@ -19,6 +19,7 @@ carry their own appendices of forms. `sk_sources_cp.py` records that scope, and
 """
 
 from sk_sources_cp import CP_CATEGORY_ORDER, all_cp_sources
+from sk_sources_pd import PD_CATEGORY_ORDER, all_pd_sources
 
 BASE = "https://publications.saskatchewan.ca/api/v1/products/%d/formats/%d/download"
 
@@ -103,15 +104,33 @@ def part15_sources():
     return out
 
 
+def shipped_sources():
+    """The forms built, verified, catalogued and bound.
+
+    Saskatchewan had no such split while `all_sources()` *was* the shipped set:
+    Part 15 and the two regulation families are all built. `sk_sources_pd` is
+    recorded and fetched but not yet built, so every tool downstream of the
+    fetcher reads this instead -- otherwise `merge_sk_catalog` would write a
+    catalogue row for a template the API cannot serve, which is the failure
+    `mb_sources` guards against the same way.
+    """
+    return [s for s in all_sources() if s.get("shipped", True)]
+
+
 def all_sources():
-    """Every Saskatchewan family-law form: Part 15, child protection, adoption.
+    """Every Saskatchewan family-law form.
+
+    Part 15, then child protection and adoption (`sk_sources_cp`), then the
+    practice-directive, ISO, interpersonal-violence, federal-relocation and
+    Court of Appeal families (`sk_sources_pd`), which are recorded and fetched
+    but not yet shipped.
 
     One list, so the fetcher, builder, verifier, binder and catalogue tool each
     cover the whole province without growing a second code path. Part 15 keeps
     the head of the list, so its rows keep the sortOrder they already have.
     """
-    return part15_sources() + all_cp_sources()
+    return part15_sources() + all_cp_sources() + all_pd_sources()
 
 
 # The picker's group order for the whole province.
-CATEGORY_ORDER = PART15_CATEGORY_ORDER + CP_CATEGORY_ORDER
+CATEGORY_ORDER = PART15_CATEGORY_ORDER + CP_CATEGORY_ORDER + PD_CATEGORY_ORDER

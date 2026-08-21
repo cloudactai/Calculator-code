@@ -10,7 +10,24 @@ Saskatchewan and unlike BC, nothing here has to be flattened.
 
 ## Scope
 
-**86 forms in two batches, 279 pages, 4,168 fields, 258 binds, zero findings.**
+**86 forms shipped, in two batches: 279 pages, 4,168 fields, 258 binds.** A third
+batch of **54 more is recorded and fetched but not built** -- see §10.
+
+`verify_mb.py` currently reports **17 findings on six forms** (MBCFS_12,
+MBCFS_19, MBCFS_20, MBAD_4, MBAD_5, MBFA_1), not the zero this section claimed
+while both batches were built. They are not a regression in the mappings: they
+are the *gates* failing to keep up with the hand repairs made during product
+review, and every one is an instance already written up under "Product-review
+regressions" below. The symbol-font checkboxes are the bulk of them -- the
+repairs added `CheckBox` fields for marks printed as the character `9` in
+WP-IconicSymbolsA (CFS-19, CFS-20) and `G` in WPTypographicSymbols (FA-1), and
+`check_unticked_marks` only knows the drawn square, the `[ ]` pair and the `☐`
+glyph, so it reads a correctly-placed box as sitting on nothing. Closing them
+means teaching `checkboxes()` the symbol-font vocabulary, which is the structural
+fix §7 made for the other three vocabularies.
+
+**140 sources are fetched and verified on every pass**, which is the number
+`fetch_mb.py` prints; 86 of them are built, catalogued and bound.
 
 **Batch 1 -- the 43 family-law forms of Rule 70** of the Court of King's Bench
 Rules, published by Manitoba Justice. The civil parts and the probate forms are
@@ -833,3 +850,67 @@ For every Manitoba mapping repair:
 5. Put the fix in the builder/repair source when possible. If a promoted mapping
    is deliberately hand-finished, document that exception because rebuilding
    can overwrite it.
+
+## 10. Batch 3 -- recorded, fetched, not built (2026-08-20)
+
+`mb_sources_batch3.py` records the six Manitoba families neither Rule 70 nor the
+regulations carry, plus the federal relocation notices: **54 rows, 243 pages**.
+`SHIPPED_CATEGORIES` is empty, so `fetch_mb.py` verifies all 54 on every pass and
+nothing downstream sees them -- the same switch Rule 70's own categories sat
+behind before they were built. The catalogue is unchanged at 86.
+
+| Family | Forms | Pages | Source |
+| --- | --- | --- | --- |
+| Provincial Court Family Rules, M.R. 87/88R | 8 | 36 | King's Printer, PDF |
+| Family Law Regulation, M.R. 50/2023, Sch. A-C | 3 | 10 | King's Printer, PDF |
+| Divorce Act relocation (federal) | 3 | 18 | Justice Canada, PDF |
+| Child-protection court briefs | 4 | 16 | Manitoba Courts, **.doc** |
+| FOAEAA packages | 16 | 77 | Manitoba Courts, **.docx** |
+| Interjurisdictional support (ISO) | 17 | 62 | Manitoba Justice, PDF |
+| Protection orders | 3 | 24 | Manitoba Courts, PDF |
+
+Gate A/B is green: **140 entries, 0 flagged**, every page count matching what the
+government's file carries.
+
+### Why none of it is built yet
+
+Batches 1 and 2 were one host and one format. This one is six hosts and three
+formats, and **the detector pipeline cannot serve four of the seven families**:
+
+- **20 forms have no official PDF at all.** The four briefs are `.doc` and all
+  sixteen FOAEAA forms are `.docx`. `fetch_mb.py` now renders them through
+  LibreOffice, which is a real change to what this pipeline ships: every other
+  Manitoba background is byte-identical to the King's Printer's file, and a
+  rendering is not the prescribed form. The conversion is checked rather than
+  trusted -- each FOAEAA form prints its own pagination ("page 1/3") and all 16
+  reproduce it exactly -- but whether a converted prescribed form is acceptable
+  is a decision about the form, not about the code, in the same sense
+  `caption_under_rule.py` is. It is recorded, not made silently.
+- **19 forms are AcroForm and 3 are XFA.** The 17 ISO forms, the two
+  protection-order applications and all three federal notices already carry
+  government-defined rectangles with meaningful field names -- 309 widgets on ISO
+  Form I alone. Reading those is strictly better than detecting anchors: running
+  `printed_rules`/`underscore_blanks` over ISO Form A.1 finds 0 rules and 25
+  runs against 112 declared widgets. **`mb-forms/` has no widget path**, though
+  `fetch_mb.py`'s docstring has always said a fillable source should route to
+  one. Ontario and BC have widget extraction; this should reuse it. ISO Forms B,
+  F and H are XFA on top of that and need BC's headless flatten.
+- The **8 Provincial Court forms** and the **3 protection/relocation statics**
+  are the only families the existing builder is the right tool for, and even
+  there the relocation schedules detect almost nothing (2 rules across 5 pages),
+  so they need reading before anything is placed.
+
+`§7` and `§8` are the record of what a new Manitoba family costs: findings went
+309 -> 0 and 15 -> 0, and six of nine defects in §8 were invisible to every gate
+because no gate was asking the question. Four new families in three formats
+should be expected to cost at least that, per family, and none of it is
+mechanical.
+
+### The one thing measured that contradicts an assumption
+
+The format table in `mb_sources_batch3` is measured off the fetched files, not
+taken from the index, and two entries surprised: the protection-order
+applications and all three federal notices are fillable, and three ISO forms are
+XFA rather than AcroForm. Saskatchewan's copy of **the same national ISO set** is
+AcroForm for all 17. Same forms, different production -- so neither province's
+classification can be inferred from the other's.

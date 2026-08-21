@@ -25,7 +25,7 @@ sys.path.insert(0, HERE)
 sys.path.insert(0, os.path.join(os.path.dirname(HERE), "bc-forms"))
 
 import build_sk_forms as B  # noqa: E402
-from sk_sources import all_sources  # noqa: E402
+from sk_sources import shipped_sources  # noqa: E402
 
 SCALE = 1.5
 COLOURS = {"CheckBox": (1, 0, 0), "TextArea": (0, 0.5, 0), "TextField": (1, 0.5, 0)}
@@ -82,7 +82,7 @@ def main():
     args = parser.parse_args()
 
     folder = os.path.join(B.STAGE, "out") if args.stage else B.EXPORT
-    sources = all_sources()
+    sources = shipped_sources()
     if args.only:
         sources = [s for s in sources if s["docId"] in set(args.only)]
     total = 0

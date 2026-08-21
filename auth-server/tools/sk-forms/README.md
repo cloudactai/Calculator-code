@@ -10,8 +10,16 @@ unlike BC, nothing here has to be flattened.
 
 ## Scope
 
-**76 forms across three families**, all published by the Office of the King's
-Printer, matching the breadth Ontario and BC carry:
+**76 forms shipped across three families**, all published by the Office of the
+King's Printer, matching the breadth Ontario and BC carry. A fourth batch of
+**45 more is recorded and fetched but not built** -- see "Batch 3" below.
+
+**121 sources are fetched and verified on every pass**, which is the number
+`fetch_sk.py` prints; 76 of them are built, catalogued and bound. Everything
+downstream of the fetcher reads `shipped_sources()` rather than `all_sources()`,
+which is new: Saskatchewan had no such split while `all_sources()` *was* the
+shipped set, and without it `merge_sk_catalog.py` would write a catalogue row for
+a template the API cannot serve.
 
 | Family | Source | Forms | docId |
 | --- | --- | --- | --- |
@@ -405,3 +413,78 @@ Five defect classes came out of it, all now fixed and all re-checked by
   the cut length and stop the fetcher, which is the intent.
 - The two families carry **no prefill binds**; see above for why that is a
   decision rather than an omission.
+
+## Batch 3 -- recorded, fetched, not built (2026-08-20)
+
+`sk_sources_pd.py` records what Part 15 and the two regulations do not carry:
+the forms the Court of King's Bench prescribes by **family practice directive**,
+the interjurisdictional support set, the emergency intervention forms, the Court
+of Appeal's civil notice of appeal, and the federal relocation notices.
+**45 rows, 149 pages.** `SHIPPED_CATEGORIES` is empty, so the fetcher verifies
+all 45 on every pass and nothing downstream sees them. The catalogue is unchanged
+at 76.
+
+| Family | Forms | Pages | Sourced |
+| --- | --- | --- | --- |
+| Family Practice Directive 1 | 2 | 8 | standalone PDF |
+| Family Practice Directives 3-7 | 14 | 30 | **cut from the directive** |
+| Family Practice Directive 8 | 6 | 16 | standalone PDF |
+| Interjurisdictional support (ISO) | 17 | 62 | King's Printer, **AcroForm** |
+| Victims of Interpersonal Violence | 2 | 9 | King's Printer, PDF |
+| Divorce Act relocation (federal) | 3 | 18 | Justice Canada, **AcroForm** |
+| Court of Appeal, civil Form 1a | 1 | 2 | sasklawcourts.ca, PDF |
+
+Gate A/B is green: **121 entries, 0 flagged**, and all 14 directive cuts produce
+exactly the window recorded for them.
+
+### Cutting a form out of its directive
+
+Directives 3 to 7 publish their forms only as appendices inside the directive, so
+`fetch_sk.obtain` grew a second cut path beside the adoption one. They are not
+the same cut and the difference is the point: an adoption form is found by its
+**own enacting heading**, which is what makes a repagination safe, but a practice
+directive has no enacting heading and titles its appendices inconsistently
+("FORM A", "APPENDIX B - FORM FAM-PD #7-1", or nothing at all -- Directive 4's
+four forms open straight onto "INITIAL SUMMARY"). So the window is page numbers,
+and an out-of-range window raises rather than clipping: a reissued directive that
+grew a page would otherwise ship a short form instead of stopping the fetch.
+
+The identity check for a cut form therefore reads the **whole directive**, not
+the window. Directive 6 is why: its memo is titled on page 1 and its form starts
+on page 2 under a bare "APPENDIX A", so nothing in the window names it.
+
+**Deliberately not cut:** Directive 5's Appendix A (explanatory material for a
+self-represented litigant) and Directive 7's Appendix A (a guide, which the
+catalogue excludes in every province). Both are recorded in `sk_sources_pd` so
+the decision is not re-derived.
+
+**The French trap.** Every directive is bilingual, and the Court of Appeal serves
+its *Formule* 1a from a **later** directory than its Form 1a -- so
+`2023/07/CA_Civ_Form1a.pdf` is French and `2022/09/Form-1a-Notice-of-Appeal.pdf`
+is the English form. Taking the newer URL gets the wrong language.
+
+### Why none of it is built yet
+
+The 22 practice-directive forms and the 3 statics are within the existing
+builder's vocabulary and need reading, not new detectors. The **17 ISO forms are
+not**: they carry 104-313 government-defined widgets each, and `build_sk_forms.py`
+reads every box off a printed anchor -- the README's "all 76 sources are static
+PDFs, no widgets, no XFA" stops being true with this batch. Detecting anchors
+where the form already declares its rectangles is strictly worse, so this family
+should reuse Ontario's or BC's widget extraction rather than grow a third copy.
+Manitoba's copy of the same national set has the same problem.
+
+### The same national forms, twice
+
+Manitoba publishes its own copy of the ISO set. The two are **not**
+byte-identical -- different layout, different widget names (`res_first_name` here,
+`First Name` there) -- and their classifications differ: all 17 are AcroForm
+here, but Manitoba's Forms B, F and H are XFA. Their titles differ too; the
+King's Printer names Form L "Respondent's Answer to Application" where Manitoba's
+copy prints "Respondent's Response to Application". Each province records its own
+source, which is also what keeps them independently re-fetchable.
+
+The federal relocation forms are the different case -- one federal document, no
+provincial copy -- and `FormTemplate` carries one province per row, so they are
+recorded once per province with province-distinct doc IDs (`SKDIV_1` /
+`MBDIV_1`). One shared row would reach only one province's picker.
