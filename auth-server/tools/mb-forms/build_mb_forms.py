@@ -119,6 +119,13 @@ TEXTAREA_LINES = 1.75
 # beside it, when it carries no colon. Measured on the relocation schedules:
 # "Proposed date of relocation" uses 0.36 of its row.
 CAPTION_MAX_FILL = 0.55
+# How much smaller than the body a block has to be set to read as footnotes.
+# Measured on Provincial Court Form 1 p5: 7.5pt notes under a 10.5pt body.
+FOOTNOTE_SIZE_DROP = 1.5
+# A sub-label inside a cell is at most this long. "E-mail address:" is 15
+# characters and "Phone number:" 13; the shortest running sentence this has to
+# refuse is 76.
+SUB_CAPTION_MAX_CHARS = 40
 # Manitoba shades its table heading rows grey and leaves data rows white.
 # Measured on Form 70D.5 p1: heading cells read 191-208, data cells 255.
 SHADED_BELOW = 248
@@ -170,6 +177,14 @@ MB_SIG_CAPTION = re.compile(r"^[^.]{0,60}\bsignature\b[^.]{0,40}$", re.I)
 # in and for The Province of Manitoba", and the whole jurat turned on that word.
 MB_COMMISSIONER = re.compile(
     r"^\s*a\s+commissioner\s+(for|of)\s+oaths\b|^\s*a\s+notary\s+public\b", re.I)
+# **A section heading is not a signature caption**, even when it contains the
+# word. The relocation schedules number their sections "Part A —" to "Part G —",
+# and "Part G — Signature of person giving notice" *introduces* the signature
+# block rather than captioning a rule in it. It happened to sit 23pt under the
+# "Other — please specify:" box on Schedule A p5, inside the 24pt window a
+# caption claims its rule in, and deleted it. A genuine caption follows its own
+# rule and never opens with the government's own section numbering.
+MB_SECTION_HEADING = re.compile(r"^\s*part\s+[A-Za-z0-9]+\s*[\u2014\u2013-]", re.I)
 MB_SIG_EXCLUDE = re.compile(r"\bdate\b", re.I)
 
 # **The office alone** -- a court officer's signature line, captioned with
@@ -344,7 +359,8 @@ def signature_captions(page):
     for block in page.get_text("dict")["blocks"]:
         for line in block.get("lines", []):
             text = "".join(span["text"] for span in line["spans"])
-            if MB_SIG_EXCLUDE.search(text) or MB_SIG_KEEP.search(text):
+            if (MB_SIG_EXCLUDE.search(text) or MB_SIG_KEEP.search(text)
+                    or MB_SECTION_HEADING.match(text)):
                 continue
             rect = fitz.Rect(line["bbox"])
             if MB_WITNESS_CAPTION.match(text):
@@ -774,21 +790,38 @@ def footer_separators(page):
     """
     horizontal, _vertical = _segments(page)
     lines = []
-    for text, boxes, _sizes in line_chars(page):
+    for text, boxes, sizes in line_chars(page):
         if text.strip():
-            lines.append((fitz.Rect(boxes[0]) | fitz.Rect(boxes[-1]), text.strip()))
+            lines.append((fitz.Rect(boxes[0]) | fitz.Rect(boxes[-1]), text.strip(),
+                          max(sizes) if sizes else 0.0))
     if not lines:
         return set()
-    left = min(rect.x0 for rect, _t in lines)
+    left = min(rect.x0 for rect, _t, _s in lines)
+    body = collections.Counter(round(size, 1) for _r, _t, size in lines
+                               if size).most_common(1)
+    body_size = body[0][0] if body else 0.0
 
     refused = set()
     for key, start, end in horizontal:
         if abs(start - left) > FOOTER_MARGIN_TOL:
             continue
+        # **A footnote separator is the same rule.** Manitoba also draws this
+        # short left-margin rule above a block of *footnotes* -- Provincial
+        # Court Form 1 p5 ends with five bulleted notes explaining what a
+        # relocation is -- and there the text below is not a citation, so the
+        # citation test alone left a 144pt typeable box hanging over the last
+        # line of paragraph 9. What separates a footnote block from the body is
+        # that it is set smaller: measured here, 7.5pt against the page's 10.5pt
+        # body. Both tests are needed; the citation blocks are set at body size.
+        below_sizes = [size for rect, _t, size in lines if rect.y1 > key and size]
+        if (below_sizes and body_size
+                and max(below_sizes) <= body_size - FOOTNOTE_SIZE_DROP):
+            refused.add(round(key, 1))
+            continue
         # Any line reaching below the rule, not only one starting below it:
         # Form AA-5 p2 draws its separator 2pt *inside* the citation's own line
         # box, so a test on the line's top saw nothing below the rule at all.
-        below = [text for rect, text in lines if rect.y1 > key]
+        below = [text for rect, text, _size in lines if rect.y1 > key]
         if not below or not all(CITATION_FOOTER.match(text) for text in below):
             continue
         refused.add(round(key, 1))
@@ -1685,6 +1718,52 @@ def _row_is_one_line(page, rect, cells):
     return False
 
 
+def _cell_sub_captions(page, rect, marks=()):
+    """One-line fields for the sub-labels printed inside a labelled cell.
+
+    A cell is not always one question. The relocation schedules set "New contact
+    information" as a cell heading and then print "E-mail address:" and "Phone
+    number:" underneath it, each with three-quarters of the row left blank
+    beside it -- two questions in one cell, and `_cell_answer_band` finds
+    nothing because the space *below* the last of them is under `CELL_BAND_MIN`.
+
+    Each such line is the same shape `_caption_right` recognises at cell level:
+    a label ending in a colon with room left after it. Restricted to lines that
+    are not the cell's first, because the first line is the cell's own heading
+    and `_cell_answer_band` already owns the space under it.
+    """
+    inner = rect + (1.5, 1.5, -1.5, -1.5)
+    rows = []
+    for block in page.get_text("dict", clip=inner)["blocks"]:
+        for line in block.get("lines", []):
+            text = "".join(span["text"] for span in line["spans"])
+            if text.strip():
+                rows.append((fitz.Rect(line["bbox"]), text))
+    rows.sort(key=lambda pair: pair[0].y0)
+    out = []
+    for index, (line, text) in enumerate(rows):
+        if index == 0 or not text.rstrip().endswith(":"):
+            continue
+        # **A sub-label is a label, not a sentence that happens to end in a
+        # colon.** Schedule A's Part D closes its instruction with "...some of
+        # the things you may want to include are:" and a box opened at the end
+        # of it, in the middle of the government's own prose. A label is short.
+        if len(text.strip()) > SUB_CAPTION_MAX_CHARS:
+            continue
+        # **A label with options under it is answered by ticking one**, not by
+        # writing beside it. Schedule B sets "I am:" over five option marks in
+        # one cell, and a box beside it offered a second way to answer the same
+        # question. Schedule A's "Other -- please specify:" shares its line with
+        # the mark it belongs to and has none below it, which is the difference.
+        if any(mark.y0 > line.y1 - 1 and mark.y1 < rect.y1 for mark in marks):
+            continue
+        box = fitz.Rect(line.x1 + EDGE_CLEARANCE * 2, line.y0, inner.x1, line.y1)
+        if box.width < MIN_BLANK_WIDTH:
+            continue
+        out.append(box)
+    return out
+
+
 def _cell_answer_band(page, rect):
     """The clear space under a cell's printed text, if it is worth a box.
 
@@ -1787,6 +1866,32 @@ def cap_stacking(boxes):
     return out
 
 
+# Boxes the page gives no anchor for at all, measured off it by hand during the
+# page-by-page review and recorded here rather than produced by a rule.
+#
+# Saskatchewan's `MANUAL_FIELDS` is the precedent and its README argues the case:
+# a caption with clear space beside it and no rule, cell or rectangle is a real
+# shape, but a sweep for it "produced one false positive and missed the
+# occupation case entirely", and "a mis-tuned auto-placer that adds fields
+# set-wide is a worse outcome than one missing box". Measured here across all
+# 140 Manitoba forms, the same sweep offers 24 candidates of which eight are
+# wrong -- "THIS COURT ORDERS:" and "For non-resident and deemed residents:"
+# introduce the text *below* them, not an answer beside them, and two are total
+# rows that already have their amount cells. So the rule is not shipped and the
+# instances the review actually found are named.
+#
+# {docId: [(page, Rect, kind), ...]}
+MANUAL_FIELDS = {
+    # The relocation schedules close Part G with a signature rule, the date, and
+    # then "Name (please print):" with the rest of the line blank and nothing
+    # printed below it. The signature rule correctly gets no box; the printed
+    # name is a field, and there is no rule, cell or run of underscores under it.
+    "MBREL_A": [(5, fitz.Rect(191.5, 285.7, 542.0, 297.4), "TextField")],
+    "MBREL_B": [(2, fitz.Rect(191.1, 432.1, 524.7, 443.8), "TextField")],
+    "MBREL_C": [(3, fitz.Rect(191.5, 187.3, 474.9, 199.0), "TextField")],
+}
+
+
 def page_boxes(page):
     """Every candidate box on one page, as (rect, type), in reading order."""
     marks = checkboxes(page)
@@ -1802,11 +1907,39 @@ def page_boxes(page):
     kinds = classify_columns(page, cells, heading_rows)
     filled_cells = []
     for rect, text, dollar, caption in cells:
-        if text and caption is None:
-            band = _cell_answer_band(page, rect)
-            if band is not None and not any(mark.intersects(rect) for mark in marks):
-                boxes.append((band, "TextArea"))
+        if text:
+            # The mark guard applies to the *band* -- a cell full of options is
+            # not one big writing space -- but not to the sub-labels, which are
+            # individual lines and are checked against the marks themselves.
+            # Schedule A's Part F prints three options and then "Other -- please
+            # specify:", and skipping the whole cell left the filer nowhere to
+            # say what "other" was.
+            has_mark = any(mark.intersects(rect) for mark in marks)
+            # **A cell with a big clear band under its label is an answer cell,
+            # whatever else it looks like.** Asked after the heading-row test,
+            # this never fires on the cell that needs it most: the relocation
+            # schedules set "Proposal:" bold at the top of a 190pt cell, bold is
+            # what `heading_row_tops` reads as a section title, and the whole
+            # page came out with no field on it. A genuine heading fills its own
+            # row, so its band is under `CELL_BAND_MIN` and it still gets
+            # nothing.
+            band = None if has_mark else _cell_answer_band(page, rect)
+            # A sub-label whose row already carries an empty cell is answered
+            # in that cell, not beside itself -- the same rule the cell-level
+            # caption follows. Schedule B's e-mail row keeps its own trailing
+            # cell where Schedule A's does not, and without this the filer got
+            # two boxes for one address.
+            subs = [] if _row_has_empty_neighbour(rect, cells) else [
+                b for b in _cell_sub_captions(page, rect, marks)
+                if not any(mark.intersects(b) for mark in marks)]
+            if band is not None or subs:
+                if band is not None:
+                    boxes.append((band, "TextArea"))
+                for sub in subs:
+                    boxes.append((sub, "TextField"))
                 filled_cells.append(rect)
+                continue
+        if text and caption is None:
             continue  # the government already wrote this cell's name (guide 9.3)
         if caption is not None and _row_has_empty_neighbour(rect, cells):
             continue  # a row label; its answer is the empty cell beside it
@@ -1819,8 +1952,24 @@ def page_boxes(page):
         # amount rows, and neither of those is a heading. A row the form calls a
         # total, and any cell the form prints a `$` in, are places the filer
         # writes a figure: a heading never carries a `$`.
-        if dollar is None and round(rect.y0) in heading_rows:
+        if (dollar is None and caption is None
+                and round(rect.y0) in heading_rows):
             continue  # frame space beside a bold section title
+        if (dollar is None and caption is not None
+                and round(rect.y0) in heading_rows
+                and is_shaded(pix, page, fitz.Rect(
+                    caption + EDGE_CLEARANCE * 2, rect.y0 + 1.5,
+                    rect.x1 - 1.5, rect.y1 - 1.5))):
+            # A bold label with room to answer beside it is a question, not a
+            # heading. `heading_row_tops` reads bold as a section title, and the
+            # relocation schedules set "Proposed date of relocation" bold with
+            # three-quarters of its row blank -- so the one date the form exists
+            # to record had nowhere to go. A real section heading here is
+            # shaded as well as bold ("Part A —", "Part B —"), and this one is
+            # not -- measured on **the space the answer will occupy**, not on
+            # the cell, because `is_shaded` averages what it is given and a cell
+            # carrying its own bold question averages dark from its own type.
+            continue
         if kind == "tick":
             cx, cy = (rect.x0 + rect.x1) / 2, (rect.y0 + rect.y1) / 2
             boxes.append((fitz.Rect(cx - TICK_SIDE / 2, cy - TICK_SIDE / 2,
@@ -2242,6 +2391,11 @@ def build(src, promote=False, force=False):
             field = _field(doc_id, index, rect, kind)
             field["page"] = number
             fields.append(field)
+    for page_number, rect, kind in MANUAL_FIELDS.get(doc_id, []):
+        index += 1
+        field = _field(doc_id, index, rect, kind)
+        field["page"] = page_number
+        fields.append(field)
     doc.close()
 
     bp.clamp_to_page(fields, page_sizes)
