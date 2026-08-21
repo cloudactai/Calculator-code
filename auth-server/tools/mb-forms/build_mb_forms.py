@@ -1515,6 +1515,18 @@ def narrative_prompt_bands(page, placed, cells, obstacles=()):
                 0 <= whole.y0 - box.y1 <= PROMPT_CAPTION_GAP
                 and box.x1 > whole.x0 and box.x0 < whole.x1 for box in placed):
             continue
+        # **A prompt that already has a field on its own line is answered
+        # beside itself, not below it.** Provincial Court Form 4 p7 lists its
+        # assets as "Other (specify)" with the possession and market-value boxes
+        # on that same line, and `NARRATIVE_PROMPT` matched the "(specify)" and
+        # opened a full-width area in the blank paper under the table. The
+        # `standalone` test above only covers a prompt that is *entirely*
+        # parenthesised, which this is not. Saskatchewan's `writing_area_bands`
+        # states the same rule and calls it the false positive that scan
+        # produces twice on Form 15-47.
+        if any(box.y0 < whole.y1 and box.y1 > whole.y0 and box.x0 >= whole.x1 - 2
+               for box in placed):
+            continue
         # A box floors the band too, including one that is about to be
         # deleted -- Form 70Q p1 leaves 75pt between "(List the affidavits ... to
         # be relied on.)" and the lawyer's signature rule, and the answer space
