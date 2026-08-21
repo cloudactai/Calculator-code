@@ -43,9 +43,18 @@ GLYPHS = set("☐☑☒□▢❑❏❒")
 # font, so the pairing is not doing any work it has not been shown to do. The
 # font name is matched as a prefix because a subset carries a tag
 # ("ABCDEF+WPTypographicSymbols").
+#   Wingdings             U+F071, U+F06F, U+F0A8  the four child-protection
+#                                                   briefs (26 on one page)
+#
+# The Wingdings entries are code points rather than letters, but they belong in
+# the same table for the same reason: they are private-use, so nothing about the
+# character says "square" and `GLYPHS` -- which lists the Unicode box characters
+# -- cannot see them. 0x71 and 0x6F are Wingdings' two open squares and 0xA8 is
+# its heavier one, which the CFCSA forms print.
 SYMBOL_MARKS = {
     "WPTypographicSymbols": {"G"},
     "WP-IconicSymbolsA": {"9"},
+    "Wingdings": {"\uf071", "\uf06f", "\uf0a8"},
 }
 
 

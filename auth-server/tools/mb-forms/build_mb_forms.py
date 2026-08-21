@@ -1917,17 +1917,34 @@ def cap_stacking(boxes):
             continue
         floor = rect.y1
         for other, other_kind in boxes:
-            if other is rect or other_kind == "CheckBox":
+            if other is rect:
                 continue
+            # A checkbox is an obstacle but never moves: it is seated on its
+            # printed square and trimming it would walk it off. The four
+            # child-protection briefs set "☐ Yes ☐ No" directly over the
+            # "Affidavit filed ______" line beneath, so without this the two
+            # controls overlapped by 0.4pt on thirteen rows of one page.
             if other.y0 <= rect.y0 + 0.5 or other.y0 >= rect.y1:
                 continue
             if other.x1 <= rect.x0 + 1 or other.x0 >= rect.x1 - 1:
                 continue  # a different column
             floor = min(floor, other.y0 - STACK_CLEARANCE)
-        if floor - rect.y0 < 6:
+        # ...and the same from above. The briefs set "☐ Yes ☐ No" whose squares
+        # end 0.3pt *into* the top of the "Affidavit filed ______" box beneath
+        # them, so trimming only the bottom left the pair still crossing.
+        ceiling = rect.y0
+        for other, other_kind in boxes:
+            if other is rect:
+                continue
+            if other.y1 <= rect.y0 or other.y1 >= rect.y1:
+                continue
+            if other.x1 <= rect.x0 + 1 or other.x0 >= rect.x1 - 1:
+                continue
+            ceiling = max(ceiling, other.y1 + STACK_CLEARANCE)
+        if floor - ceiling < 6:
             out.append((rect, kind))
             continue
-        out.append((fitz.Rect(rect.x0, rect.y0, rect.x1, floor), kind))
+        out.append((fitz.Rect(rect.x0, ceiling, rect.x1, floor), kind))
     return out
 
 
@@ -1946,7 +1963,26 @@ def cap_stacking(boxes):
 # The mechanism stays because the next shape may not be so tractable.
 #
 # {docId: [(page, Rect, kind), ...]}
-MANUAL_FIELDS = {}
+MANUAL_FIELDS = {
+    # The four child-protection briefs are Word *templates*: every printed blank
+    # and every option square now gets a control, but the substantive sections
+    # are paragraphs you type into the document, and their space is set as
+    # ordinary paragraph leading -- 27 to 46pt, one or two blank lines -- which
+    # no band rule should be inventing boxes in. Three places on the two
+    # pre-hearing briefs are different in kind: the form leaves most of a page
+    # blank under a question, and that is where the brief's argument goes.
+    # Measured off the pages, and the sweep that would place them automatically
+    # offers 169 candidates across the 140 forms of which the great majority are
+    # form titles ("PETITION FOR DIVORCE"), running heads ("Page 3") and the row
+    # labels of Form 70D.5's grid.
+    "MBCPB_PREHEARING_AGENCY": [
+        (5, fitz.Rect(90.1, 303.1, 516.9, 563.1), "TextArea"),   # Issues for trial
+    ],
+    "MBCPB_PREHEARING_PARENTS": [
+        (3, fitz.Rect(90.1, 98.2, 390.2, 358.2), "TextArea"),    # expert-witness detail
+        (4, fitz.Rect(90.1, 242.7, 510.2, 502.7), "TextArea"),   # dispute / plan of care
+    ],
+}
 
 
 # A caption that closes its page needs this much clear paper under it before it
