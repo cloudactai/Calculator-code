@@ -58,6 +58,7 @@ export enum AUTH_ROUTES {
   FORMS_CREATE_NEW_FILL_INFORMATION = "/forms/create-new/fill-information",
 
   // Super admin
+  SUPERADMINTAXCONSTANTS = "/superadmin/tax-constants",
   SUPERADMINDB = "/superadmin/dashboard",
   SUPERADMINUSERS = "/superadmin/users",
   SUPERADMINSUBSCRIBERS = "/superadmin/subscribers",

@@ -111,6 +111,17 @@ const SuperAdmin = () => {
             route={AUTH_ROUTES.SUPERADMINDATAPLATFORMISSUES}
           />
 
+          {/* Tax Constants Panel */}
+          <Panel
+            icon={getSvg('Data load')}
+            title="Tax Constants"
+            activeCount={0}
+            activeLabel="Manage tax rates"
+            inactiveCount={0}
+            inactiveLabel="and brackets by year"
+            route={AUTH_ROUTES.SUPERADMINTAXCONSTANTS}
+          />
+
         </div>
       </div>
 
