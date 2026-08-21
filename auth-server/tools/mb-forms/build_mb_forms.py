@@ -121,11 +121,18 @@ TEXTAREA_LINES = 1.75
 CAPTION_MAX_FILL = 0.55
 # How much smaller than the body a block has to be set to read as footnotes.
 # Measured on Provincial Court Form 1 p5: 7.5pt notes under a 10.5pt body.
-FOOTNOTE_SIZE_DROP = 1.5
+# Measured across the batch: Provincial Court Form 1's notes are 7.5-8pt under
+# an 11pt body, and Form 6's are 10pt under the same 11pt body -- so the cut has
+# to be well under a point. What it must *not* admit is a line set at the body
+# size itself, which is what a "Signature of ..." caption under a signature rule
+# is.
+FOOTNOTE_SIZE_DROP = 0.75
 # A footnote block is at least this many lines.
 FOOTNOTE_MIN_LINES = 3
 # ...and this fraction of them set smaller than the body.
 FOOTNOTE_MIN_FRACTION = 0.8
+# ...and the rule sitting at least this far down the sheet.
+FOOTNOTE_MIN_DEPTH = 0.6
 # A sub-label inside a cell is at most this long. "E-mail address:" is 15
 # characters and "Phone number:" 13; the shortest running sentence this has to
 # refuse is 76.
@@ -835,8 +842,18 @@ def footer_separators(page):
         #     block bold at body size on Provincial Court Form 1, so two of its
         #     nineteen lines measure 11pt;
         #   * at least three of them, because a block is a block.
-        below = [(rect, text, size) for rect, text, size in lines
-                 if rect.y0 > key and size]
+        # **A footnote separator sits near the foot of the page.** With the
+        # size cut loose enough to catch Form 6's 10pt notes under an 11pt
+        # body, a centred "Signature" caption set a point below body size
+        # qualifies too -- and Form AA-3 p2 has two of them, in the *middle* of
+        # the page, whose rules are exactly the signature lines that must keep
+        # their exemption. Every genuine separator in the batch sits below 0.6
+        # of the sheet; AA-3's signature rules are at 0.29 and 0.33.
+        if key < page.rect.height * FOOTNOTE_MIN_DEPTH:
+            below = []
+        else:
+            below = [(rect, text, size) for rect, text, size in lines
+                     if rect.y0 > key and size]
         small = sum(1 for _r, _t, size in below
                     if size <= body_size - FOOTNOTE_SIZE_DROP)
         if (len(below) >= FOOTNOTE_MIN_LINES and body_size
@@ -1439,8 +1456,18 @@ def writing_area_bands(page, placed, cells, obstacles=()):
 # the closing ")" are on different lines and neither one matches alone. `.*`
 # rather than `[^()]*` for the same reason in miniature: Form 70Y writes
 # "(Insert clause(s) as set out in order)", with a bracket inside the bracket.
+# "(name and address of ...)" is the seventh vocabulary and the one the README
+# has been carrying as an open decision: Form 70D.1 p3 and Form AA-15 p3 print
+# it with no writing area under them, which is why §6 said to record it rather
+# than invent geometry. Provincial Court Form 8 p2 prints the same caption with
+# 30pt of clear text measure under it -- geometry that *can* be read off the
+# page -- so the vocabulary is added and the band rules decide each instance on
+# its own evidence. Seven lines in 140 forms match it; four already have a field
+# on their own line and are refused by the beside-itself guard, one already has
+# its two boxes from product review, and the two with no band still get nothing.
 NARRATIVE_PROMPT = re.compile(
-    r"\((?:state|specify|list|set out|explain|describe|insert|provide|give)\b"
+    r"\((?:state|specify|list|set out|explain|describe|insert|provide|give"
+    r"|names?\s+and\s+address)\b"
     r".*\)[.\]\s]*$", re.I)
 # One line of writing is a real answer space -- it is what Form 70Q leaves
 # between "THE MOTION IS FOR (State here the precise relief sought.)" and the
