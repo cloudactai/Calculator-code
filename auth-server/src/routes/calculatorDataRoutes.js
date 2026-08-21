@@ -10,11 +10,13 @@
 
 const express = require("express");
 const path = require("path");
+const fs = require("fs");
 
 const router = express.Router();
 
 // ── Load data files ─────────────────────────────────────────────────────────
-const TAX_CONSTANTS = require("../data/tax_constants.json");
+const TAX_CONSTANTS_PATH = path.join(__dirname, "../data/tax_constants.json");
+let TAX_CONSTANTS = require("../data/tax_constants.json");
 const SCHEDULE_I = require("../data/schedule_i.json");
 
 // Legacy response wrapper (same shape as mattersRoutes)
@@ -226,6 +228,62 @@ router.get("/childSupport/values/:province/:noChild", (req, res) => {
   );
 
   return res.json(ok(filtered));
+});
+
+// ── Tax Constants Admin ─────────────────────────────────────────────────────
+
+// GET all tax constants (every year)
+router.get("/tax-constants", (req, res) => {
+  return res.json(ok(TAX_CONSTANTS));
+});
+
+// GET tax constants for a specific year
+router.get("/tax-constants/:year", (req, res) => {
+  const year = String(req.params.year);
+  if (!TAX_CONSTANTS[year]) {
+    return res.status(404).json({ data: { code: 404, status: "error", body: "Year not found" } });
+  }
+  return res.json(ok(TAX_CONSTANTS[year]));
+});
+
+// PUT — update tax constants for a specific year (create or overwrite)
+router.put("/tax-constants/:year", (req, res) => {
+  const year = String(req.params.year);
+  const constants = req.body;
+
+  if (!constants || typeof constants !== "object" || Array.isArray(constants)) {
+    return res.status(400).json({ data: { code: 400, status: "error", body: "Body must be a JSON object" } });
+  }
+
+  TAX_CONSTANTS[year] = constants;
+
+  try {
+    fs.writeFileSync(TAX_CONSTANTS_PATH, JSON.stringify(TAX_CONSTANTS, null, 2) + "\n", "utf8");
+  } catch (err) {
+    console.error("Failed to write tax_constants.json:", err.message);
+    return res.status(500).json({ data: { code: 500, status: "error", body: "Failed to save" } });
+  }
+
+  return res.json(ok({ year, message: "Tax constants updated" }));
+});
+
+// DELETE — remove a tax year
+router.delete("/tax-constants/:year", (req, res) => {
+  const year = String(req.params.year);
+  if (!TAX_CONSTANTS[year]) {
+    return res.status(404).json({ data: { code: 404, status: "error", body: "Year not found" } });
+  }
+
+  delete TAX_CONSTANTS[year];
+
+  try {
+    fs.writeFileSync(TAX_CONSTANTS_PATH, JSON.stringify(TAX_CONSTANTS, null, 2) + "\n", "utf8");
+  } catch (err) {
+    console.error("Failed to write tax_constants.json:", err.message);
+    return res.status(500).json({ data: { code: 500, status: "error", body: "Failed to save" } });
+  }
+
+  return res.json(ok({ year, message: "Tax year deleted" }));
 });
 
 module.exports = router;

@@ -76,6 +76,7 @@ import SuperAdmin from "../pages/superadmin/SuperAdmin";
 import SuperAdminUserslist from "../pages/superadmin/SuperAdminUserslist";
 import SuperAdminSubscriberlist from "../pages/superadmin/SuperAdminSubscriberlist";
 import SuperAdminDataload from "../pages/superadmin/SuperAdminDataload";
+import SuperAdminTaxConstants from "../pages/superadmin/SuperAdminTaxConstants";
 import SuperAdminPlatformIssues from "../pages/superadmin/SuperAdminPlatformIssues";
 import FormMapper from "../pages/FormMapping/FormMapper.jsx";
 import WorkflowLayout from "../pages/Workflow/WorkflowLayout";
@@ -180,6 +181,10 @@ const Routes = () => {
         >
           <FiveStepsPage currentUserRole={userChangeState.userRole} />
         </AuthUser>
+      </Route>
+
+      <Route path={AUTH_ROUTES.SUPERADMINTAXCONSTANTS}>
+        <SuperAdminTaxConstants />
       </Route>
 
       <Route path={AUTH_ROUTES.SUPERADMINDB}>
