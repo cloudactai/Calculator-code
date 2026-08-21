@@ -3,31 +3,21 @@
 Regenerates the Manitoba templates in `form-template-export/` from the
 government sources. Everything here is a build tool — the repo ships only the
 produced `MBKB_*.pdf/.json` plus `catalog.json`. Staging lives in the gitignored
-`form-template-export/_incoming_mb/`.
+`form-template-export/_incoming_mb/`; the page renders a review reads are in the
+gitignored `form-template-export/_review/`, written by `../review/`.
 
-Requires Python 3 with PyMuPDF (`fitz`). **No Chrome, no Node, no Adobe**: like
-Saskatchewan and unlike BC, nothing here has to be flattened.
+Requires Python 3 with PyMuPDF (`fitz`), and **LibreOffice** for the twenty
+batch-3 forms the government publishes only as Word documents (§10). No Chrome
+and no Adobe: unlike BC, the XFA sources here are *static* and need no headless
+flatten.
 
 ## Scope
 
-**86 forms shipped, in two batches: 279 pages, 4,168 fields, 258 binds.** A third
-batch of **54 more is recorded and fetched but not built** -- see §10.
+**140 forms in three batches: 522 pages, 7,836 fields, 398 binds, zero
+findings.**
 
-`verify_mb.py` currently reports **17 findings on six forms** (MBCFS_12,
-MBCFS_19, MBCFS_20, MBAD_4, MBAD_5, MBFA_1), not the zero this section claimed
-while both batches were built. They are not a regression in the mappings: they
-are the *gates* failing to keep up with the hand repairs made during product
-review, and every one is an instance already written up under "Product-review
-regressions" below. The symbol-font checkboxes are the bulk of them -- the
-repairs added `CheckBox` fields for marks printed as the character `9` in
-WP-IconicSymbolsA (CFS-19, CFS-20) and `G` in WPTypographicSymbols (FA-1), and
-`check_unticked_marks` only knows the drawn square, the `[ ]` pair and the `☐`
-glyph, so it reads a correctly-placed box as sitting on nothing. Closing them
-means teaching `checkboxes()` the symbol-font vocabulary, which is the structural
-fix §7 made for the other three vocabularies.
-
-**140 sources are fetched and verified on every pass**, which is the number
-`fetch_mb.py` prints; 86 of them are built, catalogued and bound.
+All 140 are fetched and verified on every pass, and all 140 are built,
+catalogued and bound.
 
 **Batch 1 -- the 43 family-law forms of Rule 70** of the Court of King's Bench
 Rules, published by Manitoba Justice. The civil parts and the probate forms are
@@ -46,6 +36,13 @@ withdrawn surfaces immediately. `mb_sources.all_sources()` is the aggregation
 point every tool here reads its work list from; adding a batch is a new
 `mb_sources_batch*.py` plus one entry in `_BATCHES`. Each batch carries its own
 `SHIPPED_CATEGORIES`, the switch for what is built, catalogued and bound.
+
+Batch 3 -- **the 54 forms neither Rule 70 nor those regulations carry**
+(`mb_sources_batch3.py`, and §10 below): the *Provincial* Court's own family
+rules, the relocation notices under The Family Law Act, the child-protection
+briefs, the FOAEAA packages, the interjurisdictional support set, the protection
+orders, and the three federal Divorce Act notices. **54 forms, 243 pages, 3,668
+fields, 140 binds**, shipped 2026-08-21.
 
 Rule 70: **43 forms, 188 pages, 2,680 fields, 229 binds**, all nine categories
 shipped. The financial five shipped first (2026-08-14); the other 38 followed,
@@ -851,66 +848,148 @@ For every Manitoba mapping repair:
    is deliberately hand-finished, document that exception because rebuilding
    can overwrite it.
 
-## 10. Batch 3 -- recorded, fetched, not built (2026-08-20)
+## 10. Batch 3 -- the six families Rule 70 and the regulations do not carry (2026-08-21)
 
-`mb_sources_batch3.py` records the six Manitoba families neither Rule 70 nor the
-regulations carry, plus the federal relocation notices: **54 rows, 243 pages**.
-`SHIPPED_CATEGORIES` is empty, so `fetch_mb.py` verifies all 54 on every pass and
-nothing downstream sees them -- the same switch Rule 70's own categories sat
-behind before they were built. The catalogue is unchanged at 86.
+`mb_sources_batch3.py`. **54 forms, 243 pages, 3,668 fields, 140 binds, zero
+findings.** The catalogue is 140 Manitoba templates.
 
-| Family | Forms | Pages | Source |
-| --- | --- | --- | --- |
-| Provincial Court Family Rules, M.R. 87/88R | 8 | 36 | King's Printer, PDF |
-| Family Law Regulation, M.R. 50/2023, Sch. A-C | 3 | 10 | King's Printer, PDF |
-| Divorce Act relocation (federal) | 3 | 18 | Justice Canada, PDF |
-| Child-protection court briefs | 4 | 16 | Manitoba Courts, **.doc** |
-| FOAEAA packages | 16 | 77 | Manitoba Courts, **.docx** |
-| Interjurisdictional support (ISO) | 17 | 62 | Manitoba Justice, PDF |
-| Protection orders | 3 | 24 | Manitoba Courts, PDF |
+| Category | Forms | Pages | Fields | Binds |
+| --- | --- | --- | --- | --- |
+| Provincial Court - Family Rules | 8 | 36 | 623 | 55 |
+| Relocation - Family Law Act | 3 | 10 | 41 | 0 |
+| Relocation - Divorce Act (federal) | 3 | 18 | 61 | 0 |
+| Child Protection - Briefs | 4 | 16 | 86 | 8 |
+| FOAEAA | 16 | 77 | 795 | 77 |
+| Interjurisdictional Support | 17 | 62 | 1,577 | 0 |
+| Protection Orders | 3 | 24 | 485 | 0 |
 
-Gate A/B is green: **140 entries, 0 flagged**, every page count matching what the
-government's file carries.
+Six hosts and three file formats, against one host and one format for batches 1
+and 2 -- and this is the batch where every source kind the repository knows
+about turns up in one province.
 
-### Why none of it is built yet
+### The widget path
 
-Batches 1 and 2 were one host and one format. This one is six hosts and three
-formats, and **the detector pipeline cannot serve four of the seven families**:
+**22 of the 54 carry the government's own field rectangles**: all 17 ISO forms,
+both protection-order applications and all three federal notices, up to 309
+widgets on ISO Form I. `fetch_mb.py` has always said a fillable source "should
+route to the widget path rather than the detector path"; `build_mb_forms.is_fillable`
+is that route, and it calls `bc_pipeline.extract` -- the same code BC's
+Provincial forms take -- rather than growing a third copy of it. Reading what
+the form declares is strictly better than detecting anchors: `page_boxes` finds
+0 rules and 25 underscore runs on ISO Form A.1 against 112 declared widgets.
 
-- **20 forms have no official PDF at all.** The four briefs are `.doc` and all
-  sixteen FOAEAA forms are `.docx`. `fetch_mb.py` now renders them through
-  LibreOffice, which is a real change to what this pipeline ships: every other
-  Manitoba background is byte-identical to the King's Printer's file, and a
-  rendering is not the prescribed form. The conversion is checked rather than
-  trusted -- each FOAEAA form prints its own pagination ("page 1/3") and all 16
-  reproduce it exactly -- but whether a converted prescribed form is acceptable
-  is a decision about the form, not about the code, in the same sense
-  `caption_under_rule.py` is. It is recorded, not made silently.
-- **19 forms are AcroForm and 3 are XFA.** The 17 ISO forms, the two
-  protection-order applications and all three federal notices already carry
-  government-defined rectangles with meaningful field names -- 309 widgets on ISO
-  Form I alone. Reading those is strictly better than detecting anchors: running
-  `printed_rules`/`underscore_blanks` over ISO Form A.1 finds 0 rules and 25
-  runs against 112 declared widgets. **`mb-forms/` has no widget path**, though
-  `fetch_mb.py`'s docstring has always said a fillable source should route to
-  one. Ontario and BC have widget extraction; this should reuse it. ISO Forms B,
-  F and H are XFA on top of that and need BC's headless flatten.
-- The **8 Provincial Court forms** and the **3 protection/relocation statics**
-  are the only families the existing builder is the right tool for, and even
-  there the relocation schedules detect almost nothing (2 rules across 5 pages),
-  so they need reading before anything is placed.
+Two consequences worth knowing:
 
-`§7` and `§8` are the record of what a new Manitoba family costs: findings went
-309 -> 0 and 15 -> 0, and six of nine defects in §8 were invisible to every gate
-because no gate was asking the question. Four new families in three formats
-should be expected to cost at least that, per family, and none of it is
-mechanical.
+- **The background is flattened, not copied.** These are the only Manitoba
+  templates whose PDF is not byte-identical to the government's file. Leaving
+  the widget layer would put the government's AcroForm fields underneath our
+  overlay and the viewer would draw two controls per blank, so
+  `flatten_background` deletes the widget annotations and the /AcroForm entry.
+  The printed page is untouched: on ISO Form B the flattened render is
+  **pixel-identical** to the source at 2x on all three pages, and the text layer
+  compares equal.
+- **`verify_mb.py` asks a widget template different questions.** Every check in
+  `CHECKS` re-derives a printed anchor and asks whether the mapping agrees with
+  it, which is the right question only when the box was reconstructed from that
+  anchor. Asked of the ISO set it produced 814 findings across the province,
+  every one of them saying "this is not where I would have put it" rather than
+  "this is wrong". `WIDGET_CHECKS` keeps what still applies -- bounds, unique
+  ids, overlap, and a box covering printed text -- and the sliver test is
+  skipped for the same reason (the ISO affidavit's "Page __ of __" slots are
+  13.3pt because a page number needs 13.3pt).
 
-### The one thing measured that contradicts an assumption
+### XFA
 
-The format table in `mb_sources_batch3` is measured off the fetched files, not
-taken from the index, and two entries surprised: the protection-order
-applications and all three federal notices are fillable, and three ISO forms are
-XFA rather than AcroForm. Saskatchewan's copy of **the same national ISO set** is
-AcroForm for all 17. Same forms, different production -- so neither province's
-classification can be inferred from the other's.
+ISO Forms B, F and H are XFA. They are **static** XFA: the AcroForm layer and
+the page content stream are the authoritative rendering, which is checked rather
+than assumed -- flattening Form B leaves a pixel-identical page and zero
+widgets. So they need no headless flatten and take the ordinary widget path, and
+BC's `xfa/` tooling is not involved. A *dynamic* XFA source would not behave
+that way and would have to be caught here; the fetch classification records
+`xfa` on every one of them so a future reissue is visible.
+
+### Word
+
+**20 forms have no official PDF at all** -- the four child-protection briefs are
+`.doc` and all sixteen FOAEAA forms are `.docx`. `fetch_mb.py` renders them
+through LibreOffice, and this is a real change to what the pipeline ships: every
+other Manitoba background is byte-identical to the King's Printer's file, and a
+rendering is not the prescribed form. It is checked rather than trusted -- every
+FOAEAA form prints its own pagination in its header ("Form 1A - FOAEAA - page
+1/3") and all sixteen conversions reproduce the declared count exactly; the four
+briefs print no such marker, so their page counts are the conversion's own and
+are a regression guard only. The manifest records `converted: true` and the
+converter's version for each. Whether a converted prescribed form is acceptable
+is a decision about the form rather than about the code, in the same sense
+`caption_under_rule.py` is, and it is recorded rather than made silently.
+
+### What the batch taught the detectors
+
+Every fix is in the builder or the gates, and each was checked against the 86
+already-shipped templates before being kept.
+
+- **An option can be an ordinary letter in a symbol font.** WordPerfect's symbol
+  faces map their box onto a character that reads as text, so `get_text()`
+  returns `G` (WPTypographicSymbols) or `9` (WP-IconicSymbolsA) and nothing
+  about the string says it is a square. `mb_marks.SYMBOL_MARKS` names the pair,
+  font and character together, because a bare "G" is a letter everywhere else on
+  the page. This is what left the relocation schedules with no tickable options
+  at all -- and it is the same defect behind twelve of the seventeen findings
+  that stood on the shipped batch (§11).
+- **A parenthesised office is a name blank, not a signature.** `(judge)` and
+  `(court)` caption the blanks in "order granted by ______ of ______", which
+  name the judge and the court; a bare "Deputy Registrar" or "Clerk of Court" is
+  where an officer signs. `MB_OFFICE_CAPTION` no longer accepts the optional
+  bracket, which is the rule `MB_PARTY_CAPTION` already stated.
+- **A witness writes their name; they do not sign.** `MB_WITNESS_CAPTION` marks
+  the signature block for the ambiguous-role test without condemning its own
+  rule, so "Witness    Signature" gets a box under the first and none under the
+  second.
+- **A row label's answer is the cell beside it.** Manitoba's own rule is that a
+  cell may ask its question and be answered inside itself (Form 70W's
+  "Address:"); the relocation schedules do the opposite, and the cell alone
+  cannot tell them apart. The *row* can: something empty to the right is where
+  the answer goes.
+- **A cell answered after a one-line label is one line.** Measured against the
+  cell instead, Schedule A's 20pt "Name:" row came out at 1.93 "lines" and every
+  field in Part A was a resizable area for a single name.
+- **A labelled cell can still have writable space.** The schedules set
+  "Children's names" and its explanatory paragraph at the top of a 215pt cell
+  and leave the rest blank; `_cell_answer_band` segments the label from the
+  answer rather than refusing the cell.
+- **A `$` with no rule takes its twin's column** (`dollar_twin_slots`).
+  Provincial Court Form 4 p5 sets its expense rows as "Parking  $______" and
+  closes with "SUBTOTAL  $" and no rule at all, so the one figure that is the
+  sum of the column had nowhere to go.
+- **Two boxes in a column may not overlap at all** (`cap_stacking`). The viewer
+  draws a bordered control inside each, so even 0.3pt puts one border through
+  the other.
+
+## 11. The findings that stood on the shipped batch, and how they closed
+
+`verify_mb.py` reported **17 findings on six forms** at the batch-3 starting
+commit -- not a regression in the mappings but the gates failing to keep up with
+the hand repairs made during product review, and every one an instance already
+written up under "Product-review regressions" below.
+
+* **Twelve `checkbox-mark`** on CFS-19, CFS-20 and FA-1: the repairs had added
+  `CheckBox` fields for marks printed as symbol-font letters, and
+  `check_unticked_marks` only knew the drawn square, the `[ ]` pair and the `☐`
+  glyph, so it read a correctly-placed box as sitting on nothing. Closed by
+  teaching `mb_marks` the vocabulary, which is structural rather than a repair.
+* **Five `signature`** on CFS-12, AA-4 and AA-5: `(judge)` and the witness lines,
+  above.
+
+Correcting those three detectors then made the builder *keep* rules the
+already-promoted maps had no field on -- 52 of them across 26 forms. Those maps
+cannot be rebuilt (`hand_finished` blocks `--promote` because they carry binds),
+so `repair_mb_forms.add_missing_rule_fields` asks the corrected builder what it
+would put on each rule the gates report as unfilled and adds exactly that. It
+names no coordinates and is a no-op once applied. Two more repairs came out of
+the same pass: `drop_signature_line_fields` removes a box the corrected builder
+now drops, and `drop_presence_areas` removes the writing area opened under "IN
+THE PRESENCE OF", which product review had asked for and which was also sitting
+on the witness rule underneath it and stopping that rule getting its own box.
+
+**Both provinces now verify with zero findings** -- Manitoba 140 forms,
+Saskatchewan 121.

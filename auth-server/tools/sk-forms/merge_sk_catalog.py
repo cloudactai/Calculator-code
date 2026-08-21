@@ -69,7 +69,12 @@ def main():
         doc.close()
         title = TITLE_OVERRIDE.get(doc_id, src["title"])
         rows.append({
-            "title": "Form %s - %s" % (src["formNo"], title),
+            # Most forms are "Form 15-47", so the picker reads "Form 15-47 -
+            # Financial Statement". A batch-3 family that is not numbered that
+            # way -- a practice-directive appendix, the federal notices, the
+            # Court of Appeal form -- carries its own `catalogTitle` rather than
+            # being forced through a template that would print "Form Form 1".
+            "title": src.get("catalogTitle") or "Form %s - %s" % (src["formNo"], title),
             # From the source, not composed here: Saskatchewan now ships three
             # families and only Part 15 is "SK KB" (see sk_sources_cp.py).
             "shortTitle": src["shortTitle"],

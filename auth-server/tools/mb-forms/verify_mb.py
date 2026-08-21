@@ -225,7 +225,7 @@ def check_underlines(doc, fields, problems):
                                      "detail": "box sits on a heading's underline"})
 
 
-def check_structure(doc, fields, page_sizes, problems):
+def check_structure(doc, fields, page_sizes, problems, widget_built=False):
     """Duplicate ids, shared positions, overlapping boxes, slivers, bounds."""
     for detail in bp.check_geometry(fields, page_sizes):
         problems.append({"check": "geometry", "page": None, "id": None,
@@ -258,6 +258,14 @@ def check_structure(doc, fields, page_sizes, problems):
     # Form 70S.3 (16.8pt) -- and a flat floor calls every one of them a defect
     # while still passing a box that covers half of a 200pt line. Measure the
     # printed anchor and compare.
+    #
+    # It therefore cannot be asked of a widget-built template at all: there is
+    # no printed anchor to measure against, because the government drew the
+    # rectangle rather than a blank for us to fit a box to. Its narrow boxes are
+    # narrow on purpose -- the ISO affidavit's "Page __ of __" slots are 13.3pt,
+    # which is what a page number needs.
+    if widget_built:
+        return
     for field in fields:
         if field["type"] == "CheckBox":
             continue
@@ -444,6 +452,45 @@ CHECKS = (check_printed_text, check_checkbox_marks, check_unticked_marks,
           check_dollar_slots)
 
 
+# **A widget-built template is checked differently, and it has to be.** Every
+# check in `CHECKS` re-derives a printed anchor from the page and asks whether
+# the mapping agrees with it -- "is there a box on every underscore run", "is
+# this box seated on its rule", "does every `$` have an amount slot". That is
+# the right question when the box was *reconstructed* from the anchor, which is
+# how every Part 15, child-protection, adoption and Rule 70 template is built.
+#
+# It is the wrong question for the interjurisdictional support forms, the
+# protection-order applications and the federal notices, whose boxes are the
+# government's own AcroForm rectangles. There the form has already answered it:
+# a rule with no widget is a rule the government chose not to make fillable, and
+# a widget that does not sit on a printed rule is where the government decided
+# the answer goes. Asking the anchor questions of them produced 916 findings
+# across 20 forms, every one of which said "this is not where I would have put
+# it" rather than "this is wrong".
+#
+# What still applies is everything that asks whether a box is sound in itself:
+# in bounds, uniquely identified, not covering a printed label, not overlapping
+# another control, not a sliver. Those are in `check_structure` and the two
+# checks below, and they run on both paths.
+WIDGET_CHECKS = (check_printed_text,)
+
+
+def _is_widget_built(doc_id):
+    """Was this template built from the government's own field rectangles?
+
+    Read off the fetched source rather than recorded, so it cannot go stale, and
+    it is the same question `build_*.is_fillable` asks at build time.
+    """
+    source = os.path.join(STAGE, "%s_source.pdf" % doc_id)
+    if not os.path.exists(source):
+        return False
+    doc = fitz.open(source)
+    try:
+        return any(len(list(page.widgets())) for page in doc)
+    finally:
+        doc.close()
+
+
 def verify(doc_id, folder):
     pdf = os.path.join(folder, "%s.pdf" % doc_id)
     mapping = os.path.join(folder, "%s.json" % doc_id)
@@ -453,8 +500,9 @@ def verify(doc_id, folder):
     doc = fitz.open(pdf)
     page_sizes = [[round(p.rect.width, 1), round(p.rect.height, 1)] for p in doc]
     problems = []
-    check_structure(doc, fields, page_sizes, problems)
-    for check in CHECKS:
+    widget_built = _is_widget_built(doc_id)
+    check_structure(doc, fields, page_sizes, problems, widget_built)
+    for check in (WIDGET_CHECKS if widget_built else CHECKS):
         check(doc, fields, problems)
     doc.close()
     return problems

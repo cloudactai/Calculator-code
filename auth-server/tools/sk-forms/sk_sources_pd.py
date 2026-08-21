@@ -112,6 +112,20 @@ form's own printing wins:
   Contact".
 """
 
+PD_CATEGORY_ORDER_NAMES = [
+    "Practice Directive - Pre-Trial",
+    "Practice Directive - Affidavit Objections",
+    "Practice Directive - Family Services",
+    "Practice Directive - Summary Hearings",
+    "Practice Directive - Chambers",
+    "Practice Directive - Case Conferences",
+    "Practice Directive - FOAEAA",
+    "Interjurisdictional Support",
+    "Interpersonal Violence",
+    "Relocation - Divorce Act",
+    "Court of Appeal",
+]
+
 COURT_KB = "King's Bench"
 COURT_CA = "Court of Appeal"
 
@@ -119,9 +133,11 @@ SK_PUB = "https://publications.saskatchewan.ca/api/v1/products/%d/formats/%d/dow
 COURTS = "https://sasklawcourts.ca/wp-content/uploads/%s"
 FED_BASE = "https://www.justice.gc.ca/eng/fl-df/divorce/pdf/%s.pdf"
 
-# Nothing in this batch is built, catalogued or bound yet. Turning a family on
-# is adding its category name here, once its pages have been read.
-SHIPPED_CATEGORIES = set()
+# All eleven families are built, catalogued and bound as of 2026-08-20, after
+# every page of every form was rendered against its government source and
+# against its own overlay. Kept as a set rather than a boolean because it is
+# still the switch a later family would be added through.
+SHIPPED_CATEGORIES = set(PD_CATEGORY_ORDER_NAMES)
 
 # --- Family practice directives ----------------------------------------------
 # Each directive is one source document. `path` is the directive's dated URL
@@ -311,23 +327,11 @@ FED_FORMS = [
     ("3", "ncpr-aclr", "Notice of Change in Place of Residence: Person with Contact", 5),
 ]
 
-PD_CATEGORY_ORDER = [
-    "Practice Directive - Pre-Trial",
-    "Practice Directive - Affidavit Objections",
-    "Practice Directive - Family Services",
-    "Practice Directive - Summary Hearings",
-    "Practice Directive - Chambers",
-    "Practice Directive - Case Conferences",
-    "Practice Directive - FOAEAA",
-    "Interjurisdictional Support",
-    "Interpersonal Violence",
-    "Relocation - Divorce Act",
-    "Court of Appeal",
-]
+PD_CATEGORY_ORDER = list(PD_CATEGORY_ORDER_NAMES)
 
 
 def _row(doc_id, form_no, title, court, category, short_title, source_file,
-         pages, url, rule, cut=None, text_check=None):
+         pages, url, rule, cut=None, text_check=None, catalog_title=None):
     """One source row.
 
     `textCheck` is a phrase the source document itself prints, and is what
@@ -340,6 +344,7 @@ def _row(doc_id, form_no, title, court, category, short_title, source_file,
     """
     row = {
         "textCheck": text_check,
+        "catalogTitle": catalog_title,
         "docId": doc_id,
         "formNo": form_no,
         "rule": rule,
@@ -371,7 +376,8 @@ def practice_directive_sources():
             "SKPD_%s" % stem, form_no, title, COURT_KB, PD_CATEGORY[family],
             "SK %s" % form_no, src, pages, COURTS % path,
             "Family Practice Directive %s" % family[2:], cut,
-            text_check=PD_TEXT_CHECK[stem]))
+            text_check=PD_TEXT_CHECK[stem],
+            catalog_title="%s - %s" % (form_no, title)))
     return out
 
 
@@ -381,12 +387,14 @@ def iso_sources():
         stem = form_no.replace(".", "_")
         label = form_no not in ("AFFIDAVIT", "LOCATE")
         out.append(_row(
-            "SKISO_%s" % stem, ("Form %s" % form_no) if label else title, title,
+            "SKISO_%s" % stem, form_no if label else title, title,
             COURT_KB, "Interjurisdictional Support",
             ("SK ISO %s" % form_no) if label else "SK ISO", src, pages,
             SK_PUB % (product, fmt), ISO_REG,
             text_check=("form %s" % form_no).lower() if label
-            else ISO_TEXT_CHECK[form_no]))
+            else ISO_TEXT_CHECK[form_no],
+            catalog_title=("ISO Form %s - %s" % (form_no, title)) if label
+            else "ISO %s" % title))
     return out
 
 
@@ -394,10 +402,11 @@ def ipv_sources():
     out = []
     for form_no, title, product, fmt, src, pages in IPV_FORMS:
         out.append(_row(
-            "SKIPV_%s" % form_no, "Form %s" % form_no, title, COURT_KB,
+            "SKIPV_%s" % form_no, form_no, title, COURT_KB,
             "Interpersonal Violence", "SK IPV %s" % form_no, src, pages,
             SK_PUB % (product, fmt), IPV_REG,
-            text_check="form %s" % form_no.lower()))
+            text_check="form %s" % form_no.lower(),
+            catalog_title="Emergency Intervention Form %s - %s" % (form_no, title)))
     return out
 
 
@@ -405,10 +414,11 @@ def court_of_appeal_sources():
     out = []
     for form_no, title, path, pages in CA_FORMS:
         out.append(_row(
-            "SKCA_%s" % form_no.upper(), "Form %s" % form_no, title, COURT_CA,
+            "SKCA_%s" % form_no.upper(), form_no, title, COURT_CA,
             "Court of Appeal", "SK CA %s" % form_no, path.rsplit("/", 1)[-1],
             pages, COURTS % path, CA_RULES,
-            text_check="form %s" % form_no.lower()))
+            text_check="form %s" % form_no.lower(),
+            catalog_title="Court of Appeal Form %s - %s" % (form_no, title)))
     return out
 
 
@@ -420,7 +430,8 @@ def federal_relocation_sources():
             "SKDIV_%s" % form_no, "Form %s" % form_no, title, COURT_KB,
             "Relocation - Divorce Act", "SK Divorce Act %s" % form_no,
             "%s.pdf" % slug, pages, FED_BASE % slug, FED_CITATION,
-            text_check=title.split(":")[0].lower()))
+            text_check=title.split(":")[0].lower(),
+            catalog_title="Divorce Act Form %s - %s" % (form_no, title)))
     return out
 
 

@@ -55,17 +55,30 @@ given a single text field.
 import argparse
 import json
 import os
+import re
 import sys
 
 import fitz
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, os.path.join(
+    os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "bc-forms"))
+import bc_pipeline as bp  # noqa: E402
 import mb_marks  # noqa: E402
+sys.path.insert(0, os.path.join(
+    os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "bc-forms"))
+import build_mb_forms as B  # noqa: E402
+import verify_mb as V  # noqa: E402
 
 EXPORT = os.path.join(os.path.dirname(os.path.abspath(__file__)),
                       "..", "..", "form-template-export")
 FORMS = ["MBKB_70D", "MBKB_70D_1", "MBKB_70D_5", "MBKB_70U", "MBKB_70W",
-         "MBKB_70Z", "MBKB_70A_1"]
+         "MBKB_70Z", "MBKB_70A_1",
+         # Repairs 8 and 9, from the 2026-08-20 product review: the promoted
+         # maps predate the corrected witness/signature rules in
+         # `build_mb_forms.signature_captions`, and cannot be rebuilt into line
+         # with them because they carry binds (see `hand_finished`).
+         "MBCFS_19", "MBCFS_20", "MBAD_4"]
 
 # Overlay convention (README "Overlay convention"): x/y are points, width/height
 # are points x 1.5.
@@ -94,8 +107,9 @@ def load(doc_id):
 
 def save(path, data):
     """Write the map back the way the batch writes it (guide §9.12)."""
+    indent = bp.existing_indent(path)  # before the truncating open below
     with open(path, "w") as handle:
-        json.dump(data, handle, indent=1)
+        json.dump(data, handle, indent=indent)
         handle.write("\n")
 
 
@@ -451,6 +465,214 @@ def clear_70u_comma(doc_id, data, pdf):
 
 # --------------------------------------------------------------------------
 
+# --------------------------------------------------------------------------
+# Repair 8 — a name box on every witness line
+# Repair 9 — no box on the line the party signs
+#
+# Both are the same product-review finding (2026-08-20, README "Context decides
+# whether a ruled blank is a signature"): Manitoba pairs a signer with a witness
+# on one line, the witness writes their *name* and the party *signs*, and the
+# builder was treating both as signature rules. `MB_WITNESS_CAPTION` fixes that
+# for anything built from now on; these two bring the already-promoted maps into
+# line, because they carry binds and `hand_finished` will not let them be
+# rebuilt.
+#
+# Neither names a coordinate. Both ask the corrected builder what it would place
+# on this page and reconcile the promoted map with that answer, restricted to
+# the witness/signature rules so nothing else can move -- which also makes them
+# no-ops once applied.
+# --------------------------------------------------------------------------
+
+WITNESS_BAND = 24.0          # how far under a rule its caption may sit
+SEATED_TOL = 6.0             # a field counts as "on" a rule within this
+
+
+def _witness_caption_rects(page):
+    """Caption lines that read exactly "Witness"."""
+    out = []
+    for block in page.get_text("dict")["blocks"]:
+        for line in block.get("lines", []):
+            text = "".join(span["text"] for span in line["spans"])
+            if B.MB_WITNESS_CAPTION.match(text):
+                out.append(fitz.Rect(line["bbox"]))
+    return out
+
+
+def _field_rect(field):
+    return fitz.Rect(field["x"], field["y"],
+                     field["x"] + field["width"] / SCALE,
+                     field["y"] + field["height"] / SCALE)
+
+
+def _unfilled_anchors(page, mine):
+    """The rules and blanks this page prints that carry no field.
+
+    **The same two questions `verify_mb.check_unfilled_rules` and
+    `check_unfilled_blanks` ask**, with the same probes and the same
+    signature-rule excuse, so this repair adds exactly what those gates
+    complain about and nothing else. Driving it off the builder's whole
+    `page_boxes` instead would also add its *writing-area bands* -- which is how
+    the first run of this proposed putting back the erroneous areas under Form
+    AA-4's "IN THE PRESENCE OF" that product review asked to be removed.
+    """
+    dropped = B.signature_rule_rects(page)
+    cells = B.grid_cells(page)
+    out = []
+    for rect, key, _size in B.printed_rules(page, cells):
+        probe = fitz.Rect(rect.x0, key - 14, rect.x1, key + 2)
+        if any(probe.intersects(other) for other in mine):
+            continue
+        if V._on_a_signature_rule(probe, dropped):
+            continue
+        out.append(probe)
+    for rect, _rule, _size in B.underscore_blanks(page):
+        probe = fitz.Rect(rect.x0, rect.y0 - 4, rect.x1, rect.y1 + 2)
+        if any(probe.intersects(other) for other in mine):
+            continue
+        if V._on_a_signature_rule(probe, dropped):
+            continue
+        out.append(probe)
+    return out
+
+
+def add_missing_rule_fields(doc_id, data, pdf):
+    """Repair 8: a box on every printed rule the corrected builder keeps.
+
+    Three detector corrections landed after these maps were promoted, and all
+    three make the builder *keep* a rule it used to delete:
+
+      * `MB_WITNESS_CAPTION` -- a witness writes their name, they do not sign,
+        so a witness's rule is a name blank (README, "Context decides whether a
+        ruled blank is a signature").
+      * `MB_OFFICE_CAPTION` no longer accepting brackets -- "(judge)" and
+        "(court)" caption the blanks in "order granted by ______ of ______",
+        which name the judge and the court; a bare "Deputy Registrar" still
+        signs.
+      * `mb_marks.SYMBOL_MARKS` -- an option printed as a letter in a symbol
+        font is an option (`add_checkboxes` places those).
+
+    Rebuilding is not available: every one of these forms carries binds and
+    `hand_finished` blocks `--promote` for exactly that reason. So this asks the
+    corrected builder what it would put on each rule the gates report as
+    unfilled, and adds that. It names no coordinates and is a no-op once
+    applied.
+    """
+    fields = data["staticFields"]
+    notes = []
+    for number in range(1, pdf.page_count + 1):
+        page = pdf[number - 1]
+        on_page = [f for f in fields if f["page"] == number]
+        mine = [_field_rect(f) for f in on_page]
+        anchors = _unfilled_anchors(page, mine)
+        if not anchors:
+            continue
+        kept, _dropped = B.drop_signature_rules(
+            B.page_boxes(page), B.signature_captions(page),
+            B.jurat_brackets(page), B.name_notes(page))
+        for probe in anchors:
+            # The box the builder would seat on this rule, so the geometry is
+            # the builder's rather than this script's.
+            best = None
+            for rect, kind in kept:
+                if kind == "CheckBox" or not rect.intersects(probe):
+                    continue
+                if best is None or rect.get_area() < best[0].get_area():
+                    best = (rect, kind)
+            if best is None:
+                continue
+            rect, kind = best
+            # **Touching is not overlapping.** `Rect.intersects` is true for a
+            # zero-area meeting, and Manitoba stacks a party band directly on
+            # top of the witness rule beneath it -- Forms CFS-15 p3 and AA-11 p1
+            # share the exact edge y=337 and y=656 -- so a bare `intersects`
+            # read the band as already serving the rule and left both witness
+            # lines with nothing to type on.
+            if any((_field_rect(f) & rect).get_area() > 1.0 for f in on_page):
+                continue
+            template = next((f for f in fields if f["type"] == "TextField"), None)
+            if template is None:
+                continue
+            field = new_field(template, x=round(rect.x0, 2), y=round(rect.y0, 2),
+                              width=round(rect.width * SCALE, 2),
+                              height=round(rect.height * SCALE, 2))
+            field["id"] = next_id(fields)
+            field["type"] = kind
+            field["page"] = number
+            fields.append(field)
+            on_page.append(field)
+            notes.append("p%d %s on an unfilled rule at %.0f,%.0f"
+                         % (number, kind, rect.x0, rect.y0))
+    return notes
+
+
+# Repair 10 -- the writing area under "IN THE PRESENCE OF"
+#
+# Product review, 2026-08-20 (README, "Match field type to the printed writing
+# structure"): "AD-4 page 2 and AD-5 page 2 had erroneous areas under IN THE
+# PRESENCE OF. Those areas must be removed, with the actual witness lines
+# handled separately." The phrase heads a signature block -- the witness and the
+# party each sign on their own ruled line beneath it -- so the clear band
+# between the caption and those rules is not a writing space at all, and an area
+# opened in it also sits on top of the witness rule and stops Repair 8 giving
+# that rule its own box.
+PRESENCE_CAPTION = re.compile(r"in\s+the\s+presence\s+of", re.I)
+PRESENCE_BAND = 30.0
+
+
+def drop_presence_areas(doc_id, data, pdf):
+    """Repair 10: remove a writing area opened under "IN THE PRESENCE OF"."""
+    fields = data["staticFields"]
+    notes = []
+    for number in range(1, pdf.page_count + 1):
+        page = pdf[number - 1]
+        captions = []
+        for block in page.get_text("dict")["blocks"]:
+            for line in block.get("lines", []):
+                text = "".join(span["text"] for span in line["spans"])
+                if PRESENCE_CAPTION.search(text):
+                    captions.append(fitz.Rect(line["bbox"]))
+        if not captions:
+            continue
+        for field in list(fields):
+            if field["page"] != number or field["type"] != "TextArea":
+                continue
+            if field.get("bind"):
+                continue
+            for caption in captions:
+                if -2 <= field["y"] - caption.y1 <= PRESENCE_BAND:
+                    fields.remove(field)
+                    notes.append("p%d removed the writing area under "
+                                 "\"in the presence of\" at %.0f,%.0f"
+                                 % (number, field["x"], field["y"]))
+                    break
+    return notes
+
+
+def drop_signature_line_fields(doc_id, data, pdf):
+    """Repair 9: remove a box the corrected builder drops as a signature rule."""
+    fields = data["staticFields"]
+    notes = []
+    for number in sorted({f["page"] for f in fields}):
+        page = pdf[number - 1]
+        dropped = B.signature_rule_rects(page)
+        if not dropped:
+            continue
+        for field in list(fields):
+            if field["page"] != number or field["type"] == "CheckBox":
+                continue
+            if field.get("bind"):
+                continue  # never silently drop a bound field
+            box = _field_rect(field)
+            for rule in dropped:
+                if (abs(box.y1 - rule.y1) < SEATED_TOL
+                        and box.x1 > rule.x0 + 2 and box.x0 < rule.x1 - 2):
+                    fields.remove(field)
+                    notes.append("p%d removed box on signature rule at %.0f,%.0f"
+                                 % (number, rule.x0, rule.y0))
+                    break
+    return notes
+
+
 def repair(doc_id, check):
     path, data = load(doc_id)
     before = {int(f["id"]): {k: v for k, v in f.items() if k not in GEOMETRY}
@@ -465,6 +687,9 @@ def repair(doc_id, check):
     notes += fill_total_rows(doc_id, data, pdf)
     notes += add_70z_second_party(doc_id, data, pdf)
     notes += add_checkboxes(doc_id, data, pdf)
+    notes += drop_presence_areas(doc_id, data, pdf)
+    notes += add_missing_rule_fields(doc_id, data, pdf)
+    notes += drop_signature_line_fields(doc_id, data, pdf)
 
     dropped = {f["id"] for f in data["staticFields"]}
     for field in data["staticFields"]:

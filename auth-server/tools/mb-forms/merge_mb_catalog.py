@@ -56,7 +56,14 @@ def main():
         page_count = doc.page_count
         doc.close()
         rows.append({
-            "title": "Form %s - %s" % (src["formNo"], src["title"]),
+            # Most forms are "Form 70D", so the picker reads "Form 70D - Financial
+            # Statement". A batch-3 family that is not numbered that way -- a
+            # relocation Schedule, a child-protection brief, a protection-order
+            # application carrying a CRT number, a practice-directive appendix --
+            # carries its own `catalogTitle` rather than being forced through a
+            # template that would print "Form Form 1" or "Form Intake Brief of
+            # Agency - Intake Brief of Agency".
+            "title": src.get("catalogTitle") or "Form %s - %s" % (src["formNo"], src["title"]),
             "shortTitle": src.get("shortTitle") or "MB KB %s" % src["formNo"],
             "footerText": manifest[doc_id].get("footerText") or None,
             "status": "active",

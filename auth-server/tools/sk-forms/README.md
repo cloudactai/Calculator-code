@@ -10,12 +10,9 @@ unlike BC, nothing here has to be flattened.
 
 ## Scope
 
-**76 forms shipped across three families**, all published by the Office of the
-King's Printer, matching the breadth Ontario and BC carry. A fourth batch of
-**45 more is recorded and fetched but not built** -- see "Batch 3" below.
-
-**121 sources are fetched and verified on every pass**, which is the number
-`fetch_sk.py` prints; 76 of them are built, catalogued and bound. Everything
+**121 forms across four families**, matching the breadth Ontario and BC carry.
+All 121 are fetched, built, catalogued, bound and verified with **zero
+findings**. Everything
 downstream of the fetcher reads `shipped_sources()` rather than `all_sources()`,
 which is new: Saskatchewan had no such split while `all_sources()` *was* the
 shipped set, and without it `merge_sk_catalog.py` would write a catalogue row for
@@ -414,7 +411,96 @@ Five defect classes came out of it, all now fixed and all re-checked by
 - The two families carry **no prefill binds**; see above for why that is a
   decision rather than an omission.
 
-## Batch 3 -- recorded, fetched, not built (2026-08-20)
+## Batch 3 -- practice directives, ISO, interpersonal violence, appeal (2026-08-21)
+
+`sk_sources_pd.py`. **45 forms, 149 pages, 2,346 fields, 24 binds, zero
+findings.** The catalogue is 121 Saskatchewan templates.
+
+| Category | Forms | Pages | Fields | Binds |
+| --- | --- | --- | --- | --- |
+| Practice Directive - Pre-Trial | 2 | 8 | 56 | 2 |
+| Practice Directive - Affidavit Objections | 2 | 2 | 17 | 0 |
+| Practice Directive - Family Services | 4 | 6 | 64 | 0 |
+| Practice Directive - Summary Hearings | 2 | 2 | 10 | 0 |
+| Practice Directive - Chambers | 1 | 4 | 94 | 1 |
+| Practice Directive - Case Conferences | 5 | 20 | 182 | 1 |
+| Practice Directive - FOAEAA | 6 | 16 | 166 | 12 |
+| Interjurisdictional Support | 17 | 62 | 1,544 | 8 |
+| Interpersonal Violence | 2 | 9 | 137 | 0 |
+| Relocation - Divorce Act (federal) | 3 | 18 | 61 | 0 |
+| Court of Appeal | 1 | 2 | 15 | 0 |
+
+### Cutting a form out of its directive
+
+Directives 3 to 7 publish their forms only as appendices inside the directive,
+so `fetch_sk.obtain` grew a second cut path beside the adoption one. They are
+not the same cut and the difference is the point: an adoption form is found by
+its **own enacting heading**, which is what makes a repagination safe, but a
+practice directive has no enacting heading and titles its appendices
+inconsistently ("FORM A", "APPENDIX B - FORM FAM-PD #7-1", or nothing at all --
+Directive 4's four forms open straight onto "INITIAL SUMMARY"). So the window is
+page numbers, and an out-of-range window raises rather than clipping: a reissued
+directive that grew a page would otherwise ship a short form instead of stopping
+the fetch. All 14 cuts produce exactly the window recorded for them.
+
+The identity check for a cut form reads the **whole directive**, not the window.
+Directive 6 is why: its memo is titled on page 1 and its form starts on page 2
+under a bare "APPENDIX A", so nothing in the window names it.
+
+**Deliberately not cut:** Directive 5's Appendix A (explanatory material for a
+self-represented litigant) and Directive 7's Appendix A (a guide, which the
+catalogue excludes in every province).
+
+**The French trap.** Every directive is bilingual, and the Court of Appeal serves
+its *Formule* 1a from a **later** directory than its Form 1a -- so
+`2023/07/CA_Civ_Form1a.pdf` is French and `2022/09/Form-1a-Notice-of-Appeal.pdf`
+is the English form. Taking the newer URL gets the wrong language.
+
+### The widget path
+
+**20 of the 45 carry the government's own field rectangles** -- all 17 ISO forms
+and the three federal notices, up to 313 widgets on ISO Form I -- so
+"all 76 sources are static PDFs, no widgets, no XFA" stops being true with this
+batch. `build_sk_forms.is_fillable` routes them to `bc_pipeline.extract`, the
+same code Manitoba's copy of the same national set takes and the same code BC's
+Provincial forms take. The background is flattened rather than copied, for the
+reason `mb-forms` §10 gives, and `verify_sk.WIDGET_CHECKS` asks a widget
+template only the questions that still apply to it.
+
+### What the batch taught the detectors
+
+Every fix was checked against the 76 already-shipped templates, whose geometry
+is **byte-identical** before and after -- asserted directly rather than assumed.
+
+- **A rule is a rule whether Word strokes it or fills it.** Part 15 and the two
+  regulation families draw their grids as stroked lines; the practice directives
+  are a different Word export and draw every border as a filled rectangle a
+  half-point thick -- 128 of them on Directive 4's Form A and not one stroked
+  line -- so `grid_cells` returned nothing and the two child tables on the most
+  important form in that family had no fields at all.
+- **Writing lines can be drawn too** (`printed_rule_blanks`), which is
+  `mb-forms`' central primitive arriving in Saskatchewan. Directive 8's Form D
+  page 4 sets all six of its answer lines that way; the page produced no boxes,
+  fell through to `template_prompt_fields` and got one full-page area per label.
+- **Two different headings in one column is two stacked tables**, not the
+  government's own reference data. Directive 4's Form A puts two four-column
+  tables at the same column positions, so signal 2 saw two different strings per
+  column and read all sixteen writing cells as guidance. A genuinely repeated
+  header -- Form 15-47's checklist prints one per block -- is the *same* string
+  and still counts as the evidence that keeps the schedule columns reference.
+- **A page can be a Word template rather than a ruled form**
+  (`template_prompt_fields`). Directive 4's Forms C and D print one drawn object
+  on the whole sheet and set every answer as an italic parenthetical the filer
+  replaces. The box goes in the clear space *after* the prompt, stopping at
+  whatever is printed next on the row, so the guidance stays readable beside it.
+  Guarded by "the page produced nothing else", which is the condition the shape
+  describes and which also keeps it away from all 76 shipped templates.
+- **A band is cut by whatever is *in* it, not by whatever *starts* below it** --
+  the same lesson `mb-forms` README §8 records. Directive 4's Form A sets
+  "SOCIAL WORKER:" 0.4pt above the bottom of the line before it, so the band
+  opened straight over it.
+
+## Batch 3 -- the record of how it was sourced
 
 `sk_sources_pd.py` records what Part 15 and the two regulations do not carry:
 the forms the Court of King's Bench prescribes by **family practice directive**,

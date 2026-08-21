@@ -27,6 +27,36 @@ import fitz
 
 GLYPHS = set("☐☑☒□▢❑❏❒")
 
+# ...and the third vocabulary: an option printed as an ordinary-looking *letter*
+# in a symbol font. WordPerfect's symbol faces map their box onto a character
+# that reads as text, so `get_text()` returns "G" or "9" and nothing about the
+# string says it is a square -- which is why every one of these shipped
+# untickable, and why `check_unticked_marks` could not see them either.
+#
+# Measured on the sources, and the font is required as well as the character:
+# a bare "G" is a letter everywhere else on the same page.
+#
+#   WPTypographicSymbols  "G"  Form FA-1 p1-p2, relocation Schedules A, B, C
+#   WP-IconicSymbolsA     "9"  Forms CFS-19 p2, CFS-20 p2
+#
+# On each of those pages the listed character is the *only* one set in that
+# font, so the pairing is not doing any work it has not been shown to do. The
+# font name is matched as a prefix because a subset carries a tag
+# ("ABCDEF+WPTypographicSymbols").
+SYMBOL_MARKS = {
+    "WPTypographicSymbols": {"G"},
+    "WP-IconicSymbolsA": {"9"},
+}
+
+
+def _symbol_mark(font, char):
+    """Is this character its font's option square?"""
+    stem = font.split("+")[-1]
+    for name, chars in SYMBOL_MARKS.items():
+        if stem.startswith(name) and char in chars:
+            return True
+    return False
+
 # A tick is about as wide as the type is tall; the bracketed sentences on 70W
 # p1 span 459pt and 461pt, so there is three decades of clear air in this cut.
 MAX_MARK_WIDTH = 20.0
@@ -73,8 +103,9 @@ def candidates(page):
     found = []
     for span in _spans(page):
         chars = span.get("chars", [])
+        font = span.get("font", "")
         for i, char in enumerate(chars):
-            if char["c"] in GLYPHS:
+            if char["c"] in GLYPHS or _symbol_mark(font, char["c"]):
                 box = fitz.Rect(char["bbox"])
                 found.append(("glyph", box, [box]))
                 continue

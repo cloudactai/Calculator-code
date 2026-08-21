@@ -9,6 +9,7 @@ The government's own widget rectangles are the authoritative field boxes, so reu
 their geometry means boxes can never land on a printed label.
 """
 import json
+import os
 import re
 import zlib
 
@@ -26,6 +27,37 @@ SIG_DATE_CAPTION = re.compile(r"date of signature", re.I)
 # 0xA8 — the open box the CFCSA forms print, which arrives as a private-use code
 # point rather than as ❑ and so was invisible to every check here.
 BOX_GLYPHS = set("❑☐□⃞◻▢")
+# ...and the same square in the other symbol fonts these batches print it in,
+# each arriving as a private-use code point rather than as its Unicode twin.
+# U+F0A8 above is the Wingdings 0xA8 box the CFCSA forms use; U+F0A3 is the one
+# the interjurisdictional support forms use, 41 times on ISO Form A.1 alone,
+# and U+F07E is the WP-MathA box the Saskatchewan adoption forms use. A
+# checkbox overlay is *supposed* to sit on its printed square, so none of these
+# can count as a label the box has covered.
+BOX_GLYPHS |= {"\uf0a3", "\uf06f", "\uf071", "\uf0fc", "\uf07e"}
+
+# The characters a printed writing rule is made of. A text box is *supposed* to
+# sit on the run of underscores it belongs to, and `get_text("words")` hands the
+# whole run back as a single token -- "$__________", "(________)",
+# "______________________)" -- so a word-level overlap test reads a correctly
+# placed box as covering a label, 201 times on ISO Form I. This is the same
+# reasoning the Manitoba and Saskatchewan verifiers use when they read
+# characters rather than words; a token has to carry an underscore *and* nothing
+# but rule punctuation to be excused, so a real label is still flagged.
+_RULE_CHARS = set("_$()[]{}.,:;-\u2014 \t")
+# Characters that belong to a blank *only when a blank is actually there*: the
+# "20" of "20___", the "%" closing a rate blank, the "(=)" opening a total.
+# Excused only alongside an underscore, so a box covering a printed number, a
+# rate or a list marker on its own is still flagged. Without that condition this
+# set would quietly stop the gate reporting a covered amount, which is the
+# difference between fixing the test and weakening it.
+_RULE_ADJACENT = set("%=/0123456789")
+
+
+def is_writing_rule(word):
+    """A token that is a printed blank rather than a printed label."""
+    stripped = word.strip()
+    return bool(stripped) and "_" in stripped and set(stripped) <= _RULE_CHARS
 
 
 def field_type(widget):
@@ -90,6 +122,7 @@ def extract(source_path, doc_id):
     """
     doc = fitz.open(source_path)
     fields, skipped_signatures, widget_names = [], [], []
+    seen = {}
     index = 0
     for page_number, page in enumerate(doc, start=1):
         captions = signature_captions(page)
@@ -105,6 +138,18 @@ def extract(source_path, doc_id):
             if kind != "CheckBox" and is_signature_box(rect, name, captions):
                 skipped_signatures.append({"page": page_number, "name": name, "why": "signature"})
                 continue
+            key = (page_number, round(rect.x0, 1), round(rect.y0, 1),
+                   round(rect.x1, 1), round(rect.y1, 1))
+            if key in seen:
+                # Two widgets stacked exactly on top of each other are one box
+                # to the filer, and the viewer would draw two controls in the
+                # same place. Manitoba's ISO Form B carries such a pair on page
+                # 2. Recorded as skipped so the count still reconciles with the
+                # source's own widget total.
+                skipped_signatures.append({"page": page_number, "name": name,
+                                           "why": "duplicate of %s" % seen[key]})
+                continue
+            seen[key] = name
             index += 1
             widget_names.append(name)
             fields.append({
@@ -169,6 +214,38 @@ def nudge_off_hint(pdf_path, fields, min_remaining=14.0):
             nudged += 1
     doc.close()
     return nudged
+
+
+def covered_label_chars(page, clip):
+    """Printed characters inside `clip` that are neither rule nor option square.
+
+    The question `check_overlap` is really asking -- is this box sitting on a
+    printed *label*? -- answered against the glyphs actually under the box
+    rather than against the whole token they belong to. A blank's own
+    punctuation is on the rule with it (guide 4's `$`, and the "20" of "20___",
+    the "%" closing a rate blank, the "(=)" opening a total), so those are not
+    a label either.
+    """
+    found = []
+    for block in page.get_text("rawdict", clip=clip)["blocks"]:
+        for line in block.get("lines", []):
+            for span in line["spans"]:
+                for char in span["chars"]:
+                    glyph = char["c"]
+                    if not glyph.strip():
+                        continue
+                    if not fitz.Rect(char["bbox"]).intersects(clip):
+                        continue
+                    found.append(glyph)
+    on_a_rule = "_" in found
+    out = []
+    for glyph in found:
+        if glyph in BOX_GLYPHS or glyph in _RULE_CHARS:
+            continue
+        if on_a_rule and glyph in _RULE_ADJACENT:
+            continue
+        out.append(glyph)
+    return out
 
 
 def printed_chars(page, clip, glyphs):
@@ -848,8 +925,19 @@ def check_overlap(pdf_path, fields):
                     continue
                 if set(word.strip()) <= BOX_GLYPHS:
                     continue  # a checkbox overlay landing on its printed square
+                if is_writing_rule(word):
+                    continue  # a text box landing on the rule it belongs to
                 # Ignore a grazing touch; flag only a box genuinely covering a label.
                 if overlap.get_area() > 0.55 * word_rect.get_area() and word_rect.get_area() > 4:
+                    # Character level, not word level, for the same reason
+                    # `printed_chars` is: the extractor hands back "20________.",
+                    # "(=)$_____________" and "________%" as single tokens, so a
+                    # whole-token test reads a box correctly seated on its rule as
+                    # covering the "20", the "%" or the "=" printed against it.
+                    # What matters is whether anything *other than* the rule is
+                    # under the box.
+                    if not covered_label_chars(page, overlap):
+                        continue
                     flagged.append({"page": page_number, "id": f["id"], "word": word})
                     break
     doc.close()
@@ -876,9 +964,33 @@ def qa_render(pdf_path, fields, out_path, zoom=2.0):
     doc.close()
 
 
+def existing_indent(path, default=1):
+    """The indent a mapping is already written with.
+
+    The catalogue was not all written by this function: Manitoba's
+    child-protection and adoption templates were promoted through a pass that
+    used `indent=2`, and every other template uses `indent=1`. Rewriting one of
+    them to add a `bind` should change the bind and nothing else -- reformatting
+    49 files turns a readable diff into 30,000 lines of whitespace and hides the
+    change it was supposed to show.
+    """
+    if not os.path.exists(path):
+        return default
+    with open(path) as fh:
+        fh.readline()
+        second = fh.readline()
+    stripped = second.lstrip(" ")
+    width = len(second) - len(stripped)
+    return width or default
+
+
 def write_mapping(path, fields):
+    # Read the indent **before** opening for write: `open(path, "w")` truncates
+    # the file, so asking afterwards always sees an empty one and answers with
+    # the default.
+    indent = existing_indent(path)
     with open(path, "w") as fh:
-        json.dump({"staticFields": fields}, fh, indent=1)
+        json.dump({"staticFields": fields}, fh, indent=indent)
         # Trailing newline, like every pass that rewrites a mapping afterwards. Without it
         # a promote churns the six templates no later pass happens to touch, showing them
         # as "\ No newline at end of file" diffs with no field change behind them.

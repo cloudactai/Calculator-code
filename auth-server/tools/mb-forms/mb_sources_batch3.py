@@ -111,6 +111,16 @@ and two differ from the working inventory this batch was requested from:
   byte-identical, which is why each province records its own source.
 """
 
+CATEGORY_ORDER_NAMES = [
+    "Provincial Court - Family Rules",
+    "Relocation - Family Law Act",
+    "Relocation - Divorce Act",
+    "Child Protection - Briefs",
+    "FOAEAA",
+    "Interjurisdictional Support",
+    "Protection Orders",
+]
+
 COURT_PC = "Provincial Court"
 COURT_KB = "King's Bench"
 COURT_EITHER = "King's Bench / Provincial Court"
@@ -120,10 +130,11 @@ COURTS_ASSET = "https://www.manitobacourts.mb.ca/site/assets/files/%s/%s"
 ISO_BASE = "https://www.gov.mb.ca/familylaw/money/pdf/%s.pdf"
 FED_BASE = "https://www.justice.gc.ca/eng/fl-df/divorce/pdf/%s.pdf"
 
-# Nothing in this batch is built, catalogued or bound yet -- see the module
-# docstring. Turning a family on is adding its category name here, once its
-# pages have been read.
-SHIPPED_CATEGORIES = set()
+# All seven families are built, catalogued and bound as of 2026-08-20, after
+# every page of every form was rendered against its government source and
+# against its own overlay. The set is kept rather than replaced by a boolean
+# because it is still the switch a later family would be added through.
+SHIPPED_CATEGORIES = set(CATEGORY_ORDER_NAMES)
 
 # --- Provincial Court Family Rules, M.R. 87/88R ------------------------------
 # Manitoba's equivalent of BC's Provincial Court Family Rules batch. Prescribed
@@ -310,20 +321,12 @@ FED_FORMS = [
     ("3", "ncpr-aclr", "Notice of Change in Place of Residence: Person with Contact", 5),
 ]
 
-CATEGORY_ORDER = [
-    "Provincial Court - Family Rules",
-    "Relocation - Family Law Act",
-    "Relocation - Divorce Act",
-    "Child Protection - Briefs",
-    "FOAEAA",
-    "Interjurisdictional Support",
-    "Protection Orders",
-]
+CATEGORY_ORDER = list(CATEGORY_ORDER_NAMES)
 
 
 def _row(doc_id, form_no, title, court, category, short_title, source_file,
          pages, url, citation, source_format="pdf", number_check=None,
-         text_check=None):
+         text_check=None, catalog_title=None):
     """One source row.
 
     `numberCheck` is the form number as the form itself prints it, which is what
@@ -335,6 +338,7 @@ def _row(doc_id, form_no, title, court, category, short_title, source_file,
     return {
         "numberCheck": number_check,
         "textCheck": text_check,
+        "catalogTitle": catalog_title,
         "docId": doc_id,
         "formNo": form_no,
         "title": title,
@@ -356,9 +360,10 @@ def provincial_court_sources():
     for form_no, title, pages in PC_FORMS:
         src = "form_%se.pdf" % form_no
         out.append(_row(
-            "MBPC_%s" % form_no, "Form %s" % form_no, title, COURT_PC,
+            "MBPC_%s" % form_no, form_no, title, COURT_PC,
             "Provincial Court - Family Rules", "MB PC %s" % form_no, src, pages,
-            KP_FORMS % (PC_DIR, src), PC_CITATION, number_check=form_no))
+            KP_FORMS % (PC_DIR, src), PC_CITATION, number_check=form_no,
+            catalog_title="Provincial Court Form %s - %s" % (form_no, title)))
     return out
 
 
@@ -370,7 +375,8 @@ def relocation_sources():
             "MBREL_%s" % sched, "Schedule %s" % sched, title, COURT_KB,
             "Relocation - Family Law Act", "MB Reloc %s" % sched, src, pages,
             KP_FORMS % (RELOC_DIR, src), RELOC_CITATION,
-            text_check=title.replace(" Form", "").lower()))
+            text_check=title.replace(" Form", "").lower(),
+            catalog_title="Schedule %s - %s" % (sched, title)))
     return out
 
 
@@ -382,7 +388,8 @@ def brief_sources():
             "Child Protection - Briefs", "MB CP Brief", src, pages,
             COURTS_ASSET % (BRIEF_ASSET_DIR, src),
             "Court of King's Bench child-protection practice material",
-            source_format="doc", text_check=title.lower()))
+            source_format="doc", text_check=title.lower(),
+            catalog_title=title))
     return out
 
 
@@ -393,12 +400,13 @@ def foaeaa_sources():
     for package, part, src, pages in FOAEAA_FORMS:
         form_no = "%s%s" % (package, part)
         out.append(_row(
-            "MBFOA_%s%s" % (package, part.upper()), "Form %s" % form_no,
+            "MBFOA_%s%s" % (package, part.upper()), form_no,
             "%s -- %s" % (parts[part], packages[package]), COURT_KB, "FOAEAA",
             "MB FOAEAA %s" % form_no, src, pages,
             COURTS_ASSET % (FOAEAA_ASSET_DIR, src),
             "Family Orders and Agreements Enforcement Assistance Act (Canada)",
-            source_format="docx", number_check=form_no.upper()))
+            source_format="docx", number_check=form_no.upper(),
+            catalog_title="FOAEAA Form %s - %s" % (form_no.upper(), parts[part])))
     return out
 
 
@@ -408,13 +416,14 @@ def iso_sources():
         doc_stem = form_no.replace(".", "_")
         label = form_no if form_no not in ("AFFIDAVIT", "LOCATE") else ""
         out.append(_row(
-            "MBISO_%s" % doc_stem,
-            ("Form %s" % form_no) if label else title, title, COURT_KB,
+            "MBISO_%s" % doc_stem, form_no if label else title, title, COURT_KB,
             "Interjurisdictional Support",
             ("MB ISO %s" % form_no) if label else "MB ISO",
             "%s.pdf" % slug, pages, ISO_BASE % slug, ISO_CITATION,
             number_check=form_no if label else None,
-            text_check=None if label else ISO_TEXT_CHECK[form_no]))
+            text_check=None if label else ISO_TEXT_CHECK[form_no],
+            catalog_title=("ISO Form %s - %s" % (form_no, title)) if label
+            else "ISO %s" % title))
     return out
 
 
@@ -426,7 +435,8 @@ def protection_order_sources():
             "Protection Orders", "MB %s" % form_no, src, pages,
             COURTS_ASSET % (PO_ASSET_DIR, src),
             "The Domestic Violence and Stalking Act, C.C.S.M. c. D93",
-            text_check=PO_TEXT_CHECK[key]))
+            text_check=PO_TEXT_CHECK[key],
+            catalog_title="%s - %s" % (form_no, title)))
     return out
 
 
@@ -438,7 +448,8 @@ def federal_relocation_sources():
             "MBDIV_%s" % form_no, "Form %s" % form_no, title, COURT_KB,
             "Relocation - Divorce Act", "MB Divorce Act %s" % form_no,
             "%s.pdf" % slug, pages, FED_BASE % slug, FED_CITATION,
-            text_check=title.split(":")[0].lower()))
+            text_check=title.split(":")[0].lower(),
+            catalog_title="Divorce Act Form %s - %s" % (form_no, title)))
     return out
 
 

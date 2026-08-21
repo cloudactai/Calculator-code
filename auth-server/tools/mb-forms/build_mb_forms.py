@@ -115,6 +115,10 @@ GRID_TOL = 1.5          # two rules this close are the same rule
 GRID_COVER = 0.80       # a border must run this much of the cell's edge
 # A cell taller than this many lines is a paragraph box, not a one-line cell.
 TEXTAREA_LINES = 1.75
+# How much of a cell a label may fill and still be read as a question answered
+# beside it, when it carries no colon. Measured on the relocation schedules:
+# "Proposed date of relocation" uses 0.36 of its row.
+CAPTION_MAX_FILL = 0.55
 # Manitoba shades its table heading rows grey and leaves data rows white.
 # Measured on Form 70D.5 p1: heading cells read 191-208, data cells 255.
 SHADED_BELOW = 248
@@ -172,9 +176,18 @@ MB_SIG_EXCLUDE = re.compile(r"\bdate\b", re.I)
 # nothing but the office. Parentheses are allowed here because Manitoba writes
 # both "(judge)" and "Deputy Registrar", and a court officer is never a party, so
 # there is no name blank for this to take by mistake.
+# **No parentheses**, for the reason `MB_PARTY_CAPTION` gives below: Manitoba
+# parenthesises the caption of a blank where a *name* is typed and leaves a
+# signature caption bare. Form 70G p1's "order granted by ______ of ______" is
+# captioned "(judge)" and "(court)" and asks for the judge's and the court's
+# name; Form 70E.1 p2's "Issued by ______" over a bare "Deputy Registrar" is
+# where the registrar signs. Accepting the optional bracket read Forms 70G,
+# 70H, 70X, 70Y and CFS-12 as signature lines and deleted the blank that
+# identifies the judge -- which product review flagged on 2026-08-20 as "read
+# the sentence and surrounding labels before suppressing it".
 MB_OFFICE_CAPTION = re.compile(
-    r"^\s*\(?\s*(deputy\s+)?(local\s+)?(registrar|judge|justice|clerk|"
-    r"associate\s+judge)\s*\)?\s*$", re.I)
+    r"^\s*(deputy\s+)?(local\s+)?(registrar|judge|justice|clerk|"
+    r"associate\s+judge)\s*$", re.I)
 
 # **The party alone**, which Rule 70 never needed: it captions every party
 # signature "Signature of X", so a bare role word only ever named an officer. The
@@ -201,8 +214,15 @@ MB_OFFICE_CAPTION = re.compile(
 _QUALIFIER = (r"(?:deputy\s+|local\s+|associate\s+|executive\s+|regional\s+|"
               r"area\s+|agency\s+|case\s+conference\s+|prospective\s+|"
               r"adoptive\s+)*")
+# "of the child", "of Child and Family Services" -- and "of Court" / "of the
+# Court" / "of Provincial Court", which the Provincial Court Family Rules forms
+# close with: Form 1 p1 sets "Issued by ______" over a bare "Clerk of Court",
+# and that is where the clerk signs, not a blank the filer types in. Only these
+# four; a role qualified by anything else is not one of the offices this list is
+# about.
 _SUFFIX = (r"s?(?:\s+[A-Z])?"
-           r"(?:\s+of\s+(?:child\s+and\s+family\s+services|the\s+child))?")
+           r"(?:\s+of\s+(?:child\s+and\s+family\s+services|the\s+child|"
+           r"(?:the\s+)?(?:provincial\s+)?court))?")
 
 
 def _role_caption(words):
@@ -213,8 +233,22 @@ def _role_caption(words):
 
 
 MB_PARTY_CAPTION = _role_caption(
-    r"registrar|judge|justice|clerk|witness|parent|guardian|agency|director|"
+    r"registrar|judge|justice|clerk|parent|guardian|agency|director|"
     r"manager|deponent|informant|interpreter|mother|father")
+
+# **"Witness" is the one role in that list whose rule is not a signature.**
+# Manitoba pairs a signer with a witness on one line -- "Witness    Signature",
+# "Witness    Respondent" -- and the witness's own rule is where the witness
+# writes their *name*, which is why product review on 2026-08-20 asked for "an
+# input on every line labelled Witness and none on the corresponding signature
+# line". Form AA-5 p2 had the mistake both ways round: no field where the
+# witness prints, and a field on the line the party signs.
+#
+# It still has to be recognised, because it is the anchor `MB_AMBIGUOUS_ROLE`
+# resolves against -- a bare "Respondent" is a signature caption *because*
+# "Witness" shares its line -- so it marks the block without condemning its own
+# rule.
+MB_WITNESS_CAPTION = _role_caption(r"witness")
 
 # **The four roles that are not evidence on their own.** "Petitioner",
 # "Respondent", "Applicant" and "Co-petitioner" caption a signature line on Forms
@@ -306,22 +340,27 @@ def signature_captions(page):
     "Respondent" is a signature caption where it shares a line with one, and a
     column label where it stands alone (see the pattern's own note).
     """
-    out, maybe = [], []
+    out, maybe, anchors = [], [], []
     for block in page.get_text("dict")["blocks"]:
         for line in block.get("lines", []):
             text = "".join(span["text"] for span in line["spans"])
             if MB_SIG_EXCLUDE.search(text) or MB_SIG_KEEP.search(text):
                 continue
             rect = fitz.Rect(line["bbox"])
-            if (MB_SIG_CAPTION.search(text) or MB_COMMISSIONER.search(text)
+            if MB_WITNESS_CAPTION.match(text):
+                # Marks the signature block for the ambiguous-role test below
+                # but keeps its own rule: see MB_WITNESS_CAPTION.
+                anchors.append(rect)
+            elif (MB_SIG_CAPTION.search(text) or MB_COMMISSIONER.search(text)
                     or MB_OFFICE_CAPTION.match(text)
                     or MB_PARTY_CAPTION.match(text)):
                 out.append(rect)
+                anchors.append(rect)
             elif MB_AMBIGUOUS_ROLE.match(text):
                 maybe.append(rect)
     for rect in maybe:
         if any(abs(other.y0 - rect.y0) <= SAME_LINE_TOL and other != rect
-               for other in out):
+               for other in anchors):
             out.append(rect)
     return out
 
@@ -984,8 +1023,21 @@ def caption_tail(rect, inside, text):
     its cell over several lines is a heading, not a question, and a label with no
     room left after it has nowhere to put the answer.
     """
-    if not text.rstrip().endswith(":") or not inside:
+    # **The colon, or half the cell left empty after a one-line label.**
+    # Manitoba's own forms mark the "answer me inside myself" cell with a colon
+    # (Form 70W's "Address:", "Date of Birth:"), and that is the reliable
+    # signal. The relocation schedules add a second shape: a bold row label with
+    # no colon at all -- "Proposed date of relocation" -- with three-quarters of
+    # the row left blank beside it. A label that is genuinely a heading fills its
+    # row or is followed by its own answer cell, so requiring *most of the cell
+    # to still be empty* separates the two without loosening the colon rule for
+    # anything that already relies on it.
+    if not inside:
         return None
+    if not text.rstrip().endswith(":"):
+        used = max(box.x1 for box, _char in inside) - rect.x0
+        if used > (rect.x1 - rect.x0) * CAPTION_MAX_FILL:
+            return None
     top = min(box.y0 for box, _char in inside)
     bottom = max(box.y1 for box, _char in inside)
     if bottom - top > CAPTION_MAX_LINE:
@@ -1578,6 +1630,163 @@ def _field(doc_id, index, rect, kind, size=9):
     }
 
 
+# A row label's answer sits in the next cell along, so the label's own cell gets
+# nothing. Two cells share a row when their tops agree within this.
+ROW_TOL = 2.0
+# Clear space under a cell's printed label, below which it is not worth a box.
+CELL_BAND_MIN = 22.0
+
+
+def _row_has_empty_neighbour(rect, cells):
+    """Is this labelled cell a row label, with its answer in the next column?
+
+    Manitoba's own rule is that a cell may ask its question and be answered
+    inside itself -- Form 70W prints "Address:" and expects the answer after the
+    colon in the same box. The relocation schedules do the opposite and print
+    "Name:" in its own narrow cell with a wide empty one beside it, which is
+    Saskatchewan's arrangement (guide 9.3). Both are ruled tables and the cell
+    alone cannot tell them apart; **the row can**. If something empty sits to the
+    right on the same row, that is where the answer goes, and a box after the
+    colon would be a second field for one question -- which is what Schedule A
+    p1 had, on every line of Part A.
+    """
+    for other, text, _dollar, _caption in cells:
+        if other == rect or text:
+            continue
+        if abs(other.y0 - rect.y0) > ROW_TOL:
+            continue
+        if other.x0 >= rect.x1 - 1:
+            return True
+    return False
+
+
+def _row_is_one_line(page, rect, cells):
+    """Does this empty cell sit in a row whose labels are a single line?
+
+    An empty cell says nothing about how much is meant to be written in it --
+    only its height, and `box.height / (SCALE * 6)` reads a 20pt row as 1.93
+    lines and hands the filer a resizable area to type a name into. **The row's
+    own labels do say**: Schedule A p1 sets "Name:", "Current address:" and
+    "Current phone number:" one line each beside the cells the answers go in, so
+    those cells are one line too. A cell whose row label wraps, or which has no
+    labelled sibling at all, is left to the height rule.
+    """
+    for other, text, _dollar, _caption in cells:
+        if other == rect or not text:
+            continue
+        if abs(other.y0 - rect.y0) > ROW_TOL:
+            continue
+        printed = 0
+        for block in page.get_text("dict", clip=other + (1, 1, -1, -1))["blocks"]:
+            for line in block.get("lines", []):
+                if "".join(span["text"] for span in line["spans"]).strip():
+                    printed += 1
+        return printed == 1
+    return False
+
+
+def _cell_answer_band(page, rect):
+    """The clear space under a cell's printed text, if it is worth a box.
+
+    A labelled cell is not automatically non-writable: the relocation schedules
+    set "Children's names" and the paragraph explaining them at the top of a
+    215pt cell and leave the rest of it blank for the answer, and Form CA-1 p2
+    does the same across nearly the whole page (README, "A labelled table cell
+    can still contain writable space"). Segment the label from the answer rather
+    than refusing the cell.
+    """
+    inner = rect + (1.5, 1.5, -1.5, -1.5)
+    bottom = inner.y0
+    for block in page.get_text("dict", clip=inner)["blocks"]:
+        for line in block.get("lines", []):
+            text = "".join(span["text"] for span in line["spans"])
+            if text.strip():
+                bottom = max(bottom, fitz.Rect(line["bbox"]).y1)
+    band = fitz.Rect(inner.x0, bottom + EDGE_CLEARANCE, inner.x1, inner.y1)
+    if band.height < CELL_BAND_MIN or band.width < MIN_BLANK_WIDTH:
+        return None
+    return band
+
+
+def dollar_twin_slots(page, boxes):
+    """An amount slot for a printed `$` the page gives no rule or cell.
+
+    Guide 4 says a `$` the government prints is a place a figure is typed, and
+    `check_dollar_slots` asks the question directly. Manitoba almost always
+    draws the rule beside it -- but not always: Provincial Court Form 4 page 5
+    sets its expense rows as "Parking  $______" and then closes the block with
+    "SUBTOTAL  $" and no rule at all, so the one figure that is the sum of the
+    column had nowhere to go.
+
+    The remedy is the one guide 9.6 gives for a caption with no writing area:
+    **copy the twin.** Every other `$` on the page is the same column, so the
+    slot takes its left edge from its own `$` and its right edge from the
+    nearest `$` that does have a box. Nothing is invented; a page with no
+    twin gets nothing.
+    """
+    dollars = []
+    for text, char_boxes, _sizes in line_chars(page):
+        for index, char in enumerate(text):
+            if char == "$":
+                dollars.append(char_boxes[index])
+    if len(dollars) < 2:
+        return []
+    served, orphans = [], []
+    for glyph in dollars:
+        probe = fitz.Rect(glyph.x1, glyph.y0 - 2, glyph.x1 + 6, glyph.y1 + 2)
+        if any(probe.intersects(rect) for rect, _kind in boxes):
+            served.append(glyph)
+        else:
+            orphans.append(glyph)
+    out = []
+    for glyph in orphans:
+        twin = None
+        for other in served:
+            if twin is None or abs(other.y0 - glyph.y0) < abs(twin.y0 - glyph.y0):
+                twin = other
+        if twin is None:
+            continue
+        right = None
+        for rect, _kind in boxes:
+            if rect.x0 >= twin.x1 - 1 and abs(rect.y0 - twin.y0) < 6:
+                right = rect.x1 if right is None else max(right, rect.x1)
+        if right is None or right - glyph.x1 < MIN_BLANK_WIDTH:
+            continue
+        height = glyph.height * LINE_RATIO
+        out.append(fitz.Rect(glyph.x1 + 1.5, glyph.y1 - height, right, glyph.y1))
+    return out
+
+
+# Two boxes in the same column may not overlap vertically at all: the viewer
+# draws a bordered control inside each, so even a fraction of a point puts one
+# border through the other. Applied after everything else has decided where the
+# boxes go, so it only ever trims.
+STACK_CLEARANCE = 0.4
+
+
+def cap_stacking(boxes):
+    """Trim a box's bottom off the top of the box below it in its column."""
+    out = []
+    for rect, kind in boxes:
+        if kind == "CheckBox":
+            out.append((rect, kind))
+            continue
+        floor = rect.y1
+        for other, other_kind in boxes:
+            if other is rect or other_kind == "CheckBox":
+                continue
+            if other.y0 <= rect.y0 + 0.5 or other.y0 >= rect.y1:
+                continue
+            if other.x1 <= rect.x0 + 1 or other.x0 >= rect.x1 - 1:
+                continue  # a different column
+            floor = min(floor, other.y0 - STACK_CLEARANCE)
+        if floor - rect.y0 < 6:
+            out.append((rect, kind))
+            continue
+        out.append((fitz.Rect(rect.x0, rect.y0, rect.x1, floor), kind))
+    return out
+
+
 def page_boxes(page):
     """Every candidate box on one page, as (rect, type), in reading order."""
     marks = checkboxes(page)
@@ -1594,7 +1803,13 @@ def page_boxes(page):
     filled_cells = []
     for rect, text, dollar, caption in cells:
         if text and caption is None:
+            band = _cell_answer_band(page, rect)
+            if band is not None and not any(mark.intersects(rect) for mark in marks):
+                boxes.append((band, "TextArea"))
+                filled_cells.append(rect)
             continue  # the government already wrote this cell's name (guide 9.3)
+        if caption is not None and _row_has_empty_neighbour(rect, cells):
+            continue  # a row label; its answer is the empty cell beside it
         if any(mark.intersects(rect) for mark in marks):
             continue  # a tick's own cell -- the printed checkbox is the field
         kind = kinds[(round(rect.x0, 0), round(rect.x1, 0))]
@@ -1636,8 +1851,19 @@ def page_boxes(page):
         if (dollar is None and round(rect.y0) not in total_rows
                 and is_shaded(pix, page, box)):
             continue  # a shaded heading row (guide 9.2)
-        lines = box.height / (SCALE * 6.0)
-        boxes.append((box, "TextArea" if lines > TEXTAREA_LINES else "TextField"))
+        if caption is not None:
+            # The answer goes after a label printed on one line, so it is one
+            # line -- the same reasoning that makes a `$` cell always a
+            # TextField. Measured against the cell instead, Schedule A p1's
+            # 20pt "Name:" row came out at 1.93 "lines" and every field in
+            # Part A was a resizable area for a single name.
+            kind = "TextField"
+        elif _row_is_one_line(page, rect, cells):
+            kind = "TextField"
+        else:
+            lines = box.height / (SCALE * 6.0)
+            kind = "TextArea" if lines > TEXTAREA_LINES else "TextField"
+        boxes.append((box, kind))
         filled_cells.append(rect)
 
     kept = []
@@ -1713,7 +1939,9 @@ def page_boxes(page):
         boxes.append((band, "TextArea"))
     for band in narrative_prompt_bands(page, surviving(), cells, every()):
         boxes.append((band, "TextArea"))
-    return clear_of_type(page, dedupe(boxes))
+    for slot in dollar_twin_slots(page, boxes):
+        boxes.append((slot, "TextField"))
+    return cap_stacking(clear_of_type(page, dedupe(boxes)))
 
 
 def dedupe(boxes, tolerance=2.0):
@@ -1920,6 +2148,76 @@ def hand_finished(doc_id):
     return ["%d bind(s)" % bound] if bound else []
 
 
+def is_fillable(source):
+    """Does this source carry the government's own field rectangles?
+
+    Batches 1 and 2 are static Word-derived PDFs with no widget layer, which is
+    why every box in them is read off a printed anchor. Batch 3 is not uniform:
+    the ISO set, the two protection-order applications and the three federal
+    notices are AcroForm (three of the ISO forms are XFA on top of that), and
+    where the form declares its own rectangles, detecting anchors instead is
+    strictly worse -- ISO Form A.1 offers 112 declared widgets against the 0
+    rules and 25 underscore runs `page_boxes` finds on it.
+
+    Asked of the file rather than read from the manifest, so a rebuild cannot
+    disagree with a stale fetch. `page.widgets()` is a generator and therefore
+    always truthy, so it has to be drained rather than tested.
+    """
+    doc = fitz.open(source)
+    try:
+        return any(len(list(page.widgets())) for page in doc)
+    finally:
+        doc.close()
+
+
+def build_from_widgets(src, doc_id, source, promote):
+    """The widget path: the form's own rectangles, and a flattened background.
+
+    `bc_pipeline.extract` is the same code BC's Provincial forms take, including
+    its geometric signature rule -- a short box printed directly above a
+    "Signature..." caption gets no control, which is the pipeline's rule
+    everywhere and the one thing a widget list will not tell you.
+
+    **The background is flattened, not copied.** This is the one respect in
+    which these templates differ from every other Manitoba one: leaving the
+    widget layer in place would put the government's own AcroForm fields
+    underneath our overlay, and the viewer would render two controls per blank.
+    `flatten_background` deletes the widget annotations and the /AcroForm entry;
+    the printed rules and captions live in the page content stream and are
+    untouched, which the page-count assertion below and the review's own
+    source-versus-overlay comparison both check.
+    """
+    fields, audit = bp.extract(source, doc_id)
+    os.makedirs(OUT, exist_ok=True)
+    os.makedirs(QA, exist_ok=True)
+    background = os.path.join(OUT, "%s.pdf" % doc_id)
+    pages = bp.flatten_background(source, background)
+    page_sizes = audit["pageSizes"]
+    if pages != len(page_sizes):
+        raise SystemExit("%s: flatten changed the page count" % doc_id)
+    bp.clamp_to_page(fields, page_sizes)
+    problems = bp.check_geometry(fields, page_sizes)
+    overlaps = bp.check_overlap(background, fields)
+    bp.write_mapping(os.path.join(OUT, "%s.json" % doc_id), fields)
+    bp.qa_render(background, fields, os.path.join(QA, "%s_qa.pdf" % doc_id))
+    kinds = {}
+    for field in fields:
+        kinds[field["type"]] = kinds.get(field["type"], 0) + 1
+    print("%-13s pages=%-3d fields=%-4d %-42s sig-skipped=%-3d geom=%-2d overlap=%d  [widgets]"
+          % (doc_id, len(page_sizes), len(fields), kinds,
+             audit["signaturesSkipped"], len(problems), len(overlaps)))
+    if problems:
+        print("   geometry:", problems[:4])
+    if promote and not problems:
+        for extension in ("pdf", "json"):
+            os.replace(os.path.join(OUT, "%s.%s" % (doc_id, extension)),
+                       os.path.join(EXPORT, "%s.%s" % (doc_id, extension)))
+    return {"docId": doc_id, "pages": len(page_sizes), "fields": len(fields),
+            "kinds": kinds, "signatureSkipped": audit["signaturesSkipped"],
+            "geometry": problems, "overlap": overlaps, "source": "widgets",
+            "widgetNames": audit["widgetNames"]}
+
+
 def build(src, promote=False, force=False):
     doc_id = src["docId"]
     blockers = hand_finished(doc_id) if promote else []
@@ -1928,6 +2226,8 @@ def build(src, promote=False, force=False):
               "overwrite, or repair it in place)" % (doc_id, ", ".join(blockers)))
         promote = False
     source = os.path.join(STAGE, "%s_source.pdf" % doc_id)
+    if is_fillable(source):
+        return build_from_widgets(src, doc_id, source, promote)
     doc = fitz.open(source)
     page_sizes = [[round(p.rect.width, 1), round(p.rect.height, 1)] for p in doc]
     fields, skipped = [], 0
@@ -1971,7 +2271,7 @@ def build(src, promote=False, force=False):
                        os.path.join(EXPORT, "%s.%s" % (doc_id, extension)))
     return {"docId": doc_id, "pages": len(page_sizes), "fields": len(fields),
             "kinds": kinds, "signatureSkipped": skipped,
-            "geometry": problems, "overlap": overlaps}
+            "geometry": problems, "overlap": overlaps, "source": "anchors"}
 
 
 def main():

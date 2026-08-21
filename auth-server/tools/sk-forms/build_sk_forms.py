@@ -42,7 +42,7 @@ sys.path.insert(0, HERE)
 sys.path.insert(0, os.path.join(os.path.dirname(HERE), "bc-forms"))
 
 import bc_pipeline as bp  # noqa: E402
-from sk_sources import shipped_sources  # noqa: E402
+from sk_sources import all_sources, shipped_sources  # noqa: E402
 
 EXPORT = os.path.join(os.path.dirname(os.path.dirname(HERE)), "form-template-export")
 STAGE = os.path.join(EXPORT, "_incoming_sk")
@@ -526,20 +526,52 @@ def checkboxes(page):
     return out
 
 
+# A table border drawn as a filled rectangle is a border up to this thickness.
+# Measured on the practice-directive sources: every one is 0.48pt, and the next
+# thicker filled rect on those pages is the title's 1.2pt underline, so the cut
+# has room in it. Same constant Manitoba calls RULE_MAX_THICK, for the same
+# primitive.
+FILL_RULE_MAX_THICK = 1.0
+
+
 def _segments(page):
-    """Horizontal and vertical rules as [key, from, to] lists."""
+    """Horizontal and vertical rules as [key, from, to] lists.
+
+    **A rule is a rule whether Word strokes it or fills it.** Part 15 and the two
+    regulation families draw their grids as stroked lines, so this only ever
+    needed the `"s"` path. The practice directives are a different Word export
+    and draw every table border as a *filled rectangle* a half-point thick --
+    128 of them on Directive 4's Form A, and not one stroked line -- so
+    `grid_cells` returned nothing and the two child tables on the most important
+    form in that family had no fields at all. This is exactly the primitive
+    `tools/mb-forms` was written around; the difference is that here it is a
+    border rather than a writing line.
+    """
     horizontal, vertical = [], []
     for drawing in page.get_drawings():
-        if drawing["type"] != "s":
-            continue
-        for item in drawing["items"]:
-            if item[0] != "l":
-                continue
-            a, b = item[1], item[2]
-            if abs(a.y - b.y) < 0.6 and abs(a.x - b.x) > 1:
-                horizontal.append([round((a.y + b.y) / 2, 1), min(a.x, b.x), max(a.x, b.x)])
-            elif abs(a.x - b.x) < 0.6 and abs(a.y - b.y) > 1:
-                vertical.append([round((a.x + b.x) / 2, 1), min(a.y, b.y), max(a.y, b.y)])
+        kind = drawing["type"]
+        if kind == "s":
+            for item in drawing["items"]:
+                if item[0] != "l":
+                    continue
+                a, b = item[1], item[2]
+                if abs(a.y - b.y) < 0.6 and abs(a.x - b.x) > 1:
+                    horizontal.append([round((a.y + b.y) / 2, 1),
+                                       min(a.x, b.x), max(a.x, b.x)])
+                elif abs(a.x - b.x) < 0.6 and abs(a.y - b.y) > 1:
+                    vertical.append([round((a.x + b.x) / 2, 1),
+                                     min(a.y, b.y), max(a.y, b.y)])
+        elif kind == "f":
+            for item in drawing["items"]:
+                if item[0] != "re":
+                    continue
+                rect = fitz.Rect(item[1])
+                if rect.height <= FILL_RULE_MAX_THICK and rect.width > 1:
+                    horizontal.append([round((rect.y0 + rect.y1) / 2, 1),
+                                       rect.x0, rect.x1])
+                elif rect.width <= FILL_RULE_MAX_THICK and rect.height > 1:
+                    vertical.append([round((rect.x0 + rect.x1) / 2, 1),
+                                     rect.y0, rect.y1])
     return _merge_segments(horizontal), _merge_segments(vertical)
 
 
@@ -676,7 +708,7 @@ def check_glyph_xs(page):
     return out
 
 
-def classify_columns(page, cells):
+def classify_columns(page, cells, heading_rows=()):
     """Split a page's table columns into printed reference, tick, and fillable data.
 
     Saskatchewan's checklists are the reason this exists. Form 15-47 pages 3-5
@@ -707,11 +739,30 @@ def classify_columns(page, cells):
        is part of that grid. A tick column is never reclassified this way -- its
        neighbour is the row-number column, which is equally narrow and reference.
 
-    Returns {column key: "reference" | "tick" | "data"}.
+    Returns ({(table, x0, x1): "reference" | "tick" | "data"}, {row top: table}).
+    The table map is returned rather than recomputed by the caller so the two
+    always agree about where one table ends and the next begins.
     """
     columns = collections.defaultdict(list)
     for rect, text, _dollar in cells:
-        columns[(round(rect.x0, 0), round(rect.x1, 0))].append((rect, text))
+        # **A column belongs to a table, not to a page.** Signal 2 reads a
+        # column whose non-empty cells differ as the government's own reference
+        # data. A page carrying two tables one above the other hands every
+        # column exactly that -- Directive 4's Form A stacks a "Child's Name /
+        # Date of Birth / Mother / Father" table over a "Dates / Child's Name /
+        # Legal Status / Time Out of Parental Care" one at the same four column
+        # positions, so each column held two different headers and all sixteen
+        # writing cells were read as printed guidance.
+        #
+        # Keying by table fixes it without touching what Form 15-47 relies on.
+        # Excluding heading rows from the evidence, which is how Manitoba solves
+        # its own version of this, does not: the checklist's schedule columns
+        # carry nothing *but* headers and dots, and dropping the headers left
+        # column 7 with no evidence and its narrow-column neighbours with none
+        # either, which put twelve boxes into the middle of the government's
+        # reference grid on page 4.
+        columns[(round(rect.x0, 0), round(rect.x1, 0))].append(
+            (rect, text, round(rect.y0) in heading_rows))
 
     ticks = check_glyph_xs(page)
     kinds = {}
@@ -719,13 +770,28 @@ def classify_columns(page, cells):
         if any(key[0] <= x <= key[1] for x in ticks):
             kinds[key] = "tick"
             continue
-        printed = {text for _rect, text in members if text}
+        headings = {text for _rect, text, heading in members if text and heading}
+        if len(headings) > 1:
+            # **Two different headings in one column is two stacked tables**,
+            # not the government's own reference data. Directive 4's Form A puts
+            # a "Child's Name / Date of Birth / Mother / Father" table directly
+            # above a "Dates / Child's Name / Legal Status / Time Out of
+            # Parental Care" one at the same four column positions, so signal 2
+            # saw two different strings per column and read all sixteen writing
+            # cells as guidance. A genuinely repeated header -- which is what
+            # Form 15-47's checklist prints once per block -- is the *same*
+            # string every time and collapses to one, so it still counts as the
+            # evidence that keeps the schedule columns reference.
+            printed = {text for _rect, text, heading in members
+                       if text and not heading}
+        else:
+            printed = {text for _rect, text, _heading in members if text}
         kinds[key] = "reference" if len(printed) > 1 else "data"
 
     keys = sorted(columns)
 
     def neighbour(key, side):
-        """The column sharing this one's left or right border."""
+        """The column sharing this one's left or right border, in its own table."""
         for other in keys:
             if other == key:
                 continue
@@ -744,7 +810,7 @@ def classify_columns(page, cells):
     for key in keys:
         if kinds[key] != "data" or key[1] - key[0] > NARROW_COLUMN:
             continue
-        if any(text for _rect, text in columns[key]):
+        if any(text for _rect, text, _heading in columns[key]):
             continue
         left, right = neighbour(key, "left"), neighbour(key, "right")
         if left is None or right is None:
@@ -863,6 +929,66 @@ BAND_MIN, BAND_MAX = 22.0, 260.0
 BAND_FOOTER = 45.0
 
 
+# A drawn writing rule is at most this thick, and must be at least this long to
+# be worth a field. Measured on the practice directives: every writing rule is
+# 0.48pt thick and the shortest is 63pt.
+DRAWN_RULE_MIN_WIDTH = 24.0
+# How far above a rule the box sits, and how tall it is. Matches the underscore
+# path's seating so a page mixing both looks the same.
+DRAWN_RULE_HEIGHT = 12.0
+RULE_NUDGE_MIN = 0.6
+
+
+def printed_rule_blanks(page):
+    """Writing lines the form *draws* rather than setting as underscores.
+
+    Part 15 and the two regulation families print every blank as a run of
+    underscores, which is why `underscore_blanks` was the only text path this
+    builder ever needed. The practice directives are a different Word export and
+    draw theirs as thin filled rectangles -- Directive 8's Form D page 4 sets
+    all six of "Telephone number:", "Fax number (if any):", "E-mail address (if
+    any):" that way, and the page produced no boxes at all, then fell through to
+    `template_prompt_fields` and got one full-page area per label.
+
+    This is `mb-forms`' central primitive arriving in Saskatchewan. It is
+    deliberately narrower than Manitoba's: a rule only counts where it is
+    **not part of a grid** (no vertical crosses it, so it is not a table border)
+    and something is **printed to its left on its own line** (so it is an answer
+    to a caption, not a heading's underline or a footer separator).
+    """
+    horizontal, vertical = _segments(page)
+    if not horizontal:
+        return []
+    rows = []
+    for block in page.get_text("dict")["blocks"]:
+        for line in block.get("lines", []):
+            text = "".join(span["text"] for span in line["spans"])
+            if text.strip():
+                rows.append((fitz.Rect(line["bbox"]), text))
+    out = []
+    for key, start, end in horizontal:
+        if end - start < DRAWN_RULE_MIN_WIDTH:
+            continue
+        if any(abs(vk - x) < 2 and vs <= key <= ve
+               for vk, vs, ve in vertical for x in (start, end)):
+            continue  # a table border, which `grid_cells` owns
+        caption = None
+        for rect, text in rows:
+            if rect.y1 < key - 14 or rect.y0 > key + 2:
+                continue
+            if rect.x1 <= start + 2:
+                if caption is None or rect.x1 > caption.x1:
+                    caption = rect
+        if caption is None:
+            continue
+        if not caption.__class__ or not "".join(
+                t for r, t in rows if r is caption).strip().rstrip().endswith(":"):
+            continue
+        out.append(fitz.Rect(start + EDGE_CLEARANCE, key - DRAWN_RULE_HEIGHT,
+                             end, key - RULE_NUDGE_MIN))
+    return out
+
+
 def writing_area_bands(page, placed):
     """Answer spaces the form anchors with a caption and then leaves as paper.
 
@@ -893,7 +1019,16 @@ def writing_area_bands(page, placed):
         if any(box.y0 < rect.y1 and box.y1 > rect.y0 and box.x0 >= rect.x0
                for box in placed):
             continue
-        below = [other.y0 for other, _t in lines if other.y0 > rect.y1 + 1]
+        # **A band is cut by whatever is *in* it, not by whatever *starts*
+        # below it.** Testing `other.y0 > rect.y1` cannot see a line that begins
+        # a fraction above where the caption ends: Directive 4's Form A sets
+        # "SOCIAL WORKER:" 0.4pt above the bottom of "FSM NO.:" on the line
+        # before, so the band opened straight over it. Any line reaching below
+        # the caption bounds the band, and it is bounded at that line's own top.
+        # Manitoba hit this exactly (`mb-forms` README §8, "A band is empty
+        # paper").
+        below = [other.y0 for other, _t in lines
+                 if other is not rect and other.y1 > rect.y1 + 1]
         band = fitz.Rect(rect.x0, rect.y1 + 2, page.rect.width - 72,
                          min(min(below, default=floor), floor))
         if not BAND_MIN <= band.height <= BAND_MAX:
@@ -954,10 +1089,12 @@ def page_boxes(page):
     boxes = [(rect, "CheckBox") for rect in marks]
 
     cells = grid_cells(page)
-    kinds = classify_columns(page, cells)
     pix = page_greyscale(page) if cells else None
+    # Heading rows are worked out **before** the columns are classified: a
+    # heading is not evidence about the column under it. See `classify_columns`.
     total_rows = total_row_tops(cells)
     heading_rows = heading_row_tops(page, cells, total_rows)
+    kinds = classify_columns(page, cells, heading_rows)
     filled_cells = []
     for rect, text, dollar in cells:
         if text:
@@ -1040,9 +1177,120 @@ def page_boxes(page):
     for box in seat_blanks(kept, marks):
         boxes.append((box, "TextField"))
 
+    placed_now = [rect for rect, _kind in boxes]
+    for rect in printed_rule_blanks(page):
+        if any((rect & other).get_area() > 0.3 * rect.get_area()
+               for other in placed_now):
+            continue
+        boxes.append((rect, "TextField"))
+
     for band in writing_area_bands(page, [rect for rect, _kind in boxes]):
         boxes.append((band, "TextArea"))
+    if not boxes:
+        boxes = template_prompt_fields(page)
     return clear_of_type(page, boxes)
+
+
+# A label introducing an italic parenthetical the filer is meant to replace:
+# "Date: (pre-trial date)", "Counsel: (name)". The label is short and ends in a
+# colon; the parenthetical opens immediately after it.
+TEMPLATE_PROMPT = re.compile(r"^\s*[^()]{1,70}:\s*\(")
+# A bare label on its own line, whose prompt is the paragraph beneath it
+# ("Summary:").
+TEMPLATE_LABEL = re.compile(r"^\s*[A-Z][^()]{0,60}:\s*$")
+# Clear space this wide to the right of a prompt is where the answer goes.
+PROMPT_MIN_WIDTH = 60.0
+# A trailing narrative block gets at least this much height to be worth a box.
+NARRATIVE_MIN_HEIGHT = 24.0
+
+
+def template_prompt_fields(page):
+    """Boxes for a page that is a Word *template* rather than a ruled form.
+
+    Practice Directive 4's Forms C and D print no rule, no underscore, no cell
+    and no rectangle -- one drawn object on the whole sheet, the title's
+    underline -- so every detector above correctly finds nothing and the form
+    built with zero fields. What they print is a label and an italic
+    parenthetical standing in for the answer: "Date: (pre-trial date)",
+    "Mother: (name and date served)". The filer replaces the parenthetical.
+
+    The answer area is therefore **the clear space after the prompt**, out to
+    the same right margin the page's own longest line reaches, so the printed
+    guidance stays readable beside the box rather than under it. A label whose
+    prompt is a paragraph of its own ("Summary:") gets a `TextArea` in the blank
+    space below that paragraph instead.
+
+    Guarded by "the page produced nothing else". That is the condition this
+    shape actually describes -- a prompt with nowhere to answer -- and it also
+    means the rule cannot reach any of the 76 shipped templates, every page of
+    which yields boxes from the detectors above. The Saskatchewan README's
+    "Known gap" is the same shape met one instance at a time and hand-measured
+    into `MANUAL_FIELDS`; this is the case where it is the whole form, and
+    hand-measuring 17 fields across two forms would record coordinates instead
+    of the reason for them.
+    """
+    rows = []
+    for block in page.get_text("dict")["blocks"]:
+        for line in block.get("lines", []):
+            text = "".join(span["text"] for span in line["spans"])
+            if text.strip():
+                rows.append((fitz.Rect(line["bbox"]), text))
+    if not rows:
+        return []
+    right = max(rect.x1 for rect, _text in rows)
+    left = min(rect.x0 for rect, _text in rows)
+    floor = page.rect.height - 54.0
+
+    boxes = []
+    for index, (rect, text) in enumerate(rows):
+        if TEMPLATE_PROMPT.match(text):
+            # **Stop at whatever is printed next on the same row.** Directive
+            # 4's Form B sets two columns on one line -- "COURT: (name)" and
+            # "SOCIAL WORKER: (name)" -- so running every box out to the page's
+            # right margin put the first column's answer across the second
+            # column's label.
+            edge = right
+            for other, other_text in rows:
+                if other is rect or not other_text.strip():
+                    continue
+                if other.y1 <= rect.y0 + 1 or other.y0 >= rect.y1 - 1:
+                    continue  # a different row
+                if other.x0 >= rect.x1 and other.x0 < edge:
+                    edge = other.x0 - EDGE_CLEARANCE
+            # Cap the bottom at the next row's top. A prompt line's own box is
+            # its line height, and Directive 4's Forms B and D set consecutive
+            # prompts 13.8pt apart on a 16.6pt line, so each box reached 2.8pt
+            # into the one below and the viewer drew two controls through each
+            # other.
+            floor_here = rect.y1
+            for other, other_text in rows:
+                if other is rect or not other_text.strip():
+                    continue
+                if other.y0 >= rect.y1 - 0.5 or other.y0 <= rect.y0 + 0.5:
+                    continue
+                floor_here = min(floor_here, other.y0)
+            below = [other.y0 for other, other_text in rows
+                     if other_text.strip() and other.y0 > rect.y0 + 0.5]
+            if below:
+                floor_here = min(rect.y1, min(below))
+            box = fitz.Rect(rect.x1 + EDGE_CLEARANCE, rect.y0, edge, floor_here)
+            if box.width >= PROMPT_MIN_WIDTH and box.height >= 6:
+                boxes.append((box, "TextField"))
+            continue
+        if not TEMPLATE_LABEL.match(text):
+            continue
+        # A bare label: its prompt is the paragraph under it, and the answer
+        # goes in the clear space after **all** of it. Advancing a running
+        # `bottom` row by row skips a line that starts above the line before it
+        # ends -- which the justified prompt on Form C does -- and the area then
+        # opened over the last line of the government's own instruction.
+        below = [other for other, other_text in rows
+                 if other.y0 >= rect.y0 and other is not rect and other_text.strip()]
+        bottom = max([other.y1 for other in below] or [rect.y1])
+        top = bottom + EDGE_CLEARANCE
+        if floor - top >= NARRATIVE_MIN_HEIGHT:
+            boxes.append((fitz.Rect(left, top, right, floor), "TextArea"))
+    return boxes
 
 
 def clear_of_type(page, boxes):
@@ -1157,9 +1405,77 @@ def nudge_onto_rules(doc_id, fields):
             field["y"] = round(field["y"] + nudge, 2)
 
 
+def is_fillable(source):
+    """Does this source carry the government's own field rectangles?
+
+    Part 15 and the two regulation families are static PDFs read off printed
+    anchors -- "all 76 sources are static, no widgets, no XFA" was true of them.
+    It stops being true with `sk_sources_pd`: the 17 interjurisdictional support
+    forms and the three federal relocation notices are AcroForm, carrying up to
+    313 declared rectangles each, and detecting anchors where the form already
+    declares its geometry is strictly worse.
+
+    Asked of the file rather than read from the manifest, so a rebuild cannot
+    disagree with a stale fetch. `page.widgets()` is a generator and therefore
+    always truthy, so it has to be drained rather than tested.
+    """
+    doc = fitz.open(source)
+    try:
+        return any(len(list(page.widgets())) for page in doc)
+    finally:
+        doc.close()
+
+
+def build_from_widgets(src, doc_id, source, promote):
+    """The widget path: the form's own rectangles, and a flattened background.
+
+    Identical to the Manitoba builder's, and for the reason the extraction is in
+    `bc_pipeline` rather than in either: Manitoba and Saskatchewan publish their
+    own copies of the same national ISO set, and this would otherwise be written
+    twice.
+
+    **The background is flattened, not copied**, which is the one respect in
+    which these templates differ from every other Saskatchewan one. Leaving the
+    widget layer would put the government's AcroForm fields underneath our
+    overlay and the viewer would draw two controls per blank. The printed rules
+    and captions live in the page content stream and are untouched.
+    """
+    fields, audit = bp.extract(source, doc_id)
+    os.makedirs(OUT, exist_ok=True)
+    os.makedirs(QA, exist_ok=True)
+    background = os.path.join(OUT, "%s.pdf" % doc_id)
+    pages = bp.flatten_background(source, background)
+    page_sizes = audit["pageSizes"]
+    if pages != len(page_sizes):
+        raise SystemExit("%s: flatten changed the page count" % doc_id)
+    bp.clamp_to_page(fields, page_sizes)
+    problems = bp.check_geometry(fields, page_sizes)
+    overlaps = bp.check_overlap(background, fields)
+    bp.write_mapping(os.path.join(OUT, "%s.json" % doc_id), fields)
+    bp.qa_render(background, fields, os.path.join(QA, "%s_qa.pdf" % doc_id))
+    kinds = {}
+    for field in fields:
+        kinds[field["type"]] = kinds.get(field["type"], 0) + 1
+    print("%-13s pages=%-3d fields=%-4d %-42s sig-skipped=%-3d geom=%-2d overlap=%d  [widgets]"
+          % (doc_id, len(page_sizes), len(fields), kinds,
+             audit["signaturesSkipped"], len(problems), len(overlaps)))
+    if problems:
+        print("   geometry:", problems[:4])
+    if promote and not problems:
+        for extension in ("pdf", "json"):
+            os.replace(os.path.join(OUT, "%s.%s" % (doc_id, extension)),
+                       os.path.join(EXPORT, "%s.%s" % (doc_id, extension)))
+    return {"docId": doc_id, "pages": len(page_sizes), "fields": len(fields),
+            "kinds": kinds, "signatureSkipped": audit["signaturesSkipped"],
+            "geometry": problems, "overlap": overlaps, "source": "widgets",
+            "widgetNames": audit["widgetNames"]}
+
+
 def build(src, promote=False):
     doc_id = src["docId"]
     source = os.path.join(STAGE, "%s_source.pdf" % doc_id)
+    if is_fillable(source):
+        return build_from_widgets(src, doc_id, source, promote)
     doc = fitz.open(source)
     page_sizes = [[round(p.rect.width, 1), round(p.rect.height, 1)] for p in doc]
     fields, skipped = [], 0
@@ -1207,7 +1523,7 @@ def build(src, promote=False):
                        os.path.join(EXPORT, "%s.%s" % (doc_id, extension)))
     return {"docId": doc_id, "pages": len(page_sizes), "fields": len(fields),
             "kinds": kinds, "signatureSkipped": skipped,
-            "geometry": problems, "overlap": overlaps}
+            "geometry": problems, "overlap": overlaps, "source": "anchors"}
 
 
 def main():
@@ -1219,7 +1535,9 @@ def main():
 
     sources = shipped_sources()
     if args.only:
-        sources = [s for s in sources if s["docId"] in set(args.only)]
+        # From every recorded source, not just the shipped ones: a batch is
+        # built and reviewed before its category is turned on.
+        sources = [s for s in all_sources() if s["docId"] in set(args.only)]
     if args.category:
         sources = [s for s in sources if s["category"].endswith(args.category)]
 

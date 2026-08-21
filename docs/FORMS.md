@@ -178,10 +178,7 @@ This is the most likely source of confusion for anyone new to the file:
   convention; the mapping is produced by a server-side extract-from-AcroForm / vector
   pipeline. (See the project's forms-migration and prefill-plan notes for the full
   mapping pipeline and per-form status — the catalogue holds **135 Ontario, 213 BC,
-  76 Saskatchewan and 86 Manitoba** templates. A further **99 Saskatchewan and
-  Manitoba sources are recorded and fetched but not built**, so they are verified
-  on every pass and deliberately absent from the catalogue; the two provinces'
-  READMEs have what each still needs. Build tooling is per province, in
+  121 Saskatchewan and 140 Manitoba** templates -- 609 in all. Build tooling is per province, in
   `auth-server/tools/on-forms/`, `auth-server/tools/bc-forms/`,
   `auth-server/tools/sk-forms/` and `auth-server/tools/mb-forms/`.)
 
@@ -194,6 +191,17 @@ This is the most likely source of confusion for anyone new to the file:
   Word-derived PDFs with a real text layer and no widgets at all** — so their boxes
   are detected from printed anchors and their backgrounds ship byte-identical to
   the government's file.
+
+  Since 2026-08-21 both prairie provinces also carry families that are **not**
+  static: the interjurisdictional support set, Manitoba's protection-order
+  applications and the federal relocation notices are **AcroForm**, and three of
+  Manitoba's ISO forms are **static XFA**. Those take a widget path -- the
+  government's own rectangles, read by `bc-forms/bc_pipeline.extract` and shipped
+  over a flattened background -- rather than the anchor detectors, and their
+  verifier runs a reduced check set for the same reason. Twenty Manitoba forms
+  have no official PDF at all and are rendered from the government's `.doc`/
+  `.docx` through LibreOffice, which is the one place a Manitoba background is
+  not the King's Printer's own bytes.
 
   Saskatchewan and Manitoba are *not* the same pipeline, and that is the trap.
   Saskatchewan prints its blanks as **underscore runs** (plus 9×9 squares and
