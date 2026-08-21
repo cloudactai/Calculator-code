@@ -122,6 +122,10 @@ CAPTION_MAX_FILL = 0.55
 # How much smaller than the body a block has to be set to read as footnotes.
 # Measured on Provincial Court Form 1 p5: 7.5pt notes under a 10.5pt body.
 FOOTNOTE_SIZE_DROP = 1.5
+# A footnote block is at least this many lines.
+FOOTNOTE_MIN_LINES = 3
+# ...and this fraction of them set smaller than the body.
+FOOTNOTE_MIN_FRACTION = 0.8
 # A sub-label inside a cell is at most this long. "E-mail address:" is 15
 # characters and "Phone number:" 13; the shortest running sentence this has to
 # refuse is 76.
@@ -773,7 +777,13 @@ CITATION_FOOTER = re.compile(
 # the separator starts at 63 or 72. Width is deliberately not constrained -- the
 # separator above a citation measures 57.5-76.6pt and the one above a
 # distribution block runs the page's whole measure.
-FOOTER_MARGIN_TOL = 2.0
+# How far a separator's left end may sit from the page's leftmost glyph. The
+# citation separators of batch 2 land within 2pt of it; Provincial Court Form 1
+# draws its footnote separator 5.3pt further left than any text on the page, so
+# a 2pt tolerance never even considered it and a 144pt box stayed on it. The
+# widened cut is safe because the tests that follow are the restrictive ones --
+# everything below the rule has to be a citation, or set smaller than the body.
+FOOTER_MARGIN_TOL = 8.0
 
 
 def footer_separators(page):
@@ -807,17 +817,33 @@ def footer_separators(page):
             continue
         # **A footnote separator is the same rule.** Manitoba also draws this
         # short left-margin rule above a block of *footnotes* -- Provincial
-        # Court Form 1 p5 ends with five bulleted notes explaining what a
-        # relocation is -- and there the text below is not a citation, so the
+        # Court Form 1 pages 5 and 6 end with six bulleted notes explaining what
+        # a relocation is -- and there the text below is not a citation, so the
         # citation test alone left a 144pt typeable box hanging over the last
-        # line of paragraph 9. What separates a footnote block from the body is
-        # that it is set smaller: measured here, 7.5pt against the page's 10.5pt
-        # body. Both tests are needed; the citation blocks are set at body size.
-        below_sizes = [size for rect, _t, size in lines if rect.y1 > key and size]
-        if (below_sizes and body_size
-                and max(below_sizes) <= body_size - FOOTNOTE_SIZE_DROP):
+        # line of paragraph 9.
+        #
+        # Three conditions together, and all three are needed. A first attempt
+        # asked only "is what follows set smaller than the body" and refused the
+        # *signature* rules on Form AA-3 p2 and Form 70H.1 p1 -- whose captions
+        # then reached back and deleted the writing line above them instead.
+        #
+        #   * measured from each line's **top**, so a body line whose descender
+        #     grazes past the rule is not counted as being below it;
+        #   * **nearly every** line below is set smaller than the body, which
+        #     is what a signature block is not -- its "Signature of ..." caption
+        #     is body size. Not *every*: Manitoba sets the last note of the
+        #     block bold at body size on Provincial Court Form 1, so two of its
+        #     nineteen lines measure 11pt;
+        #   * at least three of them, because a block is a block.
+        below = [(rect, text, size) for rect, text, size in lines
+                 if rect.y0 > key and size]
+        small = sum(1 for _r, _t, size in below
+                    if size <= body_size - FOOTNOTE_SIZE_DROP)
+        if (len(below) >= FOOTNOTE_MIN_LINES and body_size
+                and small >= FOOTNOTE_MIN_FRACTION * len(below)):
             refused.add(round(key, 1))
             continue
+
         # Any line reaching below the rule, not only one starting below it:
         # Form AA-5 p2 draws its separator 2pt *inside* the citation's own line
         # box, so a test on the line's top saw nothing below the rule at all.
@@ -1869,27 +1895,87 @@ def cap_stacking(boxes):
 # Boxes the page gives no anchor for at all, measured off it by hand during the
 # page-by-page review and recorded here rather than produced by a rule.
 #
-# Saskatchewan's `MANUAL_FIELDS` is the precedent and its README argues the case:
-# a caption with clear space beside it and no rule, cell or rectangle is a real
-# shape, but a sweep for it "produced one false positive and missed the
-# occupation case entirely", and "a mis-tuned auto-placer that adds fields
-# set-wide is a worse outcome than one missing box". Measured here across all
-# 140 Manitoba forms, the same sweep offers 24 candidates of which eight are
-# wrong -- "THIS COURT ORDERS:" and "For non-resident and deemed residents:"
-# introduce the text *below* them, not an answer beside them, and two are total
-# rows that already have their amount cells. So the rule is not shipped and the
-# instances the review actually found are named.
+# Saskatchewan's `MANUAL_FIELDS` is the precedent and its README argues the
+# case: a sweep for "a caption with clear space and no rule" is worth having
+# only when it is safe, and a mis-tuned auto-placer that adds fields set-wide is
+# a worse outcome than one missing box.
+#
+# **Currently empty, and that is the right outcome.** The three
+# "Name (please print):" lines on the relocation schedules were measured in here
+# first; `trailing_caption_boxes` then turned out to place them, and the same
+# fourteen instances across all 140 forms, correctly and without a coordinate.
+# The mechanism stays because the next shape may not be so tractable.
 #
 # {docId: [(page, Rect, kind), ...]}
-MANUAL_FIELDS = {
-    # The relocation schedules close Part G with a signature rule, the date, and
-    # then "Name (please print):" with the rest of the line blank and nothing
-    # printed below it. The signature rule correctly gets no box; the printed
-    # name is a field, and there is no rule, cell or run of underscores under it.
-    "MBREL_A": [(5, fitz.Rect(191.5, 285.7, 542.0, 297.4), "TextField")],
-    "MBREL_B": [(2, fitz.Rect(191.1, 432.1, 524.7, 443.8), "TextField")],
-    "MBREL_C": [(3, fitz.Rect(191.5, 187.3, 474.9, 199.0), "TextField")],
-}
+MANUAL_FIELDS = {}
+
+
+# A caption that closes its page needs this much clear paper under it before it
+# is worth a box, and it must be the last thing printed.
+TRAILING_MIN_GAP = 100.0
+TRAILING_MIN_WIDTH = 200.0
+# Space kept clear at the foot of the page, matching the band detectors.
+FOOTER_CLEARANCE = 54.0
+
+
+def trailing_caption_boxes(page, placed):
+    """The answer to a caption that is the last thing printed on its page.
+
+    `NARRATIVE_PROMPT` only recognises a parenthetical instruction -- "(state
+    ...)", "(specify ...)" -- which is how Rule 70 writes its prompts. Two other
+    families do not, and the gap is not small: Provincial Court Form 5 is an
+    **Order** whose page 2 ends "THIS COURT ORDERS:" with 261pt of blank paper
+    and no way to type the order, and the child-protection briefs end "AND TO:"
+    with the whole page free for the list of addressees.
+
+    **Whether the answer goes below the caption or beside it is decided by
+    case.** Manitoba sets a block introduction in capitals and an ordinary label
+    in title case, and across all 140 forms that splits the fourteen instances
+    of this shape 4/10 with no exceptions: "THIS COURT ORDERS:" and "AND TO:"
+    open a block, while "File Number:", "My Commission Expires:", "E-mail:" and
+    "Name (please print):" want a value on their own line.
+
+    Guarded by "last thing printed on the page", which is what keeps it off a
+    heading that introduces a list -- "Additions:", "Real property:", "BETWEEN:"
+    -- since those all have their own content under them. Without that guard the
+    same sweep offers 484 candidates instead of 14.
+    """
+    rows = []
+    for block in page.get_text("dict")["blocks"]:
+        for line in block.get("lines", []):
+            text = "".join(span["text"] for span in line["spans"]).strip()
+            if text:
+                rows.append((fitz.Rect(line["bbox"]), text))
+    if not rows:
+        return []
+    rows.sort(key=lambda pair: pair[0].y1)
+    last, text = rows[-1]
+    if not text.endswith(":"):
+        return []
+    letters = [c for c in text if c.isalpha()]
+    if not letters:
+        return []
+    floor = page.rect.height - FOOTER_CLEARANCE
+    left = min(rect.x0 for rect, _t in rows)
+    right = max(rect.x1 for rect, _t in rows)
+
+    if all(c.isupper() for c in letters):
+        band = fitz.Rect(left, last.y1 + EDGE_CLEARANCE, right, floor)
+        if band.height < TRAILING_MIN_GAP or band.width < MIN_BLANK_WIDTH:
+            return []
+        if any((band & other).get_area() > 0.1 * band.get_area()
+               for other in placed):
+            return []
+        return [(band, "TextArea")]
+
+    if floor - last.y1 < TRAILING_MIN_GAP:
+        return []
+    box = fitz.Rect(last.x1 + EDGE_CLEARANCE * 2, last.y0, right, last.y1)
+    if box.width < TRAILING_MIN_WIDTH:
+        return []
+    if any((box & other).get_area() > 0.1 * box.get_area() for other in placed):
+        return []
+    return [(box, "TextField")]
 
 
 def page_boxes(page):
@@ -2090,6 +2176,8 @@ def page_boxes(page):
         boxes.append((band, "TextArea"))
     for slot in dollar_twin_slots(page, boxes):
         boxes.append((slot, "TextField"))
+    for box, kind in trailing_caption_boxes(page, [r for r, _k in boxes]):
+        boxes.append((box, kind))
     return cap_stacking(clear_of_type(page, dedupe(boxes)))
 
 
