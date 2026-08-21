@@ -93,8 +93,8 @@ function formatSections(sections) {
         lines.push(`${label} income:`);
         incItems.forEach((item) => {
           const desc = item.type || item.description || "Income";
-          const annual = Number(item.annual) || 0;
-          const monthly = Number(item.monthly) || 0;
+          const annual = Number(item.yearlyAmount) || Number(item.annual) || 0;
+          const monthly = Number(item.monthlyAmount) || Number(item.monthly) || 0;
           const amt = annual || monthly * 12 || Number(item.amount) || 0;
           totalAnnualIncome += amt;
           lines.push(`  ${desc}${amt ? `: $${amt}/yr` : ""}`);
@@ -105,7 +105,7 @@ function formatSections(sections) {
         lines.push(`${label} benefits:`);
         benItems.forEach((item) => {
           const desc = item.type || item.description || "Benefit";
-          const amt = item.annual || item.monthly || item.amount || "";
+          const amt = item.yearlyAmount || item.annual || item.monthlyAmount || item.monthly || item.amount || "";
           lines.push(`  ${desc}${amt ? `: $${amt}` : ""}`);
         });
       }
