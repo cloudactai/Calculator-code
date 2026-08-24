@@ -2,6 +2,42 @@
  "staticFields": [
   {
    "id": 1750374963001,
+   "type": "CheckBox",
+   "x": 127.62,
+   "y": 545.48,
+   "width": 9.19,
+   "height": 11.25,
+   "value": "",
+   "fontSize": 9,
+   "color": [
+    0,
+    0,
+    0
+   ],
+   "background": "none",
+   "border": "none",
+   "page": 1
+  },
+  {
+   "id": 1750374963002,
+   "type": "CheckBox",
+   "x": 127.62,
+   "y": 565.16,
+   "width": 9.19,
+   "height": 11.25,
+   "value": "",
+   "fontSize": 9,
+   "color": [
+    0,
+    0,
+    0
+   ],
+   "background": "none",
+   "border": "none",
+   "page": 1
+  },
+  {
+   "id": 1750374963003,
    "type": "TextField",
    "x": 235.5,
    "y": 392.7,
@@ -19,7 +55,7 @@
    "page": 1
   },
   {
-   "id": 1750374963002,
+   "id": 1750374963004,
    "type": "TextField",
    "x": 235.5,
    "y": 409.1,
@@ -37,7 +73,7 @@
    "page": 1
   },
   {
-   "id": 1750374963003,
+   "id": 1750374963005,
    "type": "TextField",
    "x": 235.5,
    "y": 425.5,
@@ -55,12 +91,12 @@
    "page": 1
   },
   {
-   "id": 1750374963004,
+   "id": 1750374963006,
    "type": "TextField",
    "x": 90.0,
-   "y": 472.12,
+   "y": 478.32,
    "width": 198.0,
-   "height": 23.4,
+   "height": 14.1,
    "value": "",
    "fontSize": 9,
    "color": [
@@ -73,12 +109,12 @@
    "page": 1
   },
   {
-   "id": 1750374963005,
+   "id": 1750374963007,
    "type": "TextField",
    "x": 240.0,
-   "y": 472.12,
+   "y": 478.32,
    "width": 438.75,
-   "height": 23.4,
+   "height": 14.1,
    "value": "",
    "fontSize": 9,
    "color": [
@@ -91,7 +127,7 @@
    "page": 1
   },
   {
-   "id": 1750374963006,
+   "id": 1750374963008,
    "type": "TextField",
    "x": 316.92,
    "y": 503.92,
@@ -109,7 +145,7 @@
    "page": 1
   },
   {
-   "id": 1750374963007,
+   "id": 1750374963009,
    "type": "TextField",
    "x": 177.96,
    "y": 557.32,
@@ -127,12 +163,140 @@
    "page": 1
   },
   {
-   "id": 1750374963008,
+   "id": 1750374963010,
    "type": "TextField",
-   "x": 312.36,
-   "y": 339.76,
-   "width": 342.0,
-   "height": 23.4,
+   "x": 231.3,
+   "y": 130.5,
+   "width": 357.93,
+   "height": 17.1,
+   "value": "",
+   "fontSize": 9,
+   "color": [
+    0,
+    0,
+    0
+   ],
+   "background": "none",
+   "border": "none",
+   "page": 1
+  },
+  {
+   "id": 1750374963011,
+   "type": "TextField",
+   "x": 231.42,
+   "y": 198.7,
+   "width": 357.75,
+   "height": 17.1,
+   "value": "",
+   "fontSize": 9,
+   "color": [
+    0,
+    0,
+    0
+   ],
+   "background": "none",
+   "border": "none",
+   "page": 1
+  },
+  {
+   "id": 1750374963012,
+   "type": "TextField",
+   "x": 231.42,
+   "y": 219.3,
+   "width": 357.75,
+   "height": 17.1,
+   "value": "",
+   "fontSize": 9,
+   "color": [
+    0,
+    0,
+    0
+   ],
+   "background": "none",
+   "border": "none",
+   "page": 1,
+   "bind": "applicant.fullLegalName"
+  },
+  {
+   "id": 1750374963013,
+   "type": "TextField",
+   "x": 231.42,
+   "y": 240.1,
+   "width": 357.75,
+   "height": 17.1,
+   "value": "",
+   "fontSize": 9,
+   "color": [
+    0,
+    0,
+    0
+   ],
+   "background": "none",
+   "border": "none",
+   "page": 1,
+   "bind": "respondent.fullLegalName"
+  },
+  {
+   "id": 1750374963014,
+   "type": "TextField",
+   "x": 143.82,
+   "y": 297.2,
+   "width": 299.52,
+   "height": 17.1,
+   "value": "",
+   "fontSize": 9,
+   "color": [
+    0,
+    0,
+    0
+   ],
+   "background": "none",
+   "border": "none",
+   "page": 3
+  },
+  {
+   "id": 1750374963015,
+   "type": "TextField",
+   "x": 443.82,
+   "y": 297.2,
+   "width": 81.9,
+   "height": 17.1,
+   "value": "",
+   "fontSize": 9,
+   "color": [
+    0,
+    0,
+    0
+   ],
+   "background": "none",
+   "border": "none",
+   "page": 3
+  },
+  {
+   "id": 1750374963016,
+   "type": "TextField",
+   "x": 91.5,
+   "y": 313.0,
+   "width": 189.0,
+   "height": 17.1,
+   "value": "",
+   "fontSize": 9,
+   "color": [
+    0,
+    0,
+    0
+   ],
+   "background": "none",
+   "border": "none",
+   "page": 3
+  },
+  {
+   "id": 1750374963017,
+   "type": "TextField",
+   "x": 232.5,
+   "y": 313.0,
+   "width": 31.5,
+   "height": 17.1,
    "value": "",
    "fontSize": 9,
    "color": [

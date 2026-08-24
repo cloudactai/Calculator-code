@@ -54,7 +54,14 @@ GLYPHS = set("☐☑☒□▢❑❏❒")
 SYMBOL_MARKS = {
     "WPTypographicSymbols": {"G"},
     "WP-IconicSymbolsA": {"9"},
-    "Wingdings": {"\uf071", "\uf06f", "\uf0a8"},
+    # Both encodings of the same three Wingdings squares. Whether a PDF hands
+    # back the private-use code point or the plain ASCII character the font maps
+    # it from depends on how the producer wrote the encoding, and the four
+    # child-protection briefs -- one Word template, four documents -- do it both
+    # ways: the Intake Brief of Agency's 32 squares arrive as U+F071 and the
+    # Pre-Hearing Brief of Agency's 32 as an ordinary "q". Naming only one of
+    # them left half the family untickable.
+    "Wingdings": {"\uf071", "\uf06f", "\uf0a8", "q", "o", "\u00a8"},
 }
 
 

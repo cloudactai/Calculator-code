@@ -123,14 +123,61 @@ CB_MIN, CB_MAX = 4.0, 20.0
 # sliver of frame Form 15-49 p3 encloses beside its "BANK ACCOUNTS" section
 # title, and a 7.5pt box is not one anybody could type in.
 CELL_MIN_WIDTH, CELL_MIN_HEIGHT, CELL_MAX_HEIGHT = 8.0, 12.0, 200.0
+# ...except where a family's tables are built out of a few very deep rows.
+# Practice Directive 1's Schedule A is a family property statement whose rows are
+# whole sections -- "Real Property", "Household Goods", "Debts and other
+# Liabilities", "Exemptions" -- set 211 to 326pt deep with the Petitioner,
+# Respondent and Tab/Note columns beside them left empty for the filer. At a
+# 200pt ceiling every one of those bands was thrown away, and four of the
+# schedule's six pages shipped with **no fields at all**. The ceiling is a guard
+# against reading a page frame as a cell, not a statement about how deep a row
+# may be, so it is raised for the one family that needs it rather than for
+# everybody: across the 40 Part 15 templates exactly one band falls in the widened
+# window (Form 15-47 p14), and that form is reviewed and shipped.
+CELL_MAX_HEIGHT_BY_FAMILY = {"SKPD_": 400.0}
+# A bold row label marks a section *title strip*, whose empty neighbours are
+# frame rather than fields -- but only while the row is a strip. Form 15-49 p3's
+# two title rows measure 18.0 and 34.6pt; Practice Directive 1's labelled writing
+# bands measure 211 to 326. See `heading_row_tops`.
+HEADING_ROW_MAX_HEIGHT = 60.0
+# A ruled cell this deep that carries a printed label is a labelled *section*,
+# and the clear space under the label is where the filer writes. See page_boxes.
+#
+# The floor is measured, not chosen. Over all 121 templates, the labelled cells
+# with a band's worth of clear space under their label fall in two groups with
+# nothing between them: **column headers** -- "Expense Type" (55.7), "Name(s) of
+# Children" (62.8), Form 15-47 p14's "Child's Name / Description of Expense / Net
+# Expense Per Year" (90.0), and Practice Directive 1's own p6 question cell
+# (112.0), whose answers go in the three columns beside it -- and **writing
+# sections**, every one of them Schedule A's property classes, from "Bank
+# Accounts, Savings and Investments" (157.2) up to "Household Goods" (325.5).
+# The cut sits in the 45pt gap between the two.
+LABELLED_CELL_MIN_HEIGHT = 130.0
+
+
+def cell_max_height(doc_id):
+    for prefix, value in CELL_MAX_HEIGHT_BY_FAMILY.items():
+        if doc_id.startswith(prefix):
+            return value
+    return CELL_MAX_HEIGHT
 # A tick column is a column the form heads with a printed check glyph.
 # Saskatchewan sets that glyph in Wingdings, so it arrives as U+F0FC in the
 # private use area -- matching only the Unicode check marks finds nothing.
 TICK_GLYPHS = set("\u2713\u2714\u221a\uf0fc")
 # An option box the form types rather than draws. U+F07E is WP-MathA's open
-# square and is the only one in the set; the Unicode ballot boxes are listed with
-# it so a form that ever uses one is not silently missed. See glyph_checkboxes().
-BOX_GLYPHS = set("\uf07e\u2610\u25a1\u274f\u2751\u2752")
+# square; the Unicode ballot boxes are listed with it so a form that ever uses
+# one is not silently missed. See glyph_checkboxes().
+#
+# **U+F0FF is the practice directives' own option box, and it is a square in no
+# font at all.** Directive 7 sets its options in Wingdings in Word and exports
+# them as TimesNewRomanPSMT with the private-use codepoint intact, so what the
+# viewer draws is that font's .notdef -- an empty rectangle, measured 6.1 x 7.5pt
+# at 12pt type. The filer sees a box to tick; the builder saw a character it did
+# not know. All five Directive 7 forms shipped with 88 printed options between
+# them and not one control. The ink is measured off a render like every other
+# glyph here, so its being a .notdef rather than a designed square changes
+# nothing downstream.
+BOX_GLYPHS = set("\uf07e\uf0ff\u2610\u25a1\u274f\u2751\u2752")
 # Zoom for measuring one glyph's ink, and the grey it has to beat to count as ink.
 GLYPH_ZOOM = 8.0
 GLYPH_INK_BELOW = 200
@@ -170,7 +217,11 @@ TOTAL_ROW = re.compile(r"\b(sub)?total\b", re.I)
 # "signature", and it is anchored to the line start so the *instruction* that
 # mentions commissioners for oaths in passing ("...the Registrar's Office in the
 # Court House are commissioners for oaths") does not read as a caption.
-SK_SIG_CAPTION = re.compile(r"^\s*\(?\s*(your\s+)?signature\b", re.I)
+# "(signature of ...)", and also "(signed by ...)": Directive 7's Notice of
+# Judicial Case Conference closes with a rule captioned "(signed by DRL/
+# Screening Officer)", and on the word "signature" alone it was a rule with a
+# text field on the court officer's signature line.
+SK_SIG_CAPTION = re.compile(r"^\s*\(?\s*(your\s+)?(signature|signed\s+by)\b", re.I)
 SK_COMMISSIONER = re.compile(r"^\s*a\s+commissioner\s+for\s+oaths\b", re.I)
 SK_SIG_EXCLUDE = re.compile(r"date of signature", re.I)
 # A court officer's rule is captioned by the office, not by the word "signature":
@@ -246,6 +297,118 @@ MANUAL_FIELDS = {
         # "DATED at" line above each). Petitioner's block, then respondent's.
         (3, fitz.Rect(377.99, 184.23, 516.0, 197.23), "TextField"),
         (3, fitz.Rect(377.99, 332.23, 516.0, 345.23), "TextField"),
+    ],
+    # --- Batch 3, from the page-by-page review -------------------------------
+    "SKPD_PD1_A": [
+        # p1 "COURT FILE NUMBER:" is the one line of the heading block the form
+        # prints with no rule after it -- JUDICIAL CENTRE, PETITIONER and
+        # RESPONDENT all carry one. Built against those three: starts
+        # EDGE_CLEARANCE past the caption's own ink (198.70), runs to their right
+        # answer margin (498.0), and takes their height (15.6) and their offset
+        # above the caption's line top (2.82).
+        (1, fitz.Rect(200.20, 96.18, 498.00, 111.78), "TextField"),
+        # p2 "Other: (briefly describe)." is the fifth option in Part 4 and the
+        # only one that asks for words. The description goes on the rest of its
+        # own line, out to the page's answer margin (540.0).
+        (2, fitz.Rect(217.40, 383.80, 540.00, 396.80), "TextField"),
+        # p2 Parts 5 and 6 print an instruction and then the space to answer in.
+        # Neither is caught by `writing_area_bands`: the instruction is a
+        # parenthetical with no colon in front of it, so anchoring on it would
+        # also anchor on every title of the form ("APPENDIX B - FORM FAM-PD #7-1
+        # (Family Practice Directive #7)"). The two areas are what the government
+        # leaves: from just under the instruction to just above the next heading.
+        (2, fitz.Rect(72.00, 475.10, 540.00, 492.70), "TextArea"),
+        (2, fitz.Rect(72.00, 513.30, 540.00, 537.40), "TextArea"),
+    ],
+    "SKPD_PD3_A": [
+        # "TO:" names the party served. The band under it is 10.4pt -- the memo
+        # boilerplate follows immediately -- so the name goes on the rest of the
+        # caption's own line, out to the form's right answer margin (540.0).
+        (1, fitz.Rect(108.80, 399.00, 540.00, 415.20), "TextField"),
+        # "ON THE FOLLOWING GROUNDS:" is answered under the bracketed example the
+        # form prints ("[(a) As noted on the attached copy of the affidavit(s)]"),
+        # in the 27pt of paper between it and the jurat. The caption's own band is
+        # cut by that example, and the example is not a caption, so no general
+        # rule reaches it.
+        (1, fitz.Rect(122.40, 299.10, 540.00, 320.30), "TextArea"),
+    ],
+    "SKPD_PD3_B": [
+        # Both grounds blocks: the form prints a bracketed instruction and leaves
+        # the paper under it. Same shape as Form A's, twice.
+        (1, fitz.Rect(122.40, 188.50, 540.00, 211.60), "TextArea"),
+        (1, fitz.Rect(122.40, 269.30, 540.00, 290.40), "TextArea"),
+        # "TO:", as on Form A.
+        (1, fitz.Rect(108.80, 354.10, 540.00, 370.30), "TextField"),
+    ],
+    # Directive 8's three issued orders leave the endorsement space the King's
+    # Bench Rules require: "If an order is issued pursuant to an application
+    # without notice, the endorsement required by subrule 10-3(5) of The King's
+    # Bench Rules must appear here", and then clear paper down to the NOTICE box.
+    # No general rule reaches it -- the instruction is a sentence ending in a full
+    # stop, not a caption -- so each area is measured from the bottom of that
+    # instruction to the top of the box beneath it. Form F is deliberately not
+    # here: its instruction is the last line of page 1 and the notice box is the
+    # first thing on page 2, so the government left no space to measure.
+    "SKPD_PD8_B": [
+        (2, fitz.Rect(72.00, 317.90, 540.00, 338.30), "TextArea"),
+    ],
+    "SKPD_PD8_C": [
+        (2, fitz.Rect(72.00, 99.40, 540.00, 132.50), "TextArea"),
+    ],
+    "SKPD_PD8_E": [
+        (2, fitz.Rect(72.00, 296.90, 540.00, 317.60), "TextArea"),
+    ],
+    "SKPD_PD4_A": [
+        # "CIRCUMSTANCES LEADING TO THE APPLICATION:" is answered on the line
+        # under it, which the form fills with the instruction "History,
+        # circumstances of apprehension, etc." -- a stand-in for the narrative,
+        # the same shape as the "(name)" placeholders elsewhere in this family.
+        # Neither general rule reaches it: the caption's band is cut by the
+        # instruction (11.2pt of paper is left under it, which is not a control
+        # anybody could type in), and the instruction line ends in a full stop
+        # rather than a colon. The field goes after it, out to the page's answer
+        # margin, so the instruction stays readable beside the answer.
+        (1, fitz.Rect(286.30, 350.00, 540.00, 366.20), "TextField"),
+    ],
+    "SKPD_PD4_B": [
+        # p1's child list is a two-column table set with tabs rather than rules:
+        # "1.  (name)" under "CHILD(REN):" and "DOB" under "DATE(S) OF BIRTH:".
+        # Neither column's rows end in a colon and neither has a rule, a cell or
+        # a rectangle, so nothing finds them. Each answer starts EDGE_CLEARANCE
+        # past its own placeholder and stops short of the next column (286.5) or
+        # at the page's answer margin (540.0); the bottoms stop at the next row's
+        # top, because these rows are 16.1pt on a 13.8pt pitch.
+        (1, fitz.Rect(122.40, 152.90, 286.50, 166.70), "TextField"),
+        (1, fitz.Rect(314.80, 152.90, 540.00, 166.70), "TextField"),
+        (1, fitz.Rect(122.40, 166.70, 286.50, 180.50), "TextField"),
+        (1, fitz.Rect(314.80, 166.70, 540.00, 180.50), "TextField"),
+        # p2, the service table: the party's name goes after the "(name)" the
+        # form prints under each caption, out to that cell's own right border
+        # (234.0). See INLINE_CAPTION_SKIP for why these five are by hand.
+        # x starts clear of the caption's last letter on the line above -- the
+        # rows overlap by 2.4pt, so a box seated EDGE_CLEARANCE past "(name)"
+        # lands flush against the "H" of "MOTHER" above it.
+        (2, fitz.Rect(114.50, 140.00, 232.50, 155.40), "TextField"),
+        (2, fitz.Rect(114.50, 168.10, 232.50, 183.50), "TextField"),
+        (2, fitz.Rect(114.50, 196.30, 232.50, 211.70), "TextField"),
+        (2, fitz.Rect(114.50, 224.40, 232.50, 239.80), "TextField"),
+        (2, fitz.Rect(114.50, 252.50, 232.50, 267.80), "TextField"),
+        # p2 "EVIDENCE:" and "DOCUMENTS NEEDED:" are numbered lists the filer
+        # completes: item 1 of each is shown with a trailing ellipsis and the
+        # rest are bare numbers. Each answer runs from just past the number (or
+        # past the example) to the page's answer margin (540.0).
+        (2, fitz.Rect(163.40, 393.00, 540.00, 406.80), "TextField"),
+        (2, fitz.Rect(82.50, 406.80, 540.00, 420.60), "TextField"),
+        (2, fitz.Rect(82.50, 420.60, 540.00, 434.40), "TextField"),
+        (2, fitz.Rect(198.10, 462.00, 540.00, 475.80), "TextField"),
+        (2, fitz.Rect(150.40, 475.80, 540.00, 489.60), "TextField"),
+        # p2 "HAS A DRAFT ORDER BEEN FILED?   Yes or No" prints the two answers
+        # as words with nothing to tick and nowhere to write. The answer goes
+        # after them.
+        (2, fitz.Rect(340.10, 517.00, 540.00, 533.20), "TextField"),
+        # p3 "WHO APPEARED?" is a question with 24.8pt of clear paper under it
+        # and no colon, so no general rule anchors on it.
+        (3, fitz.Rect(72.00, 185.10, 540.00, 205.90), "TextArea"),
     ],
 }
 
@@ -531,7 +694,12 @@ def checkboxes(page):
 # thicker filled rect on those pages is the title's 1.2pt underline, so the cut
 # has room in it. Same constant Manitoba calls RULE_MAX_THICK, for the same
 # primitive.
-FILL_RULE_MAX_THICK = 1.0
+# ...raised from 1.0 for Directive 8, which sets the writing rule after "NOTICE
+# TO RESPONDENT [or PETITIONER]," 1.1pt thick and bold. What keeps a title's
+# underline out is not this number -- `printed_rule_blanks` needs something
+# printed *beside* the rule, and a title is printed above its own underline --
+# so the cut only has to stay under the 1.2pt those underlines measure.
+FILL_RULE_MAX_THICK = 1.15
 
 
 def _segments(page):
@@ -595,14 +763,16 @@ def _covered(segments, key, start, end, tol=2.0, fraction=GRID_COVER):
 
 
 def _line_spans(page):
-    """Printed text lines as rects, for spotting a cell that is really a slice."""
-    out = []
-    for block in page.get_text("dict")["blocks"]:
-        for line in block.get("lines", []):
-            text = "".join(span["text"] for span in line["spans"]).strip()
-            if text:
-                out.append(fitz.Rect(line["bbox"]))
-    return out
+    """Printed text lines as rects, for spotting a cell that is really a slice.
+
+    Bounding the **ink** and not the line box matters here for the same reason it
+    does in `ink_lines`. Schedule A p4 sets "(List any other property owned by a
+    spouse not identified above.)" flush to its cell's right border and follows it
+    with a space, so the line box finished 1.0pt inside the *next* cell and that
+    cell -- the Petitioner column of the last property class on the page -- was
+    read as a slice of a merged region and shipped with no field.
+    """
+    return [rect for rect, _text in ink_lines(page)]
 
 
 def _is_merged_slice(rect, lines, tolerance=2.0):
@@ -650,7 +820,7 @@ def cell_contents(chars, rect):
     return "".join(char for _box, char in inside).strip(), inside
 
 
-def grid_cells(page):
+def grid_cells(page, max_height=CELL_MAX_HEIGHT):
     """Ruled table cells, each with whatever the government printed inside it.
 
     Returns (rect, printed_text, dollar_rect).
@@ -670,7 +840,7 @@ def grid_cells(page):
     cells = []
     for top, bottom in zip(ys, ys[1:]):
         height = bottom - top
-        if height < CELL_MIN_HEIGHT or height > CELL_MAX_HEIGHT:
+        if height < CELL_MIN_HEIGHT or height > max_height:
             continue
         # Only the verticals that run the whole depth of this band can bound a
         # cell in it; the rest belong to a different table on the same page.
@@ -932,11 +1102,43 @@ BAND_FOOTER = 45.0
 # A drawn writing rule is at most this thick, and must be at least this long to
 # be worth a field. Measured on the practice directives: every writing rule is
 # 0.48pt thick and the shortest is 63pt.
-DRAWN_RULE_MIN_WIDTH = 24.0
+# ...and it was 24.0 until Directive 7's Notice of Judicial Case Conference,
+# whose year slot is a drawn rule 23.999pt wide -- the same "2____" the
+# underscore path meets everywhere and floors at MIN_RUN_WIDTH. A drawn rule and
+# a printed one are the same blank set two ways, so they take the same floor;
+# the reason MIN_RUN_WIDTH is 9 rather than 16 is a day or year slot, which is
+# exactly what this dropped.
+DRAWN_RULE_MIN_WIDTH = MIN_RUN_WIDTH
 # How far above a rule the box sits, and how tall it is. Matches the underscore
 # path's seating so a page mixing both looks the same.
 DRAWN_RULE_HEIGHT = 12.0
 RULE_NUDGE_MIN = 0.6
+# How far under an answer line the next line of the same answer may start. One
+# line of these forms is 13.8pt; the gap measured between the two rules of
+# Directive 8's taxation-year answer is 12.7pt. See `printed_rule_blanks`.
+CONTINUATION_GAP = 20.0
+
+
+def ink_lines(page):
+    """Every text line as (rect, text), the rect bounding its **ink**.
+
+    `line["bbox"]` bounds the line's character cells, trailing spaces included,
+    and Word pads a caption out to its tab stop: Directive 7 sets "COURT FILE
+    NUMBER" followed by eight spaces, so its line box ends 6pt *past* the left
+    end of the rule it captions and every test that asks "is this caption to the
+    left of that rule" answered no. The form's own file-number line had no field
+    on all five Directive 7 forms because of eight space characters.
+    """
+    out = []
+    for text, boxes, _sizes in line_chars(page):
+        ink = [index for index, char in enumerate(text) if not char.isspace()]
+        if not ink:
+            continue
+        rect = fitz.Rect(boxes[ink[0]])
+        for index in ink:
+            rect |= boxes[index]
+        out.append((rect, text))
+    return out
 
 
 def printed_rule_blanks(page):
@@ -959,12 +1161,7 @@ def printed_rule_blanks(page):
     horizontal, vertical = _segments(page)
     if not horizontal:
         return []
-    rows = []
-    for block in page.get_text("dict")["blocks"]:
-        for line in block.get("lines", []):
-            text = "".join(span["text"] for span in line["spans"])
-            if text.strip():
-                rows.append((fitz.Rect(line["bbox"]), text))
+    rows = ink_lines(page)
     out = []
     for key, start, end in horizontal:
         if end - start < DRAWN_RULE_MIN_WIDTH:
@@ -973,19 +1170,135 @@ def printed_rule_blanks(page):
                for vk, vs, ve in vertical for x in (start, end)):
             continue  # a table border, which `grid_cells` owns
         caption = None
+        beside = False
         for rect, text in rows:
             if rect.y1 < key - 14 or rect.y0 > key + 2:
                 continue
             if rect.x1 <= start + 2:
                 if caption is None or rect.x1 > caption.x1:
                     caption = rect
+            elif rect.x0 >= end - 2:
+                beside = True
+            elif rect.x0 < start + 2 and rect.x1 > end - 2:
+                # The line *straddles* the rule. The notice's date line prints
+                # its month and year rules inside one text line -- "         , 2
+                # . " -- whose box therefore starts left of the year rule and
+                # ends right of it, so neither the caption test nor the beside
+                # test saw anything and the year could not be typed. What is
+                # printed over the rule itself is only spaces, and that is what
+                # is checked.
+                beside = beside or not any(
+                    char_box.x1 > start + 1 and char_box.x0 < end - 1
+                    for line_text, char_boxes, _sizes in line_chars(page)
+                    for index, char_box in enumerate(char_boxes)
+                    if not line_text[index].isspace()
+                    and key - 14 <= char_box.y1 and char_box.y0 <= key + 2)
         if caption is None:
+            # **A rule can be captioned by the line before it.** A sentence that
+            # wraps puts its next blank at the left margin with nothing to its
+            # left at all: Directive 7's notice closes "...this____day of /
+            # ____________, 2____." and the month and year rules begin the second
+            # line, so both were skipped and the notice could not be dated. What
+            # still separates an answer line from a heading's underline and a
+            # footer separator -- the two shapes the caption test guards against
+            # -- is that neither of those has anything printed beside it either.
+            if not beside:
+                continue
+            out.append(fitz.Rect(start + EDGE_CLEARANCE, key - DRAWN_RULE_HEIGHT,
+                                 end, key - RULE_NUDGE_MIN))
             continue
-        if not caption.__class__ or not "".join(
-                t for r, t in rows if r is caption).strip().rstrip().endswith(":"):
+        # **A caption does not have to end in a colon.** The first cut of this
+        # required one, on the theory that a colon is what marks an answer -- and
+        # Directive 7 prints its whole heading block without one. "COURT FILE
+        # NUMBER", "JUDICIAL CENTRE", "PETITIONER" and "RESPONDENT" each set a
+        # drawn rule to the right of a bare caption, and so does every "DATED
+        # at____, Saskatchewan, this____day of____, 2____" line in the family:
+        # 44 blanks across the five forms with nothing to type in, and no gate
+        # asking. What actually separates an answer line from the two shapes the
+        # colon was guarding against is already tested above -- a heading's own
+        # underline starts under the heading, and a footer separator has nothing
+        # printed to its left, so neither finds a caption at all. All that is
+        # left to require is that the caption is words rather than stray ink.
+        text = "".join(t for r, t in rows if r is caption)
+        if not any(char.isalnum() for char in text):
             continue
         out.append(fitz.Rect(start + EDGE_CLEARANCE, key - DRAWN_RULE_HEIGHT,
                              end, key - RULE_NUDGE_MIN))
+
+    # **A rule under a rule is the rest of the same answer.** Directive 8's Form
+    # A item 7 asks for the taxation years and rules two lines for them; the
+    # second begins at the left margin with nothing printed on either side of it,
+    # so neither test above can see it and half the answer had nowhere to go. A
+    # continuation is recognised by what it continues: an accepted rule within a
+    # line of it, above, sharing most of its width. Repeated so a third line
+    # continues the second.
+    changed = True
+    while changed:
+        changed = False
+        for key, start, end in horizontal:
+            if end - start < DRAWN_RULE_MIN_WIDTH:
+                continue
+            if any(abs(vk - x) < 2 and vs <= key <= ve
+                   for vk, vs, ve in vertical for x in (start, end)):
+                continue
+            if any(abs(rect.y1 + RULE_NUDGE_MIN - key) < 1 and rect.x0 < end
+                   and rect.x1 > start for rect in out):
+                continue  # already taken
+            above = [rect for rect in out
+                     if 0 < key - rect.y1 <= CONTINUATION_GAP
+                     and min(rect.x1, end) - max(rect.x0, start)
+                     > 0.5 * min(rect.width, end - start)]
+            if not above:
+                continue
+            out.append(fitz.Rect(start + EDGE_CLEARANCE, key - DRAWN_RULE_HEIGHT,
+                                 end, key - RULE_NUDGE_MIN))
+            changed = True
+    return out
+
+
+# A prompt whose line ends in the instruction rather than in the colon:
+# "...allocation of debts and liabilities: (Indicate your proposal in point form
+# showing all calculations.)". The colon is still what marks the prompt -- it is
+# just not the last thing on the line, and on a wrapped paragraph it is not even
+# on the same line as the end of the instruction.
+TRAILING_PROMPT = re.compile(r":\s*\([^()]*\)\s*[.]?\s*$", re.S)
+
+
+def trailing_prompt_lines(page):
+    """The last line of each paragraph that ends `caption: (instruction)`.
+
+    `writing_area_bands` anchors on a line ending in a colon, which is the shape
+    Part 15 uses. The practice directives write the same prompt with the
+    instruction after the colon, so no line ends in one and the answer space
+    under it was never found -- Practice Directive 1's pre-trial brief lost the
+    answer area under five of its seven headings this way. The anchor is the
+    paragraph's last line, because that is where the prompt actually ends.
+    """
+    out = []
+    for block in page.get_text("dict")["blocks"]:
+        block_lines = [line for line in block.get("lines", [])
+                       if "".join(span["text"] for span in line["spans"]).strip()]
+        if not block_lines:
+            continue
+        joined = " ".join("".join(span["text"] for span in line["spans"])
+                          for line in block_lines)
+        if not TRAILING_PROMPT.search(joined):
+            continue
+        last = max(block_lines, key=lambda line: line["bbox"][3])
+        text = "".join(span["text"] for span in last["spans"])
+        ink = [index for index, char in enumerate(text) if not char.isspace()]
+        chars = None
+        for line_text, boxes, _sizes in line_chars(page):
+            if line_text == text:
+                chars = boxes
+                break
+        if chars and ink:
+            rect = fitz.Rect(chars[ink[0]])
+            for index in ink:
+                rect |= chars[index]
+            out.append(rect)
+        else:
+            out.append(fitz.Rect(last["bbox"]))
     return out
 
 
@@ -1003,17 +1316,12 @@ def writing_area_bands(page, placed):
     is the false positive this scan produces twice on this very form. And the
     band has to be bounded: the rest of an empty sheet is not an answer space.
     """
-    lines = []
-    for block in page.get_text("dict")["blocks"]:
-        for line in block.get("lines", []):
-            text = "".join(span["text"] for span in line["spans"]).strip()
-            if text:
-                lines.append((fitz.Rect(line["bbox"]), text))
-    lines.sort(key=lambda pair: pair[0].y0)
+    lines = sorted(ink_lines(page), key=lambda pair: pair[0].y0)
     floor = page.rect.height - BAND_FOOTER
+    anchors = trailing_prompt_lines(page)
     out = []
     for rect, text in lines:
-        if not text.rstrip().endswith(":"):
+        if not text.rstrip().endswith(":") and rect not in anchors:
             continue
         # Answered beside the caption rather than under it.
         if any(box.y0 < rect.y1 and box.y1 > rect.y0 and box.x0 >= rect.x0
@@ -1031,7 +1339,16 @@ def writing_area_bands(page, placed):
                  if other is not rect and other.y1 > rect.y1 + 1]
         band = fitz.Rect(rect.x0, rect.y1 + 2, page.rect.width - 72,
                          min(min(below, default=floor), floor))
-        if not BAND_MIN <= band.height <= BAND_MAX:
+        # **The rest of an empty sheet is not an answer space -- unless it is.**
+        # BAND_MAX is there to stop a caption in the middle of a form claiming
+        # everything under it, and every case it was written for has more form
+        # printed below. Where the caption is the *last* thing printed on the
+        # page, what follows it is the answer space and nothing else: Schedule
+        # A's "PROPOSED DISTRIBUTION: ... (Indicate your proposal in point form
+        # showing all calculations.)" is followed by 547pt of paper and had
+        # nowhere to type the proposal the whole schedule exists to state.
+        ceiling = float("inf") if not below else BAND_MAX
+        if not BAND_MIN <= band.height <= ceiling:
             continue
         if any(band.intersects(box) for box in placed):
             continue
@@ -1064,6 +1381,15 @@ def heading_row_tops(page, cells, total_rows):
     for top, members in rows.items():
         if top in total_rows:
             continue
+        # **A section title is a strip, not a section.** Bold alone is not enough
+        # once a form labels its writing rows: Practice Directive 1's Schedule A
+        # heads each of its 211-326pt property bands with a bold "Real Property"
+        # / "Household Goods" / "Exemptions", and with the two 15-49 title rows
+        # measuring 18.0 and 34.6pt there is a wide gap to cut in. Without this,
+        # every Petitioner, Respondent and Tab/Note cell on the schedule was read
+        # as frame space beside a title and four of its six pages shipped empty.
+        if max(rect.height for rect, _text in members) > HEADING_ROW_MAX_HEIGHT:
+            continue
         labelled = [rect for rect, text in members if text]
         if labelled and any(span.intersects(rect) for rect in labelled for span in bold):
             out.add(top)
@@ -1083,12 +1409,149 @@ def total_row_tops(cells):
             if TOTAL_ROW.search(" ".join(t for t in texts if t))}
 
 
-def page_boxes(page):
+# The Directive 4 memos, whose captions are answered *beside* themselves. See
+# `inline_caption_fields`. Kept to a named set rather than turned on everywhere:
+# the same sweep over all 195 pages is the one this pipeline wrote once and did
+# not ship, and every box it puts on these three pages has been read off the
+# rendered page.
+INLINE_CAPTION_FORMS = {"SKPD_PD4_A", "SKPD_PD4_B"}
+# An inline answer may be narrower than a prompt's, because it is bounded by the
+# cell it is in rather than by the page. Form B's service table gives
+# "SIGNIFICANT OTHER(S):" 47pt of its own cell and "MOTHER:" 99pt of the same
+# cell; at the 60pt prompt floor two of the five rows had a field and three did
+# not, which reads worse on the page than none of them would.
+INLINE_MIN_WIDTH = 40.0
+# Captions in those forms that are section headings, not inline captions: what
+# answers them is the table, box or list underneath, and a field beside them
+# would sit in the margin of a heading.
+INLINE_CAPTION_SKIP = {
+    "SKPD_PD4_A": {"CUMULATIVE TIME OUT OF PARENTAL CARE:",
+                   "CIRCUMSTANCES LEADING TO THE APPLICATION:",
+                   "ORDER RECOMMENDED:"},
+    "SKPD_PD4_B": {"CHILD(REN): DATE(S) OF BIRTH:",
+                   # The service table's five party cells are captioned on one
+                   # line and show the answer on the next ("MOTHER:" over
+                   # "(name)"). Answering beside the caption fits four of the
+                   # five and leaves "SIGNIFICANT OTHER(S):" 15.6pt of its cell,
+                   # so all five are answered after "(name)" instead, by hand,
+                   # and the table reads the same way down its whole length.
+                   "MOTHER:", "MOTHER’S BAND:", "FATHER:", "FATHER’S BAND:",
+                   "SIGNIFICANT OTHER(S):",
+                   "ORDER RECOMMENDED:",
+                   "SERVICE:",
+                   "DATE SERVED: METHOD OF SERVICE:",
+                   "REGISTRATION OF LIVE BIRTH:",
+                   "EVIDENCE:",
+                   "DOCUMENTS NEEDED:",
+                   "REPORT TO WORKER (FOR COUNSEL USE ONLY):"},
+}
+
+
+def visual_rows(page):
+    """Printed lines merged into the rows they actually read as.
+
+    PyMuPDF splits a line at a tab, so "DATE OF APPREHENSION:" and its "(date)"
+    arrive as two lines with the same baseline. An inline caption's answer goes
+    after **everything** printed on its row, not into the 21pt of tab between the
+    caption and the instruction that follows it.
+    """
+    rows = []
+    for rect, text in sorted(ink_lines(page), key=lambda pair: pair[0].y0):
+        # Same row means the **same baseline**, not merely overlapping line
+        # boxes: these forms set a 16.6pt line on a 13.8pt pitch, so consecutive
+        # lines overlap by 2.8pt and an overlap test glued a whole option block
+        # into one row. "FSM NO.:" and "SOCIAL WORKER:" overlap by 16.2 of 16.6
+        # and are still two rows.
+        if rows and abs(rect.y0 - rows[-1][0].y0) < 2.0:
+            rows[-1][0] |= rect
+            rows[-1][1].append(text.strip())
+        else:
+            rows.append([fitz.Rect(rect), [text.strip()]])
+    return [(rect, " ".join(parts).strip()) for rect, parts in rows]
+
+
+def inline_caption_fields(page, doc_id, placed):
+    """A caption whose answer goes on the rest of its own line.
+
+    Practice Directive 4's memos are Word documents whose captions print a colon
+    and a tab and nothing else -- "FSM NO.:", "SOCIAL WORKER:", and the "Term: /
+    Parent: / PSI: / Date of Home Study: / Date of Panel Approval:" under each
+    option of the recommended order. There is no rule, no cell and no rectangle,
+    so every detector in this file correctly finds nothing, and Form A shipped
+    with ten captions a social worker cannot answer.
+
+    What separates this from `writing_area_bands` is **where the answer goes**,
+    and the form itself says which: if there is a band's worth of clear paper
+    under the caption the answer goes there, and if the next line follows at the
+    leading the answer goes beside it. So the two rules partition on BAND_MIN and
+    cannot both fire.
+
+    The box runs from the end of everything printed on the row to the page's own
+    answer margin, clipped to any drawn box the caption sits inside -- the
+    recommended-order options are inside one, and without the clip their answers
+    ran past its border.
+    """
+    rows = visual_rows(page)
+    if not rows:
+        return []
+    margin = max(rect.x1 for rect, _text in rows)
+    floor = page.rect.height - BAND_FOOTER
+    # What bounds a caption's answer on the right: the enclosing ruled cell if it
+    # is in one, else the enclosing drawn box, else the page's answer margin.
+    frames = [rect for rect, _text, _dollar in grid_cells(page, cell_max_height(doc_id))]
+    frames += [fitz.Rect(item[1]) for drawing in page.get_drawings()
+               for item in drawing["items"] if item[0] == "re"
+               and fitz.Rect(item[1]).width > 200]
+    skip = INLINE_CAPTION_SKIP.get(doc_id, set())
+    out = []
+    for rect, text in rows:
+        if text in skip:
+            continue
+        if not (text.endswith(":") or TRAILING_PROMPT.search(text)):
+            continue
+        below = [other.y0 for other, _t in rows
+                 if other is not rect and other.y1 > rect.y1 + 1]
+        if min(min(below, default=floor), floor) - rect.y1 - 2 >= BAND_MIN:
+            continue  # answered underneath; `writing_area_bands` owns it
+        edge = margin
+        for frame in frames:
+            if frame.x0 < rect.x0 and frame.x1 > rect.x1 and frame.y0 < rect.y0 < frame.y1:
+                edge = min(edge, frame.x1 - 1.5)
+        for other, _t in rows:
+            if other is rect or other.y1 <= rect.y0 + 1 or other.y0 >= rect.y1 - 1:
+                continue
+            if rect.x1 <= other.x0 < edge:
+                edge = other.x0 - EDGE_CLEARANCE
+        # Already answered on its own line -- inside the same bound, and by a
+        # real share of the row rather than any overlap at all. These forms stack
+        # a 13.8pt box on a 16.6pt row, so the box belonging to the row *below*
+        # clips the bottom 2.8pt of this one; a bare overlap test read every
+        # caption as answered, and Form B's "MSS COUNSEL: (name)" -- the one row
+        # of the three whose neighbours have rules and which has none -- lost its
+        # field to the rule under the row beneath it.
+        if any(rect.x0 - 2 <= box.x0 < edge
+               and min(box.y1, rect.y1) - max(box.y0, rect.y0)
+               > 0.5 * min(box.height, rect.height)
+               for box in placed):
+            continue
+        # Cap the bottom at the next row's top. A 16.6pt line on a 13.8pt pitch
+        # otherwise puts every box 2.8pt into the one below it, and the viewer
+        # draws two controls through each other -- the same cap
+        # `template_prompt_fields` needed on the same forms.
+        bottom = min([rect.y1] + [other.y0 for other, _t in rows
+                                  if other.y0 > rect.y0 + 0.5])
+        box = fitz.Rect(rect.x1 + EDGE_CLEARANCE, rect.y0, edge, bottom)
+        if box.width >= INLINE_MIN_WIDTH and box.height >= 6:
+            out.append((box, "TextField"))
+    return out
+
+
+def page_boxes(page, max_cell_height=CELL_MAX_HEIGHT, doc_id=""):
     """Every candidate box on one page, as (rect, type), in reading order."""
     marks = checkboxes(page) + glyph_checkboxes(page)
     boxes = [(rect, "CheckBox") for rect in marks]
 
-    cells = grid_cells(page)
+    cells = grid_cells(page, max_cell_height)
     pix = page_greyscale(page) if cells else None
     # Heading rows are worked out **before** the columns are classified: a
     # heading is not evidence about the column under it. See `classify_columns`.
@@ -1096,9 +1559,48 @@ def page_boxes(page):
     heading_rows = heading_row_tops(page, cells, total_rows)
     kinds = classify_columns(page, cells, heading_rows)
     filled_cells = []
+    chars_here = page_chars(page)
     for rect, text, dollar in cells:
         if text:
-            continue  # the government already wrote this cell's name (guide 9.3)
+            # The government wrote this cell's name (guide 9.3) -- but on a deep
+            # cell the name is a *heading over writing space*, not the whole
+            # content. Practice Directive 1's Schedule A gives each property
+            # class a 211-326pt cell headed "Real Property / (List by civic
+            # address/land location.)" and expects the list underneath it; the
+            # 9.3 rule alone left the largest writing area on the form with
+            # nothing to type in. The clear space under the label becomes a
+            # TextArea when there is a band's worth of it, which is the same test
+            # `writing_area_bands` applies to a caption on open paper -- so a
+            # one-line row label, which is what 9.3 was written for, still yields
+            # nothing.
+            # A cell whose whole content is a parenthetical is not a cell the
+            # government *named*; it is one it showed how to fill. Form B's
+            # registration-of-live-birth table sets its two data rows as
+            # "(child's name)" and "(yes or no)", and guide 9.3 read them as row
+            # labels and left the table with one field in six.
+            if PLACEHOLDER_CELL.match(text.strip()):
+                # After the placeholder, not over it -- the same convention
+                # `template_prompt_fields` follows, so the government's own
+                # example of what to write stays readable beside the answer.
+                _t, inside = cell_contents(chars_here, rect)
+                right = max([box.x1 for box, _c in inside], default=rect.x0)
+                box = fitz.Rect(right + EDGE_CLEARANCE, rect.y0 + 1.5,
+                                rect.x1 - 1.5, rect.y1 - 1.5)
+                if box.width >= MIN_BLANK_WIDTH and box.height >= 6:
+                    kind = ("TextArea" if box.height / (SCALE * 6.0) > TEXTAREA_LINES
+                            else "TextField")
+                    boxes.append((box, kind))
+                    filled_cells.append(rect)
+                continue
+            if rect.height >= LABELLED_CELL_MIN_HEIGHT:
+                _t, inside = cell_contents(chars_here, rect)
+                bottom = max([box.y1 for box, _c in inside], default=rect.y0)
+                band = fitz.Rect(rect.x0 + 1.5, bottom + EDGE_CLEARANCE,
+                                 rect.x1 - 1.5, rect.y1 - 1.5)
+                if band.height >= BAND_MIN and band.width >= MIN_BLANK_WIDTH:
+                    boxes.append((band, "TextArea"))
+                    filled_cells.append(rect)
+            continue
         if any(mark.intersects(rect) for mark in marks):
             continue  # a tick's own cell -- the printed checkbox is the field
         kind = kinds[(round(rect.x0, 0), round(rect.x1, 0))]
@@ -1184,10 +1686,20 @@ def page_boxes(page):
             continue
         boxes.append((rect, "TextField"))
 
-    for band in writing_area_bands(page, [rect for rect, _kind in boxes]):
-        boxes.append((band, "TextArea"))
+    # **The template-prompt fallback is decided before the bands are added**, not
+    # after. A page that is a Word template produces nothing from any detector
+    # above -- that is the condition the shape describes -- but a trailing prompt
+    # ("Summary: (details from evidence...)") is exactly what such a page is made
+    # of, so once `writing_area_bands` learned to anchor on one, Directive 4's
+    # Forms C and D produced a single band each and the fallback stopped running.
+    # They went from 13 and 6 fields to 1.
     if not boxes:
         boxes = template_prompt_fields(page)
+    for band in writing_area_bands(page, [rect for rect, _kind in boxes]):
+        boxes.append((band, "TextArea"))
+    if doc_id in INLINE_CAPTION_FORMS:
+        boxes.extend(inline_caption_fields(page, doc_id,
+                                           [rect for rect, _kind in boxes]))
     return clear_of_type(page, boxes)
 
 
@@ -1202,6 +1714,8 @@ TEMPLATE_LABEL = re.compile(r"^\s*[A-Z][^()]{0,60}:\s*$")
 PROMPT_MIN_WIDTH = 60.0
 # A trailing narrative block gets at least this much height to be worth a box.
 NARRATIVE_MIN_HEIGHT = 24.0
+# A ruled cell holding nothing but a parenthetical instruction. See page_boxes.
+PLACEHOLDER_CELL = re.compile(r"^\((?:[^()]|\([^()]*\))*\)$")
 
 
 def template_prompt_fields(page):
@@ -1229,12 +1743,7 @@ def template_prompt_fields(page):
     hand-measuring 17 fields across two forms would record coordinates instead
     of the reason for them.
     """
-    rows = []
-    for block in page.get_text("dict")["blocks"]:
-        for line in block.get("lines", []):
-            text = "".join(span["text"] for span in line["spans"])
-            if text.strip():
-                rows.append((fitz.Rect(line["bbox"]), text))
+    rows = ink_lines(page)
     if not rows:
         return []
     right = max(rect.x1 for rect, _text in rows)
@@ -1291,6 +1800,62 @@ def template_prompt_fields(page):
         if floor - top >= NARRATIVE_MIN_HEIGHT:
             boxes.append((fitz.Rect(left, top, right, floor), "TextArea"))
     return boxes
+
+
+# A box clamped off the line above still has to be one somebody can type in.
+# Below this it keeps its height and the overlap is accepted -- there is nowhere
+# else for it to go.
+MIN_CLAMPED_HEIGHT = 8.0
+
+
+def clear_of_line_above(page, boxes):
+    """Trim a box's *top* off the line printed above it.
+
+    `clear_of_type` is the same idea applied sideways, and `seat_blanks` already
+    stops a blank rising into the blank above it. Neither sees the case the
+    practice directives are full of: a blank set in a **justified paragraph**,
+    where the pitch is the leading and the box is the font's own line. Form
+    FAM-PD #3's Form A seats a 16.8pt box on a 15pt pitch, so its top edge lands
+    a third of the way up the letters of the line above -- and because the viewer
+    draws a bordered control inside the rectangle we store, that edge renders in
+    the app as a rule struck through the government's printed words. Nothing
+    flagged it: `check_printed_text` asks whether a box *covers* type, and a
+    border grazing the line above covers almost none of it.
+
+    So a box is pushed down to clear the lowest ink that intrudes into it from
+    above. Only ink that is genuinely above the writing line counts (more than
+    3pt clear of the box's own bottom), which is what keeps the box's own caption
+    -- printed on its own line, to its left, with a descender or two below the
+    baseline -- from shoving it off its rule.
+
+    Scoped to the batch-3 families. Part 15 and the two regulation families have
+    the same shape in places and are reviewed and shipped; this is a seating
+    correction, and widening it to them is one more entry in `LINE_CLAMP`.
+    """
+    glyphs = []
+    for text, char_boxes, _sizes in line_chars(page):
+        for index, char in enumerate(text):
+            if char not in " \t_":
+                glyphs.append(char_boxes[index])
+    out = []
+    for rect, kind in boxes:
+        if kind == "CheckBox":
+            out.append((rect, kind))
+            continue
+        intruding = [g.y1 for g in glyphs
+                     if g.x1 > rect.x0 and g.x0 < rect.x1
+                     and rect.y0 < g.y1 < rect.y1 - 3]
+        if intruding:
+            top = min(max(intruding) + STACK_GAP, rect.y1 - MIN_CLAMPED_HEIGHT)
+            if top > rect.y0:
+                rect = fitz.Rect(rect.x0, top, rect.x1, rect.y1)
+        out.append((rect, kind))
+    return out
+
+
+# The families whose boxes are clamped off the line above. See
+# `clear_of_line_above`.
+LINE_CLAMP = ("SKPD_",)
 
 
 def clear_of_type(page, boxes):
@@ -1480,9 +2045,24 @@ def build(src, promote=False):
     page_sizes = [[round(p.rect.width, 1), round(p.rect.height, 1)] for p in doc]
     fields, skipped = [], 0
     index = 0
+    manual = MANUAL_FIELDS.get(doc_id, [])
     for number, page in enumerate(doc, start=1):
         captions = signature_captions(page)
-        kept, dropped = drop_signature_rules(page_boxes(page), captions)
+        boxes = page_boxes(page, cell_max_height(doc_id), doc_id)
+        if doc_id.startswith(LINE_CLAMP):
+            boxes = clear_of_line_above(page, boxes)
+        # A hand-measured field is the answer to that spot on the page, and a
+        # detector that later learns to find the same spot must not put a second
+        # control on top of it. Form 15-78 p2's item 8 is the case: its writing
+        # area has been a `MANUAL_FIELDS` entry since the first batch, and
+        # `writing_area_bands` now finds it too. The manual one wins -- it is what
+        # was reviewed and shipped -- and the automatic one is dropped.
+        here = [rect for page_number, rect, _kind in manual if page_number == number]
+        boxes = [(rect, kind) for rect, kind in boxes
+                 if not any((rect & other).get_area()
+                            > 0.5 * min(rect.get_area(), other.get_area())
+                            for other in here)]
+        kept, dropped = drop_signature_rules(boxes, captions)
         skipped += len(dropped)
         for rect, kind in kept:
             index += 1

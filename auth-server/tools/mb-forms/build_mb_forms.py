@@ -1339,6 +1339,78 @@ def heading_row_tops(page, cells, total_rows):
 # the form expects you to use but drew nothing for. Bands outside this range are
 # a line of leading (too small) or the rest of the sheet (too large).
 BAND_MIN, BAND_MAX = 22.0, 260.0
+# ...except on the twenty forms this batch converted out of Word, where the floor
+# is measured against the page's own line pitch instead.
+#
+# 22pt is the right floor for a **typeset** form, where the paper under a caption
+# is either an answer space or the leading before the next paragraph, and 22pt is
+# what separates the two. The child-protection briefs and the sixteen FOAEAA
+# forms are not typeset: they are Word documents, and a Word document has exactly
+# one way to leave a writing space, which is to press Return. That leaves a band
+# of one line -- 12.5pt at these briefs' 14.5pt pitch -- which is under the floor,
+# so it was refused, and the Pre-Hearing Brief of Agency shipped with six of its
+# eight questions unanswerable: "Date of apprehension:", "Previous CFS orders:",
+# "Previous VPAs:", "Total number of months in care...", "Family law
+# proceedings/orders:" and the counsel block each had a blank line under it and
+# no field on it. The same shape recurs down every page of all four briefs.
+#
+# What is measured is the **advance** to the next line -- its top minus this
+# line's top -- against the page's pitch, not the leftover band. The two differ
+# by the clearance trimmed off each end, and that difference is the whole answer
+# on the counsel block of the Pre-Hearing Brief of Agency: "for Mother:" is
+# followed by a blank line at an advance of 26.6pt over a 14.5pt pitch, plainly
+# empty, but the band that survives trimming is 10.1pt and a height test throws
+# it away. An advance cannot be trimmed, and it says exactly the thing worth
+# knowing: is there a line slot here with nothing set in it. Wrapped lines of one
+# paragraph advance by exactly one pitch ("Total number of months in care since
+# apprehension (including VPA and order" / "time):" advance 14.5 against a pitch
+# of 14.5) and are refused.
+#
+# **Kept to the converted forms deliberately.** Applied to all 140, the relaxed
+# floor moves 71 of them, 57 of which are PDFs from batches 1 and 2 that have
+# already been read page by page and shipped -- and on a typeset PDF a
+# pitch-sized gap after a caption really can be paragraph spacing, so those
+# fields would be guesses. Provenance is the honest gate here, and it is
+# recorded, not inferred: `mb_sources_batch3` names each row's `sourceFormat`.
+# An advance of at least this many pitches means a line slot was left empty. One
+# blank line is 2.0; the margin below that is for a block set at a slightly
+# different size from the page's mode, which the counsel block is (2 x 14.5 = 29
+# nominal, 26.6 measured, 1.83 pitches).
+BLANK_LINE_PITCHES = 1.75
+
+
+def _word_sourced():
+    """Doc IDs whose background was converted from .doc/.docx, from the manifest."""
+    try:
+        import mb_sources_batch3
+    except ImportError:  # the module is optional for callers outside this batch
+        return frozenset()
+    return frozenset(row["docId"] for row in mb_sources_batch3.all_sources()
+                     if row.get("sourceFormat") in ("doc", "docx"))
+
+
+WORD_SOURCED = _word_sourced()
+
+
+def line_pitch(page):
+    """The page's own line advance, or None if it has too little type to tell.
+
+    The mode of the gap between successive baselines within a text block,
+    rounded to the half point. Taken within a block because that is where the
+    typesetter's leading actually lives; between blocks the distance is whatever
+    space the author left.
+    """
+    gaps = collections.Counter()
+    for block in page.get_text("dict")["blocks"]:
+        lines = [fitz.Rect(line["bbox"]) for line in block.get("lines", [])]
+        lines.sort(key=lambda rect: rect.y0)
+        for above, below in zip(lines, lines[1:]):
+            gap = below.y0 - above.y0
+            if 6.0 <= gap <= 30.0:
+                gaps[round(gap * 2) / 2.0] += 1
+    if sum(gaps.values()) < 4:
+        return None
+    return gaps.most_common(1)[0][0]
 BAND_FOOTER = 45.0
 
 # Manitoba's style of cause captions its party lines from **below** and draws no
@@ -1365,7 +1437,7 @@ CAPTION_GAP = 2.0
 CAPTION_MIN_HEIGHT = 8.0
 
 
-def writing_area_bands(page, placed, cells, obstacles=()):
+def writing_area_bands(page, placed, cells, obstacles=(), blank_lines=False):
     """Answer spaces the form anchors with a caption and then leaves as paper.
 
     Three guards, each of which a form in this batch makes necessary. A caption
@@ -1384,6 +1456,29 @@ def writing_area_bands(page, placed, cells, obstacles=()):
                 lines.append((fitz.Rect(line["bbox"]), text))
     lines.sort(key=lambda pair: pair[0].y0)
     floor = page.rect.height - BAND_FOOTER
+    pitch = line_pitch(page) if blank_lines else None
+    # Each line's advance to the next thing printed anywhere below it, and
+    # whether that next thing is a row of options.
+    #
+    # **A caption whose blank line is followed by tick boxes is answered by
+    # ticking one.** "Application:" on the briefs' page 2 leaves an empty line
+    # and then lists five orders to choose between, and a writing area in that
+    # gap is a second, contradictory way to answer the same question. This is the
+    # rule `_cell_sub_captions` already applies inside a cell, applied to a
+    # caption standing on the page. Only the blank-line path needs it: a full
+    # `BAND_MIN` band between a caption and its options does not occur here.
+    advance, options_below = {}, {}
+    if pitch:
+        marks = checkboxes(page)
+        tops = sorted({round(rect.y0, 1) for rect, _t in lines})
+        following = {}
+        for rect, _text in lines:
+            following.setdefault(round(rect.y0, 1), fitz.Rect(rect))
+            following[round(rect.y0, 1)] |= rect
+        for this, nxt in zip(tops, tops[1:]):
+            advance[this] = nxt - this
+            options_below[this] = any(mark.intersects(following[nxt])
+                                      for mark in marks)
     out = []
     for rect, text in lines:
         if not text.rstrip().endswith(":"):
@@ -1436,7 +1531,12 @@ def writing_area_bands(page, placed, cells, obstacles=()):
         # `check_geometry` as a non-positive size rather than as no field at all.
         if band.width < MIN_BLANK_WIDTH:
             continue
-        if not BAND_MIN <= band.height <= BAND_MAX:
+        if band.height > BAND_MAX:
+            continue
+        if band.height < BAND_MIN and not (
+                pitch and advance.get(round(rect.y0, 1), 0.0)
+                >= pitch * BLANK_LINE_PITCHES
+                and not options_below.get(round(rect.y0, 1))):
             continue
         if any(band.intersects(box) for box in placed):
             continue
@@ -1975,11 +2075,21 @@ MANUAL_FIELDS = {
     # offers 169 candidates across the 140 forms of which the great majority are
     # form titles ("PETITION FOR DIVORCE"), running heads ("Page 3") and the row
     # labels of Form 70D.5's grid.
+    "MBCPB_INTAKE_AGENCY": [
+        (2, fitz.Rect(90.1, 609.5, 516.9, 630.5), "TextArea"),   # precipitating event / case plan
+        (2, fitz.Rect(90.1, 653.0, 516.9, 674.0), "TextArea"),   # genuine issue for trial
+        (2, fitz.Rect(90.1, 711.0, 516.9, 734.0), "TextArea"),   # summary judgment basis
+    ],
+    "MBCPB_INTAKE_PARENTS": [
+        (2, fitz.Rect(90.1, 322.5, 510.2, 358.0), "TextArea"),   # dispute the allegations
+        (2, fitz.Rect(90.1, 380.5, 510.2, 415.0), "TextArea"),   # parent's plan of care
+    ],
     "MBCPB_PREHEARING_AGENCY": [
+        (5, fitz.Rect(90.1, 230.6, 516.9, 280.6), "TextArea"),   # precipitating event / case plan
         (5, fitz.Rect(90.1, 303.1, 516.9, 563.1), "TextArea"),   # Issues for trial
     ],
     "MBCPB_PREHEARING_PARENTS": [
-        (3, fitz.Rect(90.1, 98.2, 390.2, 358.2), "TextArea"),    # expert-witness detail
+        (4, fitz.Rect(90.1, 184.7, 510.2, 220.2), "TextArea"),   # allegations / plan of care
         (4, fitz.Rect(90.1, 242.7, 510.2, 502.7), "TextArea"),   # dispute / plan of care
     ],
 }
@@ -2053,7 +2163,7 @@ def trailing_caption_boxes(page, placed):
     return [(box, "TextField")]
 
 
-def page_boxes(page):
+def page_boxes(page, doc_id=None):
     """Every candidate box on one page, as (rect, type), in reading order."""
     marks = checkboxes(page)
     boxes = [(rect, "CheckBox") for rect in marks]
@@ -2245,7 +2355,8 @@ def page_boxes(page):
         boxes.append((band, "TextField"))
     for band in style_of_cause_bands(page, surviving()):
         boxes.append((band, "TextField"))
-    for band in writing_area_bands(page, surviving(), cells, every()):
+    for band in writing_area_bands(page, surviving(), cells, every(),
+                                   blank_lines=doc_id in WORD_SOURCED):
         boxes.append((band, "TextArea"))
     for band in narrative_prompt_bands(page, surviving(), cells, every()):
         boxes.append((band, "TextArea"))
@@ -2429,9 +2540,9 @@ def tick_rects(page):
     return out
 
 
-def signature_rule_rects(page):
+def signature_rule_rects(page, doc_id=None):
     """The boxes this page deliberately does not get, for the verifier to excuse."""
-    return drop_signature_rules(page_boxes(page), signature_captions(page),
+    return drop_signature_rules(page_boxes(page, doc_id), signature_captions(page),
                                 jurat_brackets(page), name_notes(page))[1]
 
 
@@ -2546,8 +2657,8 @@ def build(src, promote=False, force=False):
     index = 0
     for number, page in enumerate(doc, start=1):
         kept, dropped = drop_signature_rules(
-            page_boxes(page), signature_captions(page), jurat_brackets(page),
-            name_notes(page))
+            page_boxes(page, doc_id), signature_captions(page),
+            jurat_brackets(page), name_notes(page))
         skipped += len(dropped)
         for rect, kind in kept:
             index += 1
