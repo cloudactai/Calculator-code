@@ -425,16 +425,6 @@ def _total_federal_credits(
     year: int,
 ) -> float:
     bpa = _bpa_federal(taxable_income, c)
-    print(
-        f"bpa: {bpa} \nage amount: {_age_amount_federal(age, taxable_income, c)}\n"
-        f" eligible dep {_eligible_dependent_federal(party_num, children_live_with, bpa)}"
-    )
-    print(
-        f"bascpp: {_base_cpp(employed_income, self_employed_income, c)}\n"
-        f" ei:{_ei(employed_income, c)}\n"
-        f" canada employment amount {_canada_employment_amount(employed_income, c)}"
-    )
-    print(f"disability: {(c['DISABILITY_AMOUNT_FED'] if has_disability else 0.0)}")
     return (
         bpa
         + _age_amount_federal(age, taxable_income, c)
