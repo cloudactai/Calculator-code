@@ -95,18 +95,21 @@ const Navbar = () => {
       accessTo: Roles.SUPERADMIN,
     },
     {
-      name: "Tax Constants",
-      linkTo: AUTH_ROUTES.SUPERADMINTAXCONSTANTS,
-      icon: <LuLayoutDashboard color="#171d34" size={20} />,
-      auth: true,
-      accessTo: Roles.SUPERADMIN,
-    },
-    {
       name: "Form Mapper",
       linkTo: AUTH_ROUTES.SUPERADMINFORMMAPPER,
       icon: <LuLayoutDashboard color="#171d34" size={20} />,
       auth: true,
       accessTo: Roles.SUPERADMIN,
+    },
+  ];
+
+  const navLinkTaxConstants = [
+    {
+      name: "Tax Constants",
+      linkTo: AUTH_ROUTES.SUPERADMINTAXCONSTANTS,
+      icon: <LuLayoutDashboard color="#171d34" size={20} />,
+      auth: true,
+      accessTo: [Roles.ADMIN, Roles.SUPERADMIN],
     },
   ];
 
@@ -226,6 +229,7 @@ const Navbar = () => {
             {userRole?.role == Roles.SUPERADMIN &&
               navLinksInfoSuperAdmin_1.map((e) => Render_link(e))}
             {navLinkHome.map((e) => Render_link(e))}
+            {navLinkTaxConstants.map((e) => Render_link(e))}
             {!TRIMMED_SIDEBAR
               ? navLinksInfo_1.map((e) => Render_link(e))
               : null}
