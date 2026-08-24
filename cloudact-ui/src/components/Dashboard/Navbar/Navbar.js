@@ -95,6 +95,13 @@ const Navbar = () => {
       accessTo: Roles.SUPERADMIN,
     },
     {
+      name: "Tax Constants",
+      linkTo: AUTH_ROUTES.SUPERADMINTAXCONSTANTS,
+      icon: <LuLayoutDashboard color="#171d34" size={20} />,
+      auth: true,
+      accessTo: Roles.SUPERADMIN,
+    },
+    {
       name: "Form Mapper",
       linkTo: AUTH_ROUTES.SUPERADMINFORMMAPPER,
       icon: <LuLayoutDashboard color="#171d34" size={20} />,
