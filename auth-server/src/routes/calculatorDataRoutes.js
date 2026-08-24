@@ -10,6 +10,7 @@
 
 const express = require("express");
 const prisma = require("../../prismaClient");
+const { authMiddleware } = require("../middleware/authMiddleware");
 
 const router = express.Router();
 
@@ -277,7 +278,7 @@ router.get("/tax-constants/:year", async (req, res) => {
 });
 
 // PUT — update tax constants for a specific year (create or overwrite)
-router.put("/tax-constants/:year", async (req, res) => {
+router.put("/tax-constants/:year", authMiddleware, async (req, res) => {
   const year = Number(req.params.year);
   const constants = req.body;
 
@@ -300,7 +301,7 @@ router.put("/tax-constants/:year", async (req, res) => {
 });
 
 // DELETE — remove a tax year
-router.delete("/tax-constants/:year", async (req, res) => {
+router.delete("/tax-constants/:year", authMiddleware, async (req, res) => {
   const year = Number(req.params.year);
 
   try {

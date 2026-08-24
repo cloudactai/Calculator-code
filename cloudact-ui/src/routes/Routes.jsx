@@ -184,7 +184,9 @@ const Routes = () => {
       </Route>
 
       <Route path={AUTH_ROUTES.SUPERADMINTAXCONSTANTS}>
-        <SuperAdminTaxConstants />
+        <AuthUser usersAuth={[...rl_adm, Roles.SUPERADMIN]} sidAccess={true}>
+          <SuperAdminTaxConstants />
+        </AuthUser>
       </Route>
 
       <Route path={AUTH_ROUTES.SUPERADMINDB}>
