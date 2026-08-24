@@ -192,7 +192,7 @@ either flags every correctly-placed box for the underscores it is supposed to si
 on, or — once underscores are excused — waves through a box that really has
 covered the caption glued to them.
 
-Current state: **76 forms, 3,880 fields, zero findings**, and the build is
+Current state: **121 forms, 6,531 fields, zero findings**, and the build is
 idempotent (two runs produce byte-identical maps). The 40 Part 15 templates are
 byte-identical to what they were before the other two families were added, which
 is asserted directly rather than assumed -- the floors that had to move to fit
@@ -574,3 +574,79 @@ The federal relocation forms are the different case -- one federal document, no
 provincial copy -- and `FormTemplate` carries one province per row, so they are
 recorded once per province with province-distinct doc IDs (`SKDIV_1` /
 `MBDIV_1`). One shared row would reach only one province's picker.
+
+## What reading the last 69 pages found
+
+The 25 practice-directive, interpersonal-violence and Court of Appeal templates
+were read page by page against the government's own page and against a filled
+render. **Every automated gate was green before this review started and stayed
+green through all six defects below** -- which is the point of doing it, and the
+reason `review/ledger.json` exists. Each defect is a class, not a one-off, and
+each is recorded here in the form the next batch can look for.
+
+- **An option glyph can be an ordinary letter.** Form A of the Interpersonal
+  Violence set prints its seven options as `G` in WPTypographicSymbols, where
+  `G` is the open square. The codepoint is U+0047, so `BOX_GLYPHS` cannot hold
+  it without turning every `G` in the body text into a control, and all 28 marks
+  across eight pages shipped with nothing to tick. `FONT_BOX_GLYPHS` keys on the
+  font instead. Ask what makes a vocabulary distinctive before assuming it is
+  the codepoint -- Manitoba's `[ ]` needed a width cut for the same reason
+  (guide 9.13).
+
+- **The ink probe can union two marks.** Guide 2's "one mark is one candidate"
+  is usually about the search window; it applies just as much to the pixels.
+  Directive 8 stacks options 14.6pt apart inside a 25.3pt character cell, so
+  each glyph's box contains most of its neighbour's square: one option came back
+  8.0 x 16.6 covering both squares, and eleven more marks came back 9.x x 16.5.
+  Masking the neighbouring characters -- Manitoba's fix -- is wrong when the
+  cells overlap by more than half, because the mask eats the ink being measured.
+  Contiguous runs of ink rows separate them cleanly (2.4 / **7.75** / 1.9 inside
+  one cell); keep the square run.
+
+- **A bare office is not only a signature caption.** `SK_ROLE_CAPTION` matched
+  "REGISTRAR" on the Court of Appeal's notice, where it is the first line of the
+  court's mailing address, and it claimed the rule belonging to a *different*
+  addressee -- deleting the respondent's service line. `check_unfilled_blanks`
+  then excused the loss by re-running the same detector, which is guide 9.14b's
+  blind spot arriving for the second time in this pipeline. A signature caption
+  sits under a bare rule; an addressee sits under somebody else's answer.
+  `SK_OFFICE_CAPTION` had that gate from the start and `SK_ROLE_CAPTION` did not.
+
+- **A rule is a rule whether the province types it or draws it.** The gate above
+  was text-only when first written and would have put a box on Directive 8's
+  "Local Registrar" rules, which are drawn rather than typed. Both readings of a
+  rule have to be checked wherever one is.
+
+- **A signing rule the government forgot to caption.** Guide 5 finds a signature
+  rule by its caption, and Directive 3's two forms print none, so both took a
+  field on the party's own signature line. The rest of the family captions the
+  identical position. Where a caption is missing, the structure still identifies
+  it: a bare rule, directly under the line the form executes itself on, set in
+  the right-hand column. Two fields across 121 templates.
+
+- **One writing line, two anchors.** Directive 7 draws its contact-block rules
+  from x 288 *and* types underscores over the last one from x 306. The typed run
+  won and the box came out 18pt short, out of line with the five above it. The
+  right edge is the discriminator: a table border also runs under the inline
+  blanks in its cells (Form 15-47 p9, p13 overhang by 180-285pt), but this run's
+  own rule ends where the run ends. One line in 121 templates.
+
+**And two shapes that looked like defects and were not** -- both settled by
+measuring rather than by eye, which is the other half of this work:
+
+- Practice Directive 1's Parts 5 and 6 look like one-line boxes in a large
+  blank. They are 17.6pt in a 21.6pt band and 24.1pt in a 28.1pt band: they fill
+  what the page gives them. The Court of Appeal's items 2-6 look like narrative
+  answers with no writing area, and every gap on that sheet is the document's
+  uniform 18pt paragraph leading, so there is no band to anchor to.
+- Form A of the Interpersonal Violence set carries its order four times, and
+  page 1 has one writing line fewer than its three twins -- exactly guide 8's
+  "diff the copies" signal. The government's page 1 genuinely prints one rule
+  fewer. Checking the source beat repairing against the "good" copy.
+
+`MANUAL_DROPS` is new and holds one entry, for a field parked in a table's
+column heading (guide 9.2) on a table whose rows are all the same height, so the
+height signal cannot fire. The structural signal that is left was measured
+against all 121 templates and would delete 50 legitimate fields on forms already
+reviewed and shipped, so the page that was actually read is recorded instead of
+a rule that is wrong 50 times.
