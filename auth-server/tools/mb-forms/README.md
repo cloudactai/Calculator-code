@@ -961,6 +961,10 @@ already-shipped templates before being kept.
   Provincial Court Form 4 p5 sets its expense rows as "Parking  $______" and
   closes with "SUBTOTAL  $" and no rule at all, so the one figure that is the
   sum of the column had nowhere to go.
+- **An amount control inherits the printed prefix's line box**
+  (`fit_currency_anchors`). A `$`, `-$`, `=$`, or standalone table `=` supplies
+  both the vertical position and height; the field begins immediately after
+  that prefix instead of filling or dropping to the bottom of a tall cell.
 - **Two boxes in a column may not overlap at all** (`cap_stacking`). The viewer
   draws a bordered control inside each, so even 0.3pt puts one border through
   the other.

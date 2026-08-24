@@ -77,6 +77,12 @@ RULE_MAX_THICK = 1.6
 RULE_CLEARANCE = 1.3
 # A blank is one line of writing; the height follows the font it was set in.
 LINE_RATIO = 1.3
+# Currency controls are different from a generic ruled blank: the printed
+# ``$`` / ``-$`` / ``=$`` is already the line-height reference and the input
+# must sit directly beside it.  Applying LINE_RATIO here made amount controls
+# 30% taller than their printed anchor and, in tall table rows, left the value
+# below the sign it belongs to.
+CURRENCY_LINE_RATIO = 1.0
 # The size to seat a rule at when no type shares its line. Form 70D, 70D.1 and
 # 70W are set in 10pt throughout (1,366 of 1,431 glyphs on 70D p3); this is only
 # ever reached by a rule standing alone on an otherwise blank line.
@@ -1996,9 +2002,75 @@ def dollar_twin_slots(page, boxes):
                 right = rect.x1 if right is None else max(right, rect.x1)
         if right is None or right - glyph.x1 < MIN_BLANK_WIDTH:
             continue
-        height = glyph.height * LINE_RATIO
+        height = glyph.height * CURRENCY_LINE_RATIO
         out.append(fitz.Rect(glyph.x1 + 1.5, glyph.y1 - height, right, glyph.y1))
     return out
+
+
+def currency_anchors(page):
+    """Printed amount prefixes that establish an input's exact line box.
+
+    A currency blank either contains underscores after ``$`` or places a short
+    standalone prefix (``$``, ``-$``, ``=$`` or ``=``) inside a table cell.
+    Literal amounts such as ``$150,000`` are deliberately excluded.
+    """
+    out = []
+    for text, char_boxes, _sizes in line_chars(page):
+        stripped = text.strip()
+        if "$" in text and ("_" in text or stripped in {"$", "-$", "=$"}
+                            or (stripped.endswith("$") and len(stripped) <= 16)):
+            index = text.rfind("$")
+        elif stripped in {"-", "="}:
+            index = text.rfind(stripped)
+        else:
+            continue
+        if index < 0 or index >= len(char_boxes):
+            continue
+        start = index
+        if index and text[index - 1] in "-=":
+            start -= 1
+        anchor = fitz.Rect(char_boxes[start])
+        for char_box in char_boxes[start + 1:index + 1]:
+            anchor |= char_box
+        out.append(anchor)
+    return out
+
+
+def fit_currency_anchors(page, boxes):
+    """Seat amount fields beside their printed prefix at its actual height.
+
+    Matching is intentionally local: a candidate must already begin within
+    24pt of the prefix and occupy the same line or table row.  This corrects
+    vertical drift without turning nearby narrative or name fields into amount
+    controls.
+    """
+    anchors = currency_anchors(page)
+    if not anchors:
+        return boxes
+    adjusted = list(boxes)
+    available = {i for i, (_rect, kind) in enumerate(adjusted)
+                 if kind == "TextField"}
+    for anchor in anchors:
+        candidates = []
+        for index in available:
+            rect, _kind = adjusted[index]
+            x_gap = abs(rect.x0 - anchor.x1)
+            y_gap = abs((rect.y0 + rect.y1) / 2
+                        - (anchor.y0 + anchor.y1) / 2)
+            if x_gap <= 24 and y_gap <= 32 and rect.x1 > anchor.x1 + 4:
+                candidates.append((y_gap + x_gap * 0.25, index))
+        if not candidates:
+            continue
+        _score, index = min(candidates)
+        rect, kind = adjusted[index]
+        left = anchor.x1 + EDGE_CLEARANCE
+        if rect.x1 - left < MIN_BLANK_WIDTH:
+            continue
+        height = anchor.height * CURRENCY_LINE_RATIO
+        adjusted[index] = (fitz.Rect(left, anchor.y0, rect.x1,
+                                     anchor.y0 + height), kind)
+        available.remove(index)
+    return adjusted
 
 
 # Two boxes in the same column may not overlap vertically at all: the viewer
@@ -2256,7 +2328,7 @@ def page_boxes(page, doc_id=None):
             # Guide 4: start after the `$`, and take both the height and the
             # vertical position from the glyph -- anchoring the top to a tall
             # cell instead leaves the printed `$` with nothing beside it.
-            height = min(dollar.height * LINE_RATIO, box.height)
+            height = min(dollar.height * CURRENCY_LINE_RATIO, box.height)
             top = min(max(dollar.y0, box.y0), box.y1 - height)
             box = fitz.Rect(dollar.x1 + 1.5, top, box.x1, top + height)
         if box.width < MIN_BLANK_WIDTH or box.height < 6:
@@ -2364,7 +2436,8 @@ def page_boxes(page, doc_id=None):
         boxes.append((slot, "TextField"))
     for box, kind in trailing_caption_boxes(page, [r for r, _k in boxes]):
         boxes.append((box, kind))
-    return cap_stacking(clear_of_type(page, dedupe(boxes)))
+    boxes = clear_of_type(page, dedupe(boxes))
+    return cap_stacking(fit_currency_anchors(page, boxes))
 
 
 def dedupe(boxes, tolerance=2.0):
