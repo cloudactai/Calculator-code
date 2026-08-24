@@ -1764,7 +1764,9 @@ def spousal_calculate():
         if "province" not in data:
             app.logger.warning("Province missing from /spousal-calculate request — defaulting to ON")
         print(f"[/spousal-calculate] province received: {province!r}")
+        print(f"[/spousal-calculate] party1_gross={party1_gross}, party2_gross={party2_gross}, party1_age={party1_age}, recipient_age={recipient_age}")
         year              = int(data.get("year", 2025))
+        print(f"[/spousal-calculate] tax year={year}")
         youngest_child_age = float(data.get("youngest_child_age", 0.0))
 
         # --- Build children list and child_counts ---
@@ -1850,6 +1852,7 @@ def spousal_calculate():
               f"monthly_cs_paid={monthly_cs_paid}, monthly_notional_cs={monthly_notional}, "
               f"youngest_child_age={youngest_child_age}, province={province!r}, "
               f"year={year}, payor_is_party1={party1_gross >= party2_gross})")
+        print(f"[/spousal-calculate] about to call calculate_spousal_support_iterative...")
         result = calculate_spousal_support_iterative(
             payor_gross          = payor_gross,
             recipient_gross      = recipient_gross,
@@ -1865,6 +1868,13 @@ def spousal_calculate():
             year                 = year,
             payor_is_party1      = (party1_gross >= party2_gross),
         )
+
+        print(f"[/spousal-calculate] iterative result received:")
+        print(f"[/spousal-calculate]   monthly: low={result.monthly_low}, mid={result.monthly_mid}, high={result.monthly_high}")
+        print(f"[/spousal-calculate]   payor_taxes: low={result.payor_taxes_low}, mid={result.payor_taxes_mid}, high={result.payor_taxes_high}")
+        print(f"[/spousal-calculate]   recipient_taxes: low={result.recipient_taxes_low}, mid={result.recipient_taxes_mid}, high={result.recipient_taxes_high}")
+        print(f"[/spousal-calculate]   payor_benefits: low={result.payor_benefits_low}, mid={result.payor_benefits_mid}, high={result.payor_benefits_high}")
+        print(f"[/spousal-calculate]   recipient_benefits: low={result.recipient_benefits_low}, mid={result.recipient_benefits_mid}, high={result.recipient_benefits_high}")
 
         # --- Determine actual payor/recipient by INDI (disposable income after CS) ---
         # The old app compares household incomes (INDI) not gross incomes.
