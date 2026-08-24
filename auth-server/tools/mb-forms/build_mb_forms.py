@@ -457,6 +457,35 @@ def jurat_brackets(page):
 
 # --- printed rules ----------------------------------------------------------
 
+# A fill this close to white paints nothing on a white page.
+WHITE = 0.99
+
+
+def _paints_nothing(drawing):
+    """Is this drawing invisible on the page?
+
+    **An invisible rectangle is not a rule.** Word lays a white-filled rectangle
+    over the writing area of some forms -- the Protection Order personal-
+    information sheet has one on nearly every line, `fill=(1,1,1)` with no
+    stroke -- and `get_drawings()` hands its four sides back as ordinary path
+    segments. Reading them as rules invents a printed line where the page is
+    blank: 73 fields across six templates were seated on one, including a box
+    left floating in the white space beside "Race:" on MBPO_CPI p1 and the
+    "Skin Colour" box, which took an invisible full-width rule 2.6pt below its
+    own real one and so started 26pt out on top of its own caption (guide 9.1,
+    "on a rule, but the wrong rule").
+
+    Guide 2 already says to exclude a filled grey shading panel by looking at
+    its fill and its lack of a stroke. This is the same test, for the fill that
+    is easiest to miss precisely because it leaves no mark to look at.
+    """
+    stroke = drawing.get("color")
+    fill = drawing.get("fill")
+    if stroke is not None:
+        return False
+    return fill is None or all(channel >= WHITE for channel in fill)
+
+
 def _segments(page):
     """Horizontal and vertical rules as [centre, from, to] lists.
 
@@ -468,6 +497,8 @@ def _segments(page):
     """
     horizontal, vertical = [], []
     for drawing in page.get_drawings():
+        if _paints_nothing(drawing):
+            continue
         for item in drawing["items"]:
             if item[0] == "l":
                 a, b = item[1], item[2]
@@ -524,6 +555,13 @@ def _covered(segments, key, start, end, tol=2.0, fraction=GRID_COVER):
     return False
 
 
+# A glyph taller than this spans several lines of body type and therefore sits
+# on none of them. Measured against what it has to separate: the Protection
+# Order sheets set a marginal banner at 48pt, whose letters stand 53pt tall,
+# while the largest heading anywhere in the batch is 14pt and stands 16pt.
+BANNER_HEIGHT = 2.5 * DEFAULT_FONT
+
+
 def _font_at(chars, key, x0, x1):
     """The size of the type sharing a rule's own line, for seating its box.
 
@@ -531,10 +569,21 @@ def _font_at(chars, key, x0, x1):
     10pt body with 8pt italic captions, and a blank set beside an 8pt caption is
     still a 10pt blank -- so the *largest* size on the line is the right answer,
     not the nearest.
+
+    **Taking the largest is what makes a banner dangerous.** The Protection
+    Order personal-information sheets print "Confidential" down the right margin
+    at 48pt, one letter per line, each glyph 53pt tall and so overlapping five
+    body lines at once. The window here reaches 120pt past the rule's end, which
+    on a rule ending at the right margin takes in the banner, and the largest
+    size on the line came back 48 -- so `_is_underline` read genuine writing
+    lines as the underline of an enormous heading. Ten rules on MBPO_CPI were
+    misread that way. A glyph that tall is on no single line, so it is not the
+    type this rule is set against.
     """
     sizes = [size for box, _char, size in chars
              if key - UNDERLINE_BAND * DEFAULT_FONT <= (box.y0 + box.y1) / 2 <= key
-             and box.x1 > x0 - 120 and box.x0 < x1 + 120]
+             and box.x1 > x0 - 120 and box.x0 < x1 + 120
+             and box.height <= BANNER_HEIGHT]
     return max(sizes) if sizes else DEFAULT_FONT
 
 
@@ -1489,8 +1538,17 @@ def writing_area_bands(page, placed, cells, obstacles=(), blank_lines=False):
     for rect, text in lines:
         if not text.rstrip().endswith(":"):
             continue
+        # **Answered beside itself, even by a box that is about to be dropped.**
+        # `placed` is what survives, so a caption whose answer is its own
+        # signature rule looks unanswered here once guide 5 deletes that rule --
+        # and MBPO_CPI p2 then opened a 23pt paragraph box on the blank paper
+        # under "Signature du (de la) requérant(e)/dénonciateur(trice) :", which
+        # its English twin on p1 does not have because that caption ends in no
+        # colon. `obstacles` already carries the dropped rules; a signature rule
+        # *below* a caption still must not veto its band (see `every()`), but one
+        # on the caption's **own line** answers it.
         if any(box.y0 < rect.y1 and box.y1 > rect.y0 and box.x0 >= rect.x0
-               for box in placed):
+               for box in list(placed) + list(obstacles)):
             continue
         if any(cell.contains(rect) for cell, _t, _d, _c in cells):
             continue
@@ -2539,6 +2597,11 @@ def clear_of_type(page, boxes):
     return out
 
 
+# How far below a caption's own line its rule may still sit, for a caption
+# printed beside its rule: one line, so a caption that wraps still reaches it.
+CAPTION_WRAP = 13.0
+
+
 def drop_signature_rules(boxes, captions, brackets, lines=()):
     """Guide 5: never put a typeable box on somebody's signature line.
 
@@ -2567,7 +2630,46 @@ def drop_signature_rules(boxes, captions, brackets, lines=()):
             if rect.x0 > x and rect.y0 < bottom + JURAT_BAND and rect.y1 > top - JURAT_BAND:
                 doomed.add(index)
                 break
-    for caption in captions:
+    # **A caption beside it**, on its own line. `is_signature_box` looks upward
+    # from a caption, because Manitoba captions almost every signature rule from
+    # below -- but the Protection Order sheet writes the whole execution line
+    # across one line, "Date: ______  Applicant's/Informant's Signature ______",
+    # so the caption's rule is level with it and to its right, and no upward
+    # look reaches it. The rule was empty before only by accident: the marginal
+    # banner made `_font_at` read 48pt there and `_is_underline` suppressed the
+    # rule outright, so fixing the banner exposed a signature line that had
+    # never actually been recognised. Across all 140 templates this claims three
+    # rules -- MBAD_1 p2 "Signature", MBAD_12 p1 "A Commissioner for Oaths in
+    # and for", and this one -- and every one of them is guide 5's case.
+    #
+    # The window reaches one line below the caption because the caption may
+    # wrap: this form's French side sets the same block as "Signature du (de
+    # la) / requérant(e)/dénonciateur(trice) :", two lines, with the rule level
+    # with the second, and only "Signature du (de la)" carries the word the
+    # caption is matched on. Widening to a line changes nothing else in the
+    # batch -- it is the same three rules either way.
+    beside = set()
+    for number, caption in enumerate(captions):
+        for index, (rect, kind) in enumerate(boxes):
+            if kind == "CheckBox" or index in doomed:
+                continue
+            if rect.x0 < caption.x1 - 4:
+                continue  # not to the caption's right
+            if caption.y0 - 2 <= rect.y1 <= caption.y1 + CAPTION_WRAP:
+                doomed.add(index)
+                beside.add(number)
+
+    for number, caption in enumerate(captions):
+        # **A caption captions one rule.** Having found its own rule beside it,
+        # a caption must not also claim the rule above it -- that one belongs to
+        # whatever is printed on it. The French side of MBPO_CPI ends its
+        # service block with two continuation writing lines and then "Date: __
+        # Signature du (de la) requérant(e)/dénonciateur(trice) : ___", and the
+        # caption reaching upward as well took the second continuation line,
+        # which its English twin on p1 keeps. Same reasoning as the nearest-rule
+        # rule just below: one caption, one rule.
+        if number in beside:
+            continue
         best, best_gap = None, None
         for index, (rect, kind) in enumerate(boxes):
             if kind == "CheckBox" or index in doomed:
