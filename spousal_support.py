@@ -447,9 +447,9 @@ def _compute_net_indi(
         both_incomes            = both_gross,
         year                    = year,
     )
-    # Suppress debug print statements inside tax.py
-    with contextlib.redirect_stdout(io.StringIO()):
-        result = calculate_taxes(inp)
+    print(f"[spousal_support] about to call calculate_taxes for party {party_num}, year={year}, province={province}, gross={gross_income}")
+    result = calculate_taxes(inp)
+    print(f"[spousal_support] calculate_taxes returned: total_taxes={result['total_taxes']}, total_benefits={result['total_benefits']}")
 
     # INDI = gross (no support/deductions) − taxes + benefits − CS − special expenses
     raw_gross = gross_income + self_employed_income + other_income
