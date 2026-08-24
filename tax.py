@@ -1355,6 +1355,10 @@ def calculate_taxes(inp: TaxInput) -> dict:
     Year-variable constants are loaded from tax_constants.json.
     """
 
+    print(f"[tax.py] calculate_taxes called: year={inp.year}, province={inp.province}, party_num={inp.party_num}")
+    print(f"[tax.py]   incomes: employed={inp.employed_income}, self_employed={inp.self_employed_income}, other={inp.other_income}")
+    print(f"[tax.py]   support: received={inp.support_received}, deductible_paid={inp.deductible_support_paid}")
+
     # Load the right year's constants once
     c = get_year_constants(inp.year)
 
@@ -1688,7 +1692,7 @@ def calculate_taxes(inp: TaxInput) -> dict:
     )
     enhanced_cpp_amt = _enhanced_cpp_deduction(inp.employed_income, inp.self_employed_income, inp.year)
 
-    return {
+    _result = {
         # Income
         "gross_income":                   total_income,
         "taxable_income":                 taxable_income,
@@ -1760,6 +1764,9 @@ def calculate_taxes(inp: TaxInput) -> dict:
         "total_taxes":            total_taxes,
         "net_income_after_tax":   net_income_after_tax,
     }
+    print(f"[tax.py] calculate_taxes result: federal_tax={federal_tax:.2f}, provincial_tax={provincial_tax:.2f}, "
+          f"cpp_ei={cpp_ei:.2f}, total_taxes={total_taxes:.2f}, total_benefits={total_benefits:.2f}")
+    return _result
 
 
 def calculate_taxes_from_input(inp: TaxInput) -> dict:
