@@ -34,7 +34,7 @@ from datetime import date
 
 
 # ===========================================================================
-# LOAD YEAR-VARIABLE CONSTANTS FROM JSON
+# LOAD YEAR-VARIABLE CONSTANTS FROM JSON (fallback)
 # ===========================================================================
 
 _CONSTANTS_PATH = os.path.join(os.path.dirname(__file__), "tax_constants.json")
@@ -42,15 +42,49 @@ with open(_CONSTANTS_PATH) as _f:
     _ALL_YEAR_CONSTANTS: dict = json.load(_f)
 
 
+# ===========================================================================
+# DATABASE CONNECTION (optional — falls back to JSON if unavailable)
+# ===========================================================================
+
+_DATABASE_URL = os.environ.get("DATABASE_URL")
+
+
+def _fetch_from_db(year: int) -> dict | None:
+    """Try to load constants for *year* from the TaxConstant table."""
+    if not _DATABASE_URL:
+        return None
+    try:
+        import psycopg2
+        conn = psycopg2.connect(_DATABASE_URL, connect_timeout=5)
+        try:
+            cur = conn.cursor()
+            cur.execute(
+                'SELECT data FROM "TaxConstant" WHERE year = %s',
+                (year,),
+            )
+            row = cur.fetchone()
+            if row:
+                data = row[0]
+                return data if isinstance(data, dict) else json.loads(data)
+        finally:
+            conn.close()
+    except Exception as exc:
+        print(f"[tax.py] DB lookup failed for year {year}: {exc}")
+    return None
+
+
 def get_year_constants(year: int) -> dict:
     """
     Return the constants dict for *year*.
-    Falls back to the most recent available year if *year* is not found.
+    Tries the database first, then falls back to the JSON file.
     """
+    db_result = _fetch_from_db(year)
+    if db_result is not None:
+        return db_result
+
     key = str(year)
     if key in _ALL_YEAR_CONSTANTS:
         return _ALL_YEAR_CONSTANTS[key]
-    # Fall back to the highest available year
     best = max(_ALL_YEAR_CONSTANTS.keys())
     return _ALL_YEAR_CONSTANTS[best]
 

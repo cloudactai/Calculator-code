@@ -5825,6 +5825,23 @@ const Screen2 = ({
             party2High: flaskResult.payor_tax_profile_high ?? null,
           };
         }
+
+        taxesWithSpecialExpenses.current = {
+          party1Low:  taxesFromApiRef.current.party1Low,
+          party1Med:  taxesFromApiRef.current.party1Mid,
+          party1High: taxesFromApiRef.current.party1High,
+          party2Low:  taxesFromApiRef.current.party2Low,
+          party2Med:  taxesFromApiRef.current.party2Mid,
+          party2High: taxesFromApiRef.current.party2High,
+        };
+        benefitsValues.current = {
+          party1Low:  benefitsFromApiRef.current.party1Low,
+          party1Med:  benefitsFromApiRef.current.party1Mid,
+          party1High: benefitsFromApiRef.current.party1High,
+          party2Low:  benefitsFromApiRef.current.party2Low,
+          party2Med:  benefitsFromApiRef.current.party2Mid,
+          party2High: benefitsFromApiRef.current.party2High,
+        };
       } else {
         setLoading(false);
         setShowFlaskError(true);
@@ -7083,10 +7100,30 @@ const Screen2 = ({
 
   useEffect(() => {
     // if (fetchedFederalValuesDB.length > 0) {
-    calculateTotalTaxes(1);
-    calculateTotalTaxes(2);
+    const totalTaxP1 = calculateTotalTaxes(1);
+    const totalTaxP2 = calculateTotalTaxes(2);
     calculateAllOperationsForParty1();
     calculateAllOperationsForParty2();
+
+    console.log("=== TAX CALCULATION RESULTS ===");
+    console.log("Federal Tax:", federalTax.current);
+    console.log("Provincial Tax:", provincialTax.current);
+    console.log("Total Taxes — Party 1:", totalTaxP1, "| Party 2:", totalTaxP2);
+    console.log("CPP/EI Employed — P1:", calculateCPPandELDeductionsForEmployed(1), "| P2:", calculateCPPandELDeductionsForEmployed(2));
+    console.log("CPP/EI Self-Employed — P1:", calculateCPPandEIDeductionsForSelfEmployed(1), "| P2:", calculateCPPandEIDeductionsForSelfEmployed(2));
+    console.log("Enhanced CPP:", enhancedCPPDeduction.current);
+    console.log("Canada Workers Benefit — P1:", calculateCanadaWorkersBenefits(1), "| P2:", calculateCanadaWorkersBenefits(2));
+    console.log("Provincial Credits:", provincialCredits.current);
+    console.log("--- Benefits ---");
+    console.log("Canada Child Benefit:", childBenefit.current);
+    console.log("Child Disability Benefit:", childDisabilityBenefit.current);
+    console.log("GST/HST Benefit:", GSTHSTBenefit.current);
+    console.log("Ontario Child Benefit:", OntarioChildBenefit.current);
+    console.log("Ontario Sales Tax Credit:", ontarioSalesTax.current);
+    console.log("Climate Action:", climateChangeVal.current);
+    console.log("Total Benefits — P1:", sumAllBenefits(1), "| P2:", sumAllBenefits(2));
+    console.log("===============================");
+
     // Force re-render so RenderCalculationValues picks up fresh ref values
     setCalcVersion((v) => v + 1);
     // }
