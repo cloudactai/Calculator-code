@@ -80,8 +80,10 @@ def get_year_constants(year: int) -> dict:
     """
     db_result = _fetch_from_db(year)
     if db_result is not None:
+        print(f"[tax.py] Loaded constants for year {year} from database")
         return db_result
 
+    print(f"[tax.py] DB fetch failed or unavailable for year {year}, falling back to JSON")
     key = str(year)
     if key in _ALL_YEAR_CONSTANTS:
         return _ALL_YEAR_CONSTANTS[key]
