@@ -146,12 +146,30 @@
    "page": 1
   },
   {
-   "id": 1750069623009,
-   "type": "TextArea",
+   "id": 1750069623044,
+   "type": "TextField",
    "x": 72.1,
    "y": 160.05,
    "width": 701.85,
-   "height": 70.16,
+   "height": 19.5,
+   "value": "",
+   "fontSize": 9,
+   "color": [
+    0,
+    0,
+    0
+   ],
+   "background": "none",
+   "border": "none",
+   "page": 1
+  },
+  {
+   "id": 1750069623045,
+   "type": "TextField",
+   "x": 72.1,
+   "y": 282.62,
+   "width": 701.85,
+   "height": 19.5,
    "value": "",
    "fontSize": 9,
    "color": [
