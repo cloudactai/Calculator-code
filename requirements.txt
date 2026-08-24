@@ -5,3 +5,4 @@ gunicorn>=21.2
 flask-cors>=4.0
 reportlab>=4.0
 xhtml2pdf>=0.2.11
+psycopg2-binary>=2.9
