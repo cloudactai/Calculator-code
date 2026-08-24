@@ -1,22 +1,20 @@
 // Calculator reference-data routes: tax brackets, dynamic values, and child
-// support tables.  These were on the retired legacy /v1 backend and are now
-// served as static JSON from this auth-server.
+// support tables.
 //
 // Data sources:
-//   tax_constants.json  – year-variable tax constants (brackets, credit
-//                         amounts, benefit thresholds).  Add a new top-level
-//                         key (e.g. "2026") when CRA publishes new values.
-//   schedule_i.json     – Ontario child-support guideline tables.
+//   TaxConstant (Postgres) – primary store for year-variable tax constants
+//     (brackets, credit amounts, benefit thresholds). Edited via the super-admin
+//     Tax Constants page.
+//   tax_constants.json     – fallback if a year is not yet in the database.
+//   schedule_i.json        – child-support guideline tables.
 
 const express = require("express");
-const path = require("path");
-const fs = require("fs");
+const prisma = require("../../prismaClient");
 
 const router = express.Router();
 
-// ── Load data files ─────────────────────────────────────────────────────────
-const TAX_CONSTANTS_PATH = path.join(__dirname, "../data/tax_constants.json");
-let TAX_CONSTANTS = require("../data/tax_constants.json");
+// ── Load fallback data ──────────────────────────────────────────────────────
+const TAX_CONSTANTS_JSON = require("../data/tax_constants.json");
 const SCHEDULE_I = require("../data/schedule_i.json");
 
 // Legacy response wrapper (same shape as mattersRoutes)
@@ -24,11 +22,20 @@ const ok = (body) => ({ data: { code: 200, status: "success", body } });
 
 // ── Helpers ─────────────────────────────────────────────────────────────────
 
-function getConstants(year) {
+async function getConstants(year) {
+  const numYear = Number(year);
+
+  // Try the database first
+  const row = await prisma.taxConstant.findUnique({ where: { year: numYear } });
+  if (row) return row.data;
+
+  // Fall back to the JSON file
   const key = String(year);
-  if (TAX_CONSTANTS[key]) return TAX_CONSTANTS[key];
-  const best = Object.keys(TAX_CONSTANTS).sort().pop();
-  return TAX_CONSTANTS[best];
+  if (TAX_CONSTANTS_JSON[key]) return TAX_CONSTANTS_JSON[key];
+
+  // Last resort: most recent year in JSON
+  const best = Object.keys(TAX_CONSTANTS_JSON).sort().pop();
+  return TAX_CONSTANTS_JSON[best];
 }
 
 /**
@@ -36,8 +43,7 @@ function getConstants(year) {
  * Province = "FED" → federal values; otherwise provincial values for that
  * province code (currently only "ON" is populated).
  */
-function buildDynamicValues(year, province) {
-  const c = getConstants(year);
+function buildDynamicValues(c, province) {
   const kv = (Key, Value) => ({ Key, Value: Number(Value) });
 
   if (province === "FED") {
@@ -143,8 +149,7 @@ function buildDynamicValues(year, province) {
  * Returns rows tagged with Province: "FED", province, province+"-Health",
  * "ON-Ccare", and "ON-Mrate".
  */
-function buildTaxBrackets(year, province) {
-  const c = getConstants(year);
+function buildTaxBrackets(c, province) {
   const rows = [];
 
   // Federal brackets
@@ -191,26 +196,34 @@ function buildTaxBrackets(year, province) {
 // ── Routes ──────────────────────────────────────────────────────────────────
 
 // Available tax years
-router.get("/tax-calc-distinct-years", (req, res) => {
-  const years = Object.keys(TAX_CONSTANTS)
+router.get("/tax-calc-distinct-years", async (req, res) => {
+  try {
+    const dbRows = await prisma.taxConstant.findMany({ select: { year: true }, orderBy: { year: "desc" } });
+    if (dbRows.length > 0) {
+      return res.json(ok(dbRows.map((r) => ({ year: r.year }))));
+    }
+  } catch (_) { /* fall through to JSON fallback */ }
+
+  const years = Object.keys(TAX_CONSTANTS_JSON)
     .map((y) => ({ year: Number(y) }))
     .sort((a, b) => b.year - a.year);
   return res.json(ok(years));
 });
 
 // Dynamic values (credit amounts, benefit thresholds, etc.)
-router.get("/dynamic_values_by_year/:year/:province", (req, res) => {
+router.get("/dynamic_values_by_year/:year/:province", async (req, res) => {
   const year = Number(req.params.year);
   const province = req.params.province.toUpperCase();
-  const values = buildDynamicValues(year, province);
+  const c = await getConstants(year);
+  const values = buildDynamicValues(c, province);
   return res.json(ok(values));
 });
 
 // Tax bracket / rate tables
-router.get("/tax-calc-values-by-year/:year", (req, res) => {
+router.get("/tax-calc-values-by-year/:year", async (req, res) => {
   const year = Number(req.params.year);
-  // Include brackets for all provinces the frontend expects
-  const rows = buildTaxBrackets(year, "ON");
+  const c = await getConstants(year);
+  const rows = buildTaxBrackets(c, "ON");
   return res.json(ok(rows));
 });
 
@@ -233,34 +246,53 @@ router.get("/childSupport/values/:province/:noChild", (req, res) => {
 // ── Tax Constants Admin ─────────────────────────────────────────────────────
 
 // GET all tax constants (every year)
-router.get("/tax-constants", (req, res) => {
-  return res.json(ok(TAX_CONSTANTS));
+router.get("/tax-constants", async (req, res) => {
+  try {
+    const rows = await prisma.taxConstant.findMany({ orderBy: { year: "desc" } });
+    if (rows.length > 0) {
+      const result = {};
+      for (const row of rows) {
+        result[String(row.year)] = row.data;
+      }
+      return res.json(ok(result));
+    }
+  } catch (_) { /* fall through */ }
+
+  return res.json(ok(TAX_CONSTANTS_JSON));
 });
 
 // GET tax constants for a specific year
-router.get("/tax-constants/:year", (req, res) => {
-  const year = String(req.params.year);
-  if (!TAX_CONSTANTS[year]) {
-    return res.status(404).json({ data: { code: 404, status: "error", body: "Year not found" } });
-  }
-  return res.json(ok(TAX_CONSTANTS[year]));
+router.get("/tax-constants/:year", async (req, res) => {
+  const year = Number(req.params.year);
+
+  try {
+    const row = await prisma.taxConstant.findUnique({ where: { year } });
+    if (row) return res.json(ok(row.data));
+  } catch (_) { /* fall through */ }
+
+  const key = String(year);
+  if (TAX_CONSTANTS_JSON[key]) return res.json(ok(TAX_CONSTANTS_JSON[key]));
+
+  return res.status(404).json({ data: { code: 404, status: "error", body: "Year not found" } });
 });
 
 // PUT — update tax constants for a specific year (create or overwrite)
-router.put("/tax-constants/:year", (req, res) => {
-  const year = String(req.params.year);
+router.put("/tax-constants/:year", async (req, res) => {
+  const year = Number(req.params.year);
   const constants = req.body;
 
   if (!constants || typeof constants !== "object" || Array.isArray(constants)) {
     return res.status(400).json({ data: { code: 400, status: "error", body: "Body must be a JSON object" } });
   }
 
-  TAX_CONSTANTS[year] = constants;
-
   try {
-    fs.writeFileSync(TAX_CONSTANTS_PATH, JSON.stringify(TAX_CONSTANTS, null, 2) + "\n", "utf8");
+    await prisma.taxConstant.upsert({
+      where: { year },
+      update: { data: constants },
+      create: { year, data: constants },
+    });
   } catch (err) {
-    console.error("Failed to write tax_constants.json:", err.message);
+    console.error("Failed to save tax constants:", err.message);
     return res.status(500).json({ data: { code: 500, status: "error", body: "Failed to save" } });
   }
 
@@ -268,19 +300,17 @@ router.put("/tax-constants/:year", (req, res) => {
 });
 
 // DELETE — remove a tax year
-router.delete("/tax-constants/:year", (req, res) => {
-  const year = String(req.params.year);
-  if (!TAX_CONSTANTS[year]) {
-    return res.status(404).json({ data: { code: 404, status: "error", body: "Year not found" } });
-  }
-
-  delete TAX_CONSTANTS[year];
+router.delete("/tax-constants/:year", async (req, res) => {
+  const year = Number(req.params.year);
 
   try {
-    fs.writeFileSync(TAX_CONSTANTS_PATH, JSON.stringify(TAX_CONSTANTS, null, 2) + "\n", "utf8");
+    await prisma.taxConstant.delete({ where: { year } });
   } catch (err) {
-    console.error("Failed to write tax_constants.json:", err.message);
-    return res.status(500).json({ data: { code: 500, status: "error", body: "Failed to save" } });
+    if (err.code === "P2025") {
+      return res.status(404).json({ data: { code: 404, status: "error", body: "Year not found" } });
+    }
+    console.error("Failed to delete tax constants:", err.message);
+    return res.status(500).json({ data: { code: 500, status: "error", body: "Failed to delete" } });
   }
 
   return res.json(ok({ year, message: "Tax year deleted" }));
