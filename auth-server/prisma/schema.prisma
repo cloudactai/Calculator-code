@@ -271,6 +271,17 @@ model MatterTaskState {
   @@unique([matterId, taskKey])
 }
 
+// Tax constants by year. One row per tax year, storing the full constants
+// object (brackets, credit amounts, benefit thresholds, etc.) as JSON.
+// Seeded from tax_constants.json; edited via the super-admin Tax Constants page.
+model TaxConstant {
+  id        Int      @id @default(autoincrement())
+  year      Int      @unique
+  data      Json
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
 // A saved calculation report with the generated PDF. Stores both the
 // input/output data (so the report can be regenerated) and the PDF bytes
 // (for instant download without re-running the calculation).
