@@ -29,6 +29,7 @@ Notes on Excel parity (2025):
 from __future__ import annotations
 import json
 import os
+import sys
 from dataclasses import dataclass
 from datetime import date
 
@@ -69,7 +70,7 @@ def _fetch_from_db(year: int) -> dict | None:
         finally:
             conn.close()
     except Exception as exc:
-        print(f"[tax.py] DB lookup failed for year {year}: {exc}")
+        print(f"[tax.py] DB lookup failed for year {year}: {exc}", file=sys.stderr)
     return None
 
 
@@ -80,10 +81,10 @@ def get_year_constants(year: int) -> dict:
     """
     db_result = _fetch_from_db(year)
     if db_result is not None:
-        print(f"[tax.py] Loaded constants for year {year} from database")
+        print(f"[tax.py] Loaded constants for year {year} from database", file=sys.stderr)
         return db_result
 
-    print(f"[tax.py] DB fetch failed or unavailable for year {year}, falling back to JSON")
+    print(f"[tax.py] DB fetch failed or unavailable for year {year}, falling back to JSON", file=sys.stderr)
     key = str(year)
     if key in _ALL_YEAR_CONSTANTS:
         return _ALL_YEAR_CONSTANTS[key]
@@ -1355,9 +1356,9 @@ def calculate_taxes(inp: TaxInput) -> dict:
     Year-variable constants are loaded from tax_constants.json.
     """
 
-    print(f"[tax.py] calculate_taxes called: year={inp.year}, province={inp.province}, party_num={inp.party_num}")
-    print(f"[tax.py]   incomes: employed={inp.employed_income}, self_employed={inp.self_employed_income}, other={inp.other_income}")
-    print(f"[tax.py]   support: received={inp.support_received}, deductible_paid={inp.deductible_support_paid}")
+    print(f"[tax.py] calculate_taxes called: year={inp.year}, province={inp.province}, party_num={inp.party_num}", file=sys.stderr)
+    print(f"[tax.py]   incomes: employed={inp.employed_income}, self_employed={inp.self_employed_income}, other={inp.other_income}", file=sys.stderr)
+    print(f"[tax.py]   support: received={inp.support_received}, deductible_paid={inp.deductible_support_paid}", file=sys.stderr)
 
     # Load the right year's constants once
     c = get_year_constants(inp.year)
@@ -1765,7 +1766,7 @@ def calculate_taxes(inp: TaxInput) -> dict:
         "net_income_after_tax":   net_income_after_tax,
     }
     print(f"[tax.py] calculate_taxes result: federal_tax={federal_tax:.2f}, provincial_tax={provincial_tax:.2f}, "
-          f"cpp_ei={cpp_ei:.2f}, total_taxes={total_taxes:.2f}, total_benefits={total_benefits:.2f}")
+          f"cpp_ei={cpp_ei:.2f}, total_taxes={total_taxes:.2f}, total_benefits={total_benefits:.2f}", file=sys.stderr)
     return _result
 
 
