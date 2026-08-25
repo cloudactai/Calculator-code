@@ -14,7 +14,7 @@ were narrow, no box at all -- "I served ___(identify person served)___" and
 This finds every drawn rule, subtracts the glyphs actually printed on it, and
 adds a field on each clear stretch left over that is wide enough to write in.
 It only ever *adds*: an existing box is left exactly where it is, so the seating
-`review/seat_on_rules.py` applied is preserved, and a stretch that already has a box
+`review/seat_boxes_on_rules.py` applied is preserved, and a stretch that already has a box
 is skipped. Idempotent.
 
 Repairs in place rather than rebuilding, for the reason in guide 1 and in

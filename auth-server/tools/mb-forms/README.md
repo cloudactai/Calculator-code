@@ -603,7 +603,7 @@ next thicker filled rect on any of these pages is a 9pt shading band, so the
 ## Seating boxes on their printed rules
 
 ```
-python3 ../review/seat_on_rules.py [--check] [--family MBKB_]
+python3 ../review/seat_boxes_on_rules.py [--check] [--family MBKB_]
 ```
 
 Moved out of `mb-forms/` and generalised to both provinces: the float is not a
@@ -703,7 +703,7 @@ had nowhere to type on the whole of page 2.
 
 This finds each drawn rule, subtracts the glyphs actually printed on it, and adds
 a field on every clear stretch wide enough to write in. It only ever **adds**, so
-the seating `review/seat_on_rules.py` applied is preserved and a stretch that already
+the seating `review/seat_boxes_on_rules.py` applied is preserved and a stretch that already
 has a box is skipped. Idempotent.
 
 Two things it has to get right, both found by it reporting the wrong answer first:

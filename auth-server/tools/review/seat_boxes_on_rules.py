@@ -49,9 +49,14 @@ inside the ink and is left alone. Over the 263 templates the second pass found
 one box left to move, on MBISO_I, whose choice of rule changed once the boxes
 around it had been seated; the third found none. Run it until it reports zero.
 
-    python3 seat_on_rules.py --check            # report, write nothing
-    python3 seat_on_rules.py --family SKPD_     # one family
-    python3 seat_on_rules.py                    # apply, both provinces
+Named apart from `bc-forms/seat_on_rules.py`, which is the Ontario tool this one
+grew out of: two files with one basename shadow each other on `sys.path` the
+moment anything imports both trees, which is exactly what `one_line_boxes.py`
+does.
+
+    python3 seat_boxes_on_rules.py --check          # report, write nothing
+    python3 seat_boxes_on_rules.py --family SKPD_   # one family
+    python3 seat_boxes_on_rules.py                  # apply, both provinces
 """
 import argparse
 import collections

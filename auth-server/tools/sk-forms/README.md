@@ -286,7 +286,7 @@ Text boxes only -- a checkbox is seated on a printed square and the nudge would
 walk it off, so 712 text fields move and all 73 option boxes stay put.
 
 **The other five families are seated by measurement instead**, with
-`../review/seat_on_rules.py`. Part 15 was originally left alone as "reviewed and
+`../review/seat_boxes_on_rules.py`. Part 15 was originally left alone as "reviewed and
 shipped, and this is a seating preference, not a defect", and that left the
 province half on its lines and half above them. One more `RULE_NUDGE` entry could
 not have fixed it: a constant works for `SKCFS_` and `SKAD_` because each of
@@ -308,6 +308,27 @@ the rendered page:
 `SKAD_`'s 59 residual boxes move a further -0.14pt median, which is the constant
 meeting the measurement: the nudge is right for the family and the measurement is
 right for each box.
+
+### A box the height of its own line
+
+```
+python3 ../review/one_line_boxes.py [--check] SKISO_I
+```
+
+A box can be seated correctly and still read wrong for being far taller than the
+line it sits on. SKISO_I is set 10pt on an 11.1pt line and 107 of its 225 text
+fields were taller than that -- the Start Date, End Date and Year-to-Date columns
+at 21.6pt and the name field at 24.1pt, near enough two lines each, so the form
+read as a column of slabs. Each is cut to `LINE_RATIO` times the font the *page*
+is printed in (13.0pt here), measured per page rather than taken from the stored
+`fontSize`, which is the 9pt the value is stamped in and says nothing about how
+tall the blank should look.
+
+Cut from the top, so the bottom edge stays on the rule the seating pass put it
+on. `TextArea`s are left alone -- their height is what says they are a narrative
+answer space. A box already within a tenth of a line is left alone too: at a
+0.3pt tolerance the pass wanted to shave 0.7pt off all 204 boxes of MBISO_I,
+which nobody would see.
 
 That pass skips every rectangle in `MANUAL_FIELDS`. Those coordinates were read
 off the page by a person and record a decision -- SKPD_PD4_A's "Conditions to
