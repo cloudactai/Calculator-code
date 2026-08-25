@@ -200,6 +200,12 @@ NARROW_COLUMN = 40.0
 # The form's own checkbox metric, used to size a tick a column asks for but does
 # not print a square for. Every one of the 457 printed squares in the set is 9x9.
 TICK_SIDE = 9.0
+# How far from square a typed glyph may be and still be read as an option box.
+# Used only when re-seating a widget-declared checkbox onto its printed mark:
+# the ISO squares measure 7.38 x 7.25 and 10.08 x 10.08, while the neighbours
+# that share a widget rect are letters and rules, none of them square. See
+# `printed_mark`.
+MARK_SQUARENESS = 2.0
 GRID_TOL = 1.5          # two rules this close are the same rule
 GRID_COVER = 0.80       # a border must run this much of the cell's edge
 # A cell taller than this many lines is a paragraph box, not a one-line cell.
@@ -2211,6 +2217,109 @@ def is_fillable(source):
         doc.close()
 
 
+def seat_checkboxes_on_print(fields, background):
+    """Move every widget-derived checkbox onto the square the page actually prints.
+
+    The widget path takes the government's own rectangle for each field, which is
+    right for a text box -- a widget rect on a writing line *is* the writing line
+    -- and wrong for an option. A checkbox annotation's rectangle is the
+    annotation's box, not the box the filer sees: the ISO forms set their option
+    as a Wingdings2 U+F0A3 square and then hang the widget around it with a
+    point of border on every side, so what shipped was a control 11.37 x 12.41
+    sitting over a printed square of 7.38 x 7.25, overhanging it by 2pt at the
+    left and 3pt at the top. On screen the tick's box is visibly bigger than the
+    box drawn under it and sits high and left of it -- SKISO Form A-1 page 4's
+    seven options are the plainest case.
+
+    So the printed mark is measured and the field is seated on it, which is the
+    rule the anchor path has followed all along (`checkboxes`, `glyph_checkboxes`)
+    -- the widget path simply never applied it. **The background must already be
+    flattened**: before that, `get_drawings` returns the widget's own appearance
+    box as well as the printed square, and the appearance box is the very
+    rectangle being corrected.
+
+    A checkbox whose square cannot be found is left exactly where the government
+    put it. That is not a failure to fix: the ISO set also declares options that
+    print no square at all (a bare rule, a cell in a grid), and guessing at ink
+    that is not there would move a control off the only anchor it has.
+    """
+    doc = fitz.open(background)
+    cache = {}
+    moved = 0
+    try:
+        for field in fields:
+            if field["type"] != "CheckBox":
+                continue
+            page = doc[field["page"] - 1]
+            if field["page"] not in cache:
+                cache[field["page"]] = (list(_chars_with_font(page)),
+                                        [d["rect"] for d in page.get_drawings()])
+            chars, drawings = cache[field["page"]]
+            rect = fitz.Rect(field["x"], field["y"],
+                             field["x"] + field["width"] / SCALE,
+                             field["y"] + field["height"] / SCALE)
+            mark = printed_mark(page, rect, chars, drawings)
+            if mark is None:
+                continue
+            if (abs(mark.x0 - rect.x0) < 0.3 and abs(mark.y0 - rect.y0) < 0.3
+                    and abs(mark.width - rect.width) < 0.3
+                    and abs(mark.height - rect.height) < 0.3):
+                continue
+            field["x"] = round(mark.x0, 2)
+            field["y"] = round(mark.y0, 2)
+            field["width"] = round(mark.width * SCALE, 2)
+            field["height"] = round(mark.height * SCALE, 2)
+            moved += 1
+    finally:
+        doc.close()
+    return moved
+
+
+def printed_mark(page, rect, chars, drawings):
+    """The option square printed inside `rect`, or None if the page prints none.
+
+    Two vocabularies, because the ISO set uses both: a form may *draw* its square
+    into the page content, and it may *type* it as a glyph. The drawn square is
+    taken as it is; the typed one is measured off a render by `_glyph_ink`,
+    because a character cell is a good deal taller than the square inside it
+    (see `glyph_checkboxes`).
+
+    The mark has to sit inside the widget's own rectangle -- grown by 1.5pt,
+    which is the border a widget hangs around its square -- so a caption printed
+    hard against the option cannot be read as the option. The typed candidate
+    also has to be *square*: the widget rect always contains part of the line it
+    sits on, and a letter's ink is the one thing that reliably is not square.
+    Ties go to the squarest candidate, which is guide 2's rule that one mark is
+    one candidate rather than the union of everything in range.
+    """
+    grown = rect + (-1.5, -1.5, 1.5, 1.5)
+    best = None
+    for drawn in drawings:
+        if (drawn in grown and CB_MIN < drawn.width < CB_MAX
+                and CB_MIN < drawn.height < CB_MAX):
+            score = abs(drawn.width - drawn.height)
+            if best is None or score < best[0]:
+                best = (score, drawn)
+    if best is not None:
+        return best[1]
+    for char, box, _font in chars:
+        overlap = fitz.Rect(box)
+        overlap.intersect(rect)
+        if overlap.get_area() < 0.5 * box.get_area():
+            continue
+        ink = _glyph_ink(page, box)
+        if ink is None or ink not in grown:
+            continue
+        if not (CB_MIN < ink.width < CB_MAX and CB_MIN < ink.height < CB_MAX):
+            continue
+        if abs(ink.width - ink.height) > MARK_SQUARENESS:
+            continue
+        score = abs(ink.width - ink.height)
+        if best is None or score < best[0]:
+            best = (score, ink)
+    return best[1] if best else None
+
+
 def build_from_widgets(src, doc_id, source, promote):
     """The widget path: the form's own rectangles, and a flattened background.
 
@@ -2233,6 +2342,7 @@ def build_from_widgets(src, doc_id, source, promote):
     page_sizes = audit["pageSizes"]
     if pages != len(page_sizes):
         raise SystemExit("%s: flatten changed the page count" % doc_id)
+    seated = seat_checkboxes_on_print(fields, background)
     bp.clamp_to_page(fields, page_sizes)
     problems = bp.check_geometry(fields, page_sizes)
     overlaps = bp.check_overlap(background, fields)
@@ -2241,9 +2351,9 @@ def build_from_widgets(src, doc_id, source, promote):
     kinds = {}
     for field in fields:
         kinds[field["type"]] = kinds.get(field["type"], 0) + 1
-    print("%-13s pages=%-3d fields=%-4d %-42s sig-skipped=%-3d geom=%-2d overlap=%d  [widgets]"
+    print("%-13s pages=%-3d fields=%-4d %-42s sig-skipped=%-3d geom=%-2d overlap=%d  seated=%-3d [widgets]"
           % (doc_id, len(page_sizes), len(fields), kinds,
-             audit["signaturesSkipped"], len(problems), len(overlaps)))
+             audit["signaturesSkipped"], len(problems), len(overlaps), seated))
     if problems:
         print("   geometry:", problems[:4])
     if promote and not problems:
@@ -2253,7 +2363,7 @@ def build_from_widgets(src, doc_id, source, promote):
     return {"docId": doc_id, "pages": len(page_sizes), "fields": len(fields),
             "kinds": kinds, "signatureSkipped": audit["signaturesSkipped"],
             "geometry": problems, "overlap": overlaps, "source": "widgets",
-            "widgetNames": audit["widgetNames"]}
+            "seated": seated, "widgetNames": audit["widgetNames"]}
 
 
 def build(src, promote=False):

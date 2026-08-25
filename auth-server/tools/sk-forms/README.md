@@ -650,3 +650,39 @@ height signal cannot fire. The structural signal that is left was measured
 against all 121 templates and would delete 50 legitimate fields on forms already
 reviewed and shipped, so the page that was actually read is recorded instead of
 a rule that is wrong 50 times.
+
+## A widget rectangle is not the box the filer sees
+
+The widget path above hands `bc_pipeline.extract` the government's own rectangle
+for every field, which is right for a writing box -- a widget rect on a rule
+*is* the rule -- and wrong for an option. **A checkbox annotation's rectangle is
+the annotation's box, not the printed square**, and the ISO set hangs it around
+the square with a point of border on every side. Form A-1 page 4's seven options
+are the plainest case: the square the page prints is a Wingdings2 U+F0A3
+measuring 7.38 x 7.25, and what shipped over it was a control 11.37 x 12.41,
+overhanging the ink by 2pt at the left and 3pt at the top. On screen the tick's
+box is visibly larger than the box drawn under it and sits high and left of it.
+
+Every automated gate was green: nothing in `verify_sk.py` compares a widget's
+rectangle to the ink inside it, because the anchor path never needed the
+comparison -- it *starts* from the ink (`checkboxes`, `glyph_checkboxes`). The
+widget path simply never applied the rule the rest of the pipeline is built on.
+
+`seat_checkboxes_on_print` now applies it, moving **304 checkboxes across 18 of
+the 20 widget templates** onto the mark the page actually prints. Three things
+about it are worth carrying to the next widget batch:
+
+- **The background must already be flattened.** Before that, `get_drawings`
+  returns the widget's own appearance box alongside the printed square, and the
+  appearance box is the very rectangle being corrected.
+- **Both vocabularies, again.** A form may draw its square into the page content
+  or type it as a glyph, and the ISO set does both, so `printed_mark` reads
+  drawings first and falls back to `_glyph_ink` -- which is what the anchor path
+  already does, and the reason the two detectors exist separately.
+- **A mark that is not there is not guessed at.** 417 of the set's checkboxes
+  print no square (a tick column, a bare rule, a cell in a grid); those keep the
+  government's rectangle, which is the only anchor they have.
+
+Manitoba takes the same `extract`, so the same defect was checked for there:
+1282 checkboxes, 3 misseated, all on `MBISO_LOCATE`. Left alone here only
+because `build_mb_forms.py` has unrelated work in flight.
