@@ -283,10 +283,36 @@ worse than the float it was meant to fix. The usable window is about half a poin
 either side.
 
 Text boxes only -- a checkbox is seated on a printed square and the nudge would
-walk it off, so 712 text fields move and all 73 option boxes stay put. **Part 15
-has the same float and is deliberately left alone**: those 40 templates are
-reviewed and shipped, and this is a seating preference, not a defect. Widening it
-to them is one more entry in `RULE_NUDGE`.
+walk it off, so 712 text fields move and all 73 option boxes stay put.
+
+**The other five families are seated by measurement instead**, with
+`../review/seat_on_rules.py`. Part 15 was originally left alone as "reviewed and
+shipped, and this is a seating preference, not a defect", and that left the
+province half on its lines and half above them. One more `RULE_NUDGE` entry could
+not have fixed it: a constant works for `SKCFS_` and `SKAD_` because each of
+those floats by a single value, and the rest do not. The practice directives are
+Word documents that mix fonts on a page, and their float ranges +0.57 to +2.84pt
+*within the family* -- the medians run +0.63pt on PD7_4, +1.50pt on PD4_B,
++2.07pt on PD6 and +2.80pt on the PD8 orders. So each box's own rule is read off
+the rendered page:
+
+| Family | Boxes moved | Median shift | Range |
+| --- | --- | --- | --- |
+| `SKKB_` | 2577 | +1.03pt | +0.82..+2.65 |
+| `SKISO_` | 993 | +0.65pt | -1.56..+2.98 |
+| `SKPD_` | 635 | +2.07pt | +0.57..+2.84 |
+| `SKIPV_` | 137 | +1.84pt | +1.84..+1.88 |
+| `SKDIV_` | 43 | +0.32pt | +0.19..+1.98 |
+| `SKCA_` | 16 | +2.02pt | +0.61..+2.07 |
+
+`SKAD_`'s 59 residual boxes move a further -0.14pt median, which is the constant
+meeting the measurement: the nudge is right for the family and the measurement is
+right for each box.
+
+That pass skips every rectangle in `MANUAL_FIELDS`. Those coordinates were read
+off the page by a person and record a decision -- SKPD_PD4_A's "Conditions to
+attach:" fills a ruled cell and is seated on that cell's *bottom border*, and
+centring the box on it would push the control through the border.
 
 The nudge is applied *after* seating, not inside it, so the stacking and obstacle
 rules still reason about the geometry the page actually prints -- and so
