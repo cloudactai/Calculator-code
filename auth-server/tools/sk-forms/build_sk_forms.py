@@ -302,7 +302,30 @@ MANUAL_DROPS = {
     # two rows under it are captioned "(child's name)" / "(yes or no)" -- so the
     # top row is the column heading and its empty left half is the heading cell
     # the section title above already names, not a place anyone writes.
-    "SKPD_PD4_B": [(2, fitz.Rect(73.7, 311.2, 304.5, 322.5))],
+    "SKPD_PD4_B": [
+        (2, fitz.Rect(73.7, 311.2, 304.5, 322.5)),
+        # The "Conditions to attach:" band -- see SKPD_PD4_A below.
+        (1, fitz.Rect(77.6, 572.2, 540.0, 747.0)),
+    ],
+    # "Conditions to attach:" is the last caption printed on p1 and it sits in a
+    # ruled cell 27.6pt tall. `writing_area_bands` bounds a band by the next line
+    # of *ink*, and the only things printed below this caption are the empty
+    # paragraphs the Word document ends with -- so the band ran from under the
+    # caption, straight through the cell's bottom border, down to the page floor,
+    # and the viewer drew a 74pt control over the footer. The band is dropped
+    # here and the answer re-seated in the cell by MANUAL_FIELDS.
+    "SKPD_PD4_A": [(1, fitz.Rect(77.6, 672.8, 540.0, 747.0))],
+    # Forms C and D are Word templates, so `template_prompt_fields` answers each
+    # prompt beside itself -- right for "Date: (pre-trial date)" and wrong for
+    # "Evidence:", whose parenthetical runs so far across the line that the
+    # answer is left a 108pt stub (Form C) for a list of affidavits and home
+    # assessments. Both forms leave 24.8pt of clear paper under the prompt,
+    # which is where the evidence goes; the stubs are dropped and re-seated by
+    # MANUAL_FIELDS. `writing_area_bands` cannot claim that paper itself: its
+    # TRAILING_PROMPT anchor allows no nested brackets and Form C's prompt has
+    # three, so the line ends in neither a colon nor a plain parenthetical.
+    "SKPD_PD4_C": [(1, fitz.Rect(432.3, 375.9, 540.0, 392.5))],
+    "SKPD_PD4_D": [(1, fitz.Rect(357.8, 194.1, 539.9, 210.7))],
 }
 
 MANUAL_FIELDS = {
@@ -408,6 +431,16 @@ MANUAL_FIELDS = {
         # rather than a colon. The field goes after it, out to the page's answer
         # margin, so the instruction stays readable beside the answer.
         (1, fitz.Rect(286.30, 350.00, 540.00, 366.20), "TextField"),
+        # "Conditions to attach:" -- the caption and its answer share one ruled
+        # cell (72.0-540.0, interior 655.9-683.5), the same way "Term:" and
+        # "PSI:" above share a line with theirs. Neither general rule can seat
+        # it: `writing_area_bands` claims it and runs off the bottom of the cell
+        # (see MANUAL_DROPS), and `inline_caption_fields` would stop at the
+        # caption's own baseline and leave the second half of the cell as paper.
+        # The answer therefore starts EDGE_CLEARANCE past the colon (180.6) and
+        # fills the cell to its inside edges: two lines of conditions, which is
+        # what the cell was ruled for.
+        (1, fitz.Rect(182.10, 655.90, 538.00, 683.50), "TextArea"),
     ],
     "SKPD_PD4_B": [
         # p1's child list is a two-column table set with tabs rather than rules:
@@ -448,6 +481,19 @@ MANUAL_FIELDS = {
         # p3 "WHO APPEARED?" is a question with 24.8pt of clear paper under it
         # and no colon, so no general rule anchors on it.
         (3, fitz.Rect(72.00, 185.10, 540.00, 205.90), "TextArea"),
+        # p1 "Conditions to attach:", the same cell as Form A's and seated the
+        # same way -- after the colon (180.6) and out to the inside edges of the
+        # cell, whose interior here is 555.4-583.0.
+        (1, fitz.Rect(182.10, 555.40, 538.00, 583.00), "TextArea"),
+    ],
+    # "Evidence:" answered under its own prompt rather than beside it -- see
+    # MANUAL_DROPS. The area runs the width of the page's answer margin, from
+    # EDGE_CLEARANCE under the prompt to EDGE_CLEARANCE above "Summary:".
+    "SKPD_PD4_C": [
+        (1, fitz.Rect(72.00, 394.50, 540.00, 415.80), "TextArea"),
+    ],
+    "SKPD_PD4_D": [
+        (1, fitz.Rect(72.00, 212.70, 540.00, 234.00), "TextArea"),
     ],
 }
 

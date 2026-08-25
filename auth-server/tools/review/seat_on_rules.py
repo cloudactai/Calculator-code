@@ -1,0 +1,253 @@
+"""Drop every writing box in the Saskatchewan and Manitoba sets onto its rule.
+
+The builders seat a box's bottom edge *above* the rule it belongs to, by a
+clearance derived from where an underscore's ink sits inside its character box.
+The viewer then draws its own bordered control inside the rectangle we store, so
+that clearance reads on screen as a control hovering above its line, with the
+printed rule showing as a second line beneath it -- the float visible on
+SKPD_PD5_C's "I, ______, am a solicitor".
+
+This is the Manitoba tool (`mb-forms/seat_mb_on_rules.py`, moved here) with its
+family list opened up to both provinces, because the float is not a Manitoba
+property: it is what `RULE_CLEARANCE` and its Saskatchewan equivalent do, and
+every family that has printed rules has it.
+
+**Why this measures each box instead of nudging them all by one constant.**
+Saskatchewan's SKCFS_ and SKAD_ families each floated by a single value, which is
+why `build_sk_forms.py` seats those two with one constant apiece (`RULE_NUDGE`)
+and that is exactly equivalent to measuring. The rest do not behave that way.
+Within one family the float ranges 1.25-1.62pt (MBCFS) and 0.95-2.40pt (MBAD),
+because Manitoba draws its blanks two different ways -- as underscore runs *and*
+as line-art segments -- and mixes font sizes on one page; Saskatchewan's practice
+directives are Word documents that do the same. A constant would seat the bulk
+and leave the rest floating, which is the defect it was meant to fix. Reading
+each box's own rule off the rendered page self-corrects for both.
+
+**What it will not touch.** A box is moved only when a printed rule is actually
+found in a 5.6pt window around its bottom edge, and then by at most MAX_SHIFT.
+A box over blank paper -- every TextArea in a writing area, every box in a Word
+template with no rules at all -- measures nothing and is left exactly where the
+builder put it. On top of that, every rectangle either builder's `MANUAL_FIELDS`
+places by hand is skipped outright: those coordinates were read off the page by
+a person and record a decision, so an automatic seating pass does not get to
+second-guess them (SKPD_PD4_A's "Conditions to attach:" is seated on the bottom
+border of its own ruled cell, and centring it on that border would push the
+control through it). Checkboxes are skipped too -- they sit on a printed square,
+which the seating would walk them off.
+
+**Why this repairs in place instead of rebuilding.** `build_mb_forms.py`'s guide
+§1 and its own `hand_finished()` guard: never rebuild a form that already carries
+binds or hand-placed fields, because `--promote` is an `os.replace` and destroys
+them. Every one of these forms is promoted and bound. So this writes back the
+`y` key alone, asserting every other key is byte-identical first, the way
+`rebind_mb_forms.py` writes back only `bind`.
+
+Idempotent: a box already seated measures a zero shift and is left alone.
+
+    python3 seat_on_rules.py --check            # report, write nothing
+    python3 seat_on_rules.py --family SKPD_     # one family
+    python3 seat_on_rules.py                    # apply, both provinces
+"""
+import argparse
+import collections
+import glob
+import json
+import os
+import statistics
+import sys
+
+import fitz
+
+HERE = os.path.dirname(os.path.abspath(__file__))
+TOOLS = os.path.dirname(HERE)
+for _dir in ("bc-forms", "sk-forms", "mb-forms"):
+    sys.path.insert(0, os.path.join(TOOLS, _dir))
+
+import bc_pipeline as bp  # noqa: E402
+import build_sk_forms as SK  # noqa: E402
+import build_mb_forms as MB  # noqa: E402
+
+EXPORT = os.path.join(os.path.dirname(TOOLS), "form-template-export")
+SCALE = bp.SCALE
+
+# Every Saskatchewan and Manitoba family in the export. Both provinces' whole
+# sets, deliberately: the earlier passes excluded Part 15 (SKKB_) and Rule 70
+# (MBKB_) as "reviewed and shipped, and this is a seating preference rather than
+# a defect". It is the same float on the same kind of rule, and a set where half
+# the families sit on their lines and half hover above them reads worse than
+# either alone, so they are in.
+PROVINCES = ("SK", "MB")
+
+# Render zoom for finding the rule. 24x resolves a 0.6pt rule into ~14 rows, which
+# is enough to place its middle to better than a tenth of a point.
+ZOOM = 24.0
+# A rule is darker than this and runs across most of what we sample.
+INK_BELOW = 160
+COVERAGE = 0.6
+# Where to look for the rule, relative to the box's bottom edge. A box already
+# seated has its rule straddling 0, so the window has to open slightly above.
+LOOK_UP, LOOK_DOWN = 1.6, 4.0
+# Sample the box's own width, inset past its left edge so the caption a blank is
+# set hard against cannot be read as the rule.
+SAMPLE_INSET, SAMPLE_MAX = 3.0, 80.0
+SAMPLE_MIN = 8.0
+# Refuse to move a box further than this: past it, whatever was found is not this
+# box's rule and the box is better left where the builder put it.
+MAX_SHIFT = 3.0
+# Smaller than this is the measurement's own noise, not a move worth making.
+DEAD_ZONE = 0.06
+# How closely a field has to match a MANUAL_FIELDS rectangle to count as that
+# hand-placed field. Generous on `y` because `nudge_onto_rules` has already
+# moved SKCFS_ and SKAD_ manual entries by a constant; the left edge, width and
+# height are what identify the box.
+MANUAL_TOL, MANUAL_Y_TOL = 0.6, 3.0
+
+
+def manual_boxes():
+    """{doc_id: [(page, x0, x1, height), ...]} from both builders."""
+    out = collections.defaultdict(list)
+    for module in (SK, MB):
+        for doc_id, entries in getattr(module, "MANUAL_FIELDS", {}).items():
+            for page, rect, _kind in entries:
+                out[doc_id].append((page, rect.x0, rect.x1, rect.height))
+    return out
+
+
+MANUAL = manual_boxes()
+
+
+def is_manual(doc_id, field):
+    """Was this field placed by hand in a builder's MANUAL_FIELDS?"""
+    right = field["x"] + field["width"] / SCALE
+    height = field["height"] / SCALE
+    return any(page == field["page"]
+               and abs(x0 - field["x"]) <= MANUAL_TOL
+               and abs(x1 - right) <= MANUAL_TOL
+               and abs(tall - height) <= MANUAL_Y_TOL
+               for page, x0, x1, tall in MANUAL.get(doc_id, ()))
+
+
+def rule_under(page, field):
+    """(top, bottom) of the printed rule under this box, in points, or None."""
+    left = field["x"]
+    right = left + field["width"] / SCALE
+    bottom = field["y"] + field["height"] / SCALE
+    x0 = left + SAMPLE_INSET
+    x1 = min(right - 1.0, x0 + SAMPLE_MAX)
+    if x1 - x0 < SAMPLE_MIN:
+        return None
+    clip = fitz.Rect(x0, bottom - LOOK_UP, x1, bottom + LOOK_DOWN)
+    clip &= page.rect
+    if clip.is_empty or clip.height <= 0:
+        return None
+    pix = page.get_pixmap(matrix=fitz.Matrix(ZOOM, ZOOM), clip=clip,
+                          colorspace=fitz.csGRAY)
+    # Straight off the sample buffer a row at a time. The per-pixel accessor
+    # costs a Python call each, and this runs over ~90,000 boxes.
+    samples, stride, width = pix.samples, pix.stride, pix.width
+    need = width * COVERAGE
+    dark = []
+    for y in range(pix.height):
+        row = samples[y * stride:y * stride + width]
+        dark.append(sum(1 for value in row if value < INK_BELOW) >= need)
+    runs, start = [], None
+    for y, is_dark in enumerate(dark):
+        if is_dark and start is None:
+            start = y
+        elif not is_dark and start is not None:
+            runs.append((start, y))
+            start = None
+    if start is not None:
+        runs.append((start, pix.height))
+    if not runs:
+        return None
+    first, last = runs[0]
+    return clip.y0 + first / ZOOM, clip.y0 + last / ZOOM
+
+
+def shifts_for(doc_id):
+    """{field id: new y} for every box that is off its rule."""
+    path = os.path.join(EXPORT, "%s.json" % doc_id)
+    pdf = os.path.join(EXPORT, "%s.pdf" % doc_id)
+    fields = json.load(open(path))["staticFields"]
+    doc = fitz.open(pdf)
+    moves, deltas, skipped = {}, [], 0
+    for field in fields:
+        if field["type"] == "CheckBox":
+            continue
+        if is_manual(doc_id, field):
+            skipped += 1
+            continue
+        page = doc[field["page"] - 1]
+        found = rule_under(page, field)
+        if found is None:
+            continue
+        top, low = found
+        bottom = field["y"] + field["height"] / SCALE
+        delta = (top + low) / 2.0 - bottom
+        if abs(delta) < DEAD_ZONE or abs(delta) > MAX_SHIFT:
+            continue
+        moves[field["id"]] = round(field["y"] + delta, 2)
+        deltas.append(delta)
+    doc.close()
+    return moves, deltas, skipped
+
+
+def apply(doc_id, moves):
+    """Write back the `y` key alone, asserting nothing else moved."""
+    path = os.path.join(EXPORT, "%s.json" % doc_id)
+    mapping = json.load(open(path))
+    before = {f["id"]: dict(f) for f in mapping["staticFields"]}
+    for field in mapping["staticFields"]:
+        if field["id"] in moves:
+            field["y"] = moves[field["id"]]
+    for field in mapping["staticFields"]:
+        was = before[field["id"]]
+        for key in was:
+            if key == "y":
+                continue
+            assert was[key] == field[key], "%s %s: %s changed" % (doc_id, field["id"], key)
+    with open(path, "w") as fh:
+        json.dump(mapping, fh, indent=2)
+        fh.write("\n")
+
+
+def template_ids(prefixes):
+    return sorted(os.path.basename(path)[:-5]
+                  for path in glob.glob(os.path.join(EXPORT, "*.json"))
+                  if " " not in os.path.basename(path)
+                  and os.path.basename(path).startswith(prefixes))
+
+
+def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--check", action="store_true", help="report without writing")
+    parser.add_argument("--family", action="append", default=None,
+                        help="prefix to limit the pass to, e.g. SKPD_")
+    args = parser.parse_args()
+
+    ids = template_ids(tuple(args.family) if args.family else PROVINCES)
+    per_family = collections.defaultdict(list)
+    total = held = 0
+    for doc_id in ids:
+        moves, deltas, skipped = shifts_for(doc_id)
+        total += len(moves)
+        held += skipped
+        per_family[doc_id.split("_")[0]].extend(deltas)
+        if moves and not args.check:
+            apply(doc_id, moves)
+        print("%-24s seated=%-4d %-18s %s"
+              % (doc_id, len(moves),
+                 "median %+.2fpt" % statistics.median(deltas) if deltas else "",
+                 "manual held=%d" % skipped if skipped else ""))
+    print("\n%d boxes %s, %d hand-placed boxes left alone."
+          % (total, "would move" if args.check else "seated on their rules", held))
+    for family in sorted(per_family):
+        d = per_family[family]
+        if d:
+            print("  %-8s n=%-4d median %+.2fpt  range %+.2f..%+.2f"
+                  % (family, len(d), statistics.median(d), min(d), max(d)))
+
+
+if __name__ == "__main__":
+    main()
