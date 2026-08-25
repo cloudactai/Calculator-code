@@ -666,6 +666,15 @@ second pass seated 3,772 more Manitoba boxes:
 not above -- the measurement centres a box on whatever it finds either way, which
 is why it is a measurement and not a nudge.
 
+**A box in a ruled cell is seated on that cell's own border.** The raster window
+is only 1.6pt deep, so a box further than that above its border is invisible to
+the search -- and one *past* it is seated on nothing. SKISO_G p1's "Reasons and
+documentation" box sat 2.18pt beyond its border, hanging into the row beneath
+while its three row-mates sat on theirs, which is what the table looked like.
+Where a box lies inside a cell the search is centred on the cell's bottom border
+instead of on the box, so the border is found however far off the box is. 21
+boxes across the 263 templates, all in the ISO, DIV and PO tables.
+
 **Hand-placed boxes are skipped outright.** Every rectangle in either builder's
 `MANUAL_FIELDS` is held where it is: those coordinates were read off the page by
 a person and record a decision, and centring one on the nearest rule is exactly

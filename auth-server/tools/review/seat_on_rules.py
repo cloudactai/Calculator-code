@@ -142,11 +142,23 @@ def is_manual(doc_id, field):
                for page, x0, x1, tall in MANUAL.get(doc_id, ()))
 
 
-def rule_under(page, field):
-    """(top, bottom) of the printed rule under this box, in points, or None."""
+def rule_under(page, field, anchor=None):
+    """(top, bottom) of the printed rule under this box, in points, or None.
+
+    `anchor` overrides where to look. Left None the search is centred on the
+    box's own bottom edge, which finds the rule a box is already close to. A box
+    sitting in a **ruled cell** is given the cell's bottom border instead: that
+    border is the rule it belongs to no matter how far off the box currently is,
+    and the raster window is only 1.6pt deep, so without the override a box more
+    than that above its border is invisible to the search. SKISO_G p1's
+    "Reasons and documentation" box was 2.18pt *past* its border and hanging into
+    the row beneath while its three row-mates sat on theirs.
+    """
     left = field["x"]
     right = left + field["width"] / SCALE
     bottom = field["y"] + field["height"] / SCALE
+    if anchor is not None:
+        bottom = anchor
     x0 = left + SAMPLE_INSET
     x1 = min(right - 1.0, x0 + SAMPLE_MAX)
     if x1 - x0 < SAMPLE_MIN:
@@ -189,6 +201,38 @@ def rule_under(page, field):
     return clip.y0 + first / ZOOM, clip.y0 + last / ZOOM
 
 
+# A box counts as living in a cell when this much of it is inside one. Below it
+# the box merely overlaps a cell it does not belong to.
+CELL_SHARE = 0.6
+_CELLS = {}
+
+
+def cells_for(doc_id, page):
+    """The page's ruled cells, from the province's own builder, memoised."""
+    key = (doc_id, page.number)
+    if key not in _CELLS:
+        try:
+            if doc_id.startswith("MB"):
+                found = MB.grid_cells(page)
+            else:
+                found = SK.grid_cells(page, SK.cell_max_height(doc_id))
+            _CELLS[key] = [item[0] for item in found]
+        except Exception:
+            _CELLS[key] = []
+    return _CELLS[key]
+
+
+def cell_of(doc_id, page, box):
+    """The smallest ruled cell this box lives in, or None."""
+    best = None
+    for cell in cells_for(doc_id, page):
+        if (box & cell).get_area() <= CELL_SHARE * box.get_area():
+            continue
+        if best is None or cell.get_area() < best.get_area():
+            best = cell
+    return best
+
+
 def _rect(field, y=None):
     top = field["y"] if y is None else y
     return fitz.Rect(field["x"], top,
@@ -229,7 +273,8 @@ def shifts_for(doc_id):
             skipped += 1
             continue
         page = doc[field["page"] - 1]
-        found = rule_under(page, field)
+        cell = cell_of(doc_id, page, _rect(field))
+        found = rule_under(page, field, anchor=cell.y1 if cell else None)
         if found is None:
             continue
         top, low = found
