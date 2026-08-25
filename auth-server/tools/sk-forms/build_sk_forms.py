@@ -178,6 +178,15 @@ TICK_GLYPHS = set("\u2713\u2714\u221a\uf0fc")
 # glyph here, so its being a .notdef rather than a designed square changes
 # nothing downstream.
 BOX_GLYPHS = set("\uf07e\uf0ff\u2610\u25a1\u274f\u2751\u2752")
+# **A box glyph a form prints as an ordinary letter.** The Interpersonal
+# Violence forms set their seven options as the letter `G` in
+# WPTypographicSymbols, WordPerfect's symbol face, where `G` is the open square.
+# The codepoint is therefore U+0047 and carries no signal whatsoever: adding it
+# to BOX_GLYPHS would turn every `G` in the body text into a control. The
+# discriminator has to be the *font*, exactly as Manitoba's `[ ]` had to be cut
+# by width rather than by codepoint (guide 9.13) -- a vocabulary is only ever
+# recognisable by whatever part of it is actually distinctive.
+FONT_BOX_GLYPHS = {"WPTypographicSymbols": set("G")}
 # Zoom for measuring one glyph's ink, and the grey it has to beat to count as ink.
 GLYPH_ZOOM = 8.0
 GLYPH_INK_BELOW = 200
@@ -191,6 +200,12 @@ NARROW_COLUMN = 40.0
 # The form's own checkbox metric, used to size a tick a column asks for but does
 # not print a square for. Every one of the 457 printed squares in the set is 9x9.
 TICK_SIDE = 9.0
+# How far from square a typed glyph may be and still be read as an option box.
+# Used only when re-seating a widget-declared checkbox onto its printed mark:
+# the ISO squares measure 7.38 x 7.25 and 10.08 x 10.08, while the neighbours
+# that share a widget rect are letters and rules, none of them square. See
+# `printed_mark`.
+MARK_SQUARENESS = 2.0
 GRID_TOL = 1.5          # two rules this close are the same rule
 GRID_COVER = 0.80       # a border must run this much of the cell's edge
 # A cell taller than this many lines is a paragraph box, not a one-line cell.
@@ -266,6 +281,30 @@ CAPTION_GAP = 24.0
 # The government left these two answer lines as bare whitespace: there is no
 # underscore, cell, or rectangle for the general detectors to measure.  Their
 # bounds follow the (a)/(b) baselines and the neighbouring full-width answers.
+# Cells the page says are furniture and no rule can say so. A drop here is a
+# finding from reading the page, recorded where it can be read back, not a
+# silent tweak to the output.
+#
+# **Why not a rule.** Guide 9.2's heading stray -- a row of boxes parked in a
+# table's column heading -- is normally caught by height, because a heading cell
+# is taller than a data row. Directive 4's Court Appearance Memo sets its
+# Registration of Live Birth table with every row the same 14.3pt, so the height
+# signal cannot fire. The structural signal that is left, "the top band's blank
+# cell whose own column is captioned in the band beneath it", was measured
+# against all 121 templates and would delete 50 legitimate fields -- Form 15-47's
+# property tables on p20, the ISO totals rows, the LOCATE lawyer table -- every
+# one of them on a form already reviewed and shipped. Guide 1 and the guide's
+# change discipline both forbid that, so the one page the reading actually found
+# is recorded here instead of generalised into a rule that is wrong 50 times.
+MANUAL_DROPS = {
+    # p2's "REGISTRATION OF LIVE BIRTH" table is three rows of two. The top row
+    # prints "FILED?  Yes or no" on the right and nothing on the left, and the
+    # two rows under it are captioned "(child's name)" / "(yes or no)" -- so the
+    # top row is the column heading and its empty left half is the heading cell
+    # the section title above already names, not a place anyone writes.
+    "SKPD_PD4_B": [(2, fitz.Rect(73.7, 311.2, 304.5, 322.5))],
+}
+
 MANUAL_FIELDS = {
     "SKKB_15_8A": [
         (1, fitz.Rect(151.0, 481.17, 516.0, 494.17), "TextField"),
@@ -439,15 +478,29 @@ def signature_captions(page):
             lines.append((fitz.Rect(line["bbox"]),
                           "".join(span["text"] for span in line["spans"])))
     lines.sort(key=lambda pair: pair[0].y0)
+    horizontal, _vertical = _segments(page)
 
     out = []
     for rect, text in lines:
         if SK_SIG_EXCLUDE.search(text):
             continue
-        if (SK_SIG_CAPTION.search(text) or SK_COMMISSIONER.search(text)
-                or SK_ROLE_CAPTION.match(text)):
+        if SK_SIG_CAPTION.search(text) or SK_COMMISSIONER.search(text):
             out.append(rect)
-        elif SK_OFFICE_CAPTION.match(text) and _over_a_bare_rule(rect, lines):
+        # A bare office -- "Local Registrar", "REGISTRAR" -- needs the same
+        # bare-rule gate SK_OFFICE_CAPTION has always had, and for a sharper
+        # reason than that one. An office on its own line is not only a
+        # signature caption: it is also how a form *addresses* something. The
+        # Court of Appeal's notice closes "TO: Respondent ______________" and
+        # then "TO: REGISTRAR / COURT OF APPEAL FOR SASKATCHEWAN / 2425
+        # VICTORIA AVENUE", so the bare office is the first line of a mailing
+        # address, and the nearest rule above it belongs to the *other*
+        # addressee. Ungated, it deleted the respondent's service line and
+        # `check_unfilled_blanks` then excused the loss by re-running this very
+        # function (guide 9.14b). What separates the two is what the caption
+        # sits under: a signature caption sits under a bare rule, an addressee
+        # sits under somebody else's answer.
+        elif ((SK_ROLE_CAPTION.match(text) or SK_OFFICE_CAPTION.match(text))
+                and _over_a_bare_rule(rect, lines, horizontal)):
             out.append(rect)
     return out
 
@@ -457,8 +510,16 @@ def _is_bare_rule(text):
     return "_" in text and not any(ch.isalnum() for ch in text)
 
 
-def _over_a_bare_rule(caption, lines):
-    """Is the line this caption sits under a bare rule? See SK_OFFICE_CAPTION."""
+def _over_a_bare_rule(caption, lines, horizontal=()):
+    """Is the line this caption sits under a bare rule? See SK_OFFICE_CAPTION.
+
+    **A rule is a rule whether the province types it or draws it** -- the same
+    lesson `_segments` records for table borders, arriving at the signature
+    block. Part 15 types its signing rules as underscore runs, so the text test
+    below was the whole of this function; Directive 8 *draws* the rule over
+    "Local Registrar" and prints no underscore anywhere near it, so on a text-
+    only test that caption sits over nothing and its signature line takes a box.
+    """
     # Compared by the top of each line, not its bottom: a rule's line box hangs
     # below the caption's own top -- Form A sets the rule at y 428.6-443.7 and
     # "Officer" at 441.3, a 2.4pt overlap -- so a "strictly above" test on the
@@ -466,10 +527,18 @@ def _over_a_bare_rule(caption, lines):
     above = [(rect, text) for rect, text in lines
              if rect.y0 < caption.y0 - 2 and caption.y0 - rect.y0 < CAPTION_GAP
              and rect.x1 > caption.x0 and rect.x0 < caption.x1]
-    if not above:
+    if above:
+        nearest = max(above, key=lambda pair: pair[0].y0)
+        if _is_bare_rule(nearest[1]):
+            return True
+        # Something with words in it is printed between the caption and
+        # whatever is above it. That is somebody else's answer, not this
+        # caption's rule -- the Court of Appeal's "TO: Respondent ______" under
+        # "TO: REGISTRAR" -- so a drawn rule further up cannot be claimed here.
         return False
-    nearest = max(above, key=lambda pair: pair[0].y0)
-    return _is_bare_rule(nearest[1])
+    return any(caption.y0 - key > 0 and caption.y0 - key < CAPTION_GAP
+               and end > caption.x0 and start < caption.x1
+               for key, start, end in horizontal)
 
 
 def _span_width(boxes, start, end):
@@ -536,7 +605,46 @@ def underscore_blanks(page):
             if right - left >= MIN_RUN_WIDTH:
                 rect = fitz.Rect(left, rect.y0, right, rect.y1)
             blanks.append((rect, rect.y1 - size * RULE_INSET_RATIO, size))
-    return blanks
+    return _widen_to_drawn_rule(page, blanks)
+
+
+# How far left of a typed run its own drawn rule may start and still be the same
+# writing line. Generous enough for the one case in the set (18pt) and far short
+# of the 180-285pt by which a table border overhangs a cell's inline blank.
+DOUBLE_ANCHOR_LEFT = 60.0
+
+
+def _widen_to_drawn_rule(page, blanks):
+    """One writing line, two anchors: take the whole line.
+
+    Directive 7's Form 7-1 sets the contact block's six lines as drawn rules from
+    x 288, and over the sixth -- "E-mail address (if any)" -- it *also* types a
+    run of underscores, from x 306. Both are anchors for the same line, the typed
+    one wins on `underscore_blanks` being read first, and the box came out 18pt
+    short at the left: five fields in that column start at 288 and the sixth at
+    306, with a stub of printed rule beside it that cannot be typed on. Guide 4
+    says take an amount box's left edge from the column rather than from its own
+    glyph, and guide 9.6 says take the band rather than the first hit; this is
+    both, for a writing line.
+
+    **The right edge is the discriminator.** Every table border in the set also
+    runs under the inline blanks printed in its cells -- on Form 15-47 p9 and
+    p13 one overhangs by 180 to 285pt -- so "a rule below the run" alone would
+    drag those boxes across the page. A rule that is *this run's own rule* ends
+    where the run ends. Requiring the two right edges to agree leaves exactly one
+    line in the 121 templates, which is the one the reading found.
+    """
+    horizontal, _vertical = _segments(page)
+    out = []
+    for rect, rule, size in blanks:
+        for key, start, end in horizontal:
+            if not 0 < key - rect.y0 < 20:
+                continue
+            if abs(end - rect.x1) <= 3 and 0 < rect.x0 - start <= DOUBLE_ANCHOR_LEFT:
+                rect = fitz.Rect(start, rect.y0, rect.x1, rect.y1)
+                break
+        out.append((rect, rule, size))
+    return out
 
 
 def dollar_rule_blanks(page):
@@ -644,34 +752,92 @@ def glyph_checkboxes(page):
     size -- a form set at another size then still lands right.
     """
     out = []
-    for text, boxes, _sizes in line_chars(page):
-        for index, box in enumerate(boxes):
-            if text[index] not in BOX_GLYPHS:
-                continue
-            ink = _glyph_ink(page, box)
-            if ink is None:
-                continue
-            if CB_MIN < ink.width < CB_MAX and CB_MIN < ink.height < CB_MAX:
-                out.append(ink)
+    for char, box, font in _chars_with_font(page):
+        if char not in BOX_GLYPHS and char not in FONT_BOX_GLYPHS.get(font, ()):
+            continue
+        ink = _glyph_ink(page, box)
+        if ink is None:
+            continue
+        if CB_MIN < ink.width < CB_MAX and CB_MIN < ink.height < CB_MAX:
+            out.append(ink)
     return out
 
 
+def _chars_with_font(page):
+    """Every character as (char, rect, font name).
+
+    `line_chars` deliberately drops the font -- every other reader here works on
+    the printed shape and the font would only be noise. The option glyph is the
+    one thing that cannot be identified without it (see FONT_BOX_GLYPHS), so it
+    gets its own reader rather than widening the tuple every other caller
+    unpacks.
+    """
+    for block in page.get_text("rawdict")["blocks"]:
+        for line in block.get("lines", []):
+            for span in line["spans"]:
+                font = span["font"].split("+")[-1]
+                for char in span["chars"]:
+                    yield char["c"], fitz.Rect(char["bbox"]), font
+
+
 def _glyph_ink(page, box):
-    """The drawn extent of one glyph inside its character box, or None if blank."""
+    """The drawn extent of one glyph inside its character box, or None if blank.
+
+    **A character box is not a private region of the page.** Where the type is
+    set tight the glyph on the line above or below reaches into it, and every
+    dark pixel it contributes grows the measurement. Practice Directive 8's
+    Form A stacks its `to establish / to vary a support provision` options
+    14.6pt apart inside a 25.3pt character cell, so each option's box contains
+    most of the other's square: raw ink measured the first option 8.0 x 16.6
+    against the page's own 7.7 x 7.7 -- one control covering both squares, with
+    nothing left to tick the second option. Eleven more marks across Forms A and
+    D came out 9.x x 16.5 the same way. This is guide 2's "one mark is one
+    candidate, never union the marks in range" arriving through the ink probe
+    rather than through the search window.
+
+    **The runs separate them, and masking does not.** Manitoba masks the
+    neighbouring characters out (guide 9.13, `mb_marks.ink_box`), which works
+    where a neighbour's *character box* does not cover the mark's own square.
+    Here it does -- the cells overlap by more than half -- so masking by the
+    neighbour's box deletes the very ink being measured and returned these same
+    marks 5.7 and 6.0pt tall instead. What actually separates them is that the
+    intruder is not contiguous with the mark: inside one 25.3pt cell the ink
+    arrives as 2.4pt / **7.75pt** / 1.9pt, the middle run being the option's own
+    square and the outer two being the neighbours' edges. So the probe reads
+    contiguous runs of ink rows and keeps the one that is square, which is what
+    guide 2.5 already says these marks always are.
+    """
     pix = page.get_pixmap(clip=box, matrix=fitz.Matrix(GLYPH_ZOOM, GLYPH_ZOOM),
                           colorspace=fitz.csGRAY)
-    xs, ys = [], []
+    dark = []
     for y in range(pix.height):
-        for x in range(pix.width):
-            if pix.pixel(x, y)[0] < GLYPH_INK_BELOW:
-                xs.append(x)
-                ys.append(y)
-    if not xs:
+        dark.append([x for x in range(pix.width)
+                     if pix.pixel(x, y)[0] < GLYPH_INK_BELOW])
+    runs, y = [], 0
+    while y < len(dark):
+        if not dark[y]:
+            y += 1
+            continue
+        start = y
+        while y < len(dark) and dark[y]:
+            y += 1
+        runs.append((start, y))
+    if not runs:
         return None
-    return fitz.Rect(box.x0 + min(xs) / GLYPH_ZOOM,
-                     box.y0 + min(ys) / GLYPH_ZOOM,
-                     box.x0 + (max(xs) + 1) / GLYPH_ZOOM,
-                     box.y0 + (max(ys) + 1) / GLYPH_ZOOM)
+
+    def rect_of(start, end):
+        xs = [x for row in dark[start:end] for x in row]
+        return fitz.Rect(box.x0 + min(xs) / GLYPH_ZOOM,
+                         box.y0 + start / GLYPH_ZOOM,
+                         box.x0 + (max(xs) + 1) / GLYPH_ZOOM,
+                         box.y0 + end / GLYPH_ZOOM)
+
+    # The squarest run wins. A single-run glyph -- which is every mark outside
+    # the two Directive 8 forms -- has exactly one candidate, so this leaves the
+    # 400-odd marks the set already placed correctly untouched.
+    best = min((rect_of(start, end) for start, end in runs),
+               key=lambda r: abs(r.width - r.height))
+    return best
 
 
 def checkboxes(page):
@@ -1898,7 +2064,60 @@ def clear_of_type(page, boxes):
     return out
 
 
-def drop_signature_rules(boxes, captions):
+# The line a form executes itself on: "DATED at ... this __ day of ..., 20__".
+# Used to recognise the *uncaptioned* signing rule -- see
+# uncaptioned_signature_rules().
+SK_EXECUTION_LINE = re.compile(r"\b(dated|issued)\b.*\b(at|this)\b|day of\b.*\b20", re.I)
+# A signing rule is set in the right-hand column. Expressed as a fraction of the
+# page so it holds whatever margins a directive uses.
+SIGNATURE_COLUMN = 0.35
+
+
+def uncaptioned_signature_rules(page):
+    """Signing rules the government printed with no caption under them.
+
+    Guide 5 drops a signature rule by reading the caption beneath it, and every
+    rule in this batch that carries one is dropped correctly. Directive 3's two
+    forms carry the same execution block as the rest of the family --
+
+        DATED at ______, in the Province of Saskatchewan, this __ day of __, 20__.
+                                    ________________________________________
+        TO: ______
+
+    -- and simply print no caption under the rule, where Directive 1 prints
+    "(Signature of Party or Lawyer)", Directive 6 "(signature of party's lawyer
+    or party, if self-represented)" and Directive 7 "(signature of party or
+    party's lawyer)" in the identical position. So both took a text field on the
+    party's own signature line. This is guide 8's "a form that carries the same
+    block more than once -- the good copy is the measurement to repair against",
+    and the structure is what identifies it once the caption is gone: a bare
+    rule, directly under the line the form executes itself on, set in the
+    right-hand column rather than running out from the left margin.
+
+    Deliberately narrow. Across all 121 Saskatchewan templates exactly two
+    fields match, which are the two the reading of the pages found.
+    """
+    lines = []
+    for block in page.get_text("dict")["blocks"]:
+        for line in block.get("lines", []):
+            text = "".join(span["text"] for span in line["spans"]).rstrip()
+            if text.strip():
+                lines.append((fitz.Rect(line["bbox"]), text))
+    lines.sort(key=lambda pair: pair[0].y0)
+
+    out = []
+    for index, (rect, text) in enumerate(lines):
+        if not index or not _is_bare_rule(text):
+            continue
+        if not SK_EXECUTION_LINE.search(lines[index - 1][1]):
+            continue
+        if rect.x0 < page.rect.width * SIGNATURE_COLUMN:
+            continue
+        out.append(rect)
+    return out
+
+
+def drop_signature_rules(boxes, captions, bare_rules=()):
     """Guide 5, with one refinement Saskatchewan forces.
 
     A caption claims **the nearest rule above it**, not every rule inside the
@@ -1910,6 +2129,12 @@ def drop_signature_rules(boxes, captions):
     range" reasoning guide 2 records for checkboxes.
     """
     doomed = set()
+    for rule in bare_rules:
+        for index, (rect, kind) in enumerate(boxes):
+            if kind == "CheckBox":
+                continue
+            if abs(rect.y0 - rule.y0) < 12 and abs(rect.x0 - rule.x0) < 30:
+                doomed.add(index)
     for caption in captions:
         best, best_gap = None, None
         for index, (rect, kind) in enumerate(boxes):
@@ -1949,7 +2174,8 @@ def tick_rects(page):
 
 def signature_rule_rects(page):
     """The boxes this page deliberately does not get, for the verifier to excuse."""
-    return drop_signature_rules(page_boxes(page), signature_captions(page))[1]
+    return drop_signature_rules(page_boxes(page), signature_captions(page),
+                                uncaptioned_signature_rules(page))[1]
 
 
 def nudge_onto_rules(doc_id, fields):
@@ -1991,6 +2217,109 @@ def is_fillable(source):
         doc.close()
 
 
+def seat_checkboxes_on_print(fields, background):
+    """Move every widget-derived checkbox onto the square the page actually prints.
+
+    The widget path takes the government's own rectangle for each field, which is
+    right for a text box -- a widget rect on a writing line *is* the writing line
+    -- and wrong for an option. A checkbox annotation's rectangle is the
+    annotation's box, not the box the filer sees: the ISO forms set their option
+    as a Wingdings2 U+F0A3 square and then hang the widget around it with a
+    point of border on every side, so what shipped was a control 11.37 x 12.41
+    sitting over a printed square of 7.38 x 7.25, overhanging it by 2pt at the
+    left and 3pt at the top. On screen the tick's box is visibly bigger than the
+    box drawn under it and sits high and left of it -- SKISO Form A-1 page 4's
+    seven options are the plainest case.
+
+    So the printed mark is measured and the field is seated on it, which is the
+    rule the anchor path has followed all along (`checkboxes`, `glyph_checkboxes`)
+    -- the widget path simply never applied it. **The background must already be
+    flattened**: before that, `get_drawings` returns the widget's own appearance
+    box as well as the printed square, and the appearance box is the very
+    rectangle being corrected.
+
+    A checkbox whose square cannot be found is left exactly where the government
+    put it. That is not a failure to fix: the ISO set also declares options that
+    print no square at all (a bare rule, a cell in a grid), and guessing at ink
+    that is not there would move a control off the only anchor it has.
+    """
+    doc = fitz.open(background)
+    cache = {}
+    moved = 0
+    try:
+        for field in fields:
+            if field["type"] != "CheckBox":
+                continue
+            page = doc[field["page"] - 1]
+            if field["page"] not in cache:
+                cache[field["page"]] = (list(_chars_with_font(page)),
+                                        [d["rect"] for d in page.get_drawings()])
+            chars, drawings = cache[field["page"]]
+            rect = fitz.Rect(field["x"], field["y"],
+                             field["x"] + field["width"] / SCALE,
+                             field["y"] + field["height"] / SCALE)
+            mark = printed_mark(page, rect, chars, drawings)
+            if mark is None:
+                continue
+            if (abs(mark.x0 - rect.x0) < 0.3 and abs(mark.y0 - rect.y0) < 0.3
+                    and abs(mark.width - rect.width) < 0.3
+                    and abs(mark.height - rect.height) < 0.3):
+                continue
+            field["x"] = round(mark.x0, 2)
+            field["y"] = round(mark.y0, 2)
+            field["width"] = round(mark.width * SCALE, 2)
+            field["height"] = round(mark.height * SCALE, 2)
+            moved += 1
+    finally:
+        doc.close()
+    return moved
+
+
+def printed_mark(page, rect, chars, drawings):
+    """The option square printed inside `rect`, or None if the page prints none.
+
+    Two vocabularies, because the ISO set uses both: a form may *draw* its square
+    into the page content, and it may *type* it as a glyph. The drawn square is
+    taken as it is; the typed one is measured off a render by `_glyph_ink`,
+    because a character cell is a good deal taller than the square inside it
+    (see `glyph_checkboxes`).
+
+    The mark has to sit inside the widget's own rectangle -- grown by 1.5pt,
+    which is the border a widget hangs around its square -- so a caption printed
+    hard against the option cannot be read as the option. The typed candidate
+    also has to be *square*: the widget rect always contains part of the line it
+    sits on, and a letter's ink is the one thing that reliably is not square.
+    Ties go to the squarest candidate, which is guide 2's rule that one mark is
+    one candidate rather than the union of everything in range.
+    """
+    grown = rect + (-1.5, -1.5, 1.5, 1.5)
+    best = None
+    for drawn in drawings:
+        if (drawn in grown and CB_MIN < drawn.width < CB_MAX
+                and CB_MIN < drawn.height < CB_MAX):
+            score = abs(drawn.width - drawn.height)
+            if best is None or score < best[0]:
+                best = (score, drawn)
+    if best is not None:
+        return best[1]
+    for char, box, _font in chars:
+        overlap = fitz.Rect(box)
+        overlap.intersect(rect)
+        if overlap.get_area() < 0.5 * box.get_area():
+            continue
+        ink = _glyph_ink(page, box)
+        if ink is None or ink not in grown:
+            continue
+        if not (CB_MIN < ink.width < CB_MAX and CB_MIN < ink.height < CB_MAX):
+            continue
+        if abs(ink.width - ink.height) > MARK_SQUARENESS:
+            continue
+        score = abs(ink.width - ink.height)
+        if best is None or score < best[0]:
+            best = (score, ink)
+    return best[1] if best else None
+
+
 def build_from_widgets(src, doc_id, source, promote):
     """The widget path: the form's own rectangles, and a flattened background.
 
@@ -2013,6 +2342,7 @@ def build_from_widgets(src, doc_id, source, promote):
     page_sizes = audit["pageSizes"]
     if pages != len(page_sizes):
         raise SystemExit("%s: flatten changed the page count" % doc_id)
+    seated = seat_checkboxes_on_print(fields, background)
     bp.clamp_to_page(fields, page_sizes)
     problems = bp.check_geometry(fields, page_sizes)
     overlaps = bp.check_overlap(background, fields)
@@ -2021,9 +2351,9 @@ def build_from_widgets(src, doc_id, source, promote):
     kinds = {}
     for field in fields:
         kinds[field["type"]] = kinds.get(field["type"], 0) + 1
-    print("%-13s pages=%-3d fields=%-4d %-42s sig-skipped=%-3d geom=%-2d overlap=%d  [widgets]"
+    print("%-13s pages=%-3d fields=%-4d %-42s sig-skipped=%-3d geom=%-2d overlap=%d  seated=%-3d [widgets]"
           % (doc_id, len(page_sizes), len(fields), kinds,
-             audit["signaturesSkipped"], len(problems), len(overlaps)))
+             audit["signaturesSkipped"], len(problems), len(overlaps), seated))
     if problems:
         print("   geometry:", problems[:4])
     if promote and not problems:
@@ -2033,7 +2363,7 @@ def build_from_widgets(src, doc_id, source, promote):
     return {"docId": doc_id, "pages": len(page_sizes), "fields": len(fields),
             "kinds": kinds, "signatureSkipped": audit["signaturesSkipped"],
             "geometry": problems, "overlap": overlaps, "source": "widgets",
-            "widgetNames": audit["widgetNames"]}
+            "seated": seated, "widgetNames": audit["widgetNames"]}
 
 
 def build(src, promote=False):
@@ -2062,13 +2392,29 @@ def build(src, promote=False):
                  if not any((rect & other).get_area()
                             > 0.5 * min(rect.get_area(), other.get_area())
                             for other in here)]
-        kept, dropped = drop_signature_rules(boxes, captions)
+        kept, dropped = drop_signature_rules(boxes, captions,
+                                             uncaptioned_signature_rules(page))
         skipped += len(dropped)
         for rect, kind in kept:
             index += 1
             field = _field(doc_id, index, rect, kind)
             field["page"] = number
             fields.append(field)
+    def _box(field):
+        return fitz.Rect(field["x"], field["y"],
+                         field["x"] + field["width"] / bp.SCALE,
+                         field["y"] + field["height"] / bp.SCALE)
+
+    for page_number, rect in MANUAL_DROPS.get(doc_id, []):
+        before = len(fields)
+        fields = [f for f in fields
+                  if not (f["page"] == page_number
+                          and (_box(f) & rect).get_area()
+                          > 0.5 * min(_box(f).get_area(), rect.get_area()))]
+        if len(fields) == before:
+            raise SystemExit("%s: MANUAL_DROPS p%d %s matched nothing -- the page "
+                             "moved, so re-read it rather than deleting the entry"
+                             % (doc_id, page_number, rect))
     for page_number, rect, kind in MANUAL_FIELDS.get(doc_id, []):
         index += 1
         field = _field(doc_id, index, rect, kind)
