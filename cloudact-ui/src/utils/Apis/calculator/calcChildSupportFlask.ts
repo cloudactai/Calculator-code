@@ -7,6 +7,7 @@
  * Returns the result dict or null if the backend is unavailable.
  */
 import { CALCULATOR_API } from "../../../config";
+import { getAuthToken } from "../../authToken";
 
 type ChildPayload = {
   name: string;
@@ -57,9 +58,12 @@ const calcChildSupportFlask = async (
 ): Promise<ChildSupportFlaskResult | null> => {
   try {
     console.log(`[calcChildSupportFlask] province: party1=${payload.party1_province}, party2=${payload.party2_province}`);
+    const headers: Record<string, string> = { "Content-Type": "application/json" };
+    const token = getAuthToken();
+    if (token) headers["Authorization"] = `Bearer ${token}`;
     const res = await fetch(`${CALCULATOR_API}/calculate`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers,
       body: JSON.stringify(payload),
     });
 

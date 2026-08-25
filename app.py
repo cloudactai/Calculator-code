@@ -1830,6 +1830,7 @@ def _compute_no_children_tax_profiles(
 
 
 @app.route("/spousal-calculate", methods=["POST"])
+@require_auth
 def spousal_calculate():
     try:
         data = request.get_json(force=True)
@@ -2304,6 +2305,7 @@ def run_tax_calc_tool(tool_input: dict) -> dict:
 
 
 @app.route("/tax-chat", methods=["POST"])
+@require_auth
 def tax_chat():
     try:
         body = request.get_json(force=True)
@@ -3106,6 +3108,7 @@ def run_spousal_calc_tool(tool_input: dict) -> dict:
     return calc_result
 
 @app.route("/spousal-chat", methods=["POST"])
+@require_auth
 def spousal_chat():
     try:
         body = request.get_json(force=True)
