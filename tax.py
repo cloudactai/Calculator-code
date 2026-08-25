@@ -49,46 +49,80 @@ with open(_CONSTANTS_PATH) as _f:
 
 _DATABASE_URL = os.environ.get("DATABASE_URL")
 
+# In-memory cache for tax constants — keyed by year.  A single spousal-
+# support request can call calculate_taxes() 40+ times for the same year;
+# without caching every call opened a fresh DB connection to RDS.
+_year_constants_cache: dict[int, dict] = {}
+
+# Connection pool (lazy-initialised on first DB hit).  Replaces the old
+# connect-per-call pattern which added ~75 ms of TCP+TLS overhead each time.
+_db_pool = None
+
+def _get_db_pool():
+    global _db_pool
+    if _db_pool is None and _DATABASE_URL:
+        try:
+            from psycopg2 import pool as _pg_pool
+            _db_pool = _pg_pool.SimpleConnectionPool(
+                minconn=1, maxconn=5, dsn=_DATABASE_URL, connect_timeout=5,
+            )
+        except Exception as exc:
+            print(f"[tax.py] connection pool init failed: {exc}", file=sys.stderr)
+    return _db_pool
+
 
 def _fetch_from_db(year: int) -> dict | None:
     """Try to load constants for *year* from the TaxConstant table."""
     if not _DATABASE_URL:
         return None
+    p = _get_db_pool()
+    if p is None:
+        return None
+    conn = None
     try:
-        import psycopg2
-        conn = psycopg2.connect(_DATABASE_URL, connect_timeout=5)
-        try:
-            cur = conn.cursor()
-            cur.execute(
-                'SELECT data FROM "TaxConstant" WHERE year = %s',
-                (year,),
-            )
-            row = cur.fetchone()
-            if row:
-                data = row[0]
-                return data if isinstance(data, dict) else json.loads(data)
-        finally:
-            conn.close()
+        conn = p.getconn()
+        cur = conn.cursor()
+        cur.execute(
+            'SELECT data FROM "TaxConstant" WHERE year = %s',
+            (year,),
+        )
+        row = cur.fetchone()
+        if row:
+            data = row[0]
+            return data if isinstance(data, dict) else json.loads(data)
     except Exception as exc:
         print(f"[tax.py] DB lookup failed for year {year}: {exc}", file=sys.stderr)
+    finally:
+        if conn is not None:
+            try:
+                p.putconn(conn)
+            except Exception:
+                pass
     return None
 
 
 def get_year_constants(year: int) -> dict:
     """
     Return the constants dict for *year*.
-    Tries the database first, then falls back to the JSON file.
+    Results are cached in-memory so repeated calls (e.g. the ~40 calls
+    during a single spousal-support iteration) hit the DB at most once.
     """
+    if year in _year_constants_cache:
+        return _year_constants_cache[year]
+
     db_result = _fetch_from_db(year)
     if db_result is not None:
+        _year_constants_cache[year] = db_result
         return db_result
 
     print(f"[tax.py] DB fetch failed or unavailable for year {year}, falling back to JSON", file=sys.stderr)
     key = str(year)
     if key in _ALL_YEAR_CONSTANTS:
-        return _ALL_YEAR_CONSTANTS[key]
+        _year_constants_cache[year] = _ALL_YEAR_CONSTANTS[key]
+        return _year_constants_cache[year]
     best = max(_ALL_YEAR_CONSTANTS.keys())
-    return _ALL_YEAR_CONSTANTS[best]
+    _year_constants_cache[year] = _ALL_YEAR_CONSTANTS[best]
+    return _year_constants_cache[year]
 
 
 # ===========================================================================
