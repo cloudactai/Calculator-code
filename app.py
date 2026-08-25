@@ -84,34 +84,18 @@ with open(SCHEDULE_I_PATH, "r") as f:
 app = Flask(__name__)
 
 # ── CORS — restrict to known frontend origins ────────────────────────────────
-import re as _re
-
 _DEFAULT_ORIGINS = [
-    "https://calculator-ai-ui.vercel.app",
-    "https://cloudforlawfirms.com",
-    "https://www.cloudforlawfirms.com",
-    "https://dev-cloudact.infoset.ca",
-    "https://apicloudact.infoset.ca",
-    "http://localhost:3000",
-    "http://localhost:5050",
+    r"https://calculator-ai-ui[a-z0-9-]*\.vercel\.app",
+    r"https://cloudforlawfirms\.com",
+    r"https://www\.cloudforlawfirms\.com",
+    r"https://dev-cloudact\.infoset\.ca",
+    r"https://apicloudact\.infoset\.ca",
+    r"http://localhost:3000",
+    r"http://localhost:5050",
 ]
-_allowed_origins = [
-    o.strip() for o in
-    os.getenv("ALLOWED_ORIGINS", "").split(",") if o.strip()
-] or _DEFAULT_ORIGINS
-
-_VERCEL_PREVIEW_RE = _re.compile(
-    r"^https://calculator-ai-ui[a-z0-9-]*\.vercel\.app$"
-)
-
-def _check_origin(origin):
-    if origin in _allowed_origins:
-        return origin
-    if _VERCEL_PREVIEW_RE.match(origin or ""):
-        return origin
-    return None
-
-CORS(app, origins=_check_origin, supports_credentials=True)
+_env_origins = os.getenv("ALLOWED_ORIGINS", "").strip()
+_allowed_origins = [o.strip() for o in _env_origins.split(",") if o.strip()] if _env_origins else _DEFAULT_ORIGINS
+CORS(app, origins=_allowed_origins, supports_credentials=True)
 
 # ── JWT authentication ───────────────────────────────────────────────────────
 JWT_SECRET = os.getenv("JWT_SECRET")
