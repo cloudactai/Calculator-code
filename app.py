@@ -8,14 +8,19 @@ Then open:  http://localhost:5050
 from dotenv import load_dotenv
 load_dotenv()
 import base64
+import functools
 import json
 import math
 import os
 import sys
+import time
+import threading
+from collections import defaultdict
 from datetime import date, datetime, timezone
-from flask import Flask, request, jsonify, send_from_directory
+from flask import Flask, request, jsonify, send_from_directory, g
 from flask_cors import CORS
 import anthropic
+import jwt as pyjwt
 from intake_chat_guard import (
     INTAKE_SECTION_NAMES,
     is_intake_complete_reply,
@@ -77,7 +82,75 @@ with open(SCHEDULE_I_PATH, "r") as f:
     SCHEDULE_I = json.load(f)
 
 app = Flask(__name__)
-CORS(app)
+
+# ── CORS — restrict to known frontend origins ────────────────────────────────
+_DEFAULT_ORIGINS = [
+    "https://cloudforlawfirms.com",
+    "https://www.cloudforlawfirms.com",
+    "https://dev-cloudact.infoset.ca",
+    "https://apicloudact.infoset.ca",
+    "http://localhost:3000",
+    "http://localhost:5050",
+]
+_allowed_origins = [
+    o.strip() for o in
+    os.getenv("ALLOWED_ORIGINS", "").split(",") if o.strip()
+] or _DEFAULT_ORIGINS
+CORS(app, origins=_allowed_origins, supports_credentials=True)
+
+# ── JWT authentication ───────────────────────────────────────────────────────
+JWT_SECRET = os.getenv("JWT_SECRET")
+
+def _extract_bearer_token():
+    auth = request.headers.get("Authorization", "")
+    if auth.lower().startswith("bearer ") and len(auth.split()) == 2:
+        return auth.split()[1]
+    for name in ("auth_token", "AccessToken"):
+        val = request.cookies.get(name)
+        if val:
+            return val
+    return None
+
+def require_auth(f):
+    @functools.wraps(f)
+    def wrapper(*args, **kwargs):
+        if not JWT_SECRET:
+            return f(*args, **kwargs)
+        token = _extract_bearer_token()
+        if not token:
+            return jsonify({"error": "Authentication required"}), 401
+        try:
+            payload = pyjwt.decode(token, JWT_SECRET, algorithms=["HS256"])
+            g.user_id = payload.get("userId")
+        except pyjwt.ExpiredSignatureError:
+            return jsonify({"error": "Token expired"}), 401
+        except pyjwt.InvalidTokenError:
+            return jsonify({"error": "Invalid token"}), 401
+        return f(*args, **kwargs)
+    return wrapper
+
+# ── Rate limiting (in-memory, per-IP) ────────────────────────────────────────
+_rate_lock = threading.Lock()
+_rate_buckets: dict = defaultdict(list)
+RATE_LIMIT = int(os.getenv("RATE_LIMIT_PER_MINUTE", "30"))
+
+def _check_rate_limit():
+    if RATE_LIMIT <= 0:
+        return None
+    ip = request.remote_addr or "unknown"
+    now = time.time()
+    window = 60.0
+    with _rate_lock:
+        bucket = _rate_buckets[ip]
+        _rate_buckets[ip] = [t for t in bucket if now - t < window]
+        if len(_rate_buckets[ip]) >= RATE_LIMIT:
+            return jsonify({"error": "Rate limit exceeded. Try again shortly."}), 429
+        _rate_buckets[ip].append(now)
+    return None
+
+@app.before_request
+def _apply_rate_limit():
+    return _check_rate_limit()
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -106,12 +179,14 @@ def compute_child_counts(children: list) -> dict:
 # ── Routes ────────────────────────────────────────────────────────────────────
 
 @app.route("/download-report/<filename>")
+@require_auth
 def download_report(filename):
     """Serve a generated PDF report for download."""
     return send_from_directory(REPORTS_DIR, filename, as_attachment=True)
 
 
 @app.route("/calculate", methods=["POST"])
+@require_auth
 def calculate():
     try:
         data = request.get_json(force=True)
@@ -571,6 +646,7 @@ def run_calc_tool(tool_input):
 
 
 @app.route("/chat", methods=["POST"])
+@require_auth
 def chat():
     try:
         body = request.get_json(force=True)
@@ -1313,6 +1389,7 @@ UPDATE_SECTION_TOOL = {
 
 
 @app.route("/intake-chat", methods=["POST"])
+@require_auth
 def intake_chat():
     """Matter-intake AI agent.
 
@@ -1420,6 +1497,7 @@ def intake_chat():
 
 
 @app.route("/update-chat", methods=["POST"])
+@require_auth
 def update_chat():
     """Update-information AI agent.
 
@@ -1596,6 +1674,7 @@ T1_RECORD_TOOL = {
 
 
 @app.route("/t1-extract", methods=["POST"])
+@require_auth
 def t1_extract():
     """Extract intake-relevant data from an uploaded T1 income tax return.
 

@@ -442,6 +442,12 @@ The `/tax-chat` endpoint collects income, deductions, and children data, then
 calls `calculate_taxes()` directly. The result is returned as a comprehensive
 line-item breakdown.
 
+> **Current AI prompt limitation.** The tax chat system prompt currently
+> instructs Claude to handle "Ontario income tax only (2024 or 2025)" and
+> politely decline other provinces. The underlying `calculate_taxes` function
+> fully supports all five provinces. Updating the tax chat prompt to offer all
+> provinces is a straightforward change.
+
 ---
 
 ## Testing
