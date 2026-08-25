@@ -603,8 +603,12 @@ next thicker filled rect on any of these pages is a 9pt shading band, so the
 ## Seating boxes on their printed rules
 
 ```
-python3 seat_mb_on_rules.py [--check]
+python3 ../review/seat_on_rules.py [--check] [--family MBKB_]
 ```
+
+Moved out of `mb-forms/` and generalised to both provinces: the float is not a
+Manitoba property but what `RULE_CLEARANCE` and Saskatchewan's `RULE_NUDGE` do,
+and every family with printed rules has it.
 
 `RULE_CLEARANCE` seats a box's bottom edge *above* the rule it belongs to. The
 viewer draws its own bordered control inside the rectangle we store, so that
@@ -639,9 +643,33 @@ seated on a printed mark, which the shift would walk them off.
 `--promote` is an `os.replace` that would destroy that. So it writes back the `y`
 key alone, asserting every other key is byte-identical first, the way
 `rebind_mb_forms.py` writes back only `bind`. Idempotent -- a box already seated
-measures a zero shift. Rule 70 (`MBKB_`) has the same float and is deliberately
-left alone: those 43 templates are reviewed and shipped, and this is a seating
-preference rather than a defect.
+measures a zero shift.
+
+**Rule 70 and the remaining families were brought in afterwards.** They were held
+back on the first pass as "reviewed and shipped, and this is a seating preference
+rather than a defect", which left half the province sitting on its lines and half
+hovering above them -- the mismatch reads worse than either state alone. The
+second pass seated 3,772 more Manitoba boxes:
+
+| Family | Boxes moved | Median shift |
+| --- | --- | --- |
+| `MBKB_` | 2273 | +1.50pt |
+| `MBISO_` | 892 | -0.39pt |
+| `MBPC_` | 548 | +1.34pt |
+| `MBFOA_` | 547 | +1.48pt |
+| `MBPO_` | 296 | +1.28pt |
+| `MBCPB_` | 75 | +2.32pt |
+| `MBDIV_` | 43 | +0.32pt |
+| `MBREL_` | 33 | +1.94pt |
+
+`MBISO_`'s median is negative because its boxes were seated *below* their rules,
+not above -- the measurement centres a box on whatever it finds either way, which
+is why it is a measurement and not a nudge.
+
+**Hand-placed boxes are skipped outright.** Every rectangle in either builder's
+`MANUAL_FIELDS` is held where it is: those coordinates were read off the page by
+a person and record a decision, and centring one on the nearest rule is exactly
+the wrong move where the "rule" is the bottom border of the cell the box fills.
 
 Verified against a HEAD baseline rather than in isolation: `verify_mb.py` reports
 the identical findings before and after, so the shift introduces none.
@@ -666,7 +694,7 @@ had nowhere to type on the whole of page 2.
 
 This finds each drawn rule, subtracts the glyphs actually printed on it, and adds
 a field on every clear stretch wide enough to write in. It only ever **adds**, so
-the seating `seat_mb_on_rules.py` applied is preserved and a stretch that already
+the seating `review/seat_on_rules.py` applied is preserved and a stretch that already
 has a box is skipped. Idempotent.
 
 Two things it has to get right, both found by it reporting the wrong answer first:

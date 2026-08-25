@@ -33,7 +33,9 @@ a person and record a decision, so an automatic seating pass does not get to
 second-guess them (SKPD_PD4_A's "Conditions to attach:" is seated on the bottom
 border of its own ruled cell, and centring it on that border would push the
 control through it). Checkboxes are skipped too -- they sit on a printed square,
-which the seating would walk them off.
+which the seating would walk them off. And a move that would bury a box in its
+neighbour is refused outright, by `verify_mb.py`'s own `box-overlap` test run
+before the move: correcting a float must not change which controls the page has.
 
 **Why this repairs in place instead of rebuilding.** `build_mb_forms.py`'s guide
 §1 and its own `hand_finished()` guard: never rebuild a form that already carries
@@ -42,7 +44,10 @@ them. Every one of these forms is promoted and bound. So this writes back the
 `y` key alone, asserting every other key is byte-identical first, the way
 `rebind_mb_forms.py` writes back only `bind`.
 
-Idempotent: a box already seated measures a zero shift and is left alone.
+Convergent, and idempotent once converged: a box already seated measures its edge
+inside the ink and is left alone. Over the 263 templates the second pass found
+one box left to move, on MBISO_I, whose choice of rule changed once the boxes
+around it had been seated; the third found none. Run it until it reports zero.
 
     python3 seat_on_rules.py --check            # report, write nothing
     python3 seat_on_rules.py --family SKPD_     # one family
@@ -94,8 +99,18 @@ SAMPLE_MIN = 8.0
 # Refuse to move a box further than this: past it, whatever was found is not this
 # box's rule and the box is better left where the builder put it.
 MAX_SHIFT = 3.0
-# Smaller than this is the measurement's own noise, not a move worth making.
+# Smaller than this is the measurement's own noise, not a move worth making --
+# and the noise floor is not a constant. A move is skipped when the box's bottom
+# edge is already **inside the printed ink**, which is what "on its line" means
+# and what the whole pass is for; a 0.72pt rule is centred to within 0.36pt by
+# definition. A flat 0.06 floor instead chased the raster: at 24x one pixel row
+# is 0.042pt, shifting the box shifts the clip window, and the ISO forms sat
+# there oscillating by a tenth of a point a pass without ever converging.
 DEAD_ZONE = 0.06
+# A move that would bury a box this far into a neighbour is refused. Same share
+# `verify_mb.py`'s own `box-overlap` check uses, so the pass cannot introduce a
+# finding the verifier will then report.
+OVERLAP_SHARE = 0.25
 # How closely a field has to match a MANUAL_FIELDS rectangle to count as that
 # hand-placed field. Generous on `y` because `nudge_onto_rules` has already
 # moved SKCFS_ and SKAD_ manual entries by a constant; the left edge, width and
@@ -161,8 +176,43 @@ def rule_under(page, field):
         runs.append((start, pix.height))
     if not runs:
         return None
-    first, last = runs[0]
+    # **The nearest run, not the first one.** The window opens LOOK_UP above the
+    # box so that an already-seated box still finds the rule straddling its edge,
+    # and on a tightly stacked row that same reach catches the rule belonging to
+    # the box *above*. Taking the first run then walked the second box of each
+    # pair up onto its neighbour -- MBISO_I p8 gained two `box-overlap` findings
+    # that way -- and left the pass oscillating by a fifth of a point on the ISO
+    # forms instead of converging. The rule a box belongs to is the one nearest
+    # its own bottom edge.
+    first, last = min(runs, key=lambda run: abs(
+        (clip.y0 + (run[0] + run[1]) / 2.0 / ZOOM) - bottom))
     return clip.y0 + first / ZOOM, clip.y0 + last / ZOOM
+
+
+def _rect(field, y=None):
+    top = field["y"] if y is None else y
+    return fitz.Rect(field["x"], top,
+                     field["x"] + field["width"] / SCALE,
+                     top + field["height"] / SCALE)
+
+
+def collides(field, y, neighbours):
+    """Would seating this field at `y` bury it in one of its neighbours?
+
+    `verify_mb.py`'s own `box-overlap` test, applied before the move rather than
+    after it. Seating is allowed to correct a box's own float; it is not allowed
+    to change which boxes the page has, and a box driven a point and a half up
+    into the one above it is a different control from the one that was reviewed.
+    """
+    moved = _rect(field, y)
+    for other in neighbours:
+        if other["id"] == field["id"] or other["page"] != field["page"]:
+            continue
+        box = _rect(other)
+        if (moved & box).get_area() > OVERLAP_SHARE * min(moved.get_area(),
+                                                          box.get_area()):
+            return True
+    return False
 
 
 def shifts_for(doc_id):
@@ -171,7 +221,7 @@ def shifts_for(doc_id):
     pdf = os.path.join(EXPORT, "%s.pdf" % doc_id)
     fields = json.load(open(path))["staticFields"]
     doc = fitz.open(pdf)
-    moves, deltas, skipped = {}, [], 0
+    moves, deltas, skipped, blocked = {}, [], 0, 0
     for field in fields:
         if field["type"] == "CheckBox":
             continue
@@ -185,12 +235,16 @@ def shifts_for(doc_id):
         top, low = found
         bottom = field["y"] + field["height"] / SCALE
         delta = (top + low) / 2.0 - bottom
-        if abs(delta) < DEAD_ZONE or abs(delta) > MAX_SHIFT:
+        settled = max(DEAD_ZONE, (low - top) / 2.0)
+        if abs(delta) < settled or abs(delta) > MAX_SHIFT:
+            continue
+        if collides(field, field["y"] + delta, fields):
+            blocked += 1
             continue
         moves[field["id"]] = round(field["y"] + delta, 2)
         deltas.append(delta)
     doc.close()
-    return moves, deltas, skipped
+    return moves, deltas, skipped, blocked
 
 
 def apply(doc_id, moves):
@@ -228,20 +282,27 @@ def main():
 
     ids = template_ids(tuple(args.family) if args.family else PROVINCES)
     per_family = collections.defaultdict(list)
-    total = held = 0
+    total = held = refused = 0
     for doc_id in ids:
-        moves, deltas, skipped = shifts_for(doc_id)
+        moves, deltas, skipped, stopped = shifts_for(doc_id)
         total += len(moves)
         held += skipped
+        refused += stopped
         per_family[doc_id.split("_")[0]].extend(deltas)
         if moves and not args.check:
             apply(doc_id, moves)
+        notes = []
+        if skipped:
+            notes.append("manual held=%d" % skipped)
+        if stopped:
+            notes.append("collision held=%d" % stopped)
         print("%-24s seated=%-4d %-18s %s"
               % (doc_id, len(moves),
                  "median %+.2fpt" % statistics.median(deltas) if deltas else "",
-                 "manual held=%d" % skipped if skipped else ""))
-    print("\n%d boxes %s, %d hand-placed boxes left alone."
-          % (total, "would move" if args.check else "seated on their rules", held))
+                 "  ".join(notes)))
+    print("\n%d boxes %s, %d hand-placed and %d colliding boxes left alone."
+          % (total, "would move" if args.check else "seated on their rules",
+             held, refused))
     for family in sorted(per_family):
         d = per_family[family]
         if d:
