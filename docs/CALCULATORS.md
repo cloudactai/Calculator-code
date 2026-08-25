@@ -7,7 +7,9 @@ stalls, a PDF that fails to generate, or a "Save to Matter" that does not persis
 
 > **Relationship to other docs.** This document covers the Flask backend's
 > calculation and AI features (everything under [app.py](../app.py)). For the
-> hosting, environment variables, and deployment topology, see
+> tax engine in detail (how taxes are calculated, how to update constants, how to
+> add a new province or year), see [TAXES.md](TAXES.md). For the hosting,
+> environment variables, and deployment topology, see
 > [ARCHITECTURE.md](ARCHITECTURE.md). For authentication and session cookies, see
 > [AUTHENTICATION.md](AUTHENTICATION.md). For the matter workflow that *contains*
 > the calculator chat panels, see [MATTERS.md](MATTERS.md).
@@ -25,9 +27,9 @@ stalls, a PDF that fails to generate, or a "Save to Matter" that does not persis
 | Generated reports directory | `generated_reports/` (created at import time) |
 | Child support math engine | [child_support.py](../child_support.py) |
 | Spousal support math engine | [spousal_support.py](../spousal_support.py) |
-| Tax engine (ON + BC) | [tax.py](../tax.py) |
+| Tax engine (ON, BC, AB, SK, MB) | [tax.py](../tax.py) |
 | Tax year constants | [tax_constants.json](../tax_constants.json) |
-| Schedule I table data (ON + BC, 2025) | [schedule_i.json](../schedule_i.json) |
+| Schedule I table data (ON, BC, AB, SK, MB — 2025) | [schedule_i.json](../schedule_i.json) |
 | Standalone calculator HTML | [templates/calculator.html](../templates/calculator.html) |
 | Standalone spousal chat HTML | [templates/spousal-chat.html](../templates/spousal-chat.html) |
 
@@ -54,12 +56,14 @@ professionals often spend significant time on manual lookups and iterative tax
 calculations across complex custody scenarios (separated, shared, split, hybrid) and
 both SSAG formulas (with and without children).
 
-The platform currently supports **Ontario (ON)** and **British Columbia (BC)**. The
-province affects three things: the Schedule I table amounts used for child support
-lookups, the provincial tax brackets and credits applied by the tax engine, and the
-provincial benefit programs included in INDI calculations. The child support chat AI
-is required to ask the user which province the calculation is for before proceeding,
-and will not default to Ontario — the `province` field must be set to `"ON"` or `"BC"`.
+The platform currently supports **Ontario (ON)**, **British Columbia (BC)**,
+**Alberta (AB)**, **Saskatchewan (SK)**, and **Manitoba (MB)**. The province affects
+three things: the Schedule I table amounts used for child support lookups, the
+provincial tax brackets and credits applied by the tax engine, and the provincial
+benefit programs included in INDI calculations. The child support chat AI is required
+to ask the user which province the calculation is for before proceeding, and will not
+default to Ontario — the `province` field must be set to `"ON"`, `"BC"`, `"AB"`,
+`"SK"`, or `"MB"`.
 
 The platform addresses this by combining a child support calculator, a spousal support
 calculator, a tax calculator, a matter-intake agent, and an update-information agent —
@@ -81,10 +85,10 @@ covers only the pieces that matter for the calculators.
 | --- | --- |
 | **Frontend** | React + Vite for the authenticated legal-professional interface (matter workflow, intake forms, calculator chat panels). HTML5 / CSS3 / vanilla JavaScript for the standalone calculator form and legacy chat interface. `marked.js` renders AI markdown responses inside chat bubbles as styled HTML. |
 | **Backend** | Python 3 / Flask handling all calculation endpoints (`/calculate`, `/chat`, `/spousal-calculate`, `/spousal-chat`, `/intake-chat`, `/update-chat`, `/tax-chat`, `/t1-extract`) plus AI agent loops and PDF generation. The Anthropic Python SDK interfaces with Claude claude-sonnet-4-6 for every AI chat assistant with tool-use support. |
-| **Child support engine** | [child_support.py](../child_support.py) implements the Federal Child Support Guidelines for all four custody scenarios. Province-aware: each party carries a `province` field (`"ON"` or `"BC"`) that selects the correct Schedule I rows. |
-| **Spousal support engine** | [spousal_support.py](../spousal_support.py) provides three APIs: a without-children percentage formula (1.5% / 1.75% / 2.0% × gross income difference × years), a with-children iterative tax-converging formula (damped fixed-point iteration calling the tax engine per step), and a wrapper that routes to the appropriate formula. Accepts a `province` parameter (defaults to `"ON"`) that is forwarded to the tax engine so provincial taxes converge correctly for BC or Ontario. |
-| **Tax engine** | [tax.py](../tax.py) — full Canadian income-tax and benefits calculator supporting Ontario and British Columbia. Year-variable constants (bracket tables, indexed amounts) are stored in [tax_constants.json](../tax_constants.json). **Ontario-specific:** provincial income tax, surtax, Ontario health premium, LIFT credit, Ontario Child Benefit (OCB), Ontario Sales Tax Credit (OSTC). **BC-specific:** provincial income tax with BC tax reduction, BC Child Benefit, BC Climate Action Tax Credit, BC-specific CWB thresholds. **Shared federal:** income tax, CPP/EI, Canada Workers Benefit (CWB), Canada Child Benefit (CCB), GST/HST credit, Climate Action Incentive Payment (CAIP). |
-| **Data** | [schedule_i.json](../schedule_i.json) (2025 Federal Child Support Guidelines Schedule I table for both ON and BC — 1608 rows, keyed by `province`). [tax_constants.json](../tax_constants.json) (year-keyed tax brackets and indexed amounts for both provinces). Prisma / PostgreSQL (auth server and matter database, separate service). No persistent user data in the calculator backend — all session data is in-memory; persisted data flows through the authenticated frontend into the auth-server database. |
+| **Child support engine** | [child_support.py](../child_support.py) implements the Federal Child Support Guidelines for all four custody scenarios. Province-aware: each party carries a `province` field (`"ON"`, `"BC"`, `"AB"`, `"SK"`, or `"MB"`) that selects the correct Schedule I rows. |
+| **Spousal support engine** | [spousal_support.py](../spousal_support.py) provides three APIs: a without-children percentage formula (1.5% / 1.75% / 2.0% × gross income difference × years), a with-children iterative tax-converging formula (damped fixed-point iteration calling the tax engine per step), and a wrapper that routes to the appropriate formula. Accepts a `province` parameter (defaults to `"ON"`) that is forwarded to the tax engine so provincial taxes converge correctly for any supported province. |
+| **Tax engine** | [tax.py](../tax.py) — full Canadian income-tax and benefits calculator supporting Ontario, British Columbia, Alberta, Saskatchewan, and Manitoba. Year-variable constants (bracket tables, indexed amounts) are stored in [tax_constants.json](../tax_constants.json). **Ontario-specific:** provincial income tax, surtax, Ontario health premium, LIFT credit, Ontario Child Benefit (OCB), Ontario Sales Tax Credit (OSTC). **BC-specific:** provincial income tax with BC tax reduction, BC Child Benefit, BC Climate Action Tax Credit, BC-specific CWB thresholds. **Alberta-specific:** provincial income tax (8% credit rate, no surtax/health premium/LIFT), Alberta Child and Family Benefit (ACFB), AB Climate Action, AB-specific CWB thresholds. **Saskatchewan-specific:** provincial income tax (10.5% credit rate), SK child amount ($7,704/child under 19), SK senior supplement, Saskatchewan Low-Income Tax Credit (SLITC), SK Climate Action. **Manitoba-specific:** provincial income tax (10.8% credit rate), MB BPA phase-out ($200k–$400k), MB Climate Action. **Shared federal:** income tax, CPP/EI, Canada Workers Benefit (CWB), Canada Child Benefit (CCB), GST/HST credit, Climate Action Incentive Payment (CAIP). See [TAXES.md](TAXES.md) for full details. |
+| **Data** | [schedule_i.json](../schedule_i.json) (2025 Federal Child Support Guidelines Schedule I table for ON, BC, AB, SK, and MB — 4020 rows, 804 per province, keyed by `province`). [tax_constants.json](../tax_constants.json) (year-keyed tax brackets and indexed amounts for all five provinces). Prisma / PostgreSQL (auth server and matter database, separate service). No persistent user data in the calculator backend — all session data is in-memory; persisted data flows through the authenticated frontend into the auth-server database. |
 | **PDF generation** | ReportLab produces PDF reports for child and spousal support results. |
 | **Hosting** | Render.com for the Flask backend; Vercel for the React frontend. See [ARCHITECTURE.md](ARCHITECTURE.md) for details. |
 
@@ -92,26 +96,29 @@ covers only the pieces that matter for the calculators.
 
 ## Province support
 
-The platform currently supports two provinces. Adding a new province requires three
-data additions and no structural code changes:
+The platform currently supports five provinces. Adding a new province requires data
+additions and corresponding code in the tax engine. See [TAXES.md](TAXES.md) for the
+full procedure.
 
-| Component | Ontario (ON) | British Columbia (BC) |
-| --- | --- | --- |
-| **Schedule I rows** | [schedule_i.json](../schedule_i.json), `"province": "ON"` | [schedule_i.json](../schedule_i.json), `"province": "BC"` |
-| **Tax brackets & credits** | [tax_constants.json](../tax_constants.json) — `ON_BRACKETS`, `BASIC_PERSONAL_AMOUNT_ON`, Ontario health premium, surtax, LIFT, OCB, OSTC constants | [tax_constants.json](../tax_constants.json) — `BC_BRACKETS`, `BASIC_PERSONAL_AMOUNT_BC`, BC tax reduction, BC Child Benefit, BC Climate Action constants |
-| **Tax engine functions** | `calculate_ontario_tax()`, Ontario surtax, Ontario health premium, `calculate_ontario_child_benefit()`, `calculate_ontario_sales_tax_credit()` | `calculate_bc_tax()`, BC tax reduction, `calculate_bc_child_benefit()`, `calculate_bc_climate_action()`, BC-specific CWB thresholds |
-| **Child support** | Fully supported | Fully supported (same engine, different Schedule I rows) |
-| **Spousal support** | Fully supported (iterative formula calls ON tax engine) | Fully supported (iterative formula calls BC tax engine via `province` parameter) |
-| **Child support AI chat** | Supported — AI asks province early | Supported — AI asks province early |
-| **Tax AI chat** | Supported (system prompt scoped to ON) | Engine supports BC; AI prompt currently restricts to ON only |
+| Component | Ontario (ON) | British Columbia (BC) | Alberta (AB) | Saskatchewan (SK) | Manitoba (MB) |
+| --- | --- | --- | --- | --- | --- |
+| **Schedule I rows** | `"province": "ON"` (804 rows) | `"province": "BC"` (804 rows) | `"province": "AB"` (804 rows) | `"province": "SK"` (804 rows) | `"province": "MB"` (804 rows) |
+| **Tax brackets & credits** | `ON_BRACKETS`, Ontario health premium, surtax, LIFT, OCB, OSTC | `BC_BRACKETS`, BC tax reduction, BC Child Benefit, BC Climate Action | `AB_BRACKETS`, ACFB, AB Climate Action, AB-specific CWB | `SK_BRACKETS`, SK child amount, SLITC, SK Climate Action | `MB_BRACKETS`, MB BPA phase-out, MB Climate Action |
+| **Tax engine functions** | `calculate_ontario_tax()`, surtax, health premium, LIFT, OCB, OSTC | `calculate_bc_tax()`, BC tax reduction, BC child/climate benefits | `calculate_ab_tax()`, ACFB, AB climate action | `calculate_sk_tax()`, SLITC, SK climate action | `calculate_mb_tax()`, MB climate action |
+| **Child support** | Fully supported | Fully supported | Fully supported | Fully supported | Fully supported |
+| **Spousal support** | Fully supported | Fully supported | Fully supported | Fully supported | Fully supported |
+| **Child support AI chat** | Supported — AI asks province early | Supported | Supported | Supported | Supported |
+| **Spousal support AI chat** | Supported | Supported | Supported | Supported | Supported |
+| **Tax AI chat** | Supported (system prompt scoped to ON) | Engine supports BC; AI prompt restricts to ON only | Engine supports AB; AI prompt restricts to ON only | Engine supports SK; AI prompt restricts to ON only | Engine supports MB; AI prompt restricts to ON only |
 
 The child support engine in [child_support.py](../child_support.py) is inherently
 province-agnostic — it looks up Schedule I rows by province and computes obligations
-from whatever rows match. The tax engine in [tax.py](../tax.py) branches on
-`province == "BC"` vs `"ON"` at each province-specific calculation point (provincial
-credits, provincial tax, provincial benefits). To add a third province, one would add
-its Schedule I rows to `schedule_i.json`, its tax constants to `tax_constants.json`,
-and its `calculate_<province>_tax()` and benefit functions to `tax.py`.
+from whatever rows match. The tax engine in [tax.py](../tax.py) branches on province
+at each province-specific calculation point (provincial credits, provincial tax,
+provincial benefits). To add a sixth province, one would add its Schedule I rows to
+`schedule_i.json`, its tax constants to `tax_constants.json`, its
+`calculate_<province>_tax()` and benefit functions to `tax.py`, and update the AI
+system prompts in `app.py`.
 
 ---
 
@@ -132,7 +139,7 @@ Each workflow is described below with its end-to-end data flow.
    SPLIT, or HYBRID.
 5. `calculate_child_support()` runs the Schedule I formula against
    [schedule_i.json](../schedule_i.json) for each party, filtering rows by the
-   party's province (`"ON"` or `"BC"`).
+   party's province (`"ON"`, `"BC"`, `"AB"`, `"SK"`, or `"MB"`).
 6. JSON result is returned. The browser renders monthly and annual figures for both
    parties with a net-payer verdict.
 7. The backend auto-generates a PDF report via ReportLab containing the input
@@ -162,9 +169,10 @@ Each workflow is described below with its end-to-end data flow.
    does not thank the user for providing it.
 5. Browser POSTs the full message history to `/chat`. Flask passes messages to Claude
    claude-sonnet-4-6 via the Anthropic API with a `calculate_child_support` tool
-   definition. The tool schema includes a `province` field with enum `["ON", "BC"]`.
+   definition. The tool schema includes a `province` field with enum `["ON", "BC", "AB", "SK", "MB"]`.
 6. The AI system prompt requires Claude to ask which province the calculation is for
-   (Ontario or British Columbia) early in the conversation. If the matter data already
+   (Ontario, British Columbia, Alberta, Saskatchewan, or Manitoba) early in the
+   conversation. If the matter data already
    includes a province, the AI uses that and confirms it. Claude collects any remaining
    missing details conversationally, then invokes the tool.
 7. Flask intercepts the tool call, runs `run_calc_tool()` which calls the same
@@ -179,7 +187,7 @@ Each workflow is described below with its end-to-end data flow.
 ### 3. Spousal support calculator — form workflow
 
 1. User submits party incomes, ages, relationship duration, children details, and
-   province (`"ON"` or `"BC"`, defaults to `"ON"` if omitted) to
+   province (`"ON"`, `"BC"`, `"AB"`, `"SK"`, or `"MB"`, defaults to `"ON"` if omitted) to
    `/spousal-calculate`.
 2. The backend determines whether to use the without-children formula or the
    with-children iterative tax-converging formula.
@@ -252,21 +260,19 @@ Each workflow is described below with its end-to-end data flow.
    self-employment, other, support received, support paid), deductions (child care,
    other), and children's details.
 2. It calls the `calculate_taxes` tool which runs the full tax engine. The tool
-   accepts an optional `province` parameter (`"ON"` or `"BC"`, defaults to `"ON"`).
+   accepts an optional `province` parameter (`"ON"`, `"BC"`, `"AB"`, `"SK"`, or `"MB"`, defaults to `"ON"`).
    The engine computes federal/provincial brackets, CPP/EI, and province-specific
-   items: Ontario health premium, surtax, and LIFT credit for ON; BC tax reduction for
-   BC. Benefit programs include CWB, CCB, GST/HST credit, and CAIP (shared), plus
-   Ontario Child Benefit and OSTC (ON) or BC Child Benefit and BC Climate Action Tax
-   Credit (BC).
+   items for all five provinces (see [TAXES.md](TAXES.md) for full details).
 3. Returns a comprehensive breakdown with every line item, displayed as a formatted
    table.
 
 > **Current AI prompt limitation.** The tax chat system prompt currently instructs
-> Claude to handle "Ontario income tax only" and decline other provinces. The
-> underlying `calculate_taxes` function and `TaxInput` dataclass fully support BC,
-> and the spousal support iterative formula already calls it with `province="BC"` when
-> appropriate. Updating the tax chat system prompt to offer BC as an option is a
-> straightforward change.
+> Claude to handle "Ontario income tax only" (2024 or 2025) and decline other
+> provinces. The underlying `calculate_taxes` function and `TaxInput` dataclass
+> fully support all five provinces (ON, BC, AB, SK, MB), and the child support,
+> spousal support, and spousal chat workflows already call the tax engine with any
+> supported province. Updating the tax chat system prompt to offer all provinces as
+> options is a straightforward change.
 
 ---
 
@@ -382,13 +388,13 @@ later without regeneration.
 
 | Endpoint | Method | Description |
 | --- | --- | --- |
-| `/calculate` | POST | Form-based child support calculation. Accepts party incomes, children array, and province (`"ON"` or `"BC"`). Returns scenario type, monthly/annual amounts, and net payer. |
-| `/chat` | POST | Child support AI chat. Message-loop with Claude using `calculate_child_support` tool (province-aware, ON/BC). Auto-generates PDF report. Returns calculation result for frontend persistence. |
-| `/spousal-calculate` | POST | Form-based spousal support calculation. Accepts province (`"ON"` or `"BC"`, defaults to `"ON"`). Routes to no-children formula or iterative with-children engine. Returns low/mid/high amounts, INDI, taxes, benefits, and duration. |
+| `/calculate` | POST | Form-based child support calculation. Accepts party incomes, children array, and province (`"ON"`, `"BC"`, `"AB"`, `"SK"`, or `"MB"`). Returns scenario type, monthly/annual amounts, and net payer. |
+| `/chat` | POST | Child support AI chat. Message-loop with Claude using `calculate_child_support` tool (province-aware, ON/BC/AB/SK/MB). Auto-generates PDF report. Returns calculation result for frontend persistence. |
+| `/spousal-calculate` | POST | Form-based spousal support calculation. Accepts province (`"ON"`, `"BC"`, `"AB"`, `"SK"`, or `"MB"`, defaults to `"ON"`). Routes to no-children formula or iterative with-children engine. Returns low/mid/high amounts, INDI, taxes, benefits, and duration. |
 | `/spousal-chat` | POST | Spousal support AI chat. Message-loop with Claude using `calculate_spousal_support` tool. Province-aware. Two paths: without-children (gross % formula) and with-children (iterative tax-converging). Auto-generates PDF. |
 | `/intake-chat` | POST | Matter intake AI agent. Collects ten sections of family-law intake data via `save_matter_section` tool. Returns collected sections for frontend persistence. Includes stall guard. |
 | `/update-chat` | POST | Update information AI agent. Same tool as intake but for editing existing values. Returns patches for frontend persistence. |
-| `/tax-chat` | POST | Tax calculator AI chat. Collects income/deduction/children data and runs the full tax engine (ON/BC supported by engine; AI prompt currently scoped to ON). Returns comprehensive breakdown. |
+| `/tax-chat` | POST | Tax calculator AI chat. Collects income/deduction/children data and runs the full tax engine (all five provinces supported by engine; AI prompt currently scoped to ON only). Returns comprehensive breakdown. |
 | `/t1-extract` | POST | T1 tax return extraction. Parses uploaded tax returns; explicitly never extracts SINs. |
 | `/download-report/:filename` | GET | Serves generated PDF reports for download. |
 

@@ -5,6 +5,7 @@
  * are omitted, Python computes them internally via the Schedule I CS calculator.
  */
 import { CALCULATOR_API } from "../../../config";
+import { getAuthToken } from "../../authToken";
 
 export type SpousalSupportFlaskPayload = {
   party1_net_income: number;              // annual income
@@ -112,9 +113,12 @@ const calcSpousalSupportFlask = async (
   payload: SpousalSupportFlaskPayload
 ): Promise<SpousalSupportFlaskResult | null> => {
   try {
+    const headers: Record<string, string> = { "Content-Type": "application/json" };
+    const token = getAuthToken();
+    if (token) headers["Authorization"] = `Bearer ${token}`;
     const res = await fetch(`${CALCULATOR_API}/spousal-calculate`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers,
       body: JSON.stringify(payload),
     });
 
