@@ -38,6 +38,7 @@ sys.path.insert(0, HERE)
 
 import bc_pipeline as bp  # noqa: E402
 from fetch_nb import KNOWN_STATIC  # noqa: E402
+from nb_reg_sources import shipped_sources as reg_sources  # noqa: E402
 from nb_sources import shipped_sources  # noqa: E402
 
 EXPORT = os.path.join(os.path.dirname(os.path.dirname(HERE)), "form-template-export")
@@ -75,6 +76,7 @@ def main():
     catalog = json.load(open(os.path.join(EXPORT, "catalog.json")))
     rows = {r["docId"]: r for r in catalog if r.get("province") == "NB"}
     expected = {s["docId"] for s in shipped_sources()}
+    expected |= {s["docId"] for s in reg_sources()}
 
     findings = []
     if set(rows) != expected:
@@ -121,7 +123,10 @@ def main():
                         findings.append("%s: unknown bind %r on %s"
                                         % (doc_id, bind, field["id"]))
 
-            if doc_id not in KNOWN_STATIC:
+            # The regulation batch is anchor-built and prints no option square
+            # anywhere, so it holds no checkboxes to check -- the same reduced
+            # set the five flat Rules of Court forms take.
+            if doc_id not in KNOWN_STATIC and not doc_id.startswith(("NBFSA_", "NBFLA_")):
                 blank = [f for f in fields if f["type"] == "CheckBox"
                          and (doc_id, f["page"]) not in INK_EXEMPT
                          and not covers_ink(document[f["page"] - 1], f)]

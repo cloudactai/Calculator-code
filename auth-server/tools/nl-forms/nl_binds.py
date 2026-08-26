@@ -71,6 +71,30 @@ def bind_for_role(right_text):
     return None
 
 
+# The emergency-protection set is captioned the other way round -- "Applicant
+# _______", with the role to the LEFT of the line and the date of birth to the
+# right of it. That is the Provincial Court's own convention on those twelve
+# forms and nowhere else in Newfoundland, so it is matched only for them
+# (`rebind_nl_forms` gates it on the docId) rather than loosened into
+# ROLE_RIGHT, where it would start reading "APPLICANT" off the *previous*
+# party's line on every Supreme Court style of cause.
+ROLE_LEFT = [
+    (re.compile(r"^applicant$"), "applicant.fullLegalName"),
+    (re.compile(r"^respondent$"), "respondent.fullLegalName"),
+]
+
+
+def bind_for_role_left(left_text):
+    """The bind for a party box captioned on its left (protection orders)."""
+    text = normalise(left_text)
+    if not text or ROLE_STOP.search(text):
+        return None
+    for pattern, bind in ROLE_LEFT:
+        if pattern.match(text):
+            return bind
+    return None
+
+
 def bind_for_caption(left_text):
     """The bind for a box from the caption printed to its left."""
     text = normalise(left_text)

@@ -37,10 +37,19 @@ sys.path.insert(0, HERE)
 
 import bc_pipeline as bp  # noqa: E402
 from fetch_nl import KNOWN_STATIC  # noqa: E402
+from nl_pc_sources import shipped_sources as pc_sources  # noqa: E402
 from nl_sources import shipped_sources  # noqa: E402
 
 EXPORT = os.path.join(os.path.dirname(os.path.dirname(HERE)), "form-template-export")
 SCALE = bp.SCALE
+
+# Checkboxes that legitimately cover no printed ink, confirmed by reading the
+# page. The Provincial Court marks these options with an **underscore run**
+# rather than a square -- "__ Original (Court)", "_____ Case Conference" -- so
+# the government's widget sits beside a line, not on a box. That is the
+# "option that prints no square" case `acroform_seat.seat_checkboxes` leaves
+# alone. Listed by (docId, page) so a new unseated checkbox still fails.
+INK_EXEMPT = {("NLPC_FORM4", 1), ("NLPC_FORM6", 1)}
 
 KNOWN_BINDS = {
     "court_info.courtFileNumber",
@@ -64,6 +73,7 @@ def main():
     catalog = json.load(open(os.path.join(EXPORT, "catalog.json")))
     rows = {r["docId"]: r for r in catalog if r.get("province") == "NL"}
     expected = {s["docId"] for s in shipped_sources()}
+    expected |= {s["docId"] for s in pc_sources()}
 
     findings = []
     if set(rows) != expected:
@@ -110,8 +120,15 @@ def main():
                         findings.append("%s: unknown bind %r on %s"
                                         % (doc_id, bind, field["id"]))
 
-            if doc_id not in KNOWN_STATIC:
+            # The checkbox-ink check runs on every form that has a printed
+            # square to sit on. The flat forms in both batches are exempt for
+            # the same reason: their boxes are read off printed ink in the first
+            # place, so a box that covers none would be a detector bug rather
+            # than an unseated widget, and `KNOWN_STATIC` plus the Provincial
+            # Court's flat set is exactly that population.
+            if doc_id not in KNOWN_STATIC and not doc_id.startswith("NLEPO_"):
                 blank = [f for f in fields if f["type"] == "CheckBox"
+                         and (doc_id, f["page"]) not in INK_EXEMPT
                          and not covers_ink(document[f["page"] - 1], f)]
                 if blank:
                     findings.append("%s: %d checkbox(es) cover no printed ink"

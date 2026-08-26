@@ -178,6 +178,62 @@ border to draw it. Our overlay is the only box there and sits exactly where the
 caption expects it. It is listed by `(docId, page)` so a *new* unseated checkbox
 still fails the gate.
 
+## The regulation batch — 14 forms
+
+**14 forms, 18 pages, 285 fields, 11 binds, zero findings.** New Brunswick now
+ships 48.
+
+```
+python3 build_nb_reg_forms.py [--only NBFSA_1_01] [--promote]
+python3 merge_nb_catalog.py               # merges both batches
+python3 rebind_nb_reg_forms.py [--check]
+python3 verify_nb.py
+```
+
+The 34 forms above are the whole of what the Rules of Court prescribe, and none
+of them starts a child-protection case: New Brunswick puts those in a
+**regulation**, as BC, Saskatchewan and Manitoba do.
+
+| Regulation | What it is | Forms |
+| --- | --- | --- |
+| 81-134 | Forms Regulation — Family Services Act | 13 |
+| 2021-18 | General Regulation — Family Law Act | 1 |
+
+**33 of Regulation 81-134's forms are repealed** — Forms 0.1, 0.2, 1, 2–21 and
+26–31 went in 2023 — and they still appear in the consolidation as a heading
+followed by "Repealed". Only the 13 that carry an actual form are built. And
+Regulation 2021-18, carried in the notes as an open batch, prescribes exactly
+one form: a certificate that files a support agreement as a judgment.
+
+Each form has **its own PDF** on `laws.gnb.ca`, so there is no page-cutting step
+— unlike BC's CFCSA forms, which had to be sliced out of one consolidation.
+
+### The dot leader
+
+These forms print a blank as a run of **spaced dots**:
+
+```
+Court File Number  . . . . . . . . . . . . . . . .
+I, . . . . . . . . . . . . . , of the . . . . . . . of . . . . . . . . .
+```
+
+Form 1.01 carries no underscore, no drawing and no widget at all — 46 dot runs
+and nothing else — so a detector tuned on any other province finds zero boxes on
+the whole batch. BC's leader detector does not fit either: it matches four or
+more *consecutive* dots, and New Brunswick spaces every one.
+
+**A box on a leader is cut to the space free above it.** These are not laid out
+like forms: Form 23 sets its declaration as a solid paragraph about 13 pt from
+baseline to baseline, and a full-height 13.3 pt box on one leader reached into
+the line above and covered the words printed there — 19 overlap flags on one
+page, down to 3 once the box was cut. The baseline never moves; only the top.
+
+**Only the court file number is bound.** These are the Minister of Social
+Development's forms: the applicant is *printed on the form*, and the role words
+sit in a right-aligned block rather than beside a leader, so no box's printed
+neighbourhood says whose name goes in it. A party bind guessed from position
+would write a name onto a warrant.
+
 ## Overlay convention
 
 Unchanged: `field.x` = box left in points, `field.y` = box top in points (y

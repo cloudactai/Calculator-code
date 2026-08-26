@@ -20,7 +20,8 @@ import fitz
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
-from nl_sources import shipped_sources  # noqa: E402
+from nl_pc_sources import shipped_sources as pc_sources  # noqa: E402
+from nl_sources import CATEGORY_ORDER, shipped_sources  # noqa: E402
 
 EXPORT = os.path.join(os.path.dirname(os.path.dirname(HERE)), "form-template-export")
 BLOCK = 100  # blocks are allocated a round hundred at a time
@@ -32,10 +33,47 @@ def nl_start(keep):
     return (highest // BLOCK + 1) * BLOCK + 1
 
 
+def rows_to_merge():
+    """Both Newfoundland batches, each carrying how it names itself.
+
+    The Supreme Court set numbers most of its forms ("Form F10.02A - Financial
+    Statement") and leaves 17 unnumbered, which carry their printed name alone.
+    The Provincial Court set numbers nothing the same way -- Form 1 to Form 8B,
+    AF001 to AF006, and the protection set 001 to 012 -- so its short titles
+    name the court as well, which is what tells the two "Notice of Hearing"
+    forms apart in the picker.
+    """
+    out = []
+    for src in shipped_sources():
+        src = dict(src)
+        src["catalogTitle"] = ("Form %s - %s" % (src["formNo"], src["title"])
+                               if src["numbered"] else src["title"])
+        src["catalogShortTitle"] = (("NL %s" % src["formNo"])
+                                    if src["numbered"] else src["title"][:40])
+        out.append(src)
+    rows = json.load(open(os.path.join(
+        EXPORT, "_incoming_nl_pc", "out", "nl_pc_rows.json")))
+    built = {row["docId"]: row for row in rows}
+    for src in pc_sources():
+        src = dict(src)
+        row = built[src["docId"]]
+        src["catalogTitle"] = row["title"]
+        src["catalogShortTitle"] = row["shortTitle"]
+        out.append(src)
+    # Both batches interleaved by category, so the picker's folders read the
+    # same whichever court a form comes from. Order inside a category is the
+    # order each batch lists its own forms in.
+    return sorted(enumerate(out),
+                  key=lambda pair: (CATEGORY_ORDER.index(pair[1]["category"]),
+                                    pair[0]))
+
+
 def main():
     catalog = json.load(open(os.path.join(EXPORT, "catalog.json")))
-    manifest = {m["docId"]: m for m in
-                json.load(open(os.path.join(EXPORT, "_incoming_nl", "manifest.json")))}
+    manifest = {}
+    for batch in ("_incoming_nl", "_incoming_nl_pc"):
+        for item in json.load(open(os.path.join(EXPORT, batch, "manifest.json"))):
+            manifest[item["docId"]] = item
 
     keep = [item for item in catalog if item.get("province") != "NL"]
     other = [(item["province"], item["sortOrder"]) for item in keep]
@@ -43,7 +81,7 @@ def main():
     start = nl_start(keep)
 
     rows = []
-    for offset, src in enumerate(shipped_sources()):
+    for offset, (_, src) in enumerate(rows_to_merge()):
         doc_id = src["docId"]
         pdf = os.path.join(EXPORT, "%s.pdf" % doc_id)
         if not os.path.exists(pdf):
@@ -52,13 +90,8 @@ def main():
         page_count = doc.page_count
         doc.close()
         rows.append({
-            # A numbered form reads "Form F10.02A - Financial Statement". The 17
-            # the court publishes with no number would otherwise print
-            # "Form ORDER_BLANK - ...", so they carry their printed name alone.
-            "title": ("Form %s - %s" % (src["formNo"], src["title"])
-                      if src["numbered"] else src["title"]),
-            "shortTitle": (("NL %s" % src["formNo"]) if src["numbered"]
-                           else src["title"][:40]),
+            "title": src["catalogTitle"],
+            "shortTitle": src["catalogShortTitle"],
             "footerText": manifest[doc_id].get("footerText") or None,
             "status": "active",
             "fileName": "%s.pdf" % doc_id,

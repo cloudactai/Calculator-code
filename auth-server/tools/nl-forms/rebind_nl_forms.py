@@ -80,8 +80,10 @@ def wanted_binds(doc_id):
                 box = rect_of(field)
                 bind = nl_binds.bind_for_role(words_beside(words, box, "right"))
                 if not bind:
-                    bind = nl_binds.bind_for_caption(
-                        words_beside(words, box, "left"))
+                    left = words_beside(words, box, "left")
+                    bind = nl_binds.bind_for_caption(left)
+                    if not bind and doc_id.startswith("NLEPO_"):
+                        bind = nl_binds.bind_for_role_left(left)
                 if bind:
                     out[field["id"]] = bind
     finally:
@@ -124,7 +126,9 @@ def main():
     check = "--check" in sys.argv
     total, forms = 0, 0
     for name in sorted(os.listdir(EXPORT)):
-        if not name.startswith("NLSC_") or not name.endswith(".json"):
+        if not name.endswith(".json"):
+            continue
+        if not name.startswith(("NLSC_", "NLPC_", "NLEPO_")):
             continue
         added = rebind(name[:-5], not check)
         if not added:

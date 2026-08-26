@@ -177,9 +177,9 @@ This is the most likely source of confusion for anyone new to the file:
   lets the user tweak/save. The forms are **image-based PDFs** with an overlay coordinate
   convention; the mapping is produced by a server-side extract-from-AcroForm / vector
   pipeline. (See the project's forms-migration and prefill-plan notes for the full
-  mapping pipeline and per-form status — the catalogue holds **135 Ontario,
-  213 BC, 121 Saskatchewan, 140 Manitoba, 102 Nova Scotia, 62 Newfoundland and
-  Labrador, 34 New Brunswick and 34 Prince Edward Island** templates -- 841 in
+  mapping pipeline and per-form status — the catalogue holds **138 Ontario,
+  213 BC, 121 Saskatchewan, 140 Manitoba, 102 Nova Scotia, 96 Newfoundland and
+  Labrador, 48 New Brunswick and 34 Prince Edward Island** templates -- 892 in
   all, across all eight provinces migrated so far. Build tooling is per
   province, in `auth-server/tools/on-forms/`, `bc-forms/`, `sk-forms/`,
   `mb-forms/`, `ns-forms/`, `nl-forms/`, `nb-forms/` and `pei-forms/`.)
@@ -230,6 +230,15 @@ This is the most likely source of confusion for anyone new to the file:
   standard heading]`), and `[or]` and `[s]` are part of the printed sentence.
   PEI, despite sharing the detectors, barely uses brackets — it writes
   underscore runs, closer to Saskatchewan.
+
+  **Several provinces are more than one batch**, and the second one is never on
+  the court's forms page. Newfoundland's Provincial Court publishes its own
+  family set (34 forms, including the emergency-protection orders) for the parts
+  of the province the Supreme Court's Family Division does not cover; New
+  Brunswick's child-protection and parentage forms are in Regulation 81-134
+  under the Family Services Act, printed as **spaced dot leaders**, a vocabulary
+  no other batch uses; and Ontario's three Hague Convention support forms live
+  in the Central Forms Repository rather than on ontariocourtforms.on.ca.
 
   **Nova Scotia is two batches, not one** (since 2026-08-26). Its 18
   Interjurisdictional Support Orders forms are prescribed by a statute rather

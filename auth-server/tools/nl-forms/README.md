@@ -188,6 +188,61 @@ covers none), binds drawn from a known vocabulary, and catalogue `pageCount`
 against the PDF. The two flat forms run a reduced set — they have no widgets to
 compare against.
 
+## The Provincial Court batch — 34 forms
+
+**34 forms, 61 pages, 1,465 fields, zero findings.** Newfoundland now ships 96.
+
+```
+python3 fetch_nl_pc.py                      # gates A + B
+python3 build_nl_pc_forms.py [--group epo] [--promote]
+python3 merge_nl_catalog.py                 # merges both batches
+python3 rebind_nl_forms.py [--check]        # covers NLSC_, NLPC_, NLEPO_
+python3 verify_nl.py
+```
+
+The 62 forms above are all **Supreme Court**. That is half of Newfoundland's
+family practice: outside the Avalon Peninsula and the west coast a family
+application is filed in the **Provincial Court**, under its own Family Rules and
+its own forms, and a matter in Labrador could not be started on anything the
+catalogue held. Those rules also govern the Adoption Act, the Children Youth and
+Families Act and the rest — which is where Newfoundland's child-protection forms
+turned out to live: in the general application set, not in a family of their own.
+
+| Group | Forms | docId |
+| --- | --- | --- |
+| Family application | 16 | `NLPC_*` |
+| Adult adoption | 6 | `NLPC_AF*` |
+| Emergency protection orders | 12 | `NLEPO_*` |
+
+The **emergency-protection set** is published on its own page under the *Family
+Violence Protection Act*, which is why the first pass missed it. Peace bonds
+(criminal), small claims and the duty-judge schedule are on those same pages and
+are out of scope.
+
+### Three things this batch cost
+
+1. **Text extraction on these files is lossy.** Form 2's heading comes back as
+   "IN THE PROVIN D LABRADOR" and its "BETWEEN:" as "E N:" — the font's
+   ToUnicode map drops characters. The page renders perfectly; only the
+   extraction is damaged. The fetch gate matches "Labrador" *or* "Provincial
+   Court" because of it, and it is the reason no printed-anchor detector should
+   ever be pointed at the AcroForm files here.
+2. **One page can print blanks three ways.** Form 003 of the protection set uses
+   drawn rules for its party lines and the glyph U+2610 for its options, and no
+   underscore anywhere: the Saskatchewan detector alone found **zero** boxes on
+   it. `nl_pc_anchors.py` adds drawn rules and drawn squares, and Nova Scotia's
+   `tick_boxes` supplies the glyph. What separates a writing rule from a frame
+   border is a **printed label to its left on the line's own baseline** — that
+   one test rejects the quotation-box borders and heading rules without
+   enumerating them.
+3. **A form with no blanks gets no boxes.** The Financial Information Sheet is a
+   page of instructions about what to attach. It ships with zero fields, and
+   that is the correct answer, not a gap.
+
+`INK_EXEMPT` gains two entries: Forms 4 and 6 mark their options with an
+**underscore run** rather than a square ("__ Original (Court)", "_____ Case
+Conference"), so the government's widget sits beside a line and covers no ink.
+
 ## Overlay convention
 
 Unchanged from every other province: `field.x` = box left in points, `field.y` =

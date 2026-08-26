@@ -89,6 +89,13 @@ CATEGORY_ORDER = [
     "Trial",
     "Divorce & Judgment",
     "Appeals",
+    # Added with the regulation batch (`nb_reg_sources.py`): child protection
+    # and parentage are prescribed by regulation in New Brunswick, so the Rules
+    # of Court set has no category for either.
+    "Child Protection",
+    "Parentage",
+    "Orders & Judgments",
+    "Enforcement",
     "Other",
 ]
 

@@ -20,7 +20,8 @@ import fitz
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
-from nb_sources import shipped_sources  # noqa: E402
+from nb_reg_sources import shipped_sources as reg_sources  # noqa: E402
+from nb_sources import CATEGORY_ORDER, shipped_sources  # noqa: E402
 
 EXPORT = os.path.join(os.path.dirname(os.path.dirname(HERE)), "form-template-export")
 BLOCK = 100  # blocks are allocated a round hundred at a time
@@ -36,14 +37,21 @@ def main():
     catalog = json.load(open(os.path.join(EXPORT, "catalog.json")))
     manifest = {m["docId"]: m for m in
                 json.load(open(os.path.join(EXPORT, "_incoming_nb", "manifest.json")))}
+    reg_rows = {row["docId"]: row for row in json.load(open(os.path.join(
+        EXPORT, "_incoming_nb_reg", "out", "nb_reg_rows.json")))}
 
     keep = [item for item in catalog if item.get("province") != "NB"]
     other = [(item["province"], item["sortOrder"]) for item in keep]
     assert len(set(other)) == len(other), "sortOrder collision outside NL"
     start = nb_start(keep)
 
+    both = list(shipped_sources()) + list(reg_sources())
+    # Interleaved by category so the picker's folders read the same whether a
+    # form comes from the Rules of Court or from a regulation.
+    both.sort(key=lambda item: CATEGORY_ORDER.index(item["category"]))
+
     rows = []
-    for offset, src in enumerate(shipped_sources()):
+    for offset, src in enumerate(both):
         doc_id = src["docId"]
         pdf = os.path.join(EXPORT, "%s.pdf" % doc_id)
         if not os.path.exists(pdf):
@@ -51,11 +59,13 @@ def main():
         doc = fitz.open(pdf)
         page_count = doc.page_count
         doc.close()
+        built = reg_rows.get(doc_id)
         rows.append({
-            # A numbered form reads "Form F10.02A - Financial Statement". The 17
-            "title": "Form %s - %s" % (src["formNo"], src["title"]),
-            "shortTitle": "NB %s" % src["formNo"],
-            "footerText": manifest[doc_id].get("footerText") or None,
+            "title": built["title"] if built else (
+                "Form %s - %s" % (src["formNo"], src["title"])),
+            "shortTitle": built["shortTitle"] if built else "NB %s" % src["formNo"],
+            "footerText": (built["footerText"] if built
+                           else manifest[doc_id].get("footerText") or None),
             "status": "active",
             "fileName": "%s.pdf" % doc_id,
             "docId": doc_id,

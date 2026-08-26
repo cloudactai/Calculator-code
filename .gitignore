@@ -28,6 +28,7 @@ auth-server/form-template-export/_incoming_bc3/
 # And for the Ontario batch: government sources, the headless XFA flatten and
 # QA renders. The promoted FormXX.pdf/.json templates are what the repo ships.
 auth-server/form-template-export/_incoming_on/
+auth-server/form-template-export/_incoming_on_hague/
 # And for the Saskatchewan batch: King's Printer source PDFs, the manifest and
 # QA renders. Only the promoted SKKB_*.pdf/.json templates belong in the repo.
 auth-server/form-template-export/_incoming_sk/
@@ -50,7 +51,9 @@ auth-server/tools/bc-forms/xfa/sc_out2/
 # the committed record of the review is tools/review/ledger.json.
 auth-server/form-template-export/_review/
 auth-server/form-template-export/_incoming_nl/
+auth-server/form-template-export/_incoming_nl_pc/
 auth-server/form-template-export/_incoming_nb/
+auth-server/form-template-export/_incoming_nb_reg/
 auth-server/form-template-export/_incoming_ns/
 auth-server/form-template-export/_incoming_ns_iso/
 auth-server/form-template-export/_incoming_pei/

@@ -113,6 +113,11 @@ CATEGORY_ORDER = [
     "Interjurisdictional & FOAEAA",
     "Return of Child",
     "Representation",
+    # Added with the Provincial Court batch (`nl_pc_sources.py`): the adult
+    # adoption set and the emergency-protection set have no counterpart in the
+    # Supreme Court's forms.
+    "Adoption",
+    "Protection Orders",
     "Other",
 ]
 
