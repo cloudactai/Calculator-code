@@ -96,8 +96,19 @@ def clear_printed_values(doc):
     return cleared
 
 
-def flatten_baked(source_path, dest_path):
+BUTTON_TYPES = (fitz.PDF_WIDGET_TYPE_CHECKBOX, fitz.PDF_WIDGET_TYPE_RADIOBUTTON)
+
+
+def flatten_baked(source_path, dest_path, only_buttons=False):
     """Flatten to a background, keeping ink that only the widget layer draws.
+
+    With `only_buttons`, **just the option squares are baked** and every other
+    widget is deleted before baking, exactly as `flatten_background` would have
+    deleted it. That is the repair mode: it restores the missing squares on a
+    template that has already been built and reviewed without altering anything
+    else on the page, so a background that was right stays byte-for-byte the
+    same picture apart from the squares. `tools/repair_option_squares.py` uses
+    it; a new batch should bake the whole widget layer instead.
 
     `bc_pipeline.flatten_background` deletes the widget annotations outright,
     on the assumption -- true of Ontario, BC and Newfoundland -- that the
@@ -127,7 +138,14 @@ def flatten_baked(source_path, dest_path):
     its off-state and clearing it has nothing to do with ink.
     """
     doc = fitz.open(source_path)
-    cleared = clear_printed_values(doc)
+    if only_buttons:
+        for page in doc:
+            for widget in list(page.widgets()):
+                if widget.field_type not in BUTTON_TYPES:
+                    page.delete_widget(widget)
+        cleared = 0
+    else:
+        cleared = clear_printed_values(doc)
     doc.bake(annots=True, widgets=True)
     for page in doc:
         for widget in list(page.widgets()):
