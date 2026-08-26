@@ -1,40 +1,23 @@
-"""Build the Newfoundland templates: background PDF + overlay map + QA.
+"""Build the New Brunswick templates: background PDF + overlay map + QA.
 
-    python3 build_nl_forms.py [--only NLSC_F10_02A] [--category Financial] [--promote]
+    python3 build_nb_forms.py [--only NBKB_72J] [--category Financial] [--promote]
 
-Without `--promote` it writes to `_incoming_nl/out` and prints the gate results
+Without `--promote` it writes to `_incoming_nb/out` and prints the gate results
 only.
 
-## Two paths, and why
+**Twenty-nine of the 34 forms are AcroForm**, so the government's own widget
+rectangles are the ground truth and the overlay converts straight from them via
+`bc_pipeline.extract`. The seating passes are shared with Newfoundland and live
+in `tools/acroform_seat.py`; the BC refinement passes stay off, for the reason
+the Ontario builder records.
 
-**Sixty of the 62 forms are AcroForm**, so the government's own widget
-rectangles are the ground truth and the overlay is converted straight from them
-by `bc_pipeline.extract`. The BC refinement passes (mark snapping, ruled-block
-expansion, amount sizing) are deliberately *not* run, for the reason the Ontario
-builder records: they exist to recover geometry XFA never emitted properly, and
-moving a real AcroForm rectangle can only make placement worse.
-
-Two passes *are* run, because both correct a defect this batch actually has and
-both were measured on it rather than assumed:
-
-* **Checkboxes are seated on the square the page prints.** Newfoundland's
-  option widgets measure 9.8 x 7.7 -- not square, and larger than the printed
-  box -- so a control taken from the widget rect visibly overhangs the box drawn
-  under it. This is the same defect Saskatchewan's widget-path forms shipped
-  with in 2026-08 and it has the same fix: measure the printed mark, seat the
-  field on it, and leave alone any option that prints no square.
-
-* **Single-line text fields are re-cut to the printed line and sat on their
-  rule.** A Newfoundland widget rect has a median height of 18.8 pt against a
-  13.3 pt printed line (p90 = 30.5), and the editor top-aligns its input, so
-  typed text floats above the rule instead of sitting on it -- exactly Ontario's
-  Defect 1. Blocks and multi-line areas keep their height.
-
-**Two forms are flat** -- the Settlement Conference Brief and the file-access
-Undertaking carry no widget layer at all. Their blanks print as underscore runs,
-so those two take a printed-anchor path instead. They are listed in
-`fetch_nl.KNOWN_STATIC`, and a third form losing its widgets is a fetch problem,
-not something this builder silently absorbs.
+**Five forms carry no widget layer and no printed blank at all.** They are the
+Rules of Court's own "APPENDIX OF FORMS" prose, with parenthetical instructions
+where a blank would be, so they ship as a background with **zero boxes** --
+inventing a box where the page prints no anchor is the one thing every
+province's builder refuses to do. They are listed in `fetch_nb.KNOWN_STATIC`,
+and a form *newly* losing its widgets is a fetch problem rather than something
+this builder silently absorbs.
 """
 import argparse
 import json
@@ -52,11 +35,11 @@ sys.path.insert(0, HERE)
 
 import acroform_seat as A  # noqa: E402
 import bc_pipeline as bp  # noqa: E402
-from fetch_nl import KNOWN_STATIC  # noqa: E402
-from nl_sources import CATEGORY_ORDER, all_sources  # noqa: E402
+from fetch_nb import KNOWN_STATIC  # noqa: E402
+from nb_sources import CATEGORY_ORDER, all_sources  # noqa: E402
 
 EXPORT = os.path.join(os.path.dirname(TOOLS), "form-template-export")
-STAGE = os.path.join(EXPORT, "_incoming_nl")
+STAGE = os.path.join(EXPORT, "_incoming_nb")
 OUT = os.path.join(STAGE, "out")
 QA = os.path.join(STAGE, "qa")
 
@@ -96,14 +79,13 @@ def build_one(src, manifest):
                  offPageDropped=dropped, fields=len(fields),
                  path="anchor" if did in KNOWN_STATIC else "widget")
     row = {
-        "title": ("Form %s - %s" % (src["formNo"], src["title"])
-                  if src["numbered"] else src["title"]),
-        "shortTitle": ("NL %s" % src["formNo"]) if src["numbered"] else src["title"][:40],
+        "title": "Form %s - %s" % (src["formNo"], src["title"]),
+        "shortTitle": "NB %s" % src["formNo"],
         "footerText": manifest.get(did, {}).get("footerText") or src["court"],
         "status": "active",
         "fileName": "%s.pdf" % did,
         "docId": did,
-        "province": "NL",
+        "province": "NB",
         "category": src["category"],
         "version": 1,
         "pageCount": pages,
@@ -142,9 +124,9 @@ def main():
                  audit["linesResized"], len(geometry), audit["overlapFlags"]))
 
     rows.sort(key=lambda r: (CATEGORY_ORDER.index(r["category"]), r["docId"]))
-    with open(os.path.join(OUT, "nl_rows.json"), "w") as fh:
+    with open(os.path.join(OUT, "nb_rows.json"), "w") as fh:
         json.dump(rows, fh, indent=1)
-    with open(os.path.join(OUT, "nl_audit.json"), "w") as fh:
+    with open(os.path.join(OUT, "nb_audit.json"), "w") as fh:
         json.dump(audits, fh, indent=1)
 
     off = [(a["docId"], a["offPageDropped"]) for a in audits if a.get("offPageDropped")]

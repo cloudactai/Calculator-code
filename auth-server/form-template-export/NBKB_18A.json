@@ -1,0 +1,152 @@
+{
+ "staticFields": [
+  {
+   "id": 1750273806001,
+   "type": "TextField",
+   "x": 41.89,
+   "y": 135.45,
+   "width": 187.04,
+   "height": 19.95,
+   "value": "",
+   "fontSize": 9,
+   "color": [
+    0,
+    0,
+    0
+   ],
+   "background": "none",
+   "border": "none",
+   "page": 1
+  },
+  {
+   "id": 1750273806002,
+   "type": "TextField",
+   "x": 167.54,
+   "y": 146.36,
+   "width": 361.83,
+   "height": 19.95,
+   "value": "",
+   "fontSize": 9,
+   "color": [
+    0,
+    0,
+    0
+   ],
+   "background": "none",
+   "border": "none",
+   "page": 1
+  },
+  {
+   "id": 1750273806003,
+   "type": "TextField",
+   "x": 429.0,
+   "y": 147.85,
+   "width": 198.54,
+   "height": 19.95,
+   "value": "",
+   "fontSize": 9,
+   "color": [
+    0,
+    0,
+    0
+   ],
+   "background": "none",
+   "border": "none",
+   "page": 1,
+   "bind": "court_info.courtFileNumber"
+  },
+  {
+   "id": 1750273806004,
+   "type": "TextField",
+   "x": 42.36,
+   "y": 205.36,
+   "width": 611.46,
+   "height": 19.95,
+   "value": "",
+   "fontSize": 9,
+   "color": [
+    0,
+    0,
+    0
+   ],
+   "background": "none",
+   "border": "none",
+   "page": 1,
+   "bind": "applicant.fullLegalName"
+  },
+  {
+   "id": 1750273806005,
+   "type": "TextField",
+   "x": 456.22,
+   "y": 210.07,
+   "width": 187.04,
+   "height": 19.95,
+   "value": "",
+   "fontSize": 9,
+   "color": [
+    0,
+    0,
+    0
+   ],
+   "background": "none",
+   "border": "none",
+   "page": 1,
+   "bind": "applicant.fullLegalName"
+  },
+  {
+   "id": 1750273806006,
+   "type": "TextField",
+   "x": 42.36,
+   "y": 255.36,
+   "width": 611.46,
+   "height": 19.95,
+   "value": "",
+   "fontSize": 9,
+   "color": [
+    0,
+    0,
+    0
+   ],
+   "background": "none",
+   "border": "none",
+   "page": 1
+  },
+  {
+   "id": 1750273806007,
+   "type": "TextField",
+   "x": 456.22,
+   "y": 261.12,
+   "width": 187.04,
+   "height": 19.95,
+   "value": "",
+   "fontSize": 9,
+   "color": [
+    0,
+    0,
+    0
+   ],
+   "background": "none",
+   "border": "none",
+   "page": 1,
+   "bind": "respondent.fullLegalName"
+  },
+  {
+   "id": 1750273806008,
+   "type": "TextField",
+   "x": 42.36,
+   "y": 350.37,
+   "width": 790.92,
+   "height": 19.95,
+   "value": "",
+   "fontSize": 9,
+   "color": [
+    0,
+    0,
+    0
+   ],
+   "background": "none",
+   "border": "none",
+   "page": 1
+  }
+ ]
+}
