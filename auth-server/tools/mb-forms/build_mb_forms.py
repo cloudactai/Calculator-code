@@ -2090,7 +2090,16 @@ def currency_anchors(page):
         anchor = fitz.Rect(char_boxes[start])
         for char_box in char_boxes[start + 1:index + 1]:
             anchor |= char_box
-        out.append(anchor)
+        # When the amount blank is printed with underscores, its final
+        # underscore is also the exact right edge of the control.  Retaining
+        # that edge prevents short accounting blanks such as ``(+) $_____``
+        # from inheriting a wider guessed field that covers the prefix.
+        line_right = None
+        if "_" in text:
+            last_underscore = text.rfind("_")
+            if last_underscore < len(char_boxes):
+                line_right = char_boxes[last_underscore].x1
+        out.append((anchor, line_right))
     return out
 
 
@@ -2108,7 +2117,7 @@ def fit_currency_anchors(page, boxes):
     adjusted = list(boxes)
     available = {i for i, (_rect, kind) in enumerate(adjusted)
                  if kind == "TextField"}
-    for anchor in anchors:
+    for anchor, line_right in anchors:
         candidates = []
         for index in available:
             rect, _kind = adjusted[index]
@@ -2122,10 +2131,11 @@ def fit_currency_anchors(page, boxes):
         _score, index = min(candidates)
         rect, kind = adjusted[index]
         left = anchor.x1 + EDGE_CLEARANCE
-        if rect.x1 - left < MIN_BLANK_WIDTH:
+        right = line_right if line_right is not None else rect.x1
+        if right - left < MIN_BLANK_WIDTH:
             continue
         height = anchor.height * CURRENCY_LINE_RATIO
-        adjusted[index] = (fitz.Rect(left, anchor.y0, rect.x1,
+        adjusted[index] = (fitz.Rect(left, anchor.y0, right,
                                      anchor.y0 + height), kind)
         available.remove(index)
     return adjusted
@@ -2223,6 +2233,37 @@ MANUAL_FIELDS = {
         (4, fitz.Rect(90.1, 242.7, 510.2, 502.7), "TextArea"),   # dispute / plan of care
     ],
 }
+
+
+# Fields confirmed during visual review to be non-fillable layout rules or
+# duplicate widgets. Keep the exclusions in the builder so regenerating a form
+# cannot restore the unwanted controls. Coordinates are the emitted overlay
+# geometry: (page, x, y, width, height).
+STRAY_FIELDS = {
+    "MBCPB_PREHEARING_PARENTS": [
+        (1, 90.1, 290.47, 647.95, 17.29),  # separator above "respondents"
+        (2, 90.1, 487.27, 674.85, 12.0),  # rule directly below "Witnesses"
+    ],
+    "MBPO_CPI": [
+        (1, 120.54, 53.27, 488.61, 19.54),  # duplicate applicant caption widget
+    ],
+}
+
+
+def drop_stray_fields(doc_id, fields, tolerance=0.5):
+    """Remove reviewed false-positive fields by page and overlay geometry."""
+    stray = STRAY_FIELDS.get(doc_id, ())
+
+    def matches(field, box):
+        page, x, y, width, height = box
+        return (field.get("page") == page
+                and abs(field.get("x", 0) - x) <= tolerance
+                and abs(field.get("y", 0) - y) <= tolerance
+                and abs(field.get("width", 0) - width) <= tolerance
+                and abs(field.get("height", 0) - height) <= tolerance)
+
+    return [field for field in fields
+            if not any(matches(field, box) for box in stray)]
 
 
 # A caption that closes its page needs this much clear paper under it before it
@@ -2786,6 +2827,7 @@ def build_from_widgets(src, doc_id, source, promote):
     source-versus-overlay comparison both check.
     """
     fields, audit = bp.extract(source, doc_id)
+    fields = drop_stray_fields(doc_id, fields)
     os.makedirs(OUT, exist_ok=True)
     os.makedirs(QA, exist_ok=True)
     background = os.path.join(OUT, "%s.pdf" % doc_id)
@@ -2845,6 +2887,7 @@ def build(src, promote=False, force=False):
         field = _field(doc_id, index, rect, kind)
         field["page"] = page_number
         fields.append(field)
+    fields = drop_stray_fields(doc_id, fields)
     doc.close()
 
     bp.clamp_to_page(fields, page_sizes)
