@@ -65,10 +65,18 @@ import fitz
 TOKEN = re.compile(r"\[([^\[\]\n]{1,70})\]")
 
 # Directives: they act on text already on the page rather than name content.
+# What separates a directive from a blank is the **verb**, not the punctuation.
+# "provide", "give", "state", "describe", "show", "set out", "list" ask for
+# content; "copy", "delete", "add", "complete", "choose", "repeat" act on text
+# that is already on the page. An earlier version rejected any bracket ending in
+# a full stop, which threw away about twenty real blanks --
+# "[give particulars of all debts owing to you.]",
+# "[provide facts in support here.]" -- for the sake of catching two notes.
 DIRECTIVE = re.compile(
-    r"^(copy|delete|choose|omit|strike|repeat|use|complete the heading|"
-    r"if applicable|as applicable|may delete|include|check|tick|"
+    r"^(copy|delete|choose|omit|strike|repeat|use|add|complete|"
+    r"if\b|as applicable|may delete|include|check|tick|"
     r"note\b|see\b|attach)\b", re.I)
+
 
 # Not content in their own right.
 NOT_BLANK = {"or", "and", "s", "es", "ies", "etc"}
@@ -215,58 +223,70 @@ CELL_MAX_H = 46.0
 
 
 def _grid(page, geom):
-    """Merged horizontal and vertical rules, as sorted coordinate lists."""
-    h = sorted({round(r[0], 1) for r in geom.hrules(page, min_len=24.0)})
-    v = sorted({round(r[0], 1) for r in geom.vrules(page, min_len=8.0)})
-    return h, v
+    """Merged horizontal and vertical rules, as (position, from, to) lists."""
+    return (geom.hrules(page, min_len=24.0), geom.vrules(page, min_len=8.0))
 
 
-def cell_boxes(page, geom, pad=1.5):
+CURRENCY = set("$¢")
+
+
+def cell_boxes(page, geom, pad=1.5, cover=0.7):
     """Every empty cell of a ruled table, as a rect.
 
-    A cell counts as empty when no glyph's centre falls inside it. Label cells
-    and heading cells therefore exclude themselves, without needing a rule about
-    which column is which.
+    A cell counts as empty when no glyph's centre falls inside it, so label and
+    heading cells exclude themselves without a rule about which column is which.
+
+    **Each row's cells are cut by the verticals that actually span that row**,
+    not by every vertical on the page. Taking consecutive x-positions from a
+    page-wide list looked right and was wrong: PEI's Form 70I(A) carries a short
+    rule at x = 387 belonging to another table, which fell inside the AMOUNT
+    column and split it in two -- and because that rule does not span the row,
+    the four-borders test then rejected *both* halves. The whole AMOUNT column
+    of a Statement of Income got no boxes while COMMENTS beside it got all of
+    them.
+
+    A cell holding nothing but a currency symbol is still a blank: the form
+    prints "$" and expects the figure beside it, so the box starts after the
+    symbol rather than the cell being called occupied.
     """
-    rows, cols = _grid(page, geom)
-    if len(rows) < 2 or len(cols) < 2:
+    hrules, vrules = _grid(page, geom)
+    rows = sorted({round(r[0], 1) for r in hrules})
+    if len(rows) < 2:
         return []
-    glyphs = [(w[0], w[1], w[2], w[3]) for w in page.get_text("words")]
+    glyphs = [(w[0], w[1], w[2], w[3], w[4]) for w in page.get_text("words")]
     out = []
     for top, bottom in zip(rows, rows[1:]):
         height = bottom - top
         if not (CELL_MIN_H <= height <= CELL_MAX_H):
             continue
-        for left, right in zip(cols, cols[1:]):
-            width = right - left
-            if width < CELL_MIN_W:
+        need_v = height * cover
+        spanning = sorted({round(v[0], 1) for v in vrules
+                           if min(v[2], bottom) - max(v[1], top) >= need_v})
+        if len(spanning) < 2:
+            continue
+        for left, right in zip(spanning, spanning[1:]):
+            if right - left < CELL_MIN_W:
                 continue
-            # Only a cell whose four borders are actually drawn is a cell; a
-            # gap between two unrelated rules is not.
-            if not _bordered(page, geom, left, top, right, bottom):
+            if not (_hrule_spans(hrules, top, left, right, cover)
+                    and _hrule_spans(hrules, bottom, left, right, cover)):
                 continue
-            occupied = any(left < (g[0] + g[2]) / 2 < right
-                           and top < (g[1] + g[3]) / 2 < bottom
-                           for g in glyphs)
-            if occupied:
+            inside = [g for g in glyphs
+                      if left < (g[0] + g[2]) / 2 < right
+                      and top < (g[1] + g[3]) / 2 < bottom]
+            if inside and any(g[4].strip() not in CURRENCY for g in inside):
                 continue
-            out.append(fitz.Rect(left + pad, top + pad, right - pad, bottom - pad))
+            start_x = left
+            if inside:
+                start_x = max(g[2] for g in inside) + 1.0
+            if right - start_x < CELL_MIN_W:
+                continue
+            out.append(fitz.Rect(start_x + pad, top + pad,
+                                 right - pad, bottom - pad))
     return out
 
 
-def _bordered(page, geom, left, top, right, bottom, tol=2.0, cover=0.7):
-    """Are all four sides of this cell drawn on the page?"""
-    if not hasattr(page, "_ns_rules"):
-        page._ns_rules = (geom.hrules(page, min_len=8.0),
-                          geom.vrules(page, min_len=6.0))
-    hrules, vrules = page._ns_rules
-    need = (right - left) * cover, (bottom - top) * cover
-    def h_at(y):
-        return any(abs(r[0] - y) <= tol
-                   and min(r[2], right) - max(r[1], left) >= need[0]
-                   for r in hrules)
-    def v_at(x):
-        return any(abs(r[0] - x) <= tol
-                   and min(r[2], bottom) - max(r[1], top) >= need[1]
-                   for r in vrules)
-    return h_at(top) and h_at(bottom) and v_at(left) and v_at(right)
+def _hrule_spans(hrules, y, left, right, cover, tol=2.0):
+    need = (right - left) * cover
+    return any(abs(r[0] - y) <= tol
+               and min(r[2], right) - max(r[1], left) >= need
+               for r in hrules)

@@ -177,13 +177,35 @@ This is the most likely source of confusion for anyone new to the file:
   lets the user tweak/save. The forms are **image-based PDFs** with an overlay coordinate
   convention; the mapping is produced by a server-side extract-from-AcroForm / vector
   pipeline. (See the project's forms-migration and prefill-plan notes for the full
-  mapping pipeline and per-form status — the catalogue holds **135 Ontario, 213 BC,
-  121 Saskatchewan and 140 Manitoba** templates -- 609 in all. Build tooling is per province, in
-  `auth-server/tools/on-forms/`, `auth-server/tools/bc-forms/`,
-  `auth-server/tools/sk-forms/` and `auth-server/tools/mb-forms/`.)
+  mapping pipeline and per-form status — the catalogue holds **135 Ontario,
+  213 BC, 121 Saskatchewan, 140 Manitoba, 84 Nova Scotia, 62 Newfoundland and
+  Labrador, 34 New Brunswick and 34 Prince Edward Island** templates -- 823 in
+  all, across all eight provinces migrated so far. Build tooling is per
+  province, in `auth-server/tools/on-forms/`, `bc-forms/`, `sk-forms/`,
+  `mb-forms/`, `ns-forms/`, `nl-forms/`, `nb-forms/` and `pei-forms/`.)
 
-  The four provinces reach the same overlay convention from very different
-  sources, which is the thing to know before touching any of them: Ontario is
+  The provinces reach the same overlay convention from very different
+  sources, which is the thing to know before touching any of them. There are
+  really only three paths, and which one a province takes is decided entirely
+  by what its government publishes:
+
+  - **A widget path**, where the government hands over its own AcroForm
+    rectangles and they are converted directly. Ontario's PDF forms, BC's
+    Provincial Court set, and the whole of **Newfoundland** (60 of 62) and
+    **New Brunswick** (29 of 34) take it. The BC refinement passes stay *off*
+    here: they exist to recover geometry XFA never emitted, and moving a real
+    widget rect only makes placement worse. The shared seating passes live in
+    `auth-server/tools/acroform_seat.py`.
+  - **A flatten path**, for XFA (Adobe LiveCycle) sources, which render as a
+    "Please wait…" placeholder outside Adobe. BC's Supreme set and a few
+    Ontario forms go through headless pdf.js + Chrome
+    (`tools/bc-forms/xfa/`). It is the most fragile route in the repo.
+  - **A printed-anchor path**, where there is no widget anywhere and every box
+    is read off the printed page. Saskatchewan, Manitoba, **Nova Scotia** and
+    **Prince Edward Island** take it, and the anchors differ per province (see
+    below).
+
+  In detail: Ontario is
   largely **scanned images**, BC is **AcroForm** (Provincial) and **XFA needing a
   headless flatten** (Supreme) — plus, for the child-protection and adoption forms
   the government publishes only as enacted text, pages **cut out of a King's
@@ -191,6 +213,23 @@ This is the most likely source of confusion for anyone new to the file:
   Word-derived PDFs with a real text layer and no widgets at all** — so their boxes
   are detected from printed anchors and their backgrounds ship byte-identical to
   the government's file.
+
+  **Nova Scotia and Prince Edward Island are both rendered from Word.** Nova
+  Scotia publishes *no* PDF edition of any family form, and PEI's fillable
+  PDFs are XFA and cover only half its set, so both are converted through
+  LibreOffice — which means their backgrounds are **ours, not the
+  government's**, and the renderer is a suspect whenever a page looks wrong.
+  Manitoba's twenty Word-only batch-3 forms share that property.
+
+  Nova Scotia also prints its blanks in a way no other province does: as an
+  **instruction in square brackets** — "I, [name], of [community], Nova
+  Scotia" — 1,182 of them against 418 underscore runs. Its Petition for
+  Divorce prints no underscore at all. Three kinds of bracket are *not* blanks
+  and all three occur in bulk: a slash is a strike-out choice
+  (`[child/children]`), a directive acts on text already there (`[copy
+  standard heading]`), and `[or]` and `[s]` are part of the printed sentence.
+  PEI, despite sharing the detectors, barely uses brackets — it writes
+  underscore runs, closer to Saskatchewan.
 
   Since 2026-08-21 both prairie provinces also carry families that are **not**
   static: the interjurisdictional support set, Manitoba's protection-order
