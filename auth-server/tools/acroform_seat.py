@@ -49,6 +49,102 @@ BLOCK_MIN = 22.0
 TEXT_TYPES = ("TextField", "Number", "Date")
 
 
+VALUE_TYPES = (fitz.PDF_WIDGET_TYPE_TEXT, fitz.PDF_WIDGET_TYPE_COMBOBOX,
+               fitz.PDF_WIDGET_TYPE_LISTBOX)
+
+
+def clear_printed_values(doc):
+    """Empty every text-ish field that arrives with a value already in it.
+
+    Both halves are needed, and finding that out cost a build:
+
+    * `/V` is the value, and clearing it alone changes nothing that gets drawn.
+    * `/AP/N` is the **appearance stream**, which is what `bake` actually paints,
+      and it still holds the old text. Setting `widget.field_value = ""` and
+      calling `update()` does not regenerate it here either -- the value reads
+      back unchanged from the saved file.
+
+    So the appearance is edited directly. A text or choice field's appearance is
+    laid out to a fixed convention: the box (its white fill, its border) is
+    drawn first, then the value sits inside a `/Tx BMC ... EMC` marked-content
+    section. Dropping what is between those two operators removes the printed
+    value and keeps the box that surrounds it -- which matters, because on these
+    forms the box is the only thing drawing the field at all.
+
+    Returns how many were cleared.
+    """
+    cleared = 0
+    for page in doc:
+        for widget in page.widgets():
+            if widget.field_type not in VALUE_TYPES:
+                continue
+            if not str(widget.field_value or "").strip():
+                continue
+            doc.xref_set_key(widget.xref, "V", "()")
+            appearance = doc.xref_get_key(widget.xref, "AP/N")
+            if appearance[0] == "xref":
+                stream_xref = int(appearance[1].split()[0])
+                content = doc.xref_stream(stream_xref).decode("latin-1")
+                start = content.find("/Tx BMC")
+                end = content.rfind("EMC")
+                if start != -1 and end > start:
+                    doc.update_stream(
+                        stream_xref,
+                        (content[:start] + "/Tx BMC\nEMC\n"
+                         + content[end + 3:]).encode("latin-1"))
+            cleared += 1
+    return cleared
+
+
+def flatten_baked(source_path, dest_path):
+    """Flatten to a background, keeping ink that only the widget layer draws.
+
+    `bc_pipeline.flatten_background` deletes the widget annotations outright,
+    on the assumption -- true of Ontario, BC and Newfoundland -- that the
+    printed rules and squares live in the page content and the widget only ever
+    added a control on top.
+
+    **Nova Scotia's ISO forms break that assumption.** Their option squares are
+    drawn by the widget's own border and nothing else: measured on the batch,
+    172 checkboxes across 16 of the 18 forms have ink in the source render and
+    none at all after a plain flatten. Form G loses 12 of its 16 squares. The
+    filer would be left with a caption, empty white space, and an overlay
+    control floating where a box used to be printed.
+
+    So the appearance streams are baked into the page content first, which is
+    exactly what the source renders as, and only then is the widget layer gone.
+    `Document.bake` does the drawing; everything after it is the same contract
+    `flatten_background` guarantees -- no widgets, no /AcroForm -- and it is
+    re-checked on the file that was written rather than in memory.
+
+    **A widget's current value is cleared before it is baked.** Baking draws
+    whatever the field holds, and Nova Scotia ships the set-aside notice with
+    four fields already carrying a value -- a dropdown resting on "Applicant",
+    another on "Port Hawkesbury Supreme Court (Family Division), 15 Kennedy
+    Street", a third on "afternoon". Printed into the background, each would sit
+    under our own box and collide with whatever the filer types over it. An
+    empty form should print empty. Buttons are left alone: a checkbox's value is
+    its off-state and clearing it has nothing to do with ink.
+    """
+    doc = fitz.open(source_path)
+    cleared = clear_printed_values(doc)
+    doc.bake(annots=True, widgets=True)
+    for page in doc:
+        for widget in list(page.widgets()):
+            page.delete_widget(widget)
+    doc.xref_set_key(doc.pdf_catalog(), "AcroForm", "null")
+    doc.save(dest_path, garbage=4, deflate=True, clean=True)
+    doc.close()
+    check = fitz.open(dest_path)
+    remaining = sum(len(list(page.widgets())) for page in check)
+    pages = check.page_count
+    check.close()
+    if remaining:
+        raise SystemExit("%s still has %d widgets after flatten"
+                         % (dest_path, remaining))
+    return pages, cleared
+
+
 def seat_checkboxes(fields, background):
     """Seat each option on the square the page prints.
 

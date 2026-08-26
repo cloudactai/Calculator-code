@@ -178,8 +178,8 @@ This is the most likely source of confusion for anyone new to the file:
   convention; the mapping is produced by a server-side extract-from-AcroForm / vector
   pipeline. (See the project's forms-migration and prefill-plan notes for the full
   mapping pipeline and per-form status — the catalogue holds **135 Ontario,
-  213 BC, 121 Saskatchewan, 140 Manitoba, 84 Nova Scotia, 62 Newfoundland and
-  Labrador, 34 New Brunswick and 34 Prince Edward Island** templates -- 823 in
+  213 BC, 121 Saskatchewan, 140 Manitoba, 102 Nova Scotia, 62 Newfoundland and
+  Labrador, 34 New Brunswick and 34 Prince Edward Island** templates -- 841 in
   all, across all eight provinces migrated so far. Build tooling is per
   province, in `auth-server/tools/on-forms/`, `bc-forms/`, `sk-forms/`,
   `mb-forms/`, `ns-forms/`, `nl-forms/`, `nb-forms/` and `pei-forms/`.)
@@ -191,8 +191,8 @@ This is the most likely source of confusion for anyone new to the file:
 
   - **A widget path**, where the government hands over its own AcroForm
     rectangles and they are converted directly. Ontario's PDF forms, BC's
-    Provincial Court set, and the whole of **Newfoundland** (60 of 62) and
-    **New Brunswick** (29 of 34) take it. The BC refinement passes stay *off*
+    Provincial Court set, the whole of **Newfoundland** (60 of 62) and
+    **New Brunswick** (29 of 34), and **Nova Scotia's 18 ISO forms** take it. The BC refinement passes stay *off*
     here: they exist to recover geometry XFA never emitted, and moving a real
     widget rect only makes placement worse. The shared seating passes live in
     `auth-server/tools/acroform_seat.py`.
@@ -215,7 +215,7 @@ This is the most likely source of confusion for anyone new to the file:
   the government's file.
 
   **Nova Scotia and Prince Edward Island are both rendered from Word.** Nova
-  Scotia publishes *no* PDF edition of any family form, and PEI's fillable
+  Scotia publishes *no* PDF edition of any *court rule* form, and PEI's fillable
   PDFs are XFA and cover only half its set, so both are converted through
   LibreOffice — which means their backgrounds are **ours, not the
   government's**, and the renderer is a suspect whenever a page looks wrong.
@@ -230,6 +230,19 @@ This is the most likely source of confusion for anyone new to the file:
   standard heading]`), and `[or]` and `[s]` are part of the printed sentence.
   PEI, despite sharing the detectors, barely uses brackets — it writes
   underscore runs, closer to Saskatchewan.
+
+  **Nova Scotia is two batches, not one** (since 2026-08-26). Its 18
+  Interjurisdictional Support Orders forms are prescribed by a statute rather
+  than a Civil Procedure Rule and are published on `nsfamilylaw.ca`, not on
+  `courts.ns.ca`, so the scrape of the court's forms pages could not see them.
+  They are real AcroForms and take the widget path, which makes them the only
+  Nova Scotia templates whose background is the government's own file. They also
+  forced a change to how a background is flattened: their option squares are
+  drawn by the **widget border and nothing else**, so deleting the widget layer
+  erased 172 printed checkboxes across 16 forms. `acroform_seat.flatten_baked`
+  bakes the appearance streams into the page first — after clearing any value a
+  field already holds, which would otherwise be printed into the background
+  under our own box.
 
   Since 2026-08-21 both prairie provinces also carry families that are **not**
   static: the interjurisdictional support set, Manitoba's protection-order

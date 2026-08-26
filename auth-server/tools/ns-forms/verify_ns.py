@@ -22,8 +22,10 @@ Checks, and what each is guarding against:
   shows up as a blank field in the app.
 * **catalogue agrees with the mapping** -- pageCount against the PDF.
 
-Every Nova Scotia form is anchor-built from a LibreOffice render, so there is no
-widget path here and no reduced set: all 84 run the same checks.
+Both Nova Scotia batches are verified together, because the catalogue offers
+them together: the 84 rule forms anchor-built from LibreOffice renders and the
+18 ISO forms built from the government's own AcroForms. Every check runs on
+every form -- there is no reduced set for either path.
 """
 import json
 import os
@@ -36,10 +38,21 @@ sys.path.insert(0, os.path.join(os.path.dirname(HERE), "bc-forms"))
 sys.path.insert(0, HERE)
 
 import bc_pipeline as bp  # noqa: E402
+from ns_iso_sources import shipped_sources as iso_sources  # noqa: E402
 from ns_sources import shipped_sources  # noqa: E402
 
 EXPORT = os.path.join(os.path.dirname(os.path.dirname(HERE)), "form-template-export")
 SCALE = bp.SCALE
+
+# Checkboxes that legitimately cover no printed ink, confirmed by looking at the
+# page rather than assumed. Form B declares an option widget beside two lines
+# that print no square at all: the heading of section 4 ("I believe that the
+# Respondent should acknowledge parentage ... (check all that apply)") and the
+# "Provide an explanation in Section 9 below" note on page 2. Both are prose the
+# government hung a spare widget on. That is the "option that prints no square"
+# case `acroform_seat.seat_checkboxes` leaves alone. Listed by (docId, page) so a
+# *new* unseated checkbox still fails the gate.
+INK_EXEMPT = {("NSISO_B", 1), ("NSISO_B", 2)}
 
 KNOWN_BINDS = {
     "court_info.courtFileNumber",
@@ -63,6 +76,7 @@ def main():
     catalog = json.load(open(os.path.join(EXPORT, "catalog.json")))
     rows = {r["docId"]: r for r in catalog if r.get("province") == "NS"}
     expected = {s["docId"] for s in shipped_sources()}
+    expected |= {s["docId"] for s in iso_sources()}
 
     findings = []
     if set(rows) != expected:
@@ -109,12 +123,12 @@ def main():
                         findings.append("%s: unknown bind %r on %s"
                                         % (doc_id, bind, field["id"]))
 
-            if True:
-                blank = [f for f in fields if f["type"] == "CheckBox"
-                         and not covers_ink(document[f["page"] - 1], f)]
-                if blank:
-                    findings.append("%s: %d checkbox(es) cover no printed ink"
-                                    % (doc_id, len(blank)))
+            blank = [f for f in fields if f["type"] == "CheckBox"
+                     and (doc_id, f["page"]) not in INK_EXEMPT
+                     and not covers_ink(document[f["page"] - 1], f)]
+            if blank:
+                findings.append("%s: %d checkbox(es) cover no printed ink"
+                                % (doc_id, len(blank)))
         finally:
             document.close()
 

@@ -20,6 +20,7 @@ import fitz
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
+from ns_iso_sources import shipped_sources as iso_sources  # noqa: E402
 from ns_sources import shipped_sources  # noqa: E402
 
 EXPORT = os.path.join(os.path.dirname(os.path.dirname(HERE)), "form-template-export")
@@ -32,10 +33,30 @@ def ns_start(keep):
     return (highest // BLOCK + 1) * BLOCK + 1
 
 
+def rows_to_merge():
+    """Both Nova Scotia batches, each carrying how it names itself.
+
+    The 84 rule forms all have a number and take the "Form 59.09 - Petition for
+    Divorce" shape. Three of the 18 ISO forms have no number at all -- the ISO
+    Affidavit, the Additional Locate Information form, the Notice to Set Aside
+    Registration -- so that shape would print a dangling "Form  - " for them and
+    each carries its own catalogue title instead.
+    """
+    for src in shipped_sources():
+        yield {"src": src, "batch": "_incoming_ns",
+               "title": "Form %s - %s" % (src["formNo"], src["title"]),
+               "shortTitle": "NS %s" % src["formNo"]}
+    for src in iso_sources():
+        yield {"src": src, "batch": "_incoming_ns_iso",
+               "title": src["catalogTitle"], "shortTitle": src["shortTitle"]}
+
+
 def main():
     catalog = json.load(open(os.path.join(EXPORT, "catalog.json")))
-    manifest = {m["docId"]: m for m in
-                json.load(open(os.path.join(EXPORT, "_incoming_ns", "manifest.json")))}
+    manifest = {}
+    for batch in ("_incoming_ns", "_incoming_ns_iso"):
+        for item in json.load(open(os.path.join(EXPORT, batch, "manifest.json"))):
+            manifest[item["docId"]] = item
 
     keep = [item for item in catalog if item.get("province") != "NS"]
     other = [(item["province"], item["sortOrder"]) for item in keep]
@@ -43,18 +64,19 @@ def main():
     start = ns_start(keep)
 
     rows = []
-    for offset, src in enumerate(shipped_sources()):
+    for offset, entry in enumerate(rows_to_merge()):
+        src = entry["src"]
         doc_id = src["docId"]
         pdf = os.path.join(EXPORT, "%s.pdf" % doc_id)
         if not os.path.exists(pdf):
-            sys.exit("%s not promoted -- run build_ns_forms.py --promote first" % doc_id)
+            sys.exit("%s not promoted -- run the builder for %s with --promote first"
+                     % (doc_id, entry["batch"]))
         doc = fitz.open(pdf)
         page_count = doc.page_count
         doc.close()
         rows.append({
-            # A numbered form reads "Form F10.02A - Financial Statement". The 17
-            "title": "Form %s - %s" % (src["formNo"], src["title"]),
-            "shortTitle": "NS %s" % src["formNo"],
+            "title": entry["title"],
+            "shortTitle": entry["shortTitle"],
             "footerText": manifest[doc_id].get("footerText") or None,
             "status": "active",
             "fileName": "%s.pdf" % doc_id,

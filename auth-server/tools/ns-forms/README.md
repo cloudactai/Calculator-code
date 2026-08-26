@@ -8,10 +8,20 @@ in the gitignored `form-template-export/_incoming_ns/`.
 Requires Python 3 with PyMuPDF (`fitz`) and **LibreOffice**. No Chrome, no
 Adobe.
 
+Nova Scotia ships **two batches from this one directory**, because the province
+publishes its family forms in two places and in two formats:
+
+| Batch | Forms | Source | Path | Tools |
+| --- | --- | --- | --- | --- |
+| Rule forms | 84 | Word, `courts.ns.ca` | printed anchor | `*_ns*.py` |
+| ISO forms | 18 | AcroForm PDF, `nsfamilylaw.ca` | widget | `*_ns_iso*.py` |
+
+Everything down to "Overlay convention" describes the 84 rule forms; the ISO
+batch has its own section at the end.
+
 ## Scope
 
-**84 forms, 227 pages, 2,249 fields, 103 binds, zero findings.** Catalogue rows
-3501–3584.
+**84 forms, 227 pages, 2,249 fields, 103 binds, zero findings.**
 
 | Rule | What it is | Forms |
 | --- | --- | --- |
@@ -22,9 +32,13 @@ Adobe.
 
 Nova Scotia is **the only province in this catalogue whose child-protection and
 adoption forms are prescribed by the court's own rules** rather than by a
-regulation — Rules 60A and 61 are part of the Civil Procedure Rules. So unlike
-BC, SK, MB and NB, there is no second batch to go and find in a consolidation:
-this is the complete family set in one pass.
+regulation — Rules 60A and 61 are part of the Civil Procedure Rules, so there is
+no child-protection regulation to go and find as there is in BC, SK, MB and NB.
+
+That is **not** the same as the province having only one batch. The
+*Interjurisdictional Support Orders Act* prescribes its own forms, they are
+published somewhere else entirely, and they were missed on the first pass — see
+the ISO section at the end.
 
 The other 30-odd Civil Procedure Rules are general civil and criminal procedure
 and are out of scope, matching every other province. Rule 82 (Administration of
@@ -193,8 +207,70 @@ npm run forms:validate-export     # from auth-server/
 
 Files present, geometry in bounds, no field off the sheet, every checkbox
 covering printed ink, binds from a known vocabulary, catalogue `pageCount`
-against the PDF. All 84 run the same checks — there is no widget path here and
-so no reduced set.
+against the PDF. `verify_ns.py` covers **both batches**, all 102 forms, with the
+same checks on each — the catalogue offers them together, so they are verified
+together.
+
+## The ISO batch — 18 forms
+
+**18 forms, 64 pages, 1,557 fields, 1 bind, zero findings.**
+
+```
+python3 fetch_ns_iso.py            # gates A + B
+python3 build_ns_iso_forms.py [--only NSISO_I] [--promote]
+python3 merge_ns_catalog.py        # merges both batches
+python3 rebind_ns_iso_forms.py [--check]
+python3 verify_ns.py
+```
+
+The *Interjurisdictional Support Orders Act* forms — how a Nova Scotia parent
+claims support from a payor in another province or country, and how a claimant
+abroad gets an order made here. `ns_iso_sources.py` lists the set and records
+what is deliberately excluded (Form 59.13B, which already ships as `NSSC_59_13B`;
+the fifteen "Guide for Form …" PDFs, which are instructions rather than forms).
+
+Three things are different from the 84:
+
+1. **They are not on `courts.ns.ca`.** They are published by the Department of
+   Justice's family law service on **`nsfamilylaw.ca`**, under the ISO topic
+   pages rather than under "Court Forms", so the scrape of the court's two forms
+   pages could not have found them. There is no scraper here; the set was
+   enumerated by reading the ISO pages, and `ns_iso_sources.py` holds the URLs.
+2. **They are real AcroForms** — Form I carries 313 widgets over 9 pages, no XFA
+   — so this batch takes the **widget path** (`tools/acroform_seat.py`), and the
+   background is the government's own file rather than a LibreOffice render.
+3. **The background must be baked, not stripped.**
+   `bc_pipeline.flatten_background` deletes the widget layer, which is correct
+   wherever the printed square lives in the page content. Here it does not:
+   measured on the batch, **172 checkboxes across 16 of the 18 forms have ink in
+   the source and none at all after a plain flatten** — Form G loses 12 of its
+   16 squares, leaving captions beside empty white space. `flatten_baked` paints
+   the appearance streams into the page first. Checkbox seating rose from 313 to
+   492 as a side effect, because there is finally a printed square to seat on.
+
+**Baking draws whatever a field holds, so values are cleared first.** Nova
+Scotia ships the set-aside notice with four fields already carrying one — a
+dropdown resting on "Applicant", another on "Port Hawkesbury Supreme Court
+(Family Division), 15 Kennedy Street", a third on "afternoon" — and each would
+have been printed into the background under our own box. Clearing needs *both*
+`/V` and the `/Tx BMC … EMC` section of the appearance stream: setting
+`widget.field_value` and calling `update()` leaves the old appearance in place,
+and the value reads back unchanged from the saved file.
+
+### One bind, and why that is right
+
+`ns_iso_binds.py` sets it out. The parties are a *Claimant* and a *Respondent*
+in an administrative package, not an applicant and respondent in a style of
+cause; party names are split into (First)(Middle)(Last) boxes, and the bind
+vocabulary has nothing finer than `fullLegalName`; the A-series court file boxes
+are "(For office use only)" and carry no widget; and Form K's *Court File
+Number* column lists the **existing orders being varied**, which may be another
+province's. The Notice to Set Aside Registration prints "Court file:" with a
+single box beside it, and that one is bound.
+
+Form A.4's widget named `full name` is the New Brunswick 81A trap again: it is
+the name of a *child* whose support is ending, not a party. A widget name is
+matched only where the printed page agrees.
 
 ## Overlay convention
 

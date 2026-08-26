@@ -81,6 +81,10 @@ CATEGORY_ORDER = [
     "Child & Adult Protection",
     "Adoption",
     "Orders & Judgments",
+    # The ISO batch (`ns_iso_sources.py`) is one self-contained procedure and
+    # keeps its own group: a filer is either running an interjurisdictional
+    # support application or is not, and Form I would be lost filed beside FD3.
+    "Interjurisdictional Support",
     "Other",
 ]
 
