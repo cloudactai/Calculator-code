@@ -1,0 +1,612 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>CloudAct Cleanup Ledger</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --navy: #171d34;
+      --navy-2: #252d4b;
+      --ink: #1c2438;
+      --muted: #5d667b;
+      --line: #dfe3eb;
+      --surface: #ffffff;
+      --surface-2: #f4f6fa;
+      --yellow: #f6bd3d;
+      --blue: #307ff4;
+      --red: #c53d43;
+      --green: #237a49;
+      --radius: 12px;
+    }
+
+    * { box-sizing: border-box; }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      margin: 0;
+      background: var(--surface-2);
+      color: var(--ink);
+      font-family: Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      line-height: 1.55;
+    }
+
+    button, input { font: inherit; }
+
+    a { color: inherit; }
+
+    .topbar {
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      background: var(--navy);
+      color: white;
+      border-bottom: 3px solid var(--yellow);
+    }
+
+    .topbar-inner,
+    main {
+      width: min(1180px, calc(100% - 40px));
+      margin: 0 auto;
+    }
+
+    .topbar-inner {
+      min-height: 64px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 20px;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+    }
+
+    .brand-mark {
+      width: 30px;
+      height: 30px;
+      display: grid;
+      place-items: center;
+      border-radius: 8px;
+      background: var(--yellow);
+      color: var(--navy);
+      font-size: 13px;
+    }
+
+    .topnav { display: flex; gap: 6px; }
+
+    .topnav a {
+      padding: 8px 11px;
+      border-radius: 8px;
+      color: #dce1ef;
+      text-decoration: none;
+      font-size: 14px;
+      font-weight: 700;
+    }
+
+    .topnav a:hover,
+    .topnav a:focus-visible { background: var(--navy-2); color: white; }
+
+    main { padding: 56px 0 80px; }
+
+    .hero {
+      display: grid;
+      grid-template-columns: minmax(0, 1.55fr) minmax(270px, .7fr);
+      gap: 48px;
+      align-items: end;
+      padding-bottom: 42px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .status {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 16px;
+      color: var(--green);
+      font-size: 14px;
+      font-weight: 800;
+    }
+
+    .status::before {
+      content: "";
+      width: 9px;
+      height: 9px;
+      border-radius: 50%;
+      background: currentColor;
+    }
+
+    h1, h2, h3 { margin-top: 0; line-height: 1.15; text-wrap: balance; }
+
+    h1 {
+      margin-bottom: 16px;
+      max-width: 14ch;
+      color: var(--navy);
+      font-size: 3.25rem;
+      letter-spacing: -0.035em;
+    }
+
+    .lede {
+      max-width: 70ch;
+      margin: 0;
+      color: var(--muted);
+      font-size: 1.08rem;
+      text-wrap: pretty;
+    }
+
+    .scope-note {
+      padding: 18px 20px;
+      border: 1px solid #cad2e2;
+      border-radius: var(--radius);
+      background: var(--surface);
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .scope-note strong { display: block; margin-bottom: 5px; color: var(--navy); }
+
+    .metrics {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0;
+      margin: 30px 0 46px;
+      background: var(--navy);
+      color: white;
+      border-radius: var(--radius);
+      overflow: hidden;
+    }
+
+    .metric {
+      flex: 1 1 190px;
+      padding: 22px 24px;
+      border-right: 1px solid #343c59;
+    }
+
+    .metric:last-child { border-right: 0; }
+    .metric strong { display: block; margin-bottom: 3px; font-size: 1.65rem; }
+    .metric span { color: #c8cedd; font-size: 13px; }
+
+    .controls {
+      display: flex;
+      gap: 12px;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 26px;
+    }
+
+    .filters { display: flex; flex-wrap: wrap; gap: 8px; }
+
+    .filter {
+      min-height: 40px;
+      padding: 0 15px;
+      border: 1px solid #cbd2df;
+      border-radius: 999px;
+      background: var(--surface);
+      color: var(--ink);
+      cursor: pointer;
+      font-weight: 750;
+    }
+
+    .filter:hover,
+    .filter:focus-visible { border-color: var(--blue); }
+
+    .filter[aria-pressed="true"] {
+      border-color: var(--navy);
+      background: var(--navy);
+      color: white;
+    }
+
+    .search {
+      width: min(330px, 100%);
+      min-height: 42px;
+      padding: 0 14px;
+      border: 1px solid #cbd2df;
+      border-radius: 9px;
+      background: var(--surface);
+      color: var(--ink);
+    }
+
+    .search:focus { border-color: var(--blue); outline: 3px solid rgba(48, 127, 244, .17); }
+
+    .tier { margin-top: 52px; scroll-margin-top: 96px; }
+
+    .tier-head {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 24px;
+      margin-bottom: 16px;
+    }
+
+    .tier h2 { margin-bottom: 6px; color: var(--navy); font-size: 1.65rem; letter-spacing: -0.02em; }
+    .tier-head p { max-width: 72ch; margin: 0; color: var(--muted); }
+
+.done {
+      display: inline-block;
+      margin-right: 6px;
+      padding: 1px 7px;
+      border-radius: 999px;
+      background: #dff3e7;
+      color: #185f38;
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: .04em;
+      text-transform: uppercase;
+      vertical-align: 1px;
+    }
+
+    .done.held { background: #fdf0d5; color: #7a5312; }
+
+    li.struck > code { text-decoration: line-through; opacity: .65; }
+
+    .confidence {
+      flex: 0 0 auto;
+      padding: 5px 10px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 800;
+    }
+
+    .level-1 .confidence { background: #dff3e7; color: #185f38; }
+    .level-2 .confidence { background: #fff0c9; color: #765600; }
+    .level-3 .confidence { background: #e5e8ef; color: #454e63; }
+
+    details {
+      margin-top: 10px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: var(--surface);
+      overflow: clip;
+    }
+
+    details[open] { border-color: #c9d0de; }
+
+    summary {
+      min-height: 58px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 18px;
+      padding: 14px 18px;
+      cursor: pointer;
+      color: var(--navy);
+      font-weight: 800;
+      list-style: none;
+    }
+
+    summary::-webkit-details-marker { display: none; }
+    summary::after { content: "+"; color: var(--blue); font-size: 21px; font-weight: 500; }
+    details[open] summary::after { content: "−"; }
+    summary:hover { background: #f8f9fc; }
+
+    .count { margin-left: auto; color: var(--muted); font-size: 12px; font-weight: 700; }
+
+    .detail-body { padding: 4px 18px 18px; border-top: 1px solid var(--line); }
+    .detail-body p { max-width: 75ch; color: var(--muted); }
+
+    ul { margin: 12px 0 0; padding-left: 22px; }
+    li { margin: 8px 0; }
+
+    code {
+      border-radius: 5px;
+      background: #edf0f6;
+      color: #26324e;
+      padding: 2px 5px;
+      font: 0.86em ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      overflow-wrap: anywhere;
+    }
+
+    .path-list { columns: 2 320px; column-gap: 36px; }
+    .path-list li { break-inside: avoid; }
+
+    .warning {
+      margin-top: 46px;
+      padding: 20px 22px;
+      border: 1px solid #e0c064;
+      border-radius: var(--radius);
+      background: #fff7df;
+      color: #5f4b12;
+    }
+
+    .warning strong { color: #453400; }
+
+    .steps {
+      margin-top: 50px;
+      padding-top: 32px;
+      border-top: 1px solid var(--line);
+    }
+
+    .steps ol { max-width: 78ch; padding-left: 24px; }
+    .steps li { padding-left: 8px; margin: 12px 0; }
+
+    .hidden { display: none !important; }
+
+    footer {
+      margin-top: 64px;
+      padding-top: 22px;
+      border-top: 1px solid var(--line);
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    :focus-visible { outline: 3px solid rgba(48, 127, 244, .35); outline-offset: 2px; }
+
+    @media (max-width: 780px) {
+      .topnav { display: none; }
+      .topbar-inner, main { width: min(100% - 24px, 1180px); }
+      main { padding-top: 34px; }
+      .hero { grid-template-columns: 1fr; gap: 24px; }
+      h1 { font-size: 2.35rem; }
+      .controls { align-items: stretch; flex-direction: column; }
+      .search { width: 100%; }
+      .tier-head { align-items: flex-start; flex-direction: column; gap: 10px; }
+      .metric { border-right: 0; border-bottom: 1px solid #343c59; }
+      .metric:last-child { border-bottom: 0; }
+    }
+
+    @media print {
+      .topbar, .controls { display: none; }
+      body { background: white; }
+      main { width: 100%; padding: 0; }
+      details { break-inside: avoid; }
+      details > * { display: block; }
+      summary::after { display: none; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      html { scroll-behavior: auto; }
+    }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <div class="topbar-inner">
+      <div class="brand"><span class="brand-mark">CA</span> Cleanup ledger</div>
+      <nav class="topnav" aria-label="Cleanup levels">
+        <a href="#level-1">Definitely remove</a>
+        <a href="#level-2">Maybe remove</a>
+        <a href="#level-3">Probably keep</a>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+    <section class="hero">
+      <div>
+        <div class="status">Level 1 in progress · 38,303 lines removed</div>
+        <h1>CloudAct repository cleanup</h1>
+        <p class="lede">A conservative cleanup ledger organized by confidence. Level 1 is limited to code that is excluded from execution or has no importer or repository reference. Three items are done; the rest of the ledger is unchanged.</p>
+      </div>
+      <aside class="scope-note">
+        <strong>Scope boundary</strong>
+        Primarily <code>cloudact-ui</code>. Marc’s calculator implementations and the root Python calculator code are not removal targets.
+      </aside>
+    </section>
+
+    <section class="metrics" aria-label="Audit summary">
+      <div class="metric"><strong>38,303</strong><span>lines removed so far (5779b8b, 512f46d)</span></div>
+      <div class="metric"><strong>3 of 4</strong><span>large dead-code items cleared</span></div>
+      <div class="metric"><strong>41</strong><span>tracked Sass cache files</span></div>
+      <div class="metric"><strong>3 levels</strong><span>separate certainty from judgment</span></div>
+    </section>
+
+    <div class="controls" aria-label="Ledger controls">
+      <div class="filters" role="group" aria-label="Filter by level">
+        <button class="filter" type="button" data-filter="all" aria-pressed="true">All levels</button>
+        <button class="filter" type="button" data-filter="level-1" aria-pressed="false">Definitely remove</button>
+        <button class="filter" type="button" data-filter="level-2" aria-pressed="false">Maybe remove</button>
+        <button class="filter" type="button" data-filter="level-3" aria-pressed="false">Probably keep</button>
+      </div>
+      <input class="search" id="search" type="search" placeholder="Filter paths and findings…" aria-label="Filter paths and findings">
+    </div>
+
+    <section class="tier level-1" id="level-1" data-level="level-1">
+      <div class="tier-head">
+        <div><h2>Definitely remove</h2><p>Generated artifacts, non-executable code, and modules with no importer or external reference.</p></div>
+        <span class="confidence">Confirmed unused</span>
+      </div>
+
+      <details open><summary>Generated and accidental files <span class="count">44 tracked files</span></summary><div class="detail-body">
+        <ul>
+          <li><code>cloudact-ui/src/assets/.sass-cache/</code> — 41 Ruby Sass compiler-cache files, about 2.6 MB.</li>
+          <li><code>cloudact-ui/src/test_write_permission</code> — empty probe file.</li>
+          <li><code>cloudact-ui/src/assets/css/css</code></li>
+          <li><code>cloudact-ui/src/assets/scss/css</code></li>
+        </ul>
+        <p>The last two files are captured Ruby Sass <code>ENOENT</code> error output, not usable stylesheets.</p>
+      </div></details>
+
+      <details open><summary>Large confirmed dead code <span class="count">38,774 lines</span></summary><div class="detail-body">
+        <ul>
+          <li class="struck"><span class="done">Done 5779b8b</span><code>src/utils/Apis/matters/CustomHook/StaticFields.js</code> — 36,870 lines. Superseded by <code>form-template-export/&lt;docId&gt;.json</code>, served over the forms API and read at <code>remoteDocument.mapping?.staticFields</code>.</li>
+          <li><span class="done held">Held</span><code>src/utils/matterData/MatterFormData_old.jsx</code> — 487 lines, no repository reference. Hardcodes 42 forms across 2 provinces; the live version fetches 609 templates from <code>/forms</code>. Deferred by decision.</li>
+          <li class="struck"><span class="done">Done 512f46d</span><code>src/pages/formPages/FillPdf.jsx</code> — retired prefill engine at 257–1673, 1,417 lines. None of its 88 symbols were used by live code. The note at 251–256 was kept.</li>
+        </ul>
+      </div></details>
+
+      <details><summary>Confirmed orphan modules <span class="count">36 files</span></summary><div class="detail-body">
+        <p>Every file is outside the app entry-point graph and has no external source reference.</p>
+        <ul class="path-list">
+          <li><code>components/DeleteLoader/DeleteLoader.jsx</code></li>
+          <li><code>components/FormPages/forms/newComponents/ApplicantsTable.jsx</code></li>
+          <li><code>components/FormPages/forms/newComponents/CalculationComponent.jsx</code></li>
+          <li><code>components/FormPages/forms/newComponents/CreateChildrensTable.jsx</code></li>
+          <li><code>components/FormPages/forms/newComponents/DynamicChildrenTable.jsx</code></li>
+          <li><code>components/FormPages/forms/newComponents/PageFooters.jsx</code></li>
+          <li><code>components/FormPages/forms/newComponents/PageHeaders.jsx</code></li>
+          <li><code>components/FormPages/forms/newComponents/TableGeneratorModal.tsx</code></li>
+          <li><code>components/LayoutComponents/LabelAndInput/LabelAndInput.tsx</code></li>
+          <li><code>components/Matters/Documents/AllDocuments.jsx</code></li>
+          <li><code>components/Matters/Documents/DocumentsSection.jsx</code></li>
+          <li><code>components/Matters/Form/SearchableDropdown.js</code></li>
+          <li><code>components/Tasks/ComplianceSelectorOld.jsx</code></li>
+          <li><code>containers/ComplianceFormsTabs/AllComplianceForms.cont.jsx</code></li>
+          <li><code>containers/ComplianceFormsTabs/ApprovedComplianceForms.cont.jsx</code></li>
+          <li><code>containers/ComplianceFormsTabs/InprogressComplianceForms.cont.jsx</code></li>
+          <li><code>containers/Dashboard/DashboardTables/DashboardCards.jsx</code></li>
+          <li><code>containers/Dashboard/DashboardTables/DashboardTable.jsx</code></li>
+          <li><code>containers/Dashboard/DoubleDonutChart.jsx</code></li>
+          <li><code>hooks/pdfForms/useFieldOperations.js</code></li>
+          <li><code>hooks/pdfForms/useTableOperations.js</code></li>
+          <li><code>pages/Setupwizard.jsx</code></li>
+          <li><code>pages/Workflow/initialElements.js</code></li>
+          <li><code>pages/complianceForms/ComplianceFormLayout.tsx</code></li>
+          <li><code>pages/fiveSteps/FinancialSummarySimple.jsx</code></li>
+          <li><code>utils/Apis/matters/CustomHook/CalculateTotals.js</code></li>
+          <li class="struck"><span class="done">Done 5779b8b</span><code>utils/Apis/matters/CustomHook/fetchFieldData.js</code></li>
+          <li><code>utils/Apis/matters/getPdfData/getPdfData.jsx</code></li>
+          <li><code>utils/Apis/matters/http-request.service.ts</code></li>
+          <li><code>utils/Apis/uploadProfilePhoto.ts</code></li>
+          <li><code>utils/PowerBi/authService.tsx</code></li>
+          <li><code>utils/matterData/assetsCalculations.js</code></li>
+          <li><code>utils/matterData/calculationUtils.js</code></li>
+          <li><code>utils/matterData/dataObjects.tsx</code></li>
+          <li><code>utils/matterData/emptyDataArray.js</code></li>
+          <li><code>utils/pdfForms/fieldUtils.js</code></li>
+          <li><code>utils/pdfForms/pdfUtils.js</code></li>
+        </ul>
+      </div></details>
+
+      <details><summary>Dead Redux limbs <span class="count">16 files</span></summary><div class="detail-body">
+        <p>Remove only these unreferenced actions/selectors. Reducers registered in <code>src/store/index.js</code> stay.</p>
+        <ul class="path-list">
+          <li><code>SaveFormFields/saveFormFieldsActions.js</code></li><li><code>SaveFormFields/saveFormFieldsReducers.js</code></li>
+          <li><code>createMatterFiles/createMatterFilesActions.js</code></li><li><code>createMatterFiles/createMatterFilesSelectors.js</code></li>
+          <li><code>createMatterFolders/createMatterFoldersActions.js</code></li><li><code>createMatterFolders/createMatterFoldersSelectors.js</code></li>
+          <li><code>getFileData/getFileDataActions.js</code></li><li><code>getFileData/getFileDataSelector.js</code></li>
+          <li><code>getMatterData/getMatterDataSelectors.js</code></li><li><code>getMatterFiles/getMattersFilesActions.js</code></li>
+          <li><code>getMatterFiles/getMattersFilesSelectors.js</code></li><li><code>getMatterFolders/getMattersFoldersActions.js</code></li>
+          <li><code>getMatterFolders/getMattersFoldersSelectors.js</code></li><li><code>saveFileData/saveFileDataActions.js</code></li>
+          <li><code>saveFileData/saveFileDataSelector.js</code></li><li><code>saveMatterInformation/saveMattersSelector.js</code></li>
+        </ul>
+        <p>All paths are below <code>src/utils/Apis/matters/</code>.</p>
+      </div></details>
+
+      <details><summary>Unused stylesheets <span class="count">15 files</span></summary><div class="detail-body">
+        <ul class="path-list">
+          <li><code>src/index.css</code></li><li><code>src/App.css</code></li>
+          <li><code>src/assets/css/build/main.css</code></li><li><code>src/assets/css/homeComponent.css</code></li>
+          <li><code>src/assets/css/components/forms.css</code></li><li><code>src/assets/css/pages/five-steps.css</code></li>
+          <li><code>src/assets/css/pages/formPages/fill-pdf.css</code></li><li><code>src/assets/css/pages/formPages/flr25.css</code></li>
+          <li><code>src/assets/css/pages/formPages/pdfpages.css</code></li><li><code>src/assets/css/pages/matter.css</code></li>
+          <li><code>src/assets/css/pages/reports.css</code></li><li><code>src/assets/css/pages/single-matter.css</code></li>
+          <li><code>src/pages/Workflow/workflow.css</code></li><li><code>src/components/Workflow/WorkflowStep.css</code></li>
+          <li><code>src/pages/TrustDepositSlipNew/styles/TrustDepositSlipBody.module.css</code></li>
+        </ul>
+        <p><strong>Keep:</strong> <code>src/components/FormPages/forms/App.css</code>. It is actively imported and is different from root <code>src/App.css</code>.</p>
+      </div></details>
+
+      <details><summary>Commented-out routes and imports</summary><div class="detail-body">
+        <p>Remove the disabled route blocks in <code>src/routes/Routes.jsx</code> for the former reports, compliance checklist, monthly checklist, and trust-deposit-slip pages. The live replacements immediately following them are what compile. Isolated commented imports in <code>src/index.tsx</code> can also go.</p>
+      </div></details>
+    </section>
+
+    <section class="tier level-2" id="level-2" data-level="level-2">
+      <div class="tier-head">
+        <div><h2>Maybe remove</h2><p>Currently unused, but deletion needs product or ownership confirmation because the files represent whole features or possible source material.</p></div>
+        <span class="confidence">Confirm first</span>
+      </div>
+
+      <details open><summary>Superseded feature implementations</summary><div class="detail-body"><ul>
+        <li><code>reporthistory/ReportsPage.js</code> and exclusive children — replaced by <code>NewReportHistory</code>.</li>
+        <li><code>MonthlyChecklist/ComplianceTable.jsx</code> — replaced by <code>ComplianceFormsNew</code>.</li>
+        <li><code>MonthlyChecklist/MonthlyChecklistTable.jsx</code> — replaced by <code>MonthlyChecklistNew</code>.</li>
+        <li><code>TrustDepositSlip/TrustDepositSlip.tsx</code> — replaced by <code>TrustDepositSlipnewType</code>.</li>
+        <li><code>TrustDepositSlipNew/TrustDepositSlipnew.jsx</code> — its import is commented and it has no active route.</li>
+        <li>The non-<code>Simple</code> five-step form component family. The active page uses the corresponding <code>*Simple</code> implementations.</li>
+        <li>Old setup/onboarding components outside the entry graph. Confirm the current account/setup flow first.</li>
+      </ul></div></details>
+
+      <details><summary>SCSS source trees <span class="count">about 256 KB</span></summary><div class="detail-body">
+        <ul><li><code>cloudact-ui/src/assets/scss/</code></li><li><code>cloudact-ui/src/styles/scss/</code></li></ul>
+        <p>The app imports compiled <code>src/assets/css/main.css</code>, has no Sass build script, and imports neither tree. Confirm nobody compiles them manually outside the repo.</p>
+      </div></details>
+
+      <details><summary>Potentially unused packages <span class="count">23 packages</span></summary><div class="detail-body">
+        <p>Remove in small groups with a clean install, production build, and smoke test.</p>
+        <ul class="path-list">
+          <li><code>@cyntler/react-doc-viewer</code></li><li><code>@material-ui/core</code></li><li><code>@reduxjs/toolkit</code></li>
+          <li><code>bootstrap-select</code></li><li><code>dayjs</code></li><li><code>docxtemplater</code></li><li><code>dotenv</code></li>
+          <li><code>faker</code></li><li><code>file-saver</code></li><li><code>lzutf8</code></li><li><code>moment-timezone</code></li>
+          <li><code>number-formatter</code></li><li><code>pizzip</code></li><li><code>powerbi-client-react</code></li><li><code>qs</code></li>
+          <li><code>react-doc-viewer</code></li><li><code>react-file-viewer</code></li><li><code>react-flatpickr</code></li>
+          <li><code>react-flow-renderer</code></li><li><code>react-html-parser</code></li><li><code>react-html-renderer</code></li>
+          <li><code>sweetalert2-react-content</code></li><li><code>web-vitals</code></li>
+        </ul>
+        <p><strong>Do not infer removal</strong> for <code>react-scripts</code>, <code>typescript</code>, ESLint/parser packages, or Emotion peer dependencies from import search alone.</p>
+      </div></details>
+
+      <details><summary>Calculator and backend-adjacent candidates <span class="count">out of scope</span></summary><div class="detail-body">
+        <p><code>app0.py</code>, the root legacy static frontend, standalone calculation scripts, and several unreferenced calculator helpers appear removable—but they require Marc/backend-owner confirmation and are deliberately excluded from this cleanup.</p>
+      </div></details>
+    </section>
+
+    <section class="tier level-3" id="level-3" data-level="level-3">
+      <div class="tier-head">
+        <div><h2>Could remove, but probably keep</h2><p>These areas may be untidy or duplicated, but the audit did not establish a worthwhile, low-risk deletion.</p></div>
+        <span class="confidence">Keep for now</span>
+      </div>
+      <details open><summary>Active code and intentional artifacts</summary><div class="detail-body"><ul>
+        <li>Large active screens such as <code>SetupDashboard.jsx</code>, compliance forms, matter screens, and <code>Routes.jsx</code>.</li>
+        <li>Parallel calculator implementations; several variants are routed or feed shared reports.</li>
+        <li>Markdown and DOCX documentation, which may intentionally serve different audiences.</li>
+        <li>Public PDFs, templates, images, and icons that can be addressed through runtime data paths.</li>
+        <li>Global TypeScript declarations, which can affect compilation without being imported.</li>
+        <li>Explanatory comments, TODOs, and legal/business-rule notes that provide useful context.</li>
+        <li>Ignored local output such as <code>node_modules</code>, <code>build</code>, generated reports, and Python caches. Clearing these saves disk space but does not clean Git history.</li>
+      </ul></div></details>
+    </section>
+
+    <aside class="warning"><strong>Worktree warning:</strong> <code>auth-server/tools/mb-forms/build_mb_forms.py</code> already contains unrelated Manitoba-form changes. Isolate or commit that work before applying cleanup batches.</aside>
+
+    <section class="steps">
+      <h2>Recommended execution order</h2>
+      <ol>
+        <li>Isolate the existing Manitoba-form work.</li>
+        <li>Apply Level 1 in small commits: generated junk, retired comments, dead modules and Redux limbs, then orphan CSS.</li>
+        <li>Run frontend tests and a production build after each group; smoke-test login, matters, intake, forms/PDF editing, workflow, reports, and trust-deposit slip.</li>
+        <li>Re-run the import/reference audit to identify child modules made unreachable by deleted roots.</li>
+        <li>Review Level 2 feature families with the relevant product or backend owner.</li>
+      </ol>
+    </section>
+
+    <footer>CloudAct cleanup audit · generated as a review artifact · no source deletions applied</footer>
+  </main>
+
+  <script>
+    const filters = [...document.querySelectorAll(".filter")];
+    const tiers = [...document.querySelectorAll("[data-level]")];
+    const search = document.querySelector("#search");
+    let activeLevel = "all";
+
+    function applyFilters() {
+      const query = search.value.trim().toLowerCase();
+      tiers.forEach((tier) => {
+        const matchesLevel = activeLevel === "all" || tier.dataset.level === activeLevel;
+        const matchesQuery = !query || tier.textContent.toLowerCase().includes(query);
+        tier.classList.toggle("hidden", !(matchesLevel && matchesQuery));
+
+        tier.querySelectorAll("details").forEach((group) => {
+          const groupMatches = !query || group.textContent.toLowerCase().includes(query);
+          group.classList.toggle("hidden", !groupMatches);
+          if (query && groupMatches) group.open = true;
+        });
+      });
+    }
+
+    filters.forEach((button) => button.addEventListener("click", () => {
+      activeLevel = button.dataset.filter;
+      filters.forEach((candidate) => candidate.setAttribute("aria-pressed", String(candidate === button)));
+      applyFilters();
+    }));
+
+    search.addEventListener("input", applyFilters);
+  </script>
+</body>
+</html>
