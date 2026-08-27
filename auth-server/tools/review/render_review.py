@@ -138,13 +138,12 @@ def render_filled(doc_id, fields, pages, zoom, out_dir):
                                  fontsize=min(rect.height, rect.width) * 0.9,
                                  color=(0, 0, 0.75))
                 continue
-            # **Does the value fit?** measured, not inferred from
-            # `insert_textbox`'s return: that function refuses a box whose
-            # height is tight for one 8pt line, which is most single-line boxes
-            # on these forms, so using it as the signal painted almost every
-            # field red and the real overflows were lost in it. The viewer draws
-            # a one-line input for a TextField, so the question is whether the
-            # string is wider than the box.
+            # White background to mask printed anchor text (bracket tokens,
+            # underscore runs) — mirrors the drawRectangle in FillPdf.jsx.
+            shape_bg = page.new_shape()
+            shape_bg.draw_rect(rect)
+            shape_bg.finish(color=None, fill=(1, 1, 1), fill_opacity=1.0)
+            shape_bg.commit()
             width = fitz.get_text_length(value, fontname="helv", fontsize=8)
             overflows = (field["type"] != "TextArea"
                          and width > (rect.width - 2))
@@ -196,13 +195,11 @@ def render_combined(doc_id, fields, pages, zoom, out_dir):
                                  fontsize=min(rect.height, rect.width) * 0.9,
                                  color=(0, 0, 0.8))
                 continue
-            # **Does the value fit?** measured, not inferred from
-            # `insert_textbox`'s return: that function refuses a box whose
-            # height is tight for one 8pt line, which is most single-line boxes
-            # on these forms, so using it as the signal painted almost every
-            # field red and the real overflows were lost in it. The viewer draws
-            # a one-line input for a TextField, so the question is whether the
-            # string is wider than the box.
+            # White background to mask printed anchor text.
+            shape_bg = page.new_shape()
+            shape_bg.draw_rect(rect)
+            shape_bg.finish(color=None, fill=(1, 1, 1), fill_opacity=1.0)
+            shape_bg.commit()
             width = fitz.get_text_length(value, fontname="helv", fontsize=8)
             overflows = (field["type"] != "TextArea"
                          and width > (rect.width - 2))

@@ -434,7 +434,7 @@ const getFieldStyle = (field) => ({
   background: field.background,
   height: '100%',
   boxSizing: 'border-box',
-  backgroundColor: `rgb(255, 144, 0, 0.2)`,
+  backgroundColor: `rgba(255, 255, 255, 0.85)`,
 });
 
 export default PDFViewer;

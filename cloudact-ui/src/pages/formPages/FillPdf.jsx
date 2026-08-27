@@ -354,6 +354,17 @@ const FillPdf = ({ currentUserRole }) => {
           }
         }
         else if (field.type === 'TextField' || field.type === 'Number' || field.type === 'TextArea') {
+          // Draw a white rectangle behind the field to mask any printed
+          // anchor text (bracket tokens, underscore runs) on the background.
+          page.drawRectangle({
+            x: fieldProperties.x,
+            y: fieldProperties.y,
+            width: fieldProperties.width,
+            height: fieldProperties.height,
+            color: rgb(1, 1, 1),
+            borderWidth: 0,
+          });
+
           const textField = form.createTextField(field.id.toString());
           textField.addToPage(page, fieldProperties);
 
