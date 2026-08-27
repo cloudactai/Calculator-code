@@ -37,6 +37,37 @@ def new_id(doc_id, index):
     return base + index
 
 
+def _seat_on_ink(page, cell_rect, zoom=20, threshold=128):
+    """Measure where the ink actually sits within the character cell."""
+    pad = 1.0
+    clip = pymupdf.Rect(cell_rect.x0 - pad, cell_rect.y0 - pad,
+                         cell_rect.x1 + pad, cell_rect.y1 + pad)
+    pix = page.get_pixmap(matrix=pymupdf.Matrix(zoom, zoom), clip=clip)
+    w, h, samples, n = pix.width, pix.height, pix.samples, pix.n
+
+    min_x, min_y, max_x, max_y = w, h, 0, 0
+    for y in range(h):
+        for x in range(w):
+            off = (y * w + x) * n
+            if samples[off] < threshold and samples[off+1] < threshold and samples[off+2] < threshold:
+                min_x = min(min_x, x)
+                min_y = min(min_y, y)
+                max_x = max(max_x, x)
+                max_y = max(max_y, y)
+
+    if max_x < min_x:
+        side = min(cell_rect.width, cell_rect.height)
+        return pymupdf.Rect(cell_rect.x0, cell_rect.y0,
+                             cell_rect.x0 + side, cell_rect.y0 + side)
+
+    ink_x0 = clip.x0 + min_x / zoom
+    ink_y0 = clip.y0 + min_y / zoom
+    ink_x1 = clip.x0 + (max_x + 1) / zoom
+    ink_y1 = clip.y0 + (max_y + 1) / zoom
+    side = min(ink_x1 - ink_x0, ink_y1 - ink_y0)
+    return pymupdf.Rect(ink_x0, ink_y0, ink_x0 + side, ink_y0 + side)
+
+
 def detect_opensymbol_ticks(pdf_path):
     """Return list of (page_no, pymupdf.Rect) for each OpenSymbol tick."""
     doc = pymupdf.open(pdf_path)
@@ -52,9 +83,7 @@ def detect_opensymbol_ticks(pdf_path):
                             continue
                         found = page.search_for(ch, clip=pymupdf.Rect(span["bbox"]))
                         for rect in found or []:
-                            side = min(rect.width, rect.height)
-                            results.append((pn, pymupdf.Rect(
-                                rect.x0, rect.y0, rect.x0 + side, rect.y0 + side)))
+                            results.append((pn, _seat_on_ink(page, rect)))
     doc.close()
     return results
 
