@@ -61,9 +61,23 @@ SAMPLE = {
 }
 
 
+# Where each province's staged government source lives. PEI's entry is the one
+# that needs a word of explanation: the "source" render for a PEI form is the
+# LibreOffice render of the court's Word document, not a government PDF, because
+# the court's own PDFs are XFA shells (see tools/pei-forms/README.md). It is
+# still the right authority to review against -- it is the court's own document,
+# typeset -- but when a page looks wrong the renderer is a suspect alongside the
+# detector, which is not true of the other provinces.
+STAGE = (("SK", "_incoming_sk"),
+         ("MB", "_incoming_mb"),
+         ("PEISC_", "_incoming_pei"))
+
+
 def stage_for(doc_id):
-    province = "_incoming_sk" if doc_id.startswith("SK") else "_incoming_mb"
-    return os.path.join(EXPORT, province, "%s_source.pdf" % doc_id)
+    for prefix, folder in STAGE:
+        if doc_id.startswith(prefix):
+            return os.path.join(EXPORT, folder, "%s_source.pdf" % doc_id)
+    return os.path.join(EXPORT, "_incoming_mb", "%s_source.pdf" % doc_id)
 
 
 def _rect(field):

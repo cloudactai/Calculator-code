@@ -56,17 +56,28 @@ def build_id():
 
 
 def scope():
-    """The templates this ledger covers: the batch-3 rows of both provinces."""
+    """The templates this ledger covers.
+
+    Grew as the review did: the batch-3 rows of Manitoba and Saskatchewan first,
+    then the whole of Prince Edward Island. PEI enters whole rather than as a
+    batch because it shipped as one -- 34 forms, 64 pages -- and because its
+    background is ours rather than the government's, which makes every page of
+    it a page no gate has ever compared against the court's own typesetting.
+    """
     import sys
     sys.path.insert(0, os.path.join(HERE, "..", "mb-forms"))
     sys.path.insert(0, os.path.join(HERE, "..", "sk-forms"))
+    sys.path.insert(0, os.path.join(HERE, "..", "pei-forms"))
     import mb_sources_batch3
     import sk_sources_pd
+    import pei_sources
     rows = []
     for src in mb_sources_batch3.all_sources():
         rows.append(("MB", src))
     for src in sk_sources_pd.all_pd_sources():
         rows.append(("SK", src))
+    for src in pei_sources.all_sources():
+        rows.append(("PE", src))
     return rows
 
 
@@ -114,14 +125,24 @@ def record(doc_id, page, first_pass, final_pass, corrections="",
     return rows
 
 
-def check():
-    """Gate: is the ledger complete and does every page pass both reads?"""
+def check(province=None):
+    """Gate: is the ledger complete and does every page pass both reads?
+
+    `province` narrows the gate to one batch. That matters because the ledger
+    grew province by province and Manitoba and Saskatchewan were never
+    finished: 222 of their 392 pages carry a row. Gating the whole file makes a
+    province that *is* complete unreportable, so Prince Edward Island can be
+    checked on its own -- `--check --province PE` -- without either hiding the
+    older gap or being blocked by it.
+    """
     rows = load()
     pages = catalogue_pages()
     problems = []
     seen = collections.Counter((r["docId"], r["page"]) for r in rows)
 
-    for _province, src in scope():
+    for row_province, src in scope():
+        if province and row_province != province:
+            continue
         doc_id = src["docId"]
         expected = pages.get(doc_id)
         if expected is None:
@@ -134,7 +155,10 @@ def check():
             elif count > 1:
                 problems.append("%s p%d has %d ledger rows" % (doc_id, page, count))
 
-    in_scope = {src["docId"] for _p, src in scope()}
+    in_scope = {src["docId"] for p, src in scope()
+                if not province or p == province}
+    if province:
+        rows = [r for r in rows if r["province"] == province]
     for row in rows:
         if row["docId"] not in in_scope:
             problems.append("%s is not in scope" % row["docId"])
@@ -154,7 +178,8 @@ def check():
             problems.append("%s p%d: final pass is %r"
                             % (row["docId"], row["page"], row.get("finalPass")))
 
-    expected_total = sum((pages.get(src["docId"]) or 0) for _p, src in scope())
+    expected_total = sum((pages.get(src["docId"]) or 0) for p, src in scope()
+                         if not province or p == province)
     if len(rows) != expected_total:
         problems.append("ledger has %d rows; the templates have %d pages"
                         % (len(rows), expected_total))
@@ -166,7 +191,9 @@ def status():
     pages = catalogue_pages()
     by_form = collections.Counter(r["docId"] for r in rows)
     done = corrected = 0
-    for _province, src in scope():
+    for row_province, src in scope():
+        if province and row_province != province:
+            continue
         doc_id = src["docId"]
         expected = pages.get(doc_id) or 0
         have = by_form.get(doc_id, 0)
@@ -183,12 +210,14 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--check", action="store_true")
     parser.add_argument("--status", action="store_true")
+    parser.add_argument("--province", help="gate one batch, e.g. PE")
     args = parser.parse_args()
     if args.status:
         status()
         return 0
-    problems, have, expected = check()
-    print("%d ledger rows, %d template pages in scope" % (have, expected))
+    problems, have, expected = check(args.province)
+    print("%d ledger rows, %d template pages in scope%s"
+          % (have, expected, " (%s)" % args.province if args.province else ""))
     if problems:
         print("\n%d problem(s):" % len(problems))
         for problem in problems[:40]:
