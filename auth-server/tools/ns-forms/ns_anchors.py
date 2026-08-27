@@ -166,7 +166,7 @@ def token_boxes(page, min_width=26.0):
     return out
 
 
-TICKS = "☐☑□■❑❐"
+TICKS = "☐☑□■❑❐"
 
 
 def tick_boxes(page):
