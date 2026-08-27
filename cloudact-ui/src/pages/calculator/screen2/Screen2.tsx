@@ -4949,18 +4949,6 @@ const Screen2 = ({
   };
 
   const sumAllBenefits = (partyNum: number = 2) => {
-
-      Number(OntarioChildBenefit.current.party1),
-      Number(GSTHSTBenefit.current.party1),
-      Number(childBenefit.current.party1),
-      Number(climateChangeVal.current.party1),
-      Number(childDisabilityBenefit.current.party1),
-      Number(OntarioChildBenefit.current.party2),
-      Number(GSTHSTBenefit.current.party2),
-      Number(childBenefit.current.party2),
-      Number(climateChangeVal.current.party2),
-      Number(childDisabilityBenefit.current.party2)
-
     if (partyNum === 1) {
       return render0IfValueIsNegative(
         Number(
