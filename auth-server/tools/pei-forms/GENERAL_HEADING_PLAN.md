@@ -397,3 +397,30 @@ applicant/respondent patterns, read from the same two patterns `ROLE_RIGHT`
 already matched, from the other side). `verify_pei.py`: 34 templates / 64
 pages / 1146 fields / 7 binds, zero findings. Ledger and
 `forms:validate-export` unchanged.
+
+---
+
+## Revision 2: two columns, seal filling the left one
+
+The label-then-box revision above still squeezed a small seal ring in beside
+the file-number row. Redrawn as two columns: the court name and
+`(Family Section)` stay centred across the **whole** block width (unchanged
+from every prior draft), and below that the block splits — a seal ring filling
+the **left** half, sized to the room it actually has, and the three
+label-then-box rows (`Court File No.:`, `Applicant/Petitioner:`,
+`Respondent:`) starting on the page's own **midline** in the right half, labels
+right-aligned into the line and boxes left-aligned out of it.
+
+**The seal's radius is bounded by the widest label, not by the column's raw
+width.** "Applicant/Petitioner:" reaches further left than "Respondent:" or
+"Court File No.:" do, so a first pass that sized the ring off `(mid - left) /
+2` read past that label's own left edge and printed the ring under its text.
+The bound is now `min(label_left_x for every row) - 8`, so the ring's right
+edge always clears whichever label happens to be widest.
+
+Re-verified after the revision: `rebind_pei_forms.py --check` still finds
+**0 binds to add** (the caption side of each row is unchanged), `verify_pei.py`
+still 34/64/1146/7 with zero findings, ledger and `forms:validate-export`
+unchanged. `repair_pei_fields.py --check` unchanged from the label-then-box
+revision (still the same three ~0.29pt self-bordered-box floats, recorded
+above).

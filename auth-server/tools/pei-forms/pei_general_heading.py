@@ -60,19 +60,20 @@ LEAD = 11.1                # the leading LibreOffice gives Times 10 here
 FIELD_H = 15.0              # box height -- one line of 10pt type plus padding
 STROKE = 0.6                # the box border weight, Ontario's own (Form 12/38)
 
-# Every field box on the block starts at the same x and is the same width,
-# label-then-box like Ontario's own general heading (Form 12, Form 38's Court
-# File Number box) rather than PEI's underscore-rule-with-caption-below-right.
-# `BOX_INDENT` is fixed rather than computed from the longest label on a given
-# form, so a page carrying the two-party rows and a page carrying the
-# counterpetition rows besides still line their boxes up on the same x --
-# "Respondent by Counterpetition:" (127.8pt at 10pt Times) is the longest
-# label this block ever prints and still clears it by 17pt.
-BOX_INDENT = 145.0
+# Two columns. Every field box starts on the page's own **midline** --
+# `Court File No.:`, `Applicant/Petitioner:` and `Respondent:` all line up
+# against it, labels right-aligned into it and boxes left-aligned out of it --
+# and the whole left column, otherwise empty, carries the court name and a
+# seal ring sized to the room that gives it rather than squeezed beside a
+# rule the way the first two drafts of this block drew it.
+LABEL_GAP = 6.0              # label's own right edge to the midline
 
-FIELD_ROW = 26.0            # box row to box row
+FIELD_ROW = 28.0            # box row to box row, generous now the left
+                             # column is doing its own work beside them
 CENTRE_ROW = 12.5            # one centred title line to the next
-ROW_GAP = 8.0                # centred title block to the field row after it
+TOP_PAD = 3.0                # first box's top, below the block's own top
+SEAL_GAP = 7.0                # title block to the seal ring below it
+BOTTOM_PAD = 6.0              # last row/ring to the block's own bottom
 
 # What each headed page was moved by, written at apply time and read by
 # `tools/review/repair_pei_fields.py`, whose repair tables are absolute
@@ -104,32 +105,35 @@ def width(text, bold=False, size=BODY):
 def block_bottom(second_title=False):
     """The y offset, relative to the block's top, of its last drawn edge.
 
-    Kept as its own function rather than a constant so `rebuild`'s `BLOCK_H`
-    and `draw_block`'s own row arithmetic cannot drift apart -- the failure
-    mode `pei_binds`' README warns about elsewhere in this batch, a number
-    that matched what a tool produced rather than what the page needed.
+    Kept as its own function rather than a constant so `rebuild`'s room
+    calculation and `draw_block`'s own row arithmetic cannot drift apart --
+    the failure mode `pei_binds`' README warns about elsewhere in this batch,
+    a number that matched what a tool produced rather than what the page
+    needed. The title sits full-width across the top; the two columns below
+    it -- the seal on the left, three field rows (four with a second title)
+    on the right -- decide the rest.
     """
-    y = FIELD_H
-    y += ROW_GAP + CENTRE_ROW
-    y += CENTRE_ROW
-    y += ROW_GAP + FIELD_H
-    y += FIELD_ROW
-    if second_title:
-        y += ROW_GAP + FIELD_H
-        y += FIELD_ROW
-    return y
+    rows = 4 if second_title else 3
+    columns_top = 2 * CENTRE_ROW + SEAL_GAP
+    return columns_top + TOP_PAD + FIELD_H + (rows - 1) * FIELD_ROW + BOTTOM_PAD
 
 
 def draw_block(page, left, right, top, seal, second_title=False):
     """Draw the heading and return the fields that belong on it.
 
-    Label-then-box, Ontario's own convention (Form 12's and Form 38's Court
-    File Number field is a bordered box, not a bare underscore rule) rather
-    than PEI's own "rule, with the role captioned below it and to the right":
-    every box on the block starts at the same `BOX_INDENT` and is the same
-    width, so "Court File No.:", "Applicant/Petitioner:" and "Respondent:"
-    line up on one edge and none of them is longer than another.
+    The court name and `(Family Section)` are centred across the **whole**
+    block width, same as the placeholder they replace. Below that, two
+    columns: the **right** column is a plain label-then-box list -- Ontario's
+    own convention (Form 12's and Form 38's Court File Number field is a
+    bordered box after a caption, not a bare rule) -- with every box starting
+    on the page's own midline: labels are right-aligned into it, boxes
+    left-aligned out of it, so `Court File No.:`, `Applicant/Petitioner:` and
+    `Respondent:` all line up on the same edge and no box is longer than
+    another. The **left** column, otherwise empty paper below the title,
+    carries a seal ring sized to fill the room the right column's rows define.
     """
+    mid = (left + right) / 2.0
+
     def text(x, y, s, bold=False, size=BODY, colour=(0, 0, 0)):
         page.insert_text(fitz.Point(x, y), s, fontsize=size,
                          fontname=base14(bold), color=colour)
@@ -137,50 +141,47 @@ def draw_block(page, left, right, top, seal, second_title=False):
     def centred(y, s, bold=False):
         text((left + right) / 2 - width(s, bold) / 2, y, s, bold)
 
-    box_x0 = left + BOX_INDENT
-    box_x1 = right
-
     def field_row(y, label, bind):
-        text(left, y - 4.0, label)
-        rect = fitz.Rect(box_x0, y - FIELD_H, box_x1, y)
+        text(mid - LABEL_GAP - width(label), y - 4.0, label)
+        rect = fitz.Rect(mid, y - FIELD_H, right, y)
         page.draw_rect(rect, color=(0, 0, 0), width=STROKE)
         return (rect, bind)
 
-    fields = []
-    y = top + FIELD_H
-    fields.append(field_row(y, "Court File No.:", "court_info.courtFileNumber"))
+    centred(top + CENTRE_ROW, COURT, bold=True)
+    centred(top + 2 * CENTRE_ROW, SECTION, bold=True)
+    columns_top = top + 2 * CENTRE_ROW + SEAL_GAP
 
-    y += ROW_GAP + CENTRE_ROW
-    centred(y, COURT, bold=True)
-    y += CENTRE_ROW
-    centred(y, SECTION, bold=True)
-
-    y += ROW_GAP + FIELD_H
-    fields.append(field_row(y, "Applicant/Petitioner:", "applicant.fullLegalName"))
-    y += FIELD_ROW
-    fields.append(field_row(y, "Respondent:", "respondent.fullLegalName"))
-
+    rows = [("Court File No.:", "court_info.courtFileNumber"),
+           ("Applicant/Petitioner:", "applicant.fullLegalName"),
+           ("Respondent:", "respondent.fullLegalName")]
     if second_title:
-        y += ROW_GAP + FIELD_H
-        centred(y - FIELD_H - 2.0, "AND BETWEEN:", bold=True)
-        y += FIELD_H
-        fields.append(field_row(y, "Petitioner by Counterpetition:", None))
+        rows += [("Petitioner by Counterpetition:", None),
+                ("Respondent by Counterpetition:", None)]
+
+    fields = []
+    y = columns_top + TOP_PAD + FIELD_H
+    for label, bind in rows:
+        fields.append(field_row(y, label, bind))
         y += FIELD_ROW
-        fields.append(field_row(y, "Respondent by Counterpetition:", None))
+    bottom = y - FIELD_ROW + BOTTOM_PAD  # last box's bottom, plus the pad
 
     if seal:
         # A reserved area, not a seal: an empty ring where PEI prints
         # "(Court seal)", carrying no field -- the registry stamps it. Sized
-        # to the gap between the file-number row and the centred court name
-        # so it clears the "Court File No." label above and the
-        # "Applicant/Petitioner" label below.
-        seal_top = top + FIELD_H + ROW_GAP
-        centre = fitz.Point(left + 24.0, seal_top + CENTRE_ROW)
-        page.draw_circle(centre, 19.0, color=(0.55, 0.55, 0.55), width=0.6)
+        # to fill the space actually free below the title: not the whole
+        # left column, but only out to the **widest label's own left edge** --
+        # "Applicant/Petitioner:" reaches further left than "Respondent:"
+        # does, and a radius sized off the column's raw width read past it
+        # and printed the ring under the label's own text.
+        seal_x1 = min(mid - LABEL_GAP - width(label) for label, _ in rows) - 8.0
+        radius = min((bottom - columns_top) / 2.0 - 3.0,
+                    (seal_x1 - left) / 2.0 - 2.0)
+        centre = fitz.Point(left + (seal_x1 - left) / 2.0, columns_top + radius + 3.0)
+        page.draw_circle(centre, radius, color=(0.55, 0.55, 0.55), width=0.7)
         cap = "Court seal"
-        page.insert_text(fitz.Point(centre.x - width(cap, size=6) / 2,
-                                    centre.y + 2.0), cap,
-                         fontsize=6, fontname=base14(), color=(0.55, 0.55, 0.55))
+        page.insert_text(fitz.Point(centre.x - width(cap, size=8) / 2,
+                                    centre.y + 3.0), cap,
+                         fontsize=8, fontname=base14(), color=(0.55, 0.55, 0.55))
 
     return [(rect, bind) for rect, bind in fields if bind]
 
