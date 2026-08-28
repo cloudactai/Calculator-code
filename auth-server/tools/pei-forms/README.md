@@ -279,6 +279,54 @@ answer space are named in the repair tool; the rest is recorded here as a limit
 of building these forms as flat PDFs, not as a defect anyone can fix in the
 mapping.
 
+## Third pass: the other 31 forms, and one gap repeated eleven times
+
+Round 2 fixed 70A and 70A\* for two bug classes: a printed line-end blank
+sized to less than the page's real content margin, and a growable
+`(i)`/`(ii)`/`(iii)` relief list left unboxed past its first line. Round 3
+opened every remaining PEISC form -- source, overlay and, where a form had
+more than one page, the combined view -- looking for the same two classes.
+
+**Neither turned up again.** Every other line-end blank in the batch is
+already sized to genuine blank paper, and no other PEISC form prints a
+growable claim list at all -- that shape is specific to the petition, which
+only 70A and 70A\* are.
+
+**What did turn up, on eleven forms, is 70A's own "TO:" gap, repeated.** A
+bare parenthetical instruction -- `TO: (Name and address of ...)` -- prints
+on its own line, or inline after the label, with no rule under it and
+nothing else on the line, the same shape 70A's `NAMED_FIELDS` entry was
+already written for. Found and fixed on:
+
+| Form | What prints there |
+| --- | --- |
+| 70B | `TO (Name and address of respondent to the counterpetition...)` and `AND TO (Name and address of petitioner's lawyer or petitioner)` -- two boxes |
+| 70D | `TO:  (Name and address of petitioner's lawyer or petitioner)`, inline |
+| 70CC | `TO:  (Name and address of lawyer or party receiving notice)` |
+| 70DD | `TO: (Name, address, telephone number and email address of Respondent)` |
+| 70E | `TO (Name and address of respondent's lawyer or respondent)` |
+| 70EE | `TO:  (parties)`, inline |
+| 70F | `TO (Name and address of respondent's lawyer or respondent)` |
+| 70G | `TO (Name and address of lawyer or party to be served)` |
+| 70H | `TO (Name and address of lawyer or party on whom notice is served)` |
+| 70M | `TO (Names and addresses of lawyer or parties receiving notice)` |
+| 71E | `TO (Name and address of person summoned)` |
+
+Each box sits on the label's own line -- or, where the placeholder prints
+inline (70D, 70EE), replaces the placeholder text the way 70A\*'s "(Name)"
+placeholders were replaced in round 2 -- out to the page's own rightmost
+printed ink, read fresh off each page rather than carried over as a flat
+number. 12 fields added in total (70B gets two). Everything the sweep
+otherwise looked at -- 70AA, 70BB, 70BB.1, 70I(A)-(D), 70J, 70P, 70Q, 70R,
+70S, 70T, 70U, 70V, 71A, 71B -- was already boxed correctly by rounds 1 and 2
+and needed nothing further.
+
+```
+python3 repair_pei_fields.py --check   # idempotent both before and after
+python3 repair_pei_fields.py
+python3 record_pe_round3.py
+```
+
 ## Catalogue, binds, verify
 
 ```

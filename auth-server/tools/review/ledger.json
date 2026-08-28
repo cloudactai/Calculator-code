@@ -1329,10 +1329,10 @@
   "sourceReviewed": true,
   "overlayReviewed": true,
   "firstPass": "pass",
-  "corrections": "",
+  "corrections": "Added two TextFields: 'TO (Name and address of respondent to the counterpetition other than the petitioner)' and 'AND TO (Name and address of petitioner's lawyer or petitioner)', both bare with no printed rule.",
   "finalPass": "pass",
-  "notes": "Date and 'Issued by' seated. '(General heading)' style of cause, so no party box, correctly.",
-  "build": "14a1205"
+  "notes": "Added a TextField for the bare 'TO: (Name and address of ...)' instruction, which had never had a field -- the same gap 70A's own 'TO:' fix closed, extended here on request to the other PEISC forms that print the same shape. The right edge is each page's own rightmost printed ink, not a number carried over from 70A.",
+  "build": "6f5d232"
  },
  {
   "province": "PE",
@@ -1509,10 +1509,10 @@
   "sourceReviewed": true,
   "overlayReviewed": true,
   "firstPass": "pass",
-  "corrections": "",
+  "corrections": "Added a TextField for 'TO:  (Name and address of lawyer or party receiving notice)'.",
   "finalPass": "pass",
-  "notes": "Two fields, date and lawyer block.",
-  "build": "14a1205"
+  "notes": "Added a TextField for the bare 'TO: (Name and address of ...)' instruction, which had never had a field -- the same gap 70A's own 'TO:' fix closed, extended here on request to the other PEISC forms that print the same shape. The right edge is each page's own rightmost printed ink, not a number carried over from 70A.",
+  "build": "6f5d232"
  },
  {
   "province": "PE",
@@ -1524,10 +1524,10 @@
   "sourceReviewed": true,
   "overlayReviewed": true,
   "firstPass": "pass",
-  "corrections": "Item 2's 'paragraphs ___' blank and the second address rule had no field. Three signature boxes dropped.",
+  "corrections": "Added a TextField for 'TO:  (Name and address of petitioner's lawyer or petitioner)', printed inline on one line with no rule.",
   "finalPass": "pass",
-  "notes": "Answer, address and lawyer blocks complete.",
-  "build": "14a1205"
+  "notes": "Added a TextField for the bare 'TO: (Name and address of ...)' instruction, which had never had a field -- the same gap 70A's own 'TO:' fix closed, extended here on request to the other PEISC forms that print the same shape. The right edge is each page's own rightmost printed ink, not a number carried over from 70A.",
+  "build": "6f5d232"
  },
  {
   "province": "PE",
@@ -1539,10 +1539,10 @@
   "sourceReviewed": true,
   "overlayReviewed": true,
   "firstPass": "pass",
-  "corrections": "",
+  "corrections": "Added a TextField for 'TO: (Name, address, telephone number and email address of Respondent)'.",
   "finalPass": "pass",
-  "notes": "File number, date and the court-office rule.",
-  "build": "14a1205"
+  "notes": "Added a TextField for the bare 'TO: (Name and address of ...)' instruction, which had never had a field -- the same gap 70A's own 'TO:' fix closed, extended here on request to the other PEISC forms that print the same shape. The right edge is each page's own rightmost printed ink, not a number carried over from 70A.",
+  "build": "6f5d232"
  },
  {
   "province": "PE",
@@ -1554,10 +1554,10 @@
   "sourceReviewed": true,
   "overlayReviewed": true,
   "firstPass": "pass",
-  "corrections": "Item 2's blank had no field.",
+  "corrections": "Added a TextField for 'TO (Name and address of respondent's lawyer or respondent)'.",
   "finalPass": "pass",
-  "notes": "Item 4's '(Set out in separate paragraphs)' is followed by 11pt before '(Date)' -- no answer space exists on the page.",
-  "build": "14a1205"
+  "notes": "Added a TextField for the bare 'TO: (Name and address of ...)' instruction, which had never had a field -- the same gap 70A's own 'TO:' fix closed, extended here on request to the other PEISC forms that print the same shape. The right edge is each page's own rightmost printed ink, not a number carried over from 70A.",
+  "build": "6f5d232"
  },
  {
   "province": "PE",
@@ -1569,10 +1569,10 @@
   "sourceReviewed": true,
   "overlayReviewed": true,
   "firstPass": "pass",
-  "corrections": "",
+  "corrections": "Added a TextField for 'TO:  (parties)'.",
   "finalPass": "pass",
-  "notes": "Six fields; the hearing date, year and hour blanks all seated. The rule over 'Registrar' keeps its field.",
-  "build": "14a1205"
+  "notes": "Added a TextField for the bare 'TO: (Name and address of ...)' instruction, which had never had a field -- the same gap 70A's own 'TO:' fix closed, extended here on request to the other PEISC forms that print the same shape. The right edge is each page's own rightmost printed ink, not a number carried over from 70A.",
+  "build": "6f5d232"
  },
  {
   "province": "PE",
@@ -1584,10 +1584,10 @@
   "sourceReviewed": true,
   "overlayReviewed": true,
   "firstPass": "pass",
-  "corrections": "",
+  "corrections": "Added a TextField for 'TO (Name and address of respondent's lawyer or respondent)'.",
   "finalPass": "pass",
-  "notes": "Four fields, every printed blank covered.",
-  "build": "14a1205"
+  "notes": "Added a TextField for the bare 'TO: (Name and address of ...)' instruction, which had never had a field -- the same gap 70A's own 'TO:' fix closed, extended here on request to the other PEISC forms that print the same shape. The right edge is each page's own rightmost printed ink, not a number carried over from 70A.",
+  "build": "6f5d232"
  },
  {
   "province": "PE",
@@ -1599,10 +1599,10 @@
   "sourceReviewed": true,
   "overlayReviewed": true,
   "firstPass": "pass",
-  "corrections": "",
+  "corrections": "Added a TextField for 'TO (Name and address of lawyer or party to be served)'.",
   "finalPass": "pass",
-  "notes": "Four fields, every printed blank covered.",
-  "build": "14a1205"
+  "notes": "Added a TextField for the bare 'TO: (Name and address of ...)' instruction, which had never had a field -- the same gap 70A's own 'TO:' fix closed, extended here on request to the other PEISC forms that print the same shape. The right edge is each page's own rightmost printed ink, not a number carried over from 70A.",
+  "build": "6f5d232"
  },
  {
   "province": "PE",
@@ -1614,10 +1614,10 @@
   "sourceReviewed": true,
   "overlayReviewed": true,
   "firstPass": "pass",
-  "corrections": "",
+  "corrections": "Added a TextField for 'TO (Name and address of lawyer or party on whom notice is served)'.",
   "finalPass": "pass",
-  "notes": "Two fields, both seated.",
-  "build": "14a1205"
+  "notes": "Added a TextField for the bare 'TO: (Name and address of ...)' instruction, which had never had a field -- the same gap 70A's own 'TO:' fix closed, extended here on request to the other PEISC forms that print the same shape. The right edge is each page's own rightmost printed ink, not a number carried over from 70A.",
+  "build": "6f5d232"
  },
  {
   "province": "PE",
@@ -1824,10 +1824,10 @@
   "sourceReviewed": true,
   "overlayReviewed": true,
   "firstPass": "pass",
-  "corrections": "",
+  "corrections": "Added a TextField for 'TO (Names and addresses of lawyer or parties receiving notice)'.",
   "finalPass": "pass",
-  "notes": "Date and the Director's block.",
-  "build": "14a1205"
+  "notes": "Added a TextField for the bare 'TO: (Name and address of ...)' instruction, which had never had a field -- the same gap 70A's own 'TO:' fix closed, extended here on request to the other PEISC forms that print the same shape. The right edge is each page's own rightmost printed ink, not a number carried over from 70A.",
+  "build": "6f5d232"
  },
  {
   "province": "PE",
@@ -2049,10 +2049,10 @@
   "sourceReviewed": true,
   "overlayReviewed": true,
   "firstPass": "pass",
-  "corrections": "The 'Travel allowance $___' and 'TOTAL $___' blanks had no fields.",
+  "corrections": "Added a TextField for 'TO (Name and address of person summoned)'.",
   "finalPass": "pass",
-  "notes": "Attendance money block now adds up on the page.",
-  "build": "14a1205"
+  "notes": "Added a TextField for the bare 'TO: (Name and address of ...)' instruction, which had never had a field -- the same gap 70A's own 'TO:' fix closed, extended here on request to the other PEISC forms that print the same shape. The right edge is each page's own rightmost printed ink, not a number carried over from 70A.",
+  "build": "6f5d232"
  },
  {
   "province": "SK",

@@ -695,6 +695,27 @@ NAMED_FIELDS = [
     ("PEISC_70A_JOINT", 1, 188.0, 406.0, 504.6, 419.3, "TextArea"),   # (b)(i)
     ("PEISC_70A_JOINT", 1, 188.0, 418.1, 504.6, 431.4, "TextArea"),   # (b)(ii)
     ("PEISC_70A_JOINT", 1, 188.0, 430.2, 504.6, 443.5, "TextArea"),   # (b)(iii)
+    # The "TO: (Name and address of ...)" line is 70A's own gap, repeated on
+    # four more forms: a bare parenthetical instruction with no printed rule
+    # under it, and nothing else on the line. Same fix as 70A's TO: field --
+    # a box on the label's own line, right margin read off the page's own
+    # rightmost ink -- extended to every other PEISC form that prints the
+    # same shape.
+    ("PEISC_70B", 1, 126.0, 620.0, 506.6, 633.3, "TextField"),   # TO
+    ("PEISC_70B", 1, 150.0, 654.6, 506.6, 667.9, "TextField"),   # AND TO
+    # Form 70D -- "TO:  (Name and address...)" prints inline on one line, the
+    # same shape as 70A*'s "(Name)" placeholders: the box replaces the
+    # placeholder text itself, not a caption underneath it.
+    ("PEISC_70D", 1, 132.5, 319.7, 506.6, 333.0, "TextField"),
+    ("PEISC_70CC", 1, 132.5, 296.6, 504.2, 309.9, "TextField"),
+    ("PEISC_70DD", 1, 130.0, 573.8, 506.5, 587.1, "TextField"),
+    ("PEISC_70E", 1, 126.0, 296.6, 506.6, 309.9, "TextField"),
+    ("PEISC_70EE", 1, 132.5, 285.0, 501.8, 298.3, "TextField"),
+    ("PEISC_70F", 1, 126.0, 377.4, 506.6, 390.7, "TextField"),
+    ("PEISC_70G", 1, 126.0, 331.2, 506.6, 344.5, "TextField"),
+    ("PEISC_70H", 1, 124.0, 261.9, 500.1, 275.2, "TextField"),
+    ("PEISC_70M", 1, 126.0, 354.3, 506.6, 367.6, "TextField"),
+    ("PEISC_71E", 1, 126.0, 192.6, 506.6, 205.9, "TextField"),
 ]
 
 # A field that was never a blank to begin with: Form 70A*'s "Issued by
