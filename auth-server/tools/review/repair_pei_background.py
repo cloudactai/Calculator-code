@@ -54,8 +54,8 @@ NORMAL_DATE_FIELDS = {("PEISC_70A", 1750805871157), ("PEISC_70A", 1750805871159)
 FORM_71B_DUPLICATE_REGISTRAR = (459.0, 401.0, 510.0, 428.0)
 FORM_71B_OPENING_SPLIT = 198.0
 FORM_71B_OPENING_DELTA = 35.0
-FORM_71B_TERMS_SPLIT = 351.0
-FORM_71B_TERMS_DELTA = 60.0
+FORM_71B_TERMS_SOURCE_SPLIT = 316.0
+FORM_71B_TERMS_DELTA = 95.0
 
 
 def has_duplicate_prompt(page, rect):
@@ -161,7 +161,7 @@ def cap_date_rules(doc_id, doc, apply_changes):
 def has_duplicate_71b_registrar(page):
     # The legitimate label moves down with the opening reflow; only the second
     # label, which sat another 23pt below it in the source, is redundant.
-    threshold = 405 + (page.rect.height - 792)
+    threshold = 540 if has_71b_full_reflow(page) else 405 + (page.rect.height - 792)
     return any(word[4] == "Registrar" and word[1] > threshold
                for word in page.get_text("words"))
 
@@ -216,20 +216,52 @@ def reflow_peisc_71b(doc):
     return rebuilt
 
 
-def reflow_peisc_71b_terms(doc):
-    """Make real writing room for Form 71B's "other terms" instruction."""
-    if doc[0].rect.height >= 792 + FORM_71B_OPENING_DELTA + FORM_71B_TERMS_DELTA - .1:
-        return None
+def has_71b_full_reflow(page):
+    return any(item[0] == "l" and abs(item[1].x - 350.0) < .2
+               and abs(item[1].y - 429.0) < .2 and abs(item[2].x - 504.0) < .2
+               for drawing in page.get_drawings() for item in drawing["items"])
+
+
+def reflow_peisc_71b_full(doc):
+    """Reflow 71B inside a letter page; the viewer's field scale stays valid."""
     source = doc[0]
     width, height = source.rect.width, source.rect.height
     rebuilt = fitz.open()
-    page = rebuilt.new_page(width=width, height=height + FORM_71B_TERMS_DELTA)
-    page.show_pdf_page(fitz.Rect(0, 0, width, FORM_71B_TERMS_SPLIT), doc, 0,
-                       clip=fitz.Rect(0, 0, width, FORM_71B_TERMS_SPLIT))
-    page.show_pdf_page(fitz.Rect(0, FORM_71B_TERMS_SPLIT + FORM_71B_TERMS_DELTA,
-                                 width, height + FORM_71B_TERMS_DELTA), doc, 0,
-                       clip=fitz.Rect(0, FORM_71B_TERMS_SPLIT, width, height))
-    page.draw_line(fitz.Point(180.1, 408.0), fitz.Point(504.0, 408.0),
+    page = rebuilt.new_page(width=width, height=height)
+    # Opening address gets one line; the terms block gets 95pt.  The footer
+    # remains comfortably above the original page number, so the page itself
+    # never changes height (critical for overlay alignment in the viewer).
+    page.show_pdf_page(fitz.Rect(0, 0, width, FORM_71B_OPENING_SPLIT), doc, 0,
+                       clip=fitz.Rect(0, 0, width, FORM_71B_OPENING_SPLIT))
+    page.show_pdf_page(fitz.Rect(0, FORM_71B_OPENING_SPLIT + FORM_71B_OPENING_DELTA,
+                                 width, FORM_71B_TERMS_SOURCE_SPLIT + FORM_71B_OPENING_DELTA), doc, 0,
+                       clip=fitz.Rect(0, FORM_71B_OPENING_SPLIT, width,
+                                      FORM_71B_TERMS_SOURCE_SPLIT))
+    lower_top = FORM_71B_TERMS_SOURCE_SPLIT + FORM_71B_OPENING_DELTA + FORM_71B_TERMS_DELTA
+    page.show_pdf_page(fitz.Rect(0, lower_top, width, 650.0 + FORM_71B_OPENING_DELTA + FORM_71B_TERMS_DELTA), doc, 0,
+                       clip=fitz.Rect(0, FORM_71B_TERMS_SOURCE_SPLIT, width, 650.0))
+    # Keep only the original page number/footer area in its normal place.
+    page.show_pdf_page(fitz.Rect(0, 650.0, width, height), doc, 0,
+                       clip=fitz.Rect(0, 650.0, width, height))
+    draw_71b_opening_reflow(page)
+    page.draw_line(fitz.Point(180.1, 416.0), fitz.Point(504.0, 416.0),
+                   color=(0, 0, 0), width=.7)
+    # The source's combined Date/Signature line is ambiguous.  Draw distinct
+    # rules for the recognizant's date and signature before the certification.
+    page.draw_rect(fitz.Rect(365.0, 447.0, 510.0, 472.4), color=None,
+                   fill=(1, 1, 1), overlay=True)
+    page.draw_line(fitz.Point(180.1, 429.0), fitz.Point(333.1, 429.0),
+                   color=(0, 0, 0), width=.7)
+    page.draw_line(fitz.Point(350.0, 429.0), fitz.Point(504.0, 429.0),
+                   color=(0, 0, 0), width=.7)
+    page.insert_text(fitz.Point(180.1, 438.2), "(Date)", fontsize=7,
+                     fontname="tiro", color=(0, 0, 0))
+    page.insert_text(fitz.Point(458.7, 438.2), "(Signature)", fontsize=10,
+                     fontname="tiro", color=(0, 0, 0))
+    # Cap the registrar-certification date after it has moved with the footer.
+    page.draw_rect(fitz.Rect(260.6, 515.0, 455.0, 521.0), color=None,
+                   fill=(1, 1, 1), overlay=True)
+    page.draw_line(fitz.Point(108.1, 517.15), fitz.Point(261.1, 517.15),
                    color=(0, 0, 0), width=.7)
     return rebuilt
 
@@ -271,9 +303,9 @@ def reflow_peisc_70a(doc):
     return rebuilt
 
 
-def repair(doc_id, apply_changes):
+def repair(doc_id, apply_changes, source_path=None):
     path = os.path.join(EXPORT, "%s.pdf" % doc_id)
-    doc = fitz.open(path)
+    doc = fitz.open(source_path or path)
     changed = 0
     try:
         for did, page_no, coords in MASKS:
@@ -311,20 +343,12 @@ def repair(doc_id, apply_changes):
                 page.add_redact_annot(fitz.Rect(coords), fill=(1, 1, 1))
         reflow = (doc_id == "PEISC_70A"
                   and doc[1].rect.height <= 800 and doc[2].rect.height <= 800)
-        reflow_71b = (doc_id == "PEISC_71B"
-                       and doc[0].rect.height < 792 + FORM_71B_OPENING_DELTA - .1)
-        reflow_71b_terms = (doc_id == "PEISC_71B"
-                            and doc[0].rect.height < 792 + FORM_71B_OPENING_DELTA
-                            + FORM_71B_TERMS_DELTA - .1)
-        # The terms reflow follows the opening reflow.  A pre-opening source
-        # needs one repair run to establish the first geometry before this
-        # second, independent band can be inserted.
-        reflow_71b_terms = reflow_71b_terms and not reflow_71b
+        reflow_71b = (doc_id == "PEISC_71B" and not has_71b_full_reflow(doc[0]))
         moved_rules = (doc_id == "PEISC_70A" and not reflow
                        and not has_moved_70a_rules(doc[1]))
         duplicate_71b_registrar = (doc_id == "PEISC_71B"
                                    and has_duplicate_71b_registrar(doc[0]))
-        changed += (int(reflow) + int(reflow_71b) + int(reflow_71b_terms) + int(moved_rules)
+        changed += (int(reflow) + int(reflow_71b) + int(moved_rules)
                     + cap_date_rules(doc_id, doc, apply_changes)
                     + int(duplicate_71b_registrar))
         if changed and apply_changes:
@@ -337,8 +361,7 @@ def repair(doc_id, apply_changes):
             for page, label_baseline, rule_baseline in court_addresses:
                 draw_court_address_reflow(page, label_baseline, rule_baseline)
             rebuilt = (reflow_peisc_70a(doc) if reflow
-                       else reflow_peisc_71b(doc) if reflow_71b
-                       else reflow_peisc_71b_terms(doc) if reflow_71b_terms else None)
+                       else reflow_peisc_71b_full(doc) if reflow_71b else None)
             if reflow:
                 draw_70a_moved_rules(rebuilt[1])
             elif moved_rules:
@@ -361,10 +384,12 @@ def repair(doc_id, apply_changes):
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--check", action="store_true")
+    ap.add_argument("--source-71b", help="one-time pristine Form 71B source for a full rebuild")
     args = ap.parse_args()
     total = 0
     for doc_id in sorted({row[0] for row in MASKS + CONTACT_BLOCKS + COURT_ADDRESS_REFLOWS} | {did for did, _ in NORMAL_DATE_FIELDS}):
-        count = repair(doc_id, not args.check)
+        source = args.source_71b if doc_id == "PEISC_71B" else None
+        count = repair(doc_id, not args.check, source)
         print("%s duplicate_prompts=%d" % (doc_id, count))
         total += count
     print(("would change" if args.check else "changed") + ": duplicate_prompts=%d" % total)
