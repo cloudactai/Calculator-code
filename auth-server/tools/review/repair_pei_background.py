@@ -35,8 +35,13 @@ CONTACT_BLOCKS = [
 # Form 70A gives the court-office address only 55pt after a long label.  Move
 # the label left on the same baseline, preserving the form's typography, so
 # the writing rule can be widened to 135pt without obscuring any printed text.
+# (document, 1-based page, old-line rectangle, new label baseline, new rule
+# baseline).  Every replacement uses the same 135pt answer rule.
 COURT_ADDRESS_REFLOWS = [
-    ("PEISC_70A", 1, (351.0, 504.0, 506.0, 520.0)),
+    ("PEISC_70A", 1, (265.0, 504.0, 506.0, 520.0), 516.8, 518.0),
+    ("PEISC_70A_JOINT", 1, (265.0, 323.0, 506.0, 340.0), 335.3, 336.5),
+    ("PEISC_70B", 1, (265.0, 623.0, 506.0, 640.0), 635.1, 636.3),
+    ("PEISC_71E", 1, (265.0, 655.0, 506.0, 671.0), 666.7, 667.9),
 ]
 
 # (zero-based page, split y, added height).  These are true reflows: the
@@ -59,8 +64,9 @@ def has_contact_caption(page, rect, doc_id):
     return "email address of lawyer" in words
 
 
-def has_court_address_reflow(page):
+def has_court_address_reflow(page, label_baseline):
     return any(word[4] == "Address" and word[0] < 300
+               and abs(word[1] - (label_baseline - 10.5)) < 3
                for word in page.get_text("words"))
 
 
@@ -80,10 +86,10 @@ def draw_contact_rules(page, doc_id):
                        color=(0, 0, 0), width=0.7)
 
 
-def draw_court_address_reflow(page):
-    page.insert_text(fitz.Point(274.0, 516.8), "Address of court office",
+def draw_court_address_reflow(page, label_baseline, rule_baseline):
+    page.insert_text(fitz.Point(274.0, label_baseline), "Address of court office",
                      fontsize=10, fontname="tiro", color=(0, 0, 0))
-    page.draw_line(fitz.Point(369.0, 518.0), fitz.Point(504.0, 518.0),
+    page.draw_line(fitz.Point(369.0, rule_baseline), fitz.Point(504.0, rule_baseline),
                    color=(0, 0, 0), width=0.7)
 
 
@@ -108,7 +114,7 @@ def draw_reflowed_answer_rules(page, page_index):
 
 def has_moved_70a_rules(page):
     expected = ((331.0, 357.0, 504.0), (192.0, 426.25, 276.0),
-                (223.0, 595.0, 384.0))
+                (223.0, 595.0, 376.0))
     lines = []
     for drawing in page.get_drawings():
         for item in drawing["items"]:
@@ -125,7 +131,7 @@ def draw_70a_moved_rules(page):
     for old, start, end, baseline in (
         ((397.0, 344.0, 505.0, 359.0), 331.0, 504.0, 357.0),  # item 4
         ((214.0, 413.0, 278.0, 428.0), 192.0, 276.0, 426.25), # item 5
-        ((322.0, 582.0, 386.0, 597.0), 223.0, 384.0, 595.0), # item 13
+        ((322.0, 582.0, 386.0, 597.0), 223.0, 376.0, 595.0), # item 13
     ):
         page.draw_rect(fitz.Rect(old), color=None, fill=(1, 1, 1), overlay=True)
         page.draw_line(fitz.Point(start, baseline), fitz.Point(end, baseline),
@@ -185,14 +191,14 @@ def repair(doc_id, apply_changes):
             if apply_changes:
                 page.add_redact_annot(rect, fill=(1, 1, 1))
         court_addresses = []
-        for did, page_no, coords in COURT_ADDRESS_REFLOWS:
+        for did, page_no, coords, label_baseline, rule_baseline in COURT_ADDRESS_REFLOWS:
             if did != doc_id:
                 continue
             page = doc[page_no - 1]
-            if has_court_address_reflow(page):
+            if has_court_address_reflow(page, label_baseline):
                 continue
             changed += 1
-            court_addresses.append(page)
+            court_addresses.append((page, label_baseline, rule_baseline))
             if apply_changes:
                 page.add_redact_annot(fitz.Rect(coords), fill=(1, 1, 1))
         reflow = (doc_id == "PEISC_70A"
@@ -205,8 +211,8 @@ def repair(doc_id, apply_changes):
                 page.apply_redactions(images=fitz.PDF_REDACT_IMAGE_NONE)
             for page, did in contacts:
                 draw_contact_rules(page, did)
-            for page in court_addresses:
-                draw_court_address_reflow(page)
+            for page, label_baseline, rule_baseline in court_addresses:
+                draw_court_address_reflow(page, label_baseline, rule_baseline)
             rebuilt = reflow_peisc_70a(doc) if reflow else None
             if reflow:
                 draw_70a_moved_rules(rebuilt[1])

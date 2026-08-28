@@ -1098,7 +1098,7 @@ def pass_compact_existing_names(doc_id, mapping, doc, taken):
 PEISC_70A_LAYOUT = {
     1750805871017: {"x": 331.0, "width": 259.0},   # item 4
     1750805871018: {"x": 192.0, "width": 126.0},   # item 5
-    1750805871024: {"x": 223.0, "width": 241.5},   # item 13
+    1750805871024: {"x": 223.0, "width": 229.5},   # item 13 date (153pt max)
     1750805871003: {"x": 369.0, "width": 202.5},   # court office address
     1750805871152: {
         "type": "TextArea", "x": 122.5, "y": 186.0,
@@ -1110,17 +1110,30 @@ PEISC_70A_LAYOUT = {
     },                                                # item 19(b)
 }
 
+# Court-office addresses were authored with a 55–60pt rule, too short for an
+# actual court address.  The background pass reflows their label and line; the
+# mapping keeps the matching 135pt minimum overlay.
+COURT_ADDRESS_FIELDS = {
+    1750805871003: {"x": 369.0, "width": 202.5},
+    1750047614002: {"x": 369.0, "width": 202.5},
+    1750081877002: {"x": 369.0, "width": 202.5},
+    1750796887006: {"x": 369.0, "width": 202.5},
+}
+
 
 def pass_70a_layout(doc_id, mapping, doc, taken):
-    if doc_id != "PEISC_70A":
-        return {}
     changes = {}
     for field in mapping["staticFields"]:
-        target = PEISC_70A_LAYOUT.get(field["id"])
+        target = PEISC_70A_LAYOUT.get(field["id"]) if doc_id == "PEISC_70A" else None
         if target and any(field.get(key) != value for key, value in target.items()):
             changes[field["id"]] = target
+        address = COURT_ADDRESS_FIELDS.get(field["id"])
+        if address and any(field.get(key) != value for key, value in address.items()):
+            changes[field["id"]] = address
     # Match the two PDF background reflows.  The sentinel field makes the pass
     # idempotent without writing application-only metadata into the mapping.
+    if doc_id != "PEISC_70A":
+        return changes
     page_two = doc[1]
     item_four = next(f for f in mapping["staticFields"] if f["id"] == 1750805871017)
     if page_two.rect.height > 800 and item_four["y"] < 340:
