@@ -282,7 +282,11 @@ const renderField = (field, handleEditField, handleSort, handleCellEdit, formatD
             width: '100%',
             height: '100%',
             border: 'none',
-            background: 'none'
+            background: 'none',
+            // Same dark-mode form-control repaint getFieldStyle guards
+            // against: without this a TextArea goes solid black under a
+            // dark OS/browser theme no matter what background is set here.
+            colorScheme: 'light',
           }}
         />
       );
@@ -435,6 +439,13 @@ const getFieldStyle = (field) => ({
   height: '100%',
   boxSizing: 'border-box',
   backgroundColor: `rgba(255, 255, 255, 0.85)`,
+  // Native <input>/<textarea> elements get repainted by the browser's own
+  // dark-mode form-control styling (color-scheme: dark), which overrides the
+  // inline backgroundColor above and reduces every field to a solid black
+  // box regardless of what this component asks for. Pinning the control to
+  // the light color scheme opts it out of that repaint so the background set
+  // here is what actually renders, in both light and dark OS/browser modes.
+  colorScheme: 'light',
 });
 
 export default PDFViewer;
