@@ -32,6 +32,13 @@ CONTACT_BLOCKS = [
     ("PEISC_70B", 2, (360.0, 482.0, 505.0, 513.0)),
 ]
 
+# Form 70A gives the court-office address only 55pt after a long label.  Move
+# the label left on the same baseline, preserving the form's typography, so
+# the writing rule can be widened to 135pt without obscuring any printed text.
+COURT_ADDRESS_REFLOWS = [
+    ("PEISC_70A", 1, (351.0, 504.0, 506.0, 520.0)),
+]
+
 
 def has_duplicate_prompt(page, rect):
     # A text block can span the whole answer paragraph, so its geometry is too
@@ -45,6 +52,11 @@ def has_contact_caption(page, rect, doc_id):
         word[4].lower() for word in page.get_text("words")
         if rect.intersects(fitz.Rect(word[:4])))
     return "email address of lawyer" in words
+
+
+def has_court_address_reflow(page):
+    return any(word[4] == "Address" and word[0] < 300
+               for word in page.get_text("words"))
 
 
 def draw_contact_rules(page, doc_id):
@@ -61,6 +73,13 @@ def draw_contact_rules(page, doc_id):
                          fontname="helv", color=(0, 0, 0))
         page.draw_line(fitz.Point(x0, baseline), fitz.Point(x1, baseline),
                        color=(0, 0, 0), width=0.7)
+
+
+def draw_court_address_reflow(page):
+    page.insert_text(fitz.Point(274.0, 516.8), "Address of court office",
+                     fontsize=10, fontname="tiro", color=(0, 0, 0))
+    page.draw_line(fitz.Point(369.0, 518.0), fitz.Point(504.0, 518.0),
+                   color=(0, 0, 0), width=0.7)
 
 
 def repair(doc_id, apply_changes):
@@ -90,11 +109,24 @@ def repair(doc_id, apply_changes):
             contacts.append((page, did))
             if apply_changes:
                 page.add_redact_annot(rect, fill=(1, 1, 1))
+        court_addresses = []
+        for did, page_no, coords in COURT_ADDRESS_REFLOWS:
+            if did != doc_id:
+                continue
+            page = doc[page_no - 1]
+            if has_court_address_reflow(page):
+                continue
+            changed += 1
+            court_addresses.append(page)
+            if apply_changes:
+                page.add_redact_annot(fitz.Rect(coords), fill=(1, 1, 1))
         if changed and apply_changes:
             for page in doc:
                 page.apply_redactions(images=fitz.PDF_REDACT_IMAGE_NONE)
             for page, did in contacts:
                 draw_contact_rules(page, did)
+            for page in court_addresses:
+                draw_court_address_reflow(page)
             fd, temp_path = tempfile.mkstemp(suffix=".pdf", dir=EXPORT)
             os.close(fd)
             try:
@@ -113,7 +145,7 @@ def main():
     ap.add_argument("--check", action="store_true")
     args = ap.parse_args()
     total = 0
-    for doc_id in sorted({row[0] for row in MASKS + CONTACT_BLOCKS}):
+    for doc_id in sorted({row[0] for row in MASKS + CONTACT_BLOCKS + COURT_ADDRESS_REFLOWS}):
         count = repair(doc_id, not args.check)
         print("%s duplicate_prompts=%d" % (doc_id, count))
         total += count

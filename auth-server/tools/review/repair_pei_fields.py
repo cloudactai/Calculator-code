@@ -1090,6 +1090,33 @@ def pass_compact_existing_names(doc_id, mapping, doc, taken):
                 changes[field["id"]] = target
     return changes
 
+
+# Form 70A's source leaves large, inconsistent gaps before a few short answer
+# rules.  Keep the same close-to-label rhythm as item 7, reflow the court
+# office address after its background label is moved left, and give item 19(b)
+# the paragraph area its prompt calls for.
+PEISC_70A_LAYOUT = {
+    1750805871017: {"x": 331.0, "width": 259.0},   # item 4
+    1750805871018: {"x": 192.0, "width": 126.0},   # item 5
+    1750805871024: {"x": 223.0, "width": 241.5},   # item 13
+    1750805871003: {"x": 369.0, "width": 202.5},   # court office address
+    1750805871032: {
+        "type": "TextArea", "x": 144.1, "y": 168.0,
+        "width": 539.85, "height": 42.0, "fontSize": 8,
+    },                                                # item 19(b)
+}
+
+
+def pass_70a_layout(doc_id, mapping, doc, taken):
+    if doc_id != "PEISC_70A":
+        return {}
+    changes = {}
+    for field in mapping["staticFields"]:
+        target = PEISC_70A_LAYOUT.get(field["id"])
+        if target and any(field.get(key) != value for key, value in target.items()):
+            changes[field["id"]] = target
+    return changes
+
 # An "Issued by ____ Registrar" rule is completed by court staff, not the
 # party using this application.  Treat every PEI instance as a signature rule
 # and leave it unboxed.  These are keyed to the field's own corner so the pass
@@ -1251,7 +1278,7 @@ def pass_areas(doc_id, mapping, doc, taken):
 
 PASSES = ("ticks", "fit_ticks", "blanks", "cells", "subcells", "areas",
          "named", "to_layout", "compact_existing_names", "margin", "signatures",
-         "brackets", "office_drop", "stubs", "seat_flat")
+         "brackets", "office_drop", "stubs", "seat_flat", "70a_layout")
 
 
 def repair(doc_id, wanted, apply_changes):
@@ -1305,6 +1332,10 @@ def repair(doc_id, wanted, apply_changes):
     if "compact_existing_names" in wanted:
         got = pass_compact_existing_names(doc_id, mapping, doc, taken)
         report["compact_existing_names"] = len(got)
+        changes.update(got)
+    if "70a_layout" in wanted:
+        got = pass_70a_layout(doc_id, mapping, doc, taken)
+        report["70a_layout"] = len(got)
         changes.update(got)
     if "margin" in wanted:
         got = pass_margin(doc_id, mapping, doc, taken)
