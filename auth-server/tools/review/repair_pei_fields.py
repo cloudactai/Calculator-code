@@ -1330,12 +1330,30 @@ def pass_date_lengths(doc_id, mapping, doc, taken):
 
 
 def pass_71b_layout(doc_id, mapping, doc, taken):
-    """Keep Form 71B's address rule proportionate to the nearby name rule."""
+    """Reflow Form 71B's opening address without covering the legal text."""
     if doc_id != "PEISC_71B":
         return {}
-    target = 135.0 * SCALE
-    return {f["id"]: {"width": target} for f in mapping["staticFields"]
-            if f["id"] == 1750731700005 and abs(f["width"] - target) > .01}
+    targets = {
+        # The opening address is now on its own first line and is deliberately
+        # a little longer than the full-name rule.  The premises address below
+        # remains the original long rule: it can contain a full civic address.
+        1750731700003: {"width": 99.0},
+        1750731700005: {"width": 333.0},
+        # The opening sentence becomes two lines, so every later field moves
+        # with the source page's 16pt reflow.
+        1750731700001: {"y": 233.45},
+        1750731700004: {"y": 271.08},
+        1750731700005: {"y": 309.83, "width": 333.0},
+        1750731700006: {"y": 327.25},
+        1750731700007: {"y": 350.42},
+        1750731700008: {"y": 389.67},
+        1750731700009: {"y": 412.75},
+    }
+    return {f["id"]: change for f in mapping["staticFields"]
+            if f["id"] in targets
+            for change in (targets[f["id"]],)
+            if any(abs(f.get(key, 0) - value) > .01
+                   for key, value in change.items())}
 
 
 PASSES = ("ticks", "fit_ticks", "blanks", "cells", "subcells", "areas",
