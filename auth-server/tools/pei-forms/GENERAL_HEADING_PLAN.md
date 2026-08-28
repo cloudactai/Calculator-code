@@ -337,3 +337,63 @@ using `pass_seat_flat`'s own `rule_under`, and leaves anything larger alone: the
 
 A `record_pe_round4.py` ledger row per headed page, the README's
 "pixel-identical" paragraph, and `PREFILL_PLAN.md`'s bind counts.
+
+---
+
+## Revision: label-then-box, not PEI's own rule-with-caption-below
+
+The first pilot draft above transcribed 70I(A)'s layout as well as its
+vocabulary — an underscore rule with the role captioned below and to the
+right, "Between:" / "and" joining the two parties. On review that layout read
+as an odd, unlabelled line when it was the *only* thing on an otherwise bare
+page (70I(A) carries it well because the surrounding financial-statement
+questions give it context). **Revised to label-then-box**, the way Ontario's
+own general heading works (Form 12's and Form 38's Court File Number field is
+a bordered box under/after a caption, not a bare rule):
+
+```
+Court File No.:    [__________________________]
+
+        Supreme Court of Prince Edward Island
+                 (Family Section)
+
+Applicant/Petitioner:  [__________________________]
+
+Respondent:            [__________________________]
+```
+
+Every box starts at the same `BOX_INDENT` (145pt from the page's own left
+margin) and is the same width — so `Court File No.:`, `Applicant/Petitioner:`
+and `Respondent:` line up on one edge and none of the three boxes is longer
+than another, satisfied even on the counterpetition variant
+("Respondent by Counterpetition:" is the longest label this block ever
+prints, at 127.8pt, and still clears the indent by 17pt). Boxes are bordered
+rectangles (0.6pt stroke, Ontario's own weight), not underscore rules. The
+seal ring moved into the gap between the file-number row and the centred
+court name, sized to clear both the label above and the label below it.
+
+The vocabulary is still 70I(A)'s, not invented: `No.`, the court name,
+`(Family Section)`, `Applicant/Petitioner`, `Respondent`. Only the layout
+changed.
+
+**One measured, accepted cost.** `pass_seat_flat`'s `rule_under` rasterises
+the ink around a box to find the rule it sits on. A box that draws its own
+complete border (this block, and Ontario's) has that border's stroke centred
+on the field's stored edge, so the ink starts half a stroke width above it —
+about 0.29pt, on all three new boxes. This is not a real misalignment (the
+box's edge and the field's stored coordinate are identical; the discrepancy is
+in how an ink-based detector reads a self-bordered field rather than a field
+sitting over a separately-drawn rule) and is the same order of magnitude as
+four floats the batch already carried before this work (`repair_pei_fields
+--check` was non-idempotent on Form 70A before this pilot began — see the
+first revision's note above). Recorded rather than silently chased further;
+teaching `pass_seat_flat` to recognize a self-bordered field is a
+`repair_pei_fields.py` change, not this tool's.
+
+Re-verified after the revision: `rebind_pei_forms.py --check` finds
+**0 binds to add** — the caption reader independently rediscovers all three
+binds from the new left-side captions (`CAPTION_LEFT` gained the
+applicant/respondent patterns, read from the same two patterns `ROLE_RIGHT`
+already matched, from the other side). `verify_pei.py`: 34 templates / 64
+pages / 1146 fields / 7 binds, zero findings. Ledger and
+`forms:validate-export` unchanged.

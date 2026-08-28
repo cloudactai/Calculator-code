@@ -5,14 +5,21 @@ generated petition comes out with no court file number, no court, no party names
 -- and the words "(General heading)" still on the client's copy. This tool
 replaces the instruction with the style of cause the instruction is asking for.
 
-**The block is transcribed from Form 70I(A), not invented.** PEI prints a full
-style of cause on exactly two forms in this batch, and 70I(A) page 1 is the
-model: `No.` right, the court and `(Family Section)` centred in bold, `Between:`
-at the left margin, two underscore rules with the role captioned *below and to
-the right* of each -- the PEI convention `pei_binds` reads. The one addition is a
-**rule after `No.`**: PEI prints the file number over bare white space, which the
-batch's golden rule correctly refuses to box, so the rule is what makes
-`court_info.courtFileNumber` a legal bind rather than a special case.
+**The vocabulary is transcribed from Form 70I(A), not invented; the layout is
+Ontario's.** PEI prints a full style of cause on exactly two forms in this
+batch, and 70I(A) page 1 supplies the words: `No.`, the court and
+`(Family Section)` centred in bold, `Applicant/Petitioner`, `Respondent`. But
+70I(A)'s own layout -- an underscore rule with the role captioned below it and
+to the right -- read as an odd, unlabelled line when it was the only thing on
+an otherwise bare page, so the block is drawn **label-then-box** instead, the
+way Ontario's own general heading works (Form 12's and Form 38's Court File
+Number field is a bordered box under a caption, not a bare rule): every box on
+the block starts at the same `BOX_INDENT` and is the same width, so
+`Court File No.:`, `Applicant/Petitioner:` and `Respondent:` line up on one
+edge. The one content addition is the file number box itself: PEI prints `No.`
+over bare white space, which the batch's golden rule correctly refuses to box,
+so the box is what makes `court_info.courtFileNumber` a legal bind rather than
+a special case.
 
 **Room is made by band reflow, never by scaling text.** The page is rebuilt from
 `show_pdf_page` bands, exactly as `repair_pei_background.reflow_peisc_70a` does:
@@ -50,24 +57,22 @@ PAGE_TOP = 72.0            # the sheet's own top margin, read off 70I(A)
 GAP = 9.0                  # air above and below the block
 BODY = 10.0                # Times 10, the size every PEI heading is set in
 LEAD = 11.1                # the leading LibreOffice gives Times 10 here
-RULE_W = 205.0             # 70I(A)'s party rule, measured
-RULE_INDENT = 95.0         # its left edge, relative to the page's own margin
-FIELD_H = 13.3             # 9pt field, the height 70I(A)'s party boxes carry
-STROKE = 0.7               # the rule width `repair_pei_background` draws with
+FIELD_H = 15.0              # box height -- one line of 10pt type plus padding
+STROKE = 0.6                # the box border weight, Ontario's own (Form 12/38)
 
-# Offsets from the block's top. Tighter than 70I(A)'s own 127pt -- the air
-# between its party rules is cut from 46pt to 38 -- because the difference is
-# whole forms not needing a continuation page.
-Y_NUMBER = 10.0
-Y_COURT = 21.5
-Y_SECTION = 32.6
-Y_BETWEEN = 43.7
-Y_RULE1 = 59.7
-Y_ROLE1 = 70.8
-Y_AND = 81.9
-Y_RULE2 = 97.9
-Y_ROLE2 = 109.0
-BLOCK_H = 112.0
+# Every field box on the block starts at the same x and is the same width,
+# label-then-box like Ontario's own general heading (Form 12, Form 38's Court
+# File Number box) rather than PEI's underscore-rule-with-caption-below-right.
+# `BOX_INDENT` is fixed rather than computed from the longest label on a given
+# form, so a page carrying the two-party rows and a page carrying the
+# counterpetition rows besides still line their boxes up on the same x --
+# "Respondent by Counterpetition:" (127.8pt at 10pt Times) is the longest
+# label this block ever prints and still clears it by 17pt.
+BOX_INDENT = 145.0
+
+FIELD_ROW = 26.0            # box row to box row
+CENTRE_ROW = 12.5            # one centred title line to the next
+ROW_GAP = 8.0                # centred title block to the field row after it
 
 # What each headed page was moved by, written at apply time and read by
 # `tools/review/repair_pei_fields.py`, whose repair tables are absolute
@@ -96,61 +101,88 @@ def width(text, bold=False, size=BODY):
     return fitz.get_text_length(text, fontname=base14(bold), fontsize=size)
 
 
-def draw_block(page, left, right, top, seal):
-    """Draw the heading and return the fields that belong on it."""
-    def text(x, dy, s, bold=False, size=BODY, colour=(0, 0, 0)):
-        page.insert_text(fitz.Point(x, top + dy), s, fontsize=size,
+def block_bottom(second_title=False):
+    """The y offset, relative to the block's top, of its last drawn edge.
+
+    Kept as its own function rather than a constant so `rebuild`'s `BLOCK_H`
+    and `draw_block`'s own row arithmetic cannot drift apart -- the failure
+    mode `pei_binds`' README warns about elsewhere in this batch, a number
+    that matched what a tool produced rather than what the page needed.
+    """
+    y = FIELD_H
+    y += ROW_GAP + CENTRE_ROW
+    y += CENTRE_ROW
+    y += ROW_GAP + FIELD_H
+    y += FIELD_ROW
+    if second_title:
+        y += ROW_GAP + FIELD_H
+        y += FIELD_ROW
+    return y
+
+
+def draw_block(page, left, right, top, seal, second_title=False):
+    """Draw the heading and return the fields that belong on it.
+
+    Label-then-box, Ontario's own convention (Form 12's and Form 38's Court
+    File Number field is a bordered box, not a bare underscore rule) rather
+    than PEI's own "rule, with the role captioned below it and to the right":
+    every box on the block starts at the same `BOX_INDENT` and is the same
+    width, so "Court File No.:", "Applicant/Petitioner:" and "Respondent:"
+    line up on one edge and none of them is longer than another.
+    """
+    def text(x, y, s, bold=False, size=BODY, colour=(0, 0, 0)):
+        page.insert_text(fitz.Point(x, y), s, fontsize=size,
                          fontname=base14(bold), color=colour)
 
-    def centred(dy, s, bold=False):
-        text((left + right) / 2 - width(s, bold) / 2, dy, s, bold)
+    def centred(y, s, bold=False):
+        text((left + right) / 2 - width(s, bold) / 2, y, s, bold)
 
-    def rule(dy, x0, x1):
-        page.draw_line(fitz.Point(x0, top + dy), fitz.Point(x1, top + dy),
-                       color=(0, 0, 0), width=0.7)
+    box_x0 = left + BOX_INDENT
+    box_x1 = right
 
-    # No. ______________  -- the rule PEI does not print, so the file number
-    # has a printed anchor and can be bound.
-    number_x1 = right
-    number_x0 = right - 140.0
-    text(number_x0 - 4 - width("No."), Y_NUMBER - 0.5, "No.")
-    rule(Y_NUMBER, number_x0, number_x1)
+    def field_row(y, label, bind):
+        text(left, y - 4.0, label)
+        rect = fitz.Rect(box_x0, y - FIELD_H, box_x1, y)
+        page.draw_rect(rect, color=(0, 0, 0), width=STROKE)
+        return (rect, bind)
 
-    centred(Y_COURT, COURT, bold=True)
-    centred(Y_SECTION, SECTION, bold=True)
-    text(left, Y_BETWEEN, "Between:")
+    fields = []
+    y = top + FIELD_H
+    fields.append(field_row(y, "Court File No.:", "court_info.courtFileNumber"))
 
-    rx0 = left + RULE_INDENT
-    rx1 = rx0 + RULE_W
-    rule(Y_RULE1, rx0, rx1)
-    text(right - width("Applicant/Petitioner"), Y_ROLE1, "Applicant/Petitioner")
-    text((rx0 + rx1) / 2 - width("and") / 2, Y_AND, "and")
-    rule(Y_RULE2, rx0, rx1)
-    text(right - width("Respondent"), Y_ROLE2, "Respondent")
+    y += ROW_GAP + CENTRE_ROW
+    centred(y, COURT, bold=True)
+    y += CENTRE_ROW
+    centred(y, SECTION, bold=True)
+
+    y += ROW_GAP + FIELD_H
+    fields.append(field_row(y, "Applicant/Petitioner:", "applicant.fullLegalName"))
+    y += FIELD_ROW
+    fields.append(field_row(y, "Respondent:", "respondent.fullLegalName"))
+
+    if second_title:
+        y += ROW_GAP + FIELD_H
+        centred(y - FIELD_H - 2.0, "AND BETWEEN:", bold=True)
+        y += FIELD_H
+        fields.append(field_row(y, "Petitioner by Counterpetition:", None))
+        y += FIELD_ROW
+        fields.append(field_row(y, "Respondent by Counterpetition:", None))
 
     if seal:
         # A reserved area, not a seal: an empty ring where PEI prints
-        # "(Court seal)", carrying no field -- the registry stamps it.
-        centre = fitz.Point(left + 30.0, top + 76.0)
-        page.draw_circle(centre, 27.0, color=(0.55, 0.55, 0.55), width=0.6)
+        # "(Court seal)", carrying no field -- the registry stamps it. Sized
+        # to the gap between the file-number row and the centred court name
+        # so it clears the "Court File No." label above and the
+        # "Applicant/Petitioner" label below.
+        seal_top = top + FIELD_H + ROW_GAP
+        centre = fitz.Point(left + 24.0, seal_top + CENTRE_ROW)
+        page.draw_circle(centre, 19.0, color=(0.55, 0.55, 0.55), width=0.6)
         cap = "Court seal"
-        page.insert_text(fitz.Point(centre.x - width(cap, size=7) / 2,
-                                    centre.y + 2.5), cap,
-                         fontsize=7, fontname=base14(), color=(0.55, 0.55, 0.55))
+        page.insert_text(fitz.Point(centre.x - width(cap, size=6) / 2,
+                                    centre.y + 2.0), cap,
+                         fontsize=6, fontname=base14(), color=(0.55, 0.55, 0.55))
 
-    # Seated on the rule's **top edge**, not its centre: `rule_under` in
-    # `repair_pei_fields` reads a stroke's bounding box, so a box seated on the
-    # centre line reads as 0.35pt of float and `pass_seat_flat` would move it.
-    seat = STROKE / 2.0
-    return [
-        (fitz.Rect(number_x0, top + Y_NUMBER - seat - FIELD_H,
-                   number_x1, top + Y_NUMBER - seat),
-         "court_info.courtFileNumber"),
-        (fitz.Rect(rx0, top + Y_RULE1 - seat - FIELD_H, rx1, top + Y_RULE1 - seat),
-         "applicant.fullLegalName"),
-        (fitz.Rect(rx0, top + Y_RULE2 - seat - FIELD_H, rx1, top + Y_RULE2 - seat),
-         "respondent.fullLegalName"),
-    ]
+    return [(rect, bind) for rect, bind in fields if bind]
 
 
 def record_shift(doc_id, page_no, hold_top, hold_bottom, lift, drop):
@@ -257,7 +289,8 @@ def band(doc, page_no, keep):
     return out
 
 
-def rebuild(doc, page_no, left, right, title_top, hold_top, hold_bottom, seal):
+def rebuild(doc, page_no, left, right, title_top, hold_top, hold_bottom, seal,
+           second_title=False):
     """Rebuild the page from three bands and return (block fields, shifts)."""
     source = doc[page_no - 1]
     w, h = source.rect.width, source.rect.height
@@ -265,7 +298,7 @@ def rebuild(doc, page_no, left, right, title_top, hold_top, hold_bottom, seal):
     # The block sits under the lifted title, not under the lifted placeholder.
     title_bottom = max(b[3] for b in source.get_text("blocks") if b[3] <= hold_top)
     top = title_bottom - lift + GAP
-    drop = (top + BLOCK_H + GAP) - hold_bottom     # band C moves down by this
+    drop = (top + block_bottom(second_title) + GAP) - hold_bottom  # band C
 
     # Whole points at two decimals, so a shifted box lands exactly where it
     # sat relative to its rule and `pass_seat_flat` has nothing to correct.
@@ -279,7 +312,7 @@ def rebuild(doc, page_no, left, right, title_top, hold_top, hold_bottom, seal):
     page.show_pdf_page(fitz.Rect(0, drop, w, h + drop), below, 0)
     above.close()
     below.close()
-    fields = draw_block(page, left, right, top, seal)
+    fields = draw_block(page, left, right, top, seal, second_title)
 
     bottom = max(b[3] for b in page.get_text("blocks"))
     if bottom > h - 60.0:
@@ -346,14 +379,20 @@ def apply(doc_id, spec, out_dir, check):
         return 1
 
     placed, lift, drop = rebuild(doc, 1, left, right, title_top,
-                                 hold_top, hold_bottom, spec["seal"])
+                                 hold_top, hold_bottom, spec["seal"],
+                                 spec.get("second_title", False))
     shift_fields(mapping, 1, hold_top, hold_bottom, lift, drop)
     moved = json.loads(before)
     assert len(moved) == len(mapping["staticFields"]), "no field may be dropped"
-    add_fields(mapping, 1, placed)
-    # After the new boxes exist, so the block's own three are seated by the
-    # same reading as everything the shift moved.
+    # Reseated before the block's own boxes exist -- `rule_under` rasterises
+    # the ink around each box, and a box drawn with a *centred* stroke (this
+    # block's own, Ontario-style) reads its own border's ink as sitting half a
+    # stroke width above its stored edge, which is not a float to correct but
+    # a property of a field that draws its own complete border rather than
+    # sitting over a separately-drawn rule. Only fields that were moved by the
+    # band shift are genuine seating candidates here.
     reseat(doc[0], [f for f in mapping["staticFields"] if f["page"] == 1])
+    add_fields(mapping, 1, placed)
 
     target = out_dir or EXPORT
     os.makedirs(target, exist_ok=True)

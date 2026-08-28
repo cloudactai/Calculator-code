@@ -57,6 +57,17 @@ CAPTION_LEFT = [
     # against the shipped 34 templates before the heading pass, this pattern
     # adds nothing, so it can only fire on a heading block.
     (re.compile(r"^no\.?$"), "court_info.courtFileNumber"),
+    # `pei_general_heading` draws its style of cause label-then-box, Ontario's
+    # own convention, rather than PEI's own rule-with-caption-below-right --
+    # so on a headed page the role word is the caption printed to the *left*
+    # of the box, not the one printed below and to the right of it. Same two
+    # patterns ROLE_RIGHT already matches, read from the other side, checked
+    # first: none of the 34 shipped templates prints "Applicant/Petitioner:"
+    # or "Respondent:" as a left caption before this pass exists.
+    (re.compile(r"^applicant([ /]petitioner)?( s)?$"), "applicant.fullLegalName"),
+    (re.compile(r"^petitioner([ /]applicant)?( s)?$"), "applicant.fullLegalName"),
+    (re.compile(r"^respondent([ /]co-?respondent)?( s)?$"),
+     "respondent.fullLegalName"),
 ]
 
 # "SECOND APPLICANT"/"SECOND RESPONDENT" and the possessive forms must never
