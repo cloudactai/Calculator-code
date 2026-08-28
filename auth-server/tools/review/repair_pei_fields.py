@@ -938,16 +938,45 @@ def _heading_shifted(entries):
     than being re-measured: the two passes then compose in either order, and a
     rebuilt-from-source template with no heading yet reads its own numbers
     unchanged.
+
+    On the forms where the block was taller than the page had room for, the
+    tail of the page spilled onto its own continuation page (appended at the
+    end of the document, not inserted where the tail used to be -- see
+    `pei_general_heading.rebuild`). An entry naming a y at or past that split
+    is naming content that isn't on `page` any more, so the page number moves
+    too, worked out from the same pre-heading y this function already reads.
     """
     out = []
     for entry in entries:
         doc_id, page = entry[0], entry[1]
         moved = list(entry)
+        y0 = moved[3] if len(moved) > 3 and isinstance(moved[3], (int, float)) else None
+        if y0 is not None:
+            moved[1] = PGH.page_for(doc_id, page, y0)
         for index in (3, 5):          # y0, y1
             if index < len(moved) and isinstance(moved[index], (int, float)):
                 moved[index] = PGH.shifted(doc_id, page, moved[index])
         out.append(tuple(moved))
     return out
+
+
+def _heading_shifted_corners(entries):
+    """The same translation as `_heading_shifted`, for `(docId, page, x, y)`
+    corner tables (`SIGNATURE_BOXES`, `OFFICE_ONLY_DROP`, and the rest) rather
+    than `(docId, page, x0, y0, x1, y1, ...)` rectangles. Returns a list;
+    callers that need a `set` wrap the result themselves.
+    """
+    out = []
+    for doc_id, page, x, y in entries:
+        out.append((doc_id, PGH.page_for(doc_id, page, y), x, PGH.shifted(doc_id, page, y)))
+    return out
+
+
+# Keyed to the box's own top-left corner, measured on the shipped template --
+# so on a form the heading pass reflowed, this table is describing the page
+# as it was. Reassigned here (rather than immediately after the list literal
+# above) because `_heading_shifted_corners` has to exist first.
+SIGNATURE_BOXES = _heading_shifted_corners(SIGNATURE_BOXES)
 
 
 NAMED_FIELDS = [
@@ -1028,9 +1057,9 @@ NAMED_FIELDS = [
 # rule so the instruction is no longer covered by the control.
 NAMED_FIELDS = _heading_shifted(NAMED_FIELDS)
 
-TO_NAMED_FIELDS = {
+TO_NAMED_FIELDS = set(_heading_shifted_corners({
     ("PEISC_70B", 1, 150.0, 668.91),
-}
+}))
 
 # Emptied when `pei_caption_lines.py` took the bracket captions. Every entry
 # this held was a `(name)` placeholder set inline in the prose and overlaid by
@@ -1041,7 +1070,7 @@ TO_NAMED_FIELDS = {
 # and the switch unions this with LAWYER_CONTACT_FIELDS.
 RULED_NAME_FIELDS = set()
 
-LAWYER_CONTACT_FIELDS = {
+LAWYER_CONTACT_FIELDS = set(_heading_shifted_corners({
     ("PEISC_70D", 1, 337.0, 660.13),
     ("PEISC_70D", 1, 343.0, 670.13),
     ("PEISC_70D", 1, 337.0, 680.13),
@@ -1052,7 +1081,7 @@ LAWYER_CONTACT_FIELDS = {
     ("PEISC_70U", 1, 345.0, 263.77),
     ("PEISC_70U", 1, 345.0, 275.27),
     ("PEISC_70U", 1, 345.0, 286.87),
-}
+}))
 
 COMPACT_EXISTING_NAME_RULES = [
     ("PEISC_70A_JOINT", 1, 300.0, 193.6),
@@ -1179,11 +1208,11 @@ def pass_70a_layout(doc_id, mapping, doc, taken):
 # party using this application.  Treat every PEI instance as a signature rule
 # and leave it unboxed.  These are keyed to the field's own corner so the pass
 # is idempotent and cannot reach the nearby Date or court-office-address fields.
-OFFICE_ONLY_DROP = [
+OFFICE_ONLY_DROP = _heading_shifted_corners([
     ("PEISC_70A", 1, 389.62, 481.30),
     ("PEISC_70B", 1, 394.12, 599.56),
     ("PEISC_70R", 3, 341.37, 134.80),
-]
+])
 
 
 def pass_named(doc_id, mapping, doc, taken):

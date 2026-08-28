@@ -1531,6 +1531,21 @@
  },
  {
   "province": "PE",
+  "docId": "PEISC_70D",
+  "formNo": "70D",
+  "title": "Answer",
+  "category": "Pleadings",
+  "page": 2,
+  "sourceReviewed": true,
+  "overlayReviewed": true,
+  "firstPass": "pass",
+  "corrections": "New page: the page 1 tail (lawyer's name/address/phone/email block) that didn't fit after the heading was added.",
+  "finalPass": "pass",
+  "notes": "General heading added (court file number, court name, applicant/petitioner, respondent) -- see pei_general_heading.py and GENERAL_HEADING_PLAN.md. The block was taller than the page's own top gap and reclaimed placeholder space could hold, so the page's tail spilled onto this continuation page, spliced in right after the page it came from so the form still reads start to finish in physical page order.",
+  "build": "459eab3"
+ },
+ {
+  "province": "PE",
   "docId": "PEISC_70DD",
   "formNo": "70DD",
   "title": "Notice to Respondent",
@@ -1543,6 +1558,21 @@
   "finalPass": "pass",
   "notes": "Added a TextField for the bare 'TO: (Name and address of ...)' instruction, which had never had a field -- the same gap 70A's own 'TO:' fix closed, extended here on request to the other PEISC forms that print the same shape. The right edge is each page's own rightmost printed ink, not a number carried over from 70A.",
   "build": "6f5d232"
+ },
+ {
+  "province": "PE",
+  "docId": "PEISC_70DD",
+  "formNo": "70DD",
+  "title": "Notice to Respondent",
+  "category": "Service",
+  "page": 2,
+  "sourceReviewed": true,
+  "overlayReviewed": true,
+  "firstPass": "pass",
+  "corrections": "New page: the page 1 tail (respondent's email field) that didn't fit after the heading was added.",
+  "finalPass": "pass",
+  "notes": "General heading added (court file number, court name, applicant/petitioner, respondent) -- see pei_general_heading.py and GENERAL_HEADING_PLAN.md. The block was taller than the page's own top gap and reclaimed placeholder space could hold, so the page's tail spilled onto this continuation page, spliced in right after the page it came from so the form still reads start to finish in physical page order.",
+  "build": "459eab3"
  },
  {
   "province": "PE",
@@ -1936,6 +1966,21 @@
  },
  {
   "province": "PE",
+  "docId": "PEISC_70R",
+  "formNo": "70R",
+  "title": "Registrar's Certificate",
+  "category": "Divorce & Judgment",
+  "page": 4,
+  "sourceReviewed": true,
+  "overlayReviewed": true,
+  "firstPass": "pass",
+  "corrections": "New page: the page 1 tail (the Claim for Relief section's remaining items) that didn't fit after the heading was added. Pages 2-3 are unchanged, just renumbered to 3-4 to keep the spilled page immediately after page 1.",
+  "finalPass": "pass",
+  "notes": "General heading added (court file number, court name, applicant/petitioner, respondent) -- see pei_general_heading.py and GENERAL_HEADING_PLAN.md. The block was taller than the page's own top gap and reclaimed placeholder space could hold, so the page's tail spilled onto this continuation page, spliced in right after the page it came from so the form still reads start to finish in physical page order.",
+  "build": "459eab3"
+ },
+ {
+  "province": "PE",
   "docId": "PEISC_70S",
   "formNo": "70S",
   "title": "Divorce Judgment",
@@ -2053,6 +2098,21 @@
   "finalPass": "pass",
   "notes": "Added a TextField for the bare 'TO: (Name and address of ...)' instruction, which had never had a field -- the same gap 70A's own 'TO:' fix closed, extended here on request to the other PEISC forms that print the same shape. The right edge is each page's own rightmost printed ink, not a number carried over from 70A.",
   "build": "6f5d232"
+ },
+ {
+  "province": "PE",
+  "docId": "PEISC_71E",
+  "formNo": "71E",
+  "title": "Summons to Provide Evidence for an Extra-Provincial Tribunal",
+  "category": "Enforcement",
+  "page": 2,
+  "sourceReviewed": true,
+  "overlayReviewed": true,
+  "firstPass": "pass",
+  "corrections": "New page: the page 1 tail (the Date/Issued by/Address of court office block) that didn't fit after the heading was added.",
+  "finalPass": "pass",
+  "notes": "General heading added (court file number, court name, applicant/petitioner, respondent) -- see pei_general_heading.py and GENERAL_HEADING_PLAN.md. The block was taller than the page's own top gap and reclaimed placeholder space could hold, so the page's tail spilled onto this continuation page, spliced in right after the page it came from so the form still reads start to finish in physical page order.",
+  "build": "459eab3"
  },
  {
   "province": "SK",
