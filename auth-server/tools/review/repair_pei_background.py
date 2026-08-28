@@ -170,25 +170,25 @@ def draw_71b_opening_reflow(page):
     """Put the opening address on a clear line, with the prose below it."""
     page.draw_rect(fitz.Rect(140.0, 170.0, 506.0, 235.0), color=None,
                    fill=(1, 1, 1), overlay=True)
-    page.insert_text(fitz.Point(267.25, 183.5), "RECOGNIZANCE", fontsize=12,
+    page.insert_text(fitz.Point(267.25, 183.5), "RECOGNIZANCE", fontsize=10,
                      fontname="tiro", color=(0, 0, 0))
-    page.insert_text(fitz.Point(144.1, 205.0), "I,", fontsize=12,
+    page.insert_text(fitz.Point(144.1, 205.0), "I,", fontsize=10,
                      fontname="tiro", color=(0, 0, 0))
     page.draw_line(fitz.Point(153.4, 207.16), fitz.Point(197.23, 207.16),
                    color=(0, 0, 0), width=.7)
-    page.insert_text(fitz.Point(199.7, 205.0), ", of", fontsize=12,
+    page.insert_text(fitz.Point(199.7, 205.0), ", of", fontsize=10,
                      fontname="tiro", color=(0, 0, 0))
-    page.draw_line(fitz.Point(214.36, 207.16), fitz.Point(280.36, 207.16),
+    page.draw_line(fitz.Point(222.0, 207.16), fitz.Point(357.0, 207.16),
                    color=(0, 0, 0), width=.7)
-    page.insert_text(fitz.Point(282.8, 205.0), ",", fontsize=12,
+    page.insert_text(fitz.Point(359.5, 205.0), ",", fontsize=10,
                      fontname="tiro", color=(0, 0, 0))
-    page.insert_text(fitz.Point(153.4, 214.2), "(full name)", fontsize=7,
-                     fontname="tiro", color=(0, 0, 0))
-    page.insert_text(fitz.Point(214.36, 214.2), "(address)", fontsize=7,
-                     fontname="tiro", color=(0, 0, 0))
+    page.insert_text(fitz.Point(153.4, 214.2), "(full name)", fontsize=5.6,
+                     fontname="tiit", color=(0, 0, 0))
+    page.insert_text(fitz.Point(222.0, 214.2), "(address)", fontsize=5.6,
+                     fontname="tiit", color=(0, 0, 0))
     page.insert_text(fitz.Point(144.1, 228.0),
                      "acknowledge that I am indebted to Her Majesty the Queen in",
-                     fontsize=12, fontname="tiro", color=(0, 0, 0))
+                     fontsize=10, fontname="tiro", color=(0, 0, 0))
     # Restore the full premises-address rule that was shortened in the prior
     # pass.  It is intentionally long enough for a civic address.
     y = 285.18 + FORM_71B_OPENING_DELTA
