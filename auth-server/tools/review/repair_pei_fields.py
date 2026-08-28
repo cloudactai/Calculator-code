@@ -35,9 +35,32 @@ digit `9`, so Form 70I(C) reads as `9 a) child care expenses ...`. Matching
 bare "9" would be reckless; what makes it safe is the private-use codepoint
 plus the symbol font, never the extracted character.
 
-Geometry is the builder's own, measured off a square it did get right: the box
-is anchored at the glyph's top-left and is square with a side of the glyph's
-*width* (the glyph box is taller than it is wide, being a text cell).
+## the last three vocabularies do not print as squares
+
+Fitting the boxes to their ink (`fit_ticks`) meant rasterising every one of
+them, and that is how this surfaced: **80 of the 240 option markers in the
+batch are not drawn as squares in the backgrounds we ship.** The Word sources
+call for fonts this machine does not have, and LibreOffice substituted:
+
+    U+F039  Form 70I(C)    6   prints the digit "9"
+    U+F091  Form 70I(A)    8   prints a narrow .notdef rectangle
+    U+F0F0  70R, 70BB     66   prints the Apple logo
+
+`U+F039` is confirmed against the source rather than guessed: Form 70I(C)'s
+`.docx` carries `<w:sym w:font="WP IconicSymbolsA" w:char="F039"/>`, and
+`fc-list` finds no WP IconicSymbolsA installed. So these **are** option
+squares -- the round-2 reading was right about that -- and the defect is in
+the render, not in the reading. Form 70R is the one that matters: 60 of its
+squares, on a certificate whose whole purpose is to be ticked.
+
+The boxes are fitted to whatever the page actually prints, because that is the
+mark the filer is aiming at. Fixing the substitution means installing the
+fonts and re-rendering those backgrounds, which is a separate job with its own
+review; `fit_ticks` is idempotent and re-running it afterwards re-fits them.
+
+Geometry is measured off the rendered page, per glyph: a box is set to the
+bounding box of the ink inside the glyph's type cell. Anchoring on the cell
+was tried twice and is what the six vocabularies defeat -- see `fit_ticks`.
 
 ## blanks -- printed writing rules with no field
 
@@ -136,6 +159,15 @@ MISSED_TICKS = {0xF0F0, 0xF091, 0xF039, 0xF071}
 # the seat_ticks pass below needs the full set, not just the ones the builder
 # never boxed.
 TICK_GLYPHS = MISSED_TICKS | {0x25A1, 0x2610, 0x2611, 0x2612}
+
+# Rasterising a glyph cell to find the ink inside it. 12x puts about 0.08pt in
+# a pixel, which is finer than any coordinate this file rounds to; 160 of 255
+# separates PEI's hairline rules from the white of the page with room on both
+# sides; 0.90 is the share of an edge that has to be inked before that edge is
+# read as a rule crossing the clip rather than part of the mark.
+INK_ZOOM = 12.0
+INK_DARK = 160
+INK_FULL = 0.90
 
 # Above this share of its length carrying a glyph, a stroke underlines text
 # rather than waiting for writing.
@@ -291,6 +323,69 @@ def glyphs(page):
     return out
 
 
+def ink_rect(page, cell):
+    """The bounding box of the ink actually drawn inside `cell`, in points.
+
+    A glyph's reported bbox is its **type cell** -- the full em box, ascent to
+    descent, advance width included -- and the mark inside it can be very much
+    smaller. On Form 70BB the cell for a `U+25A1` is 5.44 x 9.96 and the square
+    it draws is 4.17 x 4.17, sitting near the baseline: less than a fifth of
+    the cell's area. No arithmetic on the cell recovers that, because the
+    inset differs per font and per vocabulary, so the square is measured off
+    the rendered page instead of inferred.
+
+    **A page rule crossing the clip boundary is not the glyph.** PEI sets the
+    option squares of Form 70BB inside a ruled table, and the cell's top edge
+    lands within a rasterised pixel of the row rule: measured naively that
+    square came out 5.50 x 8.00 instead of 4.17 x 4.17, and every box on the
+    form would have inherited the error. Any fully inked row or column
+    touching the edge of the clip is peeled off before the box is taken, which
+    is safe because a glyph that genuinely filled an entire edge of its own
+    type cell would have no white side bearing at all.
+
+    Returns None for a cell that draws nothing, which a caller must treat as
+    "leave this field alone" rather than as an empty box.
+    """
+    pixmap = page.get_pixmap(matrix=fitz.Matrix(INK_ZOOM, INK_ZOOM),
+                             clip=cell, colorspace=fitz.csGRAY)
+    wide, high, data = pixmap.width, pixmap.height, pixmap.samples
+    if wide < 2 or high < 2:
+        return None
+    dark = [[data[y * wide + x] < INK_DARK for x in range(wide)]
+            for y in range(high)]
+
+    top, bottom, left, right = 0, high - 1, 0, wide - 1
+    peeling = True
+    while peeling and top < bottom and left < right:
+        peeling = False
+        span = right - left + 1
+        if sum(dark[top][left:right + 1]) >= INK_FULL * span:
+            top += 1
+            peeling = True
+        if bottom > top and sum(dark[bottom][left:right + 1]) >= INK_FULL * span:
+            bottom -= 1
+            peeling = True
+        tall = bottom - top + 1
+        if sum(dark[y][left] for y in range(top, bottom + 1)) >= INK_FULL * tall:
+            left += 1
+            peeling = True
+        if right > left and sum(dark[y][right]
+                                for y in range(top, bottom + 1)) >= INK_FULL * tall:
+            right -= 1
+            peeling = True
+
+    x0, y0, x1, y1 = wide, high, -1, -1
+    for y in range(top, bottom + 1):
+        for x in range(left, right + 1):
+            if dark[y][x]:
+                x0, x1 = min(x0, x), max(x1, x)
+                y0, y1 = min(y0, y), max(y1, y)
+    if x1 < 0:
+        return None
+    return fitz.Rect(cell.x0 + x0 / INK_ZOOM, cell.y0 + y0 / INK_ZOOM,
+                     cell.x0 + (x1 + 1) / INK_ZOOM, cell.y0 + (y1 + 1) / INK_ZOOM)
+
+
 def inked_glyphs(page):
     """Glyphs that actually mark the page.
 
@@ -408,55 +503,89 @@ def caption_near(page, rect, lines=None):
 
 # ------------------------------------------------------------------- the passes
 
-def pass_seat_ticks(doc_id, mapping, doc, taken):
-    """Move every checkbox down onto the glyph it actually ticks.
+def pass_fit_ticks(doc_id, mapping, doc, taken):
+    """Fit every checkbox to the ink of the square it actually ticks.
 
-    Every checkbox in the batch -- the ones the original builder placed and
-    the 81 `pass_ticks` adds above -- is anchored at the *top* of its glyph's
-    reported bounding box, using the glyph's width as the side of a square.
-    That is wrong for the same reason across all six of PEI's tick
-    vocabularies: a character's bounding box is its full type-cell, ascent to
-    descent, and the visible mark -- a small square drawn near the baseline --
-    occupies only the bottom slice of it. Boxing off the top of that cell
-    leaves the field hovering well above the printed square, with the actual
-    ink showing underneath through the gap.
+    This supersedes the earlier "seat at the bottom of the glyph cell" rule,
+    which fixed the direction of the error without fixing its size and so left
+    all 240 boxes in the batch still visibly wrong. Measured against the ink
+    of the printed square, that rule left a median offset of **+2.93pt
+    vertically and up to +7.54pt**, with the box now hanging *below* the mark
+    instead of above it -- it traded a gap at the top for a gap at the bottom.
 
-    Measured on Form 70A: the glyph cell for a `☐` here is 5.4pt wide by
-    9.96pt tall. A field sized to that width and anchored at the cell's top
-    sits 4.5pt above where the mark is actually drawn. On Form 70R's `U+F0F0`
-    glyphs the cell is 7.9 x 11.25 -- the same shape, the same direction of
-    error, on every vocabulary this batch uses.
+    The reason no arithmetic on the cell was ever going to work is that both
+    the inset and the shape are per-vocabulary, and PEI uses six:
 
-    **The fix is one line: anchor at the bottom of the cell instead of the
-    top**, keeping the field's existing width as the side of the square. It
-    is intentionally the identity function on anything not already sitting
-    exactly on a glyph's top-left corner, which is what makes it idempotent
-    without a separate "already seated" list: once a box is moved, its top no
-    longer lines up with `glyph.y0`, so the match test that triggers the move
-    stops firing on it.
+        U+25A1  Times            155   cell 5.44 x 9.96   ink 4.17 x 4.17
+        U+2610  AppleSymbols       4                      ink 5.4-6.6 square
+        U+F0F0  Symbol            66   cell 7.90 x 11.25  ink 6.9 x 8.3
+        U+F091  OpenSymbol         8                      ink 2.67 x 6.67
+        U+F039  OpenSymbol         6                      ink 4.25 x 6.75
+        U+F071  Wingdings          1                      ink 7.25 x 7.25
+
+    The cell is between 1.4x and 2.4x the height of the mark inside it, and
+    the mark is not square in three of the six. So the box is measured off the
+    rendered page, per glyph, and the field is set to exactly that rectangle.
+
+    **The last three vocabularies are not drawing squares at all**, which this
+    measurement is how we found out -- see the module docstring. The box is
+    fitted to what the page prints regardless, because that is the mark the
+    filer is aiming at; if the backgrounds are ever re-rendered with the
+    missing fonts installed, re-running this pass re-fits them.
+
+    Idempotent by construction: a field already equal to its glyph's ink
+    rounds to the same four numbers and reports no change.
     """
     changes = {}
     for number in range(1, doc.page_count + 1):
         page = doc[number - 1]
-        here = [rect for char, _font, rect in glyphs(page)
-                if ord(char) in TICK_GLYPHS]
+        cells = [rect for char, _font, rect in glyphs(page)
+                 if ord(char) in TICK_GLYPHS]
+        if not cells:
+            continue
+        measured, claimed = {}, set()
         for field in page_fields(mapping["staticFields"], number):
             if field["type"] != "CheckBox":
                 continue
-            match = next((r for r in here
-                         if abs(r.x0 - field["x"]) < 0.6
-                         and abs(r.y0 - field["y"]) < 0.6), None)
-            if match is None:
+            here = rect_of(field)
+            # The field came from one of these cells and has only ever been
+            # nudged within it, so overlap identifies it. Nearest centre is the
+            # fallback for a box that an earlier pass pushed clear of its cell.
+            best, score = None, 0.0
+            for cell in cells:
+                area = (cell & here).get_area() if cell.intersects(here) else 0.0
+                if area > score:
+                    best, score = cell, area
+            if best is None:
+                best = min(cells, key=lambda c: abs((c.x0 + c.x1) / 2 - (here.x0 + here.x1) / 2)
+                           + abs((c.y0 + c.y1) / 2 - (here.y0 + here.y1) / 2))
+                if abs((best.x0 + best.x1) / 2 - (here.x0 + here.x1) / 2) > 8.0:
+                    continue
+            key = tuple(round(v, 2) for v in best)
+            if key in claimed:
+                continue          # one printed square, one box
+            if key not in measured:
+                measured[key] = ink_rect(page, best)
+            ink = measured[key]
+            if ink is None:
                 continue
-            side = field["width"] / SCALE
-            new_y = round(match.y1 - side, 2)
-            if abs(new_y - field["y"]) < 0.05:
+            claimed.add(key)
+            want = {"x": round(ink.x0, 2), "y": round(ink.y0, 2),
+                    "width": round(ink.width * SCALE, 2),
+                    "height": round(ink.height * SCALE, 2)}
+            if all(abs(field[k] - v) < 0.005 for k, v in want.items()):
                 continue
-            changes[field["id"]] = {"y": new_y}
+            changes[field["id"]] = want
     return changes
 
 
 def pass_ticks(doc_id, mapping, doc, taken):
+    """Box the option squares the builder's vocabulary did not include.
+
+    A new box is placed on the glyph's **ink**, not on its type cell, so it
+    arrives already fitted rather than waiting for `fit_ticks` on a second
+    run. A cell that draws nothing gets no box at all.
+    """
     added = []
     for number in range(1, doc.page_count + 1):
         page = doc[number - 1]
@@ -466,9 +595,11 @@ def pass_ticks(doc_id, mapping, doc, taken):
                 continue
             if any((b & rect).get_area() > 0.25 * rect.get_area() for b in boxes):
                 continue
-            side = rect.width
-            added.append(make_field("CheckBox", number, rect.x0, rect.y0,
-                                    rect.x0 + side, rect.y0 + side, taken))
+            ink = ink_rect(page, rect)
+            if ink is None:
+                continue
+            added.append(make_field("CheckBox", number, ink.x0, ink.y0,
+                                    ink.x1, ink.y1, taken))
     return added
 
 
@@ -1028,7 +1159,7 @@ def pass_areas(doc_id, mapping, doc, taken):
     return added
 
 
-PASSES = ("ticks", "seat_ticks", "blanks", "cells", "subcells", "areas",
+PASSES = ("ticks", "fit_ticks", "blanks", "cells", "subcells", "areas",
          "named", "to_layout", "compact_existing_names", "margin", "signatures", "brackets", "office_drop", "stubs")
 
 
@@ -1048,9 +1179,9 @@ def repair(doc_id, wanted, apply_changes):
         got = pass_ticks(doc_id, mapping, doc, taken)
         report["ticks"] = len(got)
         added += got
-    if "seat_ticks" in wanted:
-        got = pass_seat_ticks(doc_id, mapping, doc, taken)
-        report["seat_ticks"] = len(got)
+    if "fit_ticks" in wanted:
+        got = pass_fit_ticks(doc_id, mapping, doc, taken)
+        report["fit_ticks"] = len(got)
         changes.update(got)
     if "blanks" in wanted:
         got = pass_blanks(doc_id, mapping, doc, taken)
