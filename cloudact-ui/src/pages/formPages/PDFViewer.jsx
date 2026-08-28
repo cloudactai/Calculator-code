@@ -241,6 +241,7 @@ const renderField = (field, handleEditField, handleSort, handleCellEdit, formatD
           type="text"
           value={field.value}
           readOnly
+          data-darkreader-ignore
           maxLength={getFieldMaxLength(field)}
           title="Click to edit this sideways field"
           onFocus={() => openVerticalEditor?.(field)}
@@ -260,6 +261,7 @@ const renderField = (field, handleEditField, handleSort, handleCellEdit, formatD
           aria-label={field.label || field.id}
           type="text"
           value={field.value}
+          data-darkreader-ignore
           maxLength={getFieldMaxLength(field)}
           onChange={(e) => handleEditField(field.id, e.target.value)}
           style={getFieldStyle(field)}
@@ -277,16 +279,11 @@ const renderField = (field, handleEditField, handleSort, handleCellEdit, formatD
           id={field.id}
           aria-label={field.label || field.id}
           value={field.value}
+          data-darkreader-ignore
           onChange={(e) => handleEditField(field.id, e.target.value)}
           style={{
-            width: '100%',
-            height: '100%',
-            border: 'none',
-            background: 'none',
-            // Same dark-mode form-control repaint getFieldStyle guards
-            // against: without this a TextArea goes solid black under a
-            // dark OS/browser theme no matter what background is set here.
-            colorScheme: 'light',
+            ...getFieldStyle(field),
+            resize: 'none',
           }}
         />
       );
@@ -439,12 +436,10 @@ const getFieldStyle = (field) => ({
   height: '100%',
   boxSizing: 'border-box',
   backgroundColor: `rgba(255, 255, 255, 0.85)`,
-  // Native <input>/<textarea> elements get repainted by the browser's own
-  // dark-mode form-control styling (color-scheme: dark), which overrides the
-  // inline backgroundColor above and reduces every field to a solid black
-  // box regardless of what this component asks for. Pinning the control to
-  // the light color scheme opts it out of that repaint so the background set
-  // here is what actually renders, in both light and dark OS/browser modes.
+  // Native form controls get repainted by a browser dark theme. `colorScheme`
+  // prevents that browser-level repaint; `data-darkreader-ignore` on the
+  // controls below prevents Dark Reader's extension-level repaint. Together
+  // they preserve the field surface in an otherwise dark browser.
   colorScheme: 'light',
 });
 

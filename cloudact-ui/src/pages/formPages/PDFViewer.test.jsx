@@ -181,4 +181,22 @@ describe('sideways text fields', () => {
     expect(handleEditField).toHaveBeenCalledWith(verticalField.id, 'O');
     expect(box).toHaveAttribute('maxlength', '40');
   });
+
+  test('keeps text controls out of extension-driven dark mode repainting', () => {
+    renderViewer({
+      fields: [
+        { ...verticalField, type: 'TextField', value: '' },
+        { ...verticalField, id: 'notes', label: 'Notes', type: 'TextArea', value: '' },
+      ],
+    });
+
+    const textField = screen.getByLabelText('Name of court');
+    const textArea = screen.getByLabelText('Notes');
+
+    expect(textField).toHaveAttribute('data-darkreader-ignore');
+    expect(textArea).toHaveAttribute('data-darkreader-ignore');
+    expect(textField).toHaveStyle({ colorScheme: 'light' });
+    expect(textArea).toHaveStyle({ colorScheme: 'light' });
+    expect(textArea).toHaveStyle({ backgroundColor: 'rgba(255, 255, 255, 0.85)' });
+  });
 });
