@@ -58,11 +58,11 @@
    "id": 1750576354004,
    "type": "TextField",
    "x": 130.0,
-   "y": 573.8,
+   "y": 577.1,
    "width": 564.75,
-   "height": 19.95,
+   "height": 15.0,
    "value": "",
-   "fontSize": 9,
+   "fontSize": 7,
    "color": [
     0,
     0,
@@ -70,7 +70,9 @@
    ],
    "background": "none",
    "border": "none",
-   "page": 1
+   "page": 1,
+   "compact": true,
+   "rule": "bottom"
   }
  ]
 }

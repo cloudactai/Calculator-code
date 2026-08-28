@@ -26,6 +26,11 @@ describe('ensureMinimumTextFieldHeight', () => {
     expect(ensureMinimumTextFieldHeight(field)).toBe(field);
   });
 
+  test('preserves intentionally compact ruled fields', () => {
+    const field = { id: 3, type: 'TextField', y: 100, height: 9, compact: true };
+    expect(ensureMinimumTextFieldHeight(field)).toBe(field);
+  });
+
   test('does not resize text areas, checkboxes, or vertical text fields', () => {
     ['TextArea', 'CheckBox', 'VerticalTextField'].forEach((type) => {
       const field = { type, y: 100, height: 4 };

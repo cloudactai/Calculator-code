@@ -58,11 +58,11 @@
    "id": 1750805871139,
    "type": "TextField",
    "x": 126.0,
-   "y": 516.0,
+   "y": 519.3,
    "width": 567.9,
-   "height": 19.95,
+   "height": 15.0,
    "value": "",
-   "fontSize": 9,
+   "fontSize": 7,
    "color": [
     0,
     0,
@@ -70,7 +70,9 @@
    ],
    "background": "none",
    "border": "none",
-   "page": 1
+   "page": 1,
+   "compact": true,
+   "rule": "bottom"
   },
   {
    "id": 1750805871140,
@@ -2341,6 +2343,60 @@
    "page": 6
   },
   {
+   "id": 1750805871146,
+   "type": "TextField",
+   "x": 122.5,
+   "y": 576.4,
+   "width": 84.75,
+   "height": 26.4,
+   "value": "",
+   "fontSize": 9,
+   "color": [
+    0,
+    0,
+    0
+   ],
+   "background": "none",
+   "border": "none",
+   "page": 6
+  },
+  {
+   "id": 1750805871147,
+   "type": "TextArea",
+   "x": 182.0,
+   "y": 576.4,
+   "width": 319.5,
+   "height": 26.4,
+   "value": "",
+   "fontSize": 9,
+   "color": [
+    0,
+    0,
+    0
+   ],
+   "background": "none",
+   "border": "none",
+   "page": 6
+  },
+  {
+   "id": 1750805871148,
+   "type": "TextField",
+   "x": 398.0,
+   "y": 576.4,
+   "width": 162.9,
+   "height": 26.4,
+   "value": "",
+   "fontSize": 9,
+   "color": [
+    0,
+    0,
+    0
+   ],
+   "background": "none",
+   "border": "none",
+   "page": 6
+  },
+  {
    "id": 1750805871124,
    "type": "TextField",
    "x": 122.5,
@@ -2357,6 +2413,26 @@
    "background": "none",
    "border": "none",
    "page": 8
+  },
+  {
+   "id": 1750805871145,
+   "type": "TextField",
+   "x": 136.9,
+   "y": 201.5,
+   "width": 79.65,
+   "height": 15.0,
+   "value": "",
+   "fontSize": 7,
+   "color": [
+    0,
+    0,
+    0
+   ],
+   "background": "none",
+   "border": "none",
+   "page": 8,
+   "compact": true,
+   "rule": "bottom"
   },
   {
    "id": 1750805871126,

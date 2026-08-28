@@ -114,6 +114,10 @@ def render_overlay(doc_id, fields, pages, zoom, out_dir):
             colour = OUTLINE.get(field["type"], (0.6, 0, 0.6))
             shape.draw_rect(rect)
             shape.finish(color=colour, width=0.7, fill=colour, fill_opacity=0.10)
+            if field.get("rule") == "bottom":
+                shape.draw_line(fitz.Point(rect.x0, rect.y1),
+                                fitz.Point(rect.x1, rect.y1))
+                shape.finish(color=(0, 0, 0), width=0.7)
             shape.insert_text(fitz.Point(rect.x0 + 0.6, rect.y0 + 4.4),
                               str(index), fontsize=4.2, color=colour)
         shape.commit()
@@ -158,6 +162,12 @@ def render_filled(doc_id, fields, pages, zoom, out_dir):
             shape_bg.draw_rect(rect)
             shape_bg.finish(color=None, fill=(1, 1, 1), fill_opacity=1.0)
             shape_bg.commit()
+            if field.get("rule") == "bottom":
+                shape_rule = page.new_shape()
+                shape_rule.draw_line(fitz.Point(rect.x0, rect.y1),
+                                     fitz.Point(rect.x1, rect.y1))
+                shape_rule.finish(color=(0, 0, 0), width=0.7)
+                shape_rule.commit()
             width = fitz.get_text_length(value, fontname="helv", fontsize=8)
             overflows = (field["type"] != "TextArea"
                          and width > (rect.width - 2))
@@ -197,6 +207,10 @@ def render_combined(doc_id, fields, pages, zoom, out_dir):
             colour = OUTLINE.get(field["type"], (0.6, 0, 0.6))
             shape.draw_rect(rect)
             shape.finish(color=colour, width=0.6, fill=colour, fill_opacity=0.07)
+            if field.get("rule") == "bottom":
+                shape.draw_line(fitz.Point(rect.x0, rect.y1),
+                                fitz.Point(rect.x1, rect.y1))
+                shape.finish(color=(0, 0, 0), width=0.7)
             shape.insert_text(fitz.Point(rect.x0 + 0.6, rect.y0 + 4.0),
                               str(index), fontsize=4.0, color=colour)
         shape.commit()
@@ -214,6 +228,12 @@ def render_combined(doc_id, fields, pages, zoom, out_dir):
             shape_bg.draw_rect(rect)
             shape_bg.finish(color=None, fill=(1, 1, 1), fill_opacity=1.0)
             shape_bg.commit()
+            if field.get("rule") == "bottom":
+                shape_rule = page.new_shape()
+                shape_rule.draw_line(fitz.Point(rect.x0, rect.y1),
+                                     fitz.Point(rect.x1, rect.y1))
+                shape_rule.finish(color=(0, 0, 0), width=0.7)
+                shape_rule.commit()
             width = fitz.get_text_length(value, fontname="helv", fontsize=8)
             overflows = (field["type"] != "TextArea"
                          and width > (rect.width - 2))

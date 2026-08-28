@@ -8,6 +8,8 @@ export const MIN_SINGLE_LINE_FIELD_HEIGHT = 17.1;
 
 export const ensureMinimumTextFieldHeight = (field) => {
   if (field?.type !== 'TextField') return field;
+  // Compact ruled fields deliberately leave room for a printed caption.
+  if (field.compact) return field;
 
   const height = Number(field.height);
   const y = Number(field.y);

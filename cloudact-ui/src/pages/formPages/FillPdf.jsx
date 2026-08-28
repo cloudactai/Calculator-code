@@ -365,6 +365,15 @@ const FillPdf = ({ currentUserRole }) => {
             borderWidth: 0,
           });
 
+          if (field.rule === 'bottom') {
+            page.drawLine({
+              start: { x: fieldProperties.x, y: fieldProperties.y },
+              end: { x: fieldProperties.x + fieldProperties.width, y: fieldProperties.y },
+              thickness: 0.7,
+              color: rgb(0, 0, 0),
+            });
+          }
+
           const textField = form.createTextField(field.id.toString());
           textField.addToPage(page, fieldProperties);
 
@@ -387,7 +396,7 @@ const FillPdf = ({ currentUserRole }) => {
 
           const value = field.value != null ? String(field.value) : '';
           textField.setText(value);
-          textField.setFontSize(8);
+          textField.setFontSize(Number(field.fontSize) || 8);
 
           // Add extra newline for textarea fields
           if (field.type === 'TextArea') {

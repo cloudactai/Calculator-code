@@ -76,11 +76,11 @@
    "id": 1750662912012,
    "type": "TextField",
    "x": 132.5,
-   "y": 319.7,
+   "y": 323.0,
    "width": 561.15,
-   "height": 19.95,
+   "height": 15.0,
    "value": "",
-   "fontSize": 9,
+   "fontSize": 7,
    "color": [
     0,
     0,
@@ -88,7 +88,9 @@
    ],
    "background": "none",
    "border": "none",
-   "page": 1
+   "page": 1,
+   "compact": true,
+   "rule": "bottom"
   },
   {
    "id": 1750662912005,
@@ -145,6 +147,26 @@
    "page": 1
   },
   {
+   "id": 1750662912013,
+   "type": "TextField",
+   "x": 156.8,
+   "y": 567.2,
+   "width": 79.8,
+   "height": 15.0,
+   "value": "",
+   "fontSize": 7,
+   "color": [
+    0,
+    0,
+    0
+   ],
+   "background": "none",
+   "border": "none",
+   "page": 1,
+   "compact": true,
+   "rule": "bottom"
+  },
+  {
    "id": 1750662912008,
    "type": "TextField",
    "x": 129.43,
@@ -161,6 +183,86 @@
    "background": "none",
    "border": "none",
    "page": 1
+  },
+  {
+   "id": 1750662912014,
+   "type": "TextField",
+   "x": 337.0,
+   "y": 632.0,
+   "width": 250.8,
+   "height": 15.0,
+   "value": "",
+   "fontSize": 7,
+   "color": [
+    0,
+    0,
+    0
+   ],
+   "background": "none",
+   "border": "none",
+   "page": 1,
+   "compact": true,
+   "rule": "bottom"
+  },
+  {
+   "id": 1750662912015,
+   "type": "TextField",
+   "x": 343.0,
+   "y": 642.0,
+   "width": 241.8,
+   "height": 15.0,
+   "value": "",
+   "fontSize": 7,
+   "color": [
+    0,
+    0,
+    0
+   ],
+   "background": "none",
+   "border": "none",
+   "page": 1,
+   "compact": true,
+   "rule": "bottom"
+  },
+  {
+   "id": 1750662912016,
+   "type": "TextField",
+   "x": 337.0,
+   "y": 652.0,
+   "width": 72.0,
+   "height": 15.0,
+   "value": "",
+   "fontSize": 7,
+   "color": [
+    0,
+    0,
+    0
+   ],
+   "background": "none",
+   "border": "none",
+   "page": 1,
+   "compact": true,
+   "rule": "bottom"
+  },
+  {
+   "id": 1750662912017,
+   "type": "TextField",
+   "x": 425.0,
+   "y": 652.0,
+   "width": 118.8,
+   "height": 15.0,
+   "value": "",
+   "fontSize": 7,
+   "color": [
+    0,
+    0,
+    0
+   ],
+   "background": "none",
+   "border": "none",
+   "page": 1,
+   "compact": true,
+   "rule": "bottom"
   }
  ]
 }

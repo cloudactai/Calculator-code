@@ -260,8 +260,8 @@ def new_id(taken):
     return base
 
 
-def make_field(kind, page, x0, y0, x1, y1, taken):
-    return {
+def make_field(kind, page, x0, y0, x1, y1, taken, **extras):
+    field = {
         "id": new_id(taken),
         "type": kind,
         "x": round(x0, 2),
@@ -275,6 +275,8 @@ def make_field(kind, page, x0, y0, x1, y1, taken):
         "border": "none",
         "page": page,
     }
+    field.update(extras)
+    return field
 
 
 # ---------------------------------------------------------------- page reading
@@ -716,7 +718,157 @@ NAMED_FIELDS = [
     ("PEISC_70H", 1, 124.0, 261.9, 500.1, 275.2, "TextField"),
     ("PEISC_70M", 1, 126.0, 354.3, 506.6, 367.6, "TextField"),
     ("PEISC_71E", 1, 126.0, 192.6, 506.6, 205.9, "TextField"),
+    # Standalone party and statement-of-lawyer placeholders.  These are real
+    # answer spaces, unlike parenthetical drafting instructions in the body of
+    # a form, so they receive a compact ruled field rather than literal
+    # "(name)" text or a page-wide box.
+    ("PEISC_70A", 8, 136.9, 200.4, 190.0, 211.5, "TextField"),
+    ("PEISC_70A_JOINT", 6, 162.6, 273.7, 216.0, 284.8, "TextField"),
+    ("PEISC_70A_JOINT", 6, 173.2, 430.7, 226.5, 441.8, "TextField"),
+    ("PEISC_70B", 1, 295.3, 253.8, 348.5, 264.9, "TextField"),
+    ("PEISC_70B", 1, 295.3, 300.0, 348.5, 311.1, "TextField"),
+    ("PEISC_70B", 2, 156.8, 415.9, 210.0, 427.0, "TextField"),
+    ("PEISC_70B_JOINT", 1, 103.0, 476.2, 156.2, 487.3, "TextField"),
+    ("PEISC_70D", 1, 156.8, 566.1, 210.0, 577.2, "TextField"),
+    # Form 70D's lawyer-contact block, deliberately separate from the
+    # signature rule above it.
+    ("PEISC_70D", 1, 337.0, 632.0, 504.2, 642.0, "TextField"),
+    ("PEISC_70D", 1, 343.0, 642.0, 504.2, 652.0, "TextField"),
+    ("PEISC_70D", 1, 337.0, 652.0, 385.0, 662.0, "TextField"),
+    ("PEISC_70D", 1, 425.0, 652.0, 504.2, 662.0, "TextField"),
+    ("PEISC_70B", 2, 398.0, 481.0, 504.2, 491.0, "TextField"),
+    ("PEISC_70B", 2, 404.0, 491.0, 504.2, 501.0, "TextField"),
+    ("PEISC_70B", 2, 438.0, 501.0, 504.2, 511.0, "TextField"),
+    ("PEISC_70U", 1, 345.0, 257.9, 504.0, 267.9, "TextField"),
+    ("PEISC_70U", 1, 345.0, 269.4, 504.0, 279.4, "TextField"),
+    ("PEISC_70U", 1, 345.0, 281.0, 504.0, 291.0, "TextField"),
+    # The domestic-contracts row -- "Date / Nature of contract or arrangement /
+    # Status" -- set as a row of column headings over open paper with no grid
+    # under it. That is the same shape as Form 70I(D)'s Real Estate and Debts
+    # headings that `pass_areas` already names, and it was missed here for the
+    # same reason: a cell detector needs ruled cells and this row has none, so
+    # both petitions shipped with the contracts row unfillable.
+    #
+    # The boxes go in the band **below** the headings. That is where the row is
+    # written, and it is the only side with room: 22.8pt on 70A*, 23.6pt on
+    # 70A, against 11.2pt above the headings, which is one line of leading.
+    # Column edges are the midpoints between the printed captions, so each box
+    # sits under its own heading. "Nature of contract or arrangement" is a
+    # TextArea because what goes in it is a description -- the same reading
+    # BLOCK_TOKEN gives the phrase "nature of" in the builder.
+    ("PEISC_70A_JOINT", 5, 136.9, 227.5, 223.0, 245.0, "TextField"),  # Date
+    ("PEISC_70A_JOINT", 5, 226.0, 227.5, 402.0, 245.0, "TextArea"),   # Nature
+    ("PEISC_70A_JOINT", 5, 405.0, 227.5, 504.6, 245.0, "TextField"),  # Status
+    ("PEISC_70A", 6, 122.5, 576.4, 179.0, 594.0, "TextField"),        # Date
+    ("PEISC_70A", 6, 182.0, 576.4, 395.0, 594.0, "TextArea"),         # Nature
+    ("PEISC_70A", 6, 398.0, 576.4, 506.6, 594.0, "TextField"),        # Status
 ]
+
+# A TO writing line needs room for its printed instruction beneath it. Keep
+# its rule at the measured bottom edge, but use a compact field above that
+# rule so the instruction is no longer covered by the control.
+TO_NAMED_FIELDS = {
+    ("PEISC_70A", 1, 126.0, 516.0),
+    ("PEISC_70B", 1, 126.0, 620.0),
+    ("PEISC_70B", 1, 150.0, 654.6),
+    ("PEISC_70D", 1, 132.5, 319.7),
+    ("PEISC_70CC", 1, 132.5, 296.6),
+    ("PEISC_70DD", 1, 130.0, 573.8),
+    ("PEISC_70E", 1, 126.0, 296.6),
+    ("PEISC_70EE", 1, 132.5, 285.0),
+    ("PEISC_70F", 1, 126.0, 377.4),
+    ("PEISC_70G", 1, 126.0, 331.2),
+    ("PEISC_70H", 1, 124.0, 261.9),
+    ("PEISC_70M", 1, 126.0, 354.3),
+    ("PEISC_71E", 1, 126.0, 192.6),
+}
+
+RULED_NAME_FIELDS = {
+    ("PEISC_70A", 8, 136.9, 200.4),
+    ("PEISC_70A_JOINT", 6, 162.6, 273.7),
+    ("PEISC_70A_JOINT", 6, 173.2, 430.7),
+    ("PEISC_70B", 1, 295.3, 253.8),
+    ("PEISC_70B", 1, 295.3, 300.0),
+    ("PEISC_70B", 2, 156.8, 415.9),
+    ("PEISC_70B_JOINT", 1, 103.0, 476.2),
+    ("PEISC_70D", 1, 156.8, 566.1),
+}
+
+LAWYER_CONTACT_FIELDS = {
+    ("PEISC_70D", 1, 337.0, 632.0),
+    ("PEISC_70D", 1, 343.0, 642.0),
+    ("PEISC_70D", 1, 337.0, 652.0),
+    ("PEISC_70D", 1, 425.0, 652.0),
+    ("PEISC_70B", 2, 398.0, 481.0),
+    ("PEISC_70B", 2, 404.0, 491.0),
+    ("PEISC_70B", 2, 438.0, 501.0),
+    ("PEISC_70U", 1, 345.0, 257.9),
+    ("PEISC_70U", 1, 345.0, 269.4),
+    ("PEISC_70U", 1, 345.0, 281.0),
+}
+
+COMPACT_EXISTING_NAME_RULES = [
+    ("PEISC_70A_JOINT", 1, 300.0, 181.0),
+    ("PEISC_70A_JOINT", 1, 300.0, 227.2),
+]
+
+TO_FIELD_HEIGHT = 10.0
+
+
+def to_field_layout(y1):
+    """Properties for a compact TO writing line, anchored on its rule."""
+    return {
+        "y": round(y1 - TO_FIELD_HEIGHT, 2),
+        "height": round(TO_FIELD_HEIGHT * SCALE, 2),
+        "fontSize": 7,
+        "compact": True,
+        "rule": "bottom",
+    }
+
+
+def ruled_name_layout(y1):
+    """A short name rule, sized for the wording that introduces it."""
+    return {
+        "y": round(y1 - TO_FIELD_HEIGHT, 2),
+        "height": round(TO_FIELD_HEIGHT * SCALE, 2),
+        "fontSize": 7,
+        "compact": True,
+        "rule": "bottom",
+    }
+
+
+def pass_to_layout(doc_id, mapping, doc, taken):
+    """Upgrade the already-added TO fields without changing any other field."""
+    changes = {}
+    for did, page, x0, y0, x1, y1, _kind in NAMED_FIELDS:
+        if did != doc_id or (did, page, x0, y0) not in TO_NAMED_FIELDS:
+            continue
+        original = fitz.Rect(x0, y0, x1, y1)
+        for field in page_fields(mapping["staticFields"], page):
+            current = rect_of(field)
+            if not (current.intersects(original)
+                    and (current & original).get_area() > 0.5 * original.get_area()):
+                continue
+            target = to_field_layout(y1)
+            if any(field.get(key) != value for key, value in target.items()):
+                changes[field["id"]] = target
+    return changes
+
+
+def pass_compact_existing_names(doc_id, mapping, doc, taken):
+    """Turn the two joint-petition name overlays into writing rules."""
+    changes = {}
+    for did, page, x, y in COMPACT_EXISTING_NAME_RULES:
+        if did != doc_id:
+            continue
+        for field in page_fields(mapping["staticFields"], page):
+            if abs(field["x"] - x) > 0.2 or abs(field["y"] - y) > 0.2:
+                continue
+            bottom = field["y"] + field["height"] / SCALE
+            target = ruled_name_layout(bottom)
+            if any(field.get(key) != value for key, value in target.items()):
+                changes[field["id"]] = target
+    return changes
 
 # A field that was never a blank to begin with: Form 70A*'s "Issued by
 # ______  Registrar" line is the court's own signature rule, not a client
@@ -737,7 +889,11 @@ def pass_named(doc_id, mapping, doc, taken):
         band = fitz.Rect(x0, y0, x1, y1)
         if any((r & band).get_area() > 0.5 * band.get_area() for r in existing):
             continue          # already added
-        added.append(make_field(kind, page, x0, y0, x1, y1, taken))
+        key = (did, page, x0, y0)
+        extras = (to_field_layout(y1) if key in TO_NAMED_FIELDS
+                  else ruled_name_layout(y1)
+                  if key in RULED_NAME_FIELDS | LAWYER_CONTACT_FIELDS else {})
+        added.append(make_field(kind, page, x0, y0, x1, y1, taken, **extras))
     return added
 
 
@@ -758,6 +914,20 @@ NARRATIVE_AREAS = [
     # left it out. Named in on request: it is genuinely short, but a filer
     # would rather have a tight box than none.
     ("PEISC_70A", 6, 108.10, 391.60, 540.00, 409.20),    # item 34
+    # 70A*'s own copy of that band, which the same reasoning reaches and the
+    # first pass missed on both forms: the joint petition asks item 34 in the
+    # identical words, and its band -- from the tail of "briefly outline the
+    # reasons here." to the DOMESTIC CONTRACTS heading -- measures 24.3pt, so
+    # it is under the 26pt floor for the same reason 70A's is.
+    ("PEISC_70A_JOINT", 5, 108.10, 129.30, 540.00, 147.60),   # item 34
+    # "□ No  □ Yes. (Give details below)" -- the only two prompts in the batch
+    # that both ask for a written answer and leave paper to write it on. A
+    # sweep of all 34 templates found 79 prompts with no field under them and
+    # exactly these two clear 22.8pt; every other one is 13.4pt or less, which
+    # is leading rather than answer space, and is left bare for the reason
+    # `pass_areas` records below.
+    ("PEISC_70BB", 3, 141.10, 128.60, 510.90, 145.40),
+    ("PEISC_70BB_1", 2, 105.60, 154.40, 473.50, 171.20),
 ]
 
 
@@ -859,7 +1029,7 @@ def pass_areas(doc_id, mapping, doc, taken):
 
 
 PASSES = ("ticks", "seat_ticks", "blanks", "cells", "subcells", "areas",
-         "named", "margin", "signatures", "brackets", "office_drop", "stubs")
+         "named", "to_layout", "compact_existing_names", "margin", "signatures", "brackets", "office_drop", "stubs")
 
 
 def repair(doc_id, wanted, apply_changes):
@@ -902,6 +1072,14 @@ def repair(doc_id, wanted, apply_changes):
         got = pass_named(doc_id, mapping, doc, taken)
         report["named"] = len(got)
         added += got
+    if "to_layout" in wanted:
+        got = pass_to_layout(doc_id, mapping, doc, taken)
+        report["to_layout"] = len(got)
+        changes.update(got)
+    if "compact_existing_names" in wanted:
+        got = pass_compact_existing_names(doc_id, mapping, doc, taken)
+        report["compact_existing_names"] = len(got)
+        changes.update(got)
     if "margin" in wanted:
         got = pass_margin(doc_id, mapping, doc, taken)
         report["margin"] = len(got)
