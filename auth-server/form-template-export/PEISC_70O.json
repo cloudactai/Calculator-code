@@ -1,58 +1,102 @@
 {
- "staticFields": [
-  {
-   "id": 1750842824001,
-   "type": "TextField",
-   "x": 292.22,
-   "y": 204.1,
-   "width": 82.5,
-   "height": 19.95,
-   "value": "",
-   "fontSize": 9,
-   "color": [
-    0,
-    0,
-    0
-   ],
-   "background": "none",
-   "border": "none",
-   "page": 1
-  },
-  {
-   "id": 1750842824002,
-   "type": "TextField",
-   "x": 108.1,
-   "y": 388.9,
-   "width": 232.5,
-   "height": 19.95,
-   "value": "",
-   "fontSize": 9,
-   "color": [
-    0,
-    0,
-    0
-   ],
-   "background": "none",
-   "border": "none",
-   "page": 1
-  },
-  {
-   "id": 1750842824003,
-   "type": "TextField",
-   "x": 324.1,
-   "y": 388.9,
-   "width": 247.5,
-   "height": 19.95,
-   "value": "",
-   "fontSize": 9,
-   "color": [
-    0,
-    0,
-    0
-   ],
-   "background": "none",
-   "border": "none",
-   "page": 1
-  }
- ]
+  "staticFields": [
+    {
+      "id": 1750842824002,
+      "type": "TextField",
+      "x": 108.1,
+      "y": 393.67,
+      "width": 232.5,
+      "height": 19.95,
+      "value": "",
+      "fontSize": 9,
+      "color": [
+        0,
+        0,
+        0
+      ],
+      "background": "none",
+      "border": "none",
+      "page": 1
+    },
+    {
+      "id": 1750842824004,
+      "type": "TextField",
+      "x": 292.81,
+      "y": 207.92,
+      "width": 129.18,
+      "height": 15.0,
+      "value": "",
+      "fontSize": 7,
+      "color": [
+        0,
+        0,
+        0
+      ],
+      "background": "none",
+      "border": "none",
+      "page": 1,
+      "compact": true,
+      "rule": "bottom"
+    },
+    {
+      "id": 1750842824005,
+      "type": "TextField",
+      "x": 324.1,
+      "y": 397.5,
+      "width": 247.5,
+      "height": 15.0,
+      "value": "",
+      "fontSize": 7,
+      "color": [
+        0,
+        0,
+        0
+      ],
+      "background": "none",
+      "border": "none",
+      "page": 1,
+      "compact": true,
+      "rule": "bottom"
+    },
+    {
+      "id": 1750842824006,
+      "type": "TextField",
+      "x": 324.1,
+      "y": 409.0,
+      "width": 247.5,
+      "height": 15.0,
+      "value": "",
+      "fontSize": 7,
+      "color": [
+        0,
+        0,
+        0
+      ],
+      "background": "none",
+      "border": "none",
+      "page": 1,
+      "compact": true,
+      "rule": "bottom"
+    },
+    {
+      "id": 1750842824007,
+      "type": "TextField",
+      "x": 324.1,
+      "y": 420.5,
+      "width": 247.5,
+      "height": 15.0,
+      "value": "",
+      "fontSize": 7,
+      "color": [
+        0,
+        0,
+        0
+      ],
+      "background": "none",
+      "border": "none",
+      "page": 1,
+      "compact": true,
+      "rule": "bottom"
+    }
+  ]
 }

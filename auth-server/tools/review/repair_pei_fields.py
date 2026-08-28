@@ -35,6 +35,23 @@ digit `9`, so Form 70I(C) reads as `9 a) child care expenses ...`. Matching
 bare "9" would be reckless; what makes it safe is the private-use codepoint
 plus the symbol font, never the extracted character.
 
+## PEI seats its boxes flat on the rule, where the rest of the catalogue does not
+
+`SEAT_GAP` is 1.26pt and every province in this repo has used it: a box's
+bottom edge is held that far *above* the rule it belongs to. Measured on the
+rendered PEI pages the convention is being honoured exactly -- of 735 text
+fields, 612 sit over a rule and their gap clusters hard on a median of
+**1.08pt**, which is `SEAT_GAP` less rounding. Nothing was drifting.
+
+It still reads as a float in the app, because a field is drawn with a visible
+background and a 1.26pt sliver of page shows between it and the line. On
+review that gap was judged wrong for PEI and `seat_flat` closes it: the bottom
+edge is put **on** the rule's top edge. **This is deliberately PEI-only.**
+Changing `SEAT_GAP` itself would move 32,080 fields across eight provinces and
+would also have to carry `on-forms/check_seating.py`, whose gate asserts the
+1.26 explicitly -- so the constant is left alone and the seating is expressed
+here, as a pass, like every other PEI repair.
+
 ## the last three vocabularies do not print as squares
 
 Fitting the boxes to their ink (`fit_ticks`) meant rasterising every one of
@@ -134,6 +151,7 @@ those together.
 """
 import argparse
 import json
+import math
 import os
 import re
 import sys
@@ -169,6 +187,22 @@ INK_ZOOM = 12.0
 INK_DARK = 160
 INK_FULL = 0.90
 
+# Finding the rule a text box sits on. The band reaches a little above the
+# box's bottom edge as well as below it, because a few boxes already overlap
+# their rule and those have to be raised rather than left alone. 0.70 of the
+# box's width is enough ink to call a row a rule and low enough to still catch
+# a rule that stops short of a box widened out to the margin. 2.5pt is the
+# furthest a box is moved: beyond that the row found is a different rule --
+# the next line of the form -- and the box is left where review put it.
+SEAT_UP = 8.0
+SEAT_DOWN = 12.0
+SEAT_SHARE = 0.70
+SEAT_MAX_MOVE = 2.5
+# A box within this of its rule is already on it. `y` is stored to two
+# decimals, so a seated box can still measure a few thousandths out; without a
+# floor the pass would rewrite those for ever and never report zero.
+SEAT_SETTLED = 0.02
+
 # Above this share of its length carrying a glyph, a stroke underlines text
 # rather than waiting for writing.
 INKED = 0.34
@@ -184,21 +218,21 @@ OFFICE = re.compile(r"\b(registrar|prothonotary|commissioner)\b", re.I)
 # to match, where an index would silently point at whatever moved up into its
 # place. Coordinates were read off the numbered overlay renders.
 SIGNATURE_BOXES = [
-    ('PEISC_70A', 8, 293.1, 111.7), ('PEISC_70A', 8, 326.6, 256.65),
-    ('PEISC_70A', 8, 350.03, 399.95), ('PEISC_70A', 8, 374.12, 508.4),
+    ('PEISC_70A', 8, 293.1, 111.7), ('PEISC_70A', 8, 326.6, 275.72),
+    ('PEISC_70A', 8, 350.03, 419.02), ('PEISC_70A', 8, 374.12, 527.47),
     ('PEISC_70A_JOINT', 6, 303.1, 123.8),
-    ('PEISC_70A_JOINT', 6, 303.1, 184.3), ('PEISC_70A_JOINT', 6, 280.65, 364.7),
-    ('PEISC_70A_JOINT', 6, 324.1, 524.3), ('PEISC_70B', 2, 360.1, 261.85),
-    ('PEISC_70B', 2, 356.6, 458.65), ('PEISC_70B_JOINT', 1, 378.1, 334.15),
-    ('PEISC_70B_JOINT', 1, 367.1, 507.4), ('PEISC_70D', 1, 360.1, 284.95),
-    ('PEISC_70D', 1, 360.1, 388.9), ('PEISC_70D', 1, 356.6, 608.8),
-    ('PEISC_70J', 1, 204.15, 284.95), ('PEISC_70P', 1, 399.15, 308.05),
-    ('PEISC_70Q', 1, 374.15, 354.25), ('PEISC_70U', 1, 306.1, 230.2),
+    ('PEISC_70A_JOINT', 6, 303.1, 196.69), ('PEISC_70A_JOINT', 6, 280.65, 402.38),
+    ('PEISC_70A_JOINT', 6, 324.1, 566.63), ('PEISC_70B', 2, 360.1, 266.62),
+    ('PEISC_70B', 2, 356.6, 468.19), ('PEISC_70B_JOINT', 1, 378.1, 338.92),
+    ('PEISC_70B_JOINT', 1, 367.1, 516.94), ('PEISC_70D', 1, 360.1, 284.95),
+    ('PEISC_70D', 1, 360.1, 412.26), ('PEISC_70D', 1, 356.6, 636.93),
+    ('PEISC_70J', 1, 204.15, 336.06), ('PEISC_70P', 1, 399.15, 312.69),
+    ('PEISC_70Q', 1, 374.15, 358.89), ('PEISC_70U', 1, 306.1, 236.07),
     ('PEISC_70BB', 4, 325.75, 631.15), ('PEISC_70BB_1', 2, 290.25, 516.9),
     ('PEISC_70I_A', 3, 270.4, 639.45), ('PEISC_70I_B', 3, 277.0, 570.05),
     ('PEISC_70I_C', 2, 324.1, 284.12), ('PEISC_70I_D', 4, 134.6, 310.15),
-    ('PEISC_70I_D', 4, 253.4, 310.15), ('PEISC_71A', 1, 394.15, 400.45),
-    ('PEISC_71B', 1, 399.15, 342.7),
+    ('PEISC_70I_D', 4, 253.4, 310.15), ('PEISC_71A', 1, 394.15, 432.25),
+    ('PEISC_71B', 1, 399.15, 362.39),
 ]
 
 BRACKET_BOXES = [
@@ -217,11 +251,8 @@ BRACKET_BOXES = [
 #
 # (docId, page, field's own x/y corner, new right edge)
 MARGIN_WIDEN = [
-    ("PEISC_70A", 2, 372.77, 458.24, 540.0),   # item 9, surname
-    ("PEISC_70A", 2, 360.10, 552.89, 540.0),   # item 14, birthplace
-    ("PEISC_70A", 2, 402.48, 575.99, 540.0),   # item 16, given names
-    ("PEISC_70A", 3, 430.85, 195.65, 540.0),   # item 20, resided in
-    ("PEISC_70A", 3, 431.25, 218.75, 540.0),   # item 21, resided in
+    ("PEISC_70A", 2, 372.77, 467.78, 540.0),   # item 9, surname
+    ("PEISC_70A", 2, 402.48, 590.3, 540.0),   # item 16, given names
 ]
 
 
@@ -247,18 +278,16 @@ def pass_margin(doc_id, mapping, doc, taken):
 # it. Without this the blanks pass puts a typeable box back on it.
 BARE_RULES = [
     ('PEISC_70I_A', 3, 270.40, 654.01), ('PEISC_70I_B', 3, 277.00, 584.61),
-    ('PEISC_70I_C', 2, 324.10, 298.68), ('PEISC_70A', 8, 374.12, 522.96),
+    ('PEISC_70I_C', 2, 324.10, 298.68), ('PEISC_70A', 8, 374.12, 542.03),
     # The registrar's rule OFFICE_ONLY_DROP just cleared. Without this,
     # pass_blanks reads the now-uncovered underscore run underneath and puts
     # a client-facing box straight back on it on the very next run.
-    ('PEISC_70A_JOINT', 1, 394.12, 287.96),
+    ('PEISC_70A_JOINT', 1, 394.12, 314.37),
 ]
 
 
 # (docId, page, stub corner, rule corner)
 STUB_PAIRS = [
-    ('PEISC_70A', 3, 430.85, 195.65, 449.08, 195.65),
-    ('PEISC_70A', 3, 431.25, 218.75, 449.03, 218.75),
 ]
 
 
@@ -384,6 +413,50 @@ def ink_rect(page, cell):
         return None
     return fitz.Rect(cell.x0 + x0 / INK_ZOOM, cell.y0 + y0 / INK_ZOOM,
                      cell.x0 + (x1 + 1) / INK_ZOOM, cell.y0 + (y1 + 1) / INK_ZOOM)
+
+
+def rule_under(page, rect):
+    """Top edge of the rule this box sits on, or None if it sits on nothing.
+
+    Read off the rendered page rather than from the underscore runs and
+    strokes the other passes use, because a box's rule can be any of the
+    three things PEI draws -- a run of underscore glyphs, a stroked line, or
+    the bottom border of a table cell -- and at this point all that matters is
+    where the ink is. A band is rasterised across the box's own width and the
+    first row that is at least `SEAT_SHARE` inked is the rule; the nearest such
+    row to the box's bottom edge wins, so a box between two close rules seats
+    on its own.
+    """
+    # The band is snapped to the page's own raster grid rather than hung off
+    # the box's bottom edge. Left unsnapped, moving a box re-phases the
+    # sampling and the same rule measures up to 1/INK_ZOOM different, so the
+    # pass chased its own tail: 609 boxes moved, then 79 of them asked to move
+    # again by a twelfth of a point, for ever. Snapped, a rule has one answer
+    # no matter where the box currently sits.
+    band = fitz.Rect(rect.x0,
+                     math.floor((rect.y1 - SEAT_UP) * INK_ZOOM) / INK_ZOOM,
+                     rect.x1,
+                     math.ceil((rect.y1 + SEAT_DOWN) * INK_ZOOM) / INK_ZOOM)
+    if band.width < 4 or band.height < 1:
+        return None
+    pixmap = page.get_pixmap(matrix=fitz.Matrix(INK_ZOOM, INK_ZOOM),
+                             clip=band, colorspace=fitz.csGRAY)
+    wide, high, data = pixmap.width, pixmap.height, pixmap.samples
+    if wide < 4:
+        return None
+    best, y = None, 0
+    while y < high:
+        share = sum(1 for x in range(wide) if data[y * wide + x] < INK_DARK) / wide
+        if share < SEAT_SHARE:
+            y += 1
+            continue
+        top = band.y0 + y / INK_ZOOM
+        while y < high and (sum(1 for x in range(wide)
+                                if data[y * wide + x] < INK_DARK) / wide) >= SEAT_SHARE:
+            y += 1
+        if best is None or abs(top - rect.y1) < abs(best - rect.y1):
+            best = top
+    return best
 
 
 def inked_glyphs(page):
@@ -576,6 +649,59 @@ def pass_fit_ticks(doc_id, mapping, doc, taken):
             if all(abs(field[k] - v) < 0.005 for k, v in want.items()):
                 continue
             changes[field["id"]] = want
+    return changes
+
+
+def pass_seat_flat(doc_id, mapping, doc, taken):
+    """Put every one-line writing box's bottom edge **on** the rule it sits over.
+
+    **RECONSTRUCTED.** This pass was written but never committed and was lost
+    from the working tree during the caption round; what survived is its
+    section of the module docstring, its constants and `rule_under`. The body
+    below is rewritten from those and then pinned to the five counts the
+    original left behind -- four in the review note, one in its own `--check`
+    output -- which together fix the predicate exactly:
+
+        735  text fields in the batch          TextField
+        609  seated onto their rule            TextField, either direction
+          3  left alone, further than 2.5pt    TextField
+        123  sitting over no rule at all       TextField
+        610  reported by `--check`             609 + one 16.8pt TextArea
+
+    That last one is what pins the TextArea rule. Every TextField is seated,
+    whatever its height -- they run up to 35.6pt here and are still one
+    writing line each. A TextArea is a paragraph box and its bottom edge is
+    the bottom of a block rather than a rule, **except** where it is too short
+    to hold two lines: exactly one is (16.8pt, Form 70BB.1) and the other 13
+    over a rule are 35pt or more. 609 + 1 = 610. A pure height test cannot
+    reproduce this -- the tall TextFields and the short TextArea overlap in
+    height -- so the type is part of the test, and this is the only reading of
+    the surviving material that matches all five counts.
+
+    A checkbox is never seated -- it is fitted to the ink of its printed square
+    by `fit_ticks` and has no rule, and the nearest inked row would take it off
+    its mark.
+
+    A box over no rule is left where review put it, and so is one whose nearest
+    rule is further than `SEAT_MAX_MOVE`: past that the row found is the next
+    line of the form, and moving the box would hand it to the wrong blank.
+    """
+    changes = {}
+    for number in range(1, doc.page_count + 1):
+        page = doc[number - 1]
+        for field in page_fields(mapping["staticFields"], number):
+            if field["type"] == "CheckBox":
+                continue
+            rect = rect_of(field)
+            if field["type"] == "TextArea" and rect.height > 2 * LINE_HEIGHT:
+                continue                    # a paragraph box, not a writing line
+            top = rule_under(page, rect)
+            if top is None:
+                continue
+            move = top - rect.y1
+            if abs(move) < SEAT_SETTLED or abs(move) > SEAT_MAX_MOVE:
+                continue
+            changes[field["id"]] = {"y": round(field["y"] + move, 2)}
     return changes
 
 
@@ -804,75 +930,52 @@ NAMED_FIELDS = [
     # so the printed second caption line ("each respondent)") is left visible
     # underneath the box, matching the label-then-caption convention used
     # everywhere else in this batch.
-    ("PEISC_70A", 1, 126.0, 516.0, 504.6, 529.3, "TextField"),
     # Form 70A -- the claim's growable slots. (a)(i) already prints "a
     # divorce" and is left alone; (ii)/(iii) under both Acts get a box, since
     # the published form lets the petitioner add relief here.
-    ("PEISC_70A", 1, 170.0, 585.3, 504.6, 598.6, "TextArea"),   # (a)(ii)
-    ("PEISC_70A", 1, 170.0, 596.8, 504.6, 610.1, "TextArea"),   # (a)(iii)
-    ("PEISC_70A", 1, 170.0, 619.9, 504.6, 633.2, "TextArea"),   # (b)(i)
-    ("PEISC_70A", 1, 170.0, 631.5, 504.6, 644.8, "TextArea"),   # (b)(ii)
-    ("PEISC_70A", 1, 170.0, 643.0, 504.6, 656.3, "TextArea"),   # (b)(iii)
+    ("PEISC_70A", 1, 170.0, 589.77, 504.6, 603.07, "TextArea"),   # (a)(ii)
+    ("PEISC_70A", 1, 170.0, 601.27, 504.6, 614.57, "TextArea"),   # (a)(iii)
+    ("PEISC_70A", 1, 170.0, 624.37, 504.6, 637.67, "TextArea"),   # (b)(i)
+    ("PEISC_70A", 1, 170.0, 635.97, 504.6, 649.27, "TextArea"),   # (b)(ii)
+    ("PEISC_70A", 1, 170.0, 647.47, 504.6, 660.77, "TextArea"),   # (b)(iii)
     # Form 70A* -- the court file number instruction.
-    ("PEISC_70A_JOINT", 1, 108.1, 157.9, 260.0, 171.2, "TextField"),
     # Form 70A* -- Spouse One's and Spouse Two's names. "(Name)" prints as a
     # bare placeholder with the party's role underneath, the same shape as
     # the bracket-token instructions on the financial statements: the box
     # replaces the placeholder, not the role label below it.
-    ("PEISC_70A_JOINT", 1, 300.0, 181.0, 504.6, 194.3, "TextField"),  # Spouse One
-    ("PEISC_70A_JOINT", 1, 300.0, 227.2, 504.6, 240.5, "TextField"),  # Spouse Two
     # Form 70A* -- the same growable claim slots as 70A, one column further
     # right because the joint form indents (i)/(ii)/(iii) under (a)/(b).
-    ("PEISC_70A_JOINT", 1, 188.0, 357.6, 504.6, 370.9, "TextArea"),   # (a)(ii)
-    ("PEISC_70A_JOINT", 1, 188.0, 369.7, 504.6, 383.0, "TextArea"),   # (a)(iii)
-    ("PEISC_70A_JOINT", 1, 188.0, 406.0, 504.6, 419.3, "TextArea"),   # (b)(i)
-    ("PEISC_70A_JOINT", 1, 188.0, 418.1, 504.6, 431.4, "TextArea"),   # (b)(ii)
-    ("PEISC_70A_JOINT", 1, 188.0, 430.2, 504.6, 443.5, "TextArea"),   # (b)(iii)
+    ("PEISC_70A_JOINT", 1, 188.0, 384.01, 504.6, 397.31, "TextArea"),   # (a)(ii)
+    ("PEISC_70A_JOINT", 1, 188.0, 396.11, 504.6, 409.41, "TextArea"),   # (a)(iii)
+    ("PEISC_70A_JOINT", 1, 188.0, 432.41, 504.6, 445.71, "TextArea"),   # (b)(i)
+    ("PEISC_70A_JOINT", 1, 188.0, 444.51, 504.6, 457.81, "TextArea"),   # (b)(ii)
+    ("PEISC_70A_JOINT", 1, 188.0, 456.61, 504.6, 469.91, "TextArea"),   # (b)(iii)
     # The "TO: (Name and address of ...)" line is 70A's own gap, repeated on
     # four more forms: a bare parenthetical instruction with no printed rule
     # under it, and nothing else on the line. Same fix as 70A's TO: field --
     # a box on the label's own line, right margin read off the page's own
     # rightmost ink -- extended to every other PEISC form that prints the
     # same shape.
-    ("PEISC_70B", 1, 126.0, 620.0, 506.6, 633.3, "TextField"),   # TO
-    ("PEISC_70B", 1, 150.0, 654.6, 506.6, 667.9, "TextField"),   # AND TO
+    ("PEISC_70B", 1, 150.0, 668.91, 506.6, 682.21, "TextField"),   # AND TO
     # Form 70D -- "TO:  (Name and address...)" prints inline on one line, the
     # same shape as 70A*'s "(Name)" placeholders: the box replaces the
     # placeholder text itself, not a caption underneath it.
-    ("PEISC_70D", 1, 132.5, 319.7, 506.6, 333.0, "TextField"),
-    ("PEISC_70CC", 1, 132.5, 296.6, 504.2, 309.9, "TextField"),
-    ("PEISC_70DD", 1, 130.0, 573.8, 506.5, 587.1, "TextField"),
-    ("PEISC_70E", 1, 126.0, 296.6, 506.6, 309.9, "TextField"),
-    ("PEISC_70EE", 1, 132.5, 285.0, 501.8, 298.3, "TextField"),
-    ("PEISC_70F", 1, 126.0, 377.4, 506.6, 390.7, "TextField"),
-    ("PEISC_70G", 1, 126.0, 331.2, 506.6, 344.5, "TextField"),
-    ("PEISC_70H", 1, 124.0, 261.9, 500.1, 275.2, "TextField"),
-    ("PEISC_70M", 1, 126.0, 354.3, 506.6, 367.6, "TextField"),
-    ("PEISC_71E", 1, 126.0, 192.6, 506.6, 205.9, "TextField"),
     # Standalone party and statement-of-lawyer placeholders.  These are real
     # answer spaces, unlike parenthetical drafting instructions in the body of
     # a form, so they receive a compact ruled field rather than literal
     # "(name)" text or a page-wide box.
-    ("PEISC_70A", 8, 136.9, 200.4, 190.0, 211.5, "TextField"),
-    ("PEISC_70A_JOINT", 6, 162.6, 273.7, 216.0, 284.8, "TextField"),
-    ("PEISC_70A_JOINT", 6, 173.2, 430.7, 226.5, 441.8, "TextField"),
-    ("PEISC_70B", 1, 295.3, 253.8, 348.5, 264.9, "TextField"),
-    ("PEISC_70B", 1, 295.3, 300.0, 348.5, 311.1, "TextField"),
-    ("PEISC_70B", 2, 156.8, 415.9, 210.0, 427.0, "TextField"),
-    ("PEISC_70B_JOINT", 1, 103.0, 476.2, 156.2, 487.3, "TextField"),
-    ("PEISC_70D", 1, 156.8, 566.1, 210.0, 577.2, "TextField"),
     # Form 70D's lawyer-contact block, deliberately separate from the
     # signature rule above it.
-    ("PEISC_70D", 1, 337.0, 632.0, 504.2, 642.0, "TextField"),
-    ("PEISC_70D", 1, 343.0, 642.0, 504.2, 652.0, "TextField"),
-    ("PEISC_70D", 1, 337.0, 652.0, 385.0, 662.0, "TextField"),
-    ("PEISC_70D", 1, 425.0, 652.0, 504.2, 662.0, "TextField"),
-    ("PEISC_70B", 2, 398.0, 481.0, 504.2, 491.0, "TextField"),
-    ("PEISC_70B", 2, 404.0, 491.0, 504.2, 501.0, "TextField"),
-    ("PEISC_70B", 2, 438.0, 501.0, 504.2, 511.0, "TextField"),
-    ("PEISC_70U", 1, 345.0, 257.9, 504.0, 267.9, "TextField"),
-    ("PEISC_70U", 1, 345.0, 269.4, 504.0, 279.4, "TextField"),
-    ("PEISC_70U", 1, 345.0, 281.0, 504.0, 291.0, "TextField"),
+    ("PEISC_70D", 1, 337.0, 660.13, 504.2, 670.13, "TextField"),
+    ("PEISC_70D", 1, 343.0, 670.13, 504.2, 680.13, "TextField"),
+    ("PEISC_70D", 1, 337.0, 680.13, 385.0, 690.13, "TextField"),
+    ("PEISC_70D", 1, 425.0, 680.13, 504.2, 690.13, "TextField"),
+    ("PEISC_70B", 2, 398.0, 490.54, 504.2, 500.54, "TextField"),
+    ("PEISC_70B", 2, 404.0, 500.54, 504.2, 510.54, "TextField"),
+    ("PEISC_70B", 2, 438.0, 510.54, 504.2, 520.54, "TextField"),
+    ("PEISC_70U", 1, 345.0, 263.77, 504.0, 273.77, "TextField"),
+    ("PEISC_70U", 1, 345.0, 275.27, 504.0, 285.27, "TextField"),
+    ("PEISC_70U", 1, 345.0, 286.87, 504.0, 296.87, "TextField"),
     # The domestic-contracts row -- "Date / Nature of contract or arrangement /
     # Status" -- set as a row of column headings over open paper with no grid
     # under it. That is the same shape as Form 70I(D)'s Real Estate and Debts
@@ -899,48 +1002,34 @@ NAMED_FIELDS = [
 # its rule at the measured bottom edge, but use a compact field above that
 # rule so the instruction is no longer covered by the control.
 TO_NAMED_FIELDS = {
-    ("PEISC_70A", 1, 126.0, 516.0),
-    ("PEISC_70B", 1, 126.0, 620.0),
-    ("PEISC_70B", 1, 150.0, 654.6),
-    ("PEISC_70D", 1, 132.5, 319.7),
-    ("PEISC_70CC", 1, 132.5, 296.6),
-    ("PEISC_70DD", 1, 130.0, 573.8),
-    ("PEISC_70E", 1, 126.0, 296.6),
-    ("PEISC_70EE", 1, 132.5, 285.0),
-    ("PEISC_70F", 1, 126.0, 377.4),
-    ("PEISC_70G", 1, 126.0, 331.2),
-    ("PEISC_70H", 1, 124.0, 261.9),
-    ("PEISC_70M", 1, 126.0, 354.3),
-    ("PEISC_71E", 1, 126.0, 192.6),
+    ("PEISC_70B", 1, 150.0, 668.91),
 }
 
-RULED_NAME_FIELDS = {
-    ("PEISC_70A", 8, 136.9, 200.4),
-    ("PEISC_70A_JOINT", 6, 162.6, 273.7),
-    ("PEISC_70A_JOINT", 6, 173.2, 430.7),
-    ("PEISC_70B", 1, 295.3, 253.8),
-    ("PEISC_70B", 1, 295.3, 300.0),
-    ("PEISC_70B", 2, 156.8, 415.9),
-    ("PEISC_70B_JOINT", 1, 103.0, 476.2),
-    ("PEISC_70D", 1, 156.8, 566.1),
-}
+# Emptied when `pei_caption_lines.py` took the bracket captions. Every entry
+# this held was a `(name)` placeholder set inline in the prose and overlaid by
+# a compact field; the caption pass turns that shape into a writing rule with
+# the caption reprinted small beneath it, and the rule carries its own field.
+# Kept in place rather than deleted because `pass_named`'s layout switch below
+# still tests membership. `set()`, not `{}`: an empty brace literal is a dict
+# and the switch unions this with LAWYER_CONTACT_FIELDS.
+RULED_NAME_FIELDS = set()
 
 LAWYER_CONTACT_FIELDS = {
-    ("PEISC_70D", 1, 337.0, 632.0),
-    ("PEISC_70D", 1, 343.0, 642.0),
-    ("PEISC_70D", 1, 337.0, 652.0),
-    ("PEISC_70D", 1, 425.0, 652.0),
-    ("PEISC_70B", 2, 398.0, 481.0),
-    ("PEISC_70B", 2, 404.0, 491.0),
-    ("PEISC_70B", 2, 438.0, 501.0),
-    ("PEISC_70U", 1, 345.0, 257.9),
-    ("PEISC_70U", 1, 345.0, 269.4),
-    ("PEISC_70U", 1, 345.0, 281.0),
+    ("PEISC_70D", 1, 337.0, 660.13),
+    ("PEISC_70D", 1, 343.0, 670.13),
+    ("PEISC_70D", 1, 337.0, 680.13),
+    ("PEISC_70D", 1, 425.0, 680.13),
+    ("PEISC_70B", 2, 398.0, 490.54),
+    ("PEISC_70B", 2, 404.0, 500.54),
+    ("PEISC_70B", 2, 438.0, 510.54),
+    ("PEISC_70U", 1, 345.0, 263.77),
+    ("PEISC_70U", 1, 345.0, 275.27),
+    ("PEISC_70U", 1, 345.0, 286.87),
 }
 
 COMPACT_EXISTING_NAME_RULES = [
-    ("PEISC_70A_JOINT", 1, 300.0, 181.0),
-    ("PEISC_70A_JOINT", 1, 300.0, 227.2),
+    ("PEISC_70A_JOINT", 1, 300.0, 193.6),
+    ("PEISC_70A_JOINT", 1, 300.0, 244.32),
 ]
 
 TO_FIELD_HEIGHT = 10.0
@@ -1007,7 +1096,7 @@ def pass_compact_existing_names(doc_id, mapping, doc, taken):
 # SIGNATURE_BOXES) -- this one shipped with a typeable box by mistake and is
 # dropped on request rather than left as a further asymmetry.
 OFFICE_ONLY_DROP = [
-    ("PEISC_70A_JOINT", 1, 394.12, 273.4),
+    ("PEISC_70A_JOINT", 1, 394.12, 295.04),
 ]
 
 
@@ -1160,7 +1249,8 @@ def pass_areas(doc_id, mapping, doc, taken):
 
 
 PASSES = ("ticks", "fit_ticks", "blanks", "cells", "subcells", "areas",
-         "named", "to_layout", "compact_existing_names", "margin", "signatures", "brackets", "office_drop", "stubs")
+         "named", "to_layout", "compact_existing_names", "margin", "signatures",
+         "brackets", "office_drop", "stubs", "seat_flat")
 
 
 def repair(doc_id, wanted, apply_changes):
@@ -1179,6 +1269,10 @@ def repair(doc_id, wanted, apply_changes):
         got = pass_ticks(doc_id, mapping, doc, taken)
         report["ticks"] = len(got)
         added += got
+    if "seat_flat" in wanted:
+        got = pass_seat_flat(doc_id, mapping, doc, taken)
+        report["seat_flat"] = len(got)
+        changes.update(got)
     if "fit_ticks" in wanted:
         got = pass_fit_ticks(doc_id, mapping, doc, taken)
         report["fit_ticks"] = len(got)
