@@ -54,6 +54,8 @@ NORMAL_DATE_FIELDS = {("PEISC_70A", 1750805871157), ("PEISC_70A", 1750805871159)
 FORM_71B_DUPLICATE_REGISTRAR = (459.0, 401.0, 510.0, 428.0)
 FORM_71B_OPENING_SPLIT = 198.0
 FORM_71B_OPENING_DELTA = 35.0
+FORM_71B_TERMS_SPLIT = 351.0
+FORM_71B_TERMS_DELTA = 60.0
 
 
 def has_duplicate_prompt(page, rect):
@@ -159,7 +161,7 @@ def cap_date_rules(doc_id, doc, apply_changes):
 def has_duplicate_71b_registrar(page):
     # The legitimate label moves down with the opening reflow; only the second
     # label, which sat another 23pt below it in the source, is redundant.
-    threshold = 425 if page.rect.height > 800 else 405
+    threshold = 405 + (page.rect.height - 792)
     return any(word[4] == "Registrar" and word[1] > threshold
                for word in page.get_text("words"))
 
@@ -211,6 +213,24 @@ def reflow_peisc_71b(doc):
                                  width, height + remaining_delta), doc, 0,
                        clip=fitz.Rect(0, split, width, height))
     draw_71b_opening_reflow(page)
+    return rebuilt
+
+
+def reflow_peisc_71b_terms(doc):
+    """Make real writing room for Form 71B's "other terms" instruction."""
+    if doc[0].rect.height >= 792 + FORM_71B_OPENING_DELTA + FORM_71B_TERMS_DELTA - .1:
+        return None
+    source = doc[0]
+    width, height = source.rect.width, source.rect.height
+    rebuilt = fitz.open()
+    page = rebuilt.new_page(width=width, height=height + FORM_71B_TERMS_DELTA)
+    page.show_pdf_page(fitz.Rect(0, 0, width, FORM_71B_TERMS_SPLIT), doc, 0,
+                       clip=fitz.Rect(0, 0, width, FORM_71B_TERMS_SPLIT))
+    page.show_pdf_page(fitz.Rect(0, FORM_71B_TERMS_SPLIT + FORM_71B_TERMS_DELTA,
+                                 width, height + FORM_71B_TERMS_DELTA), doc, 0,
+                       clip=fitz.Rect(0, FORM_71B_TERMS_SPLIT, width, height))
+    page.draw_line(fitz.Point(180.1, 408.0), fitz.Point(504.0, 408.0),
+                   color=(0, 0, 0), width=.7)
     return rebuilt
 
 
@@ -293,11 +313,18 @@ def repair(doc_id, apply_changes):
                   and doc[1].rect.height <= 800 and doc[2].rect.height <= 800)
         reflow_71b = (doc_id == "PEISC_71B"
                        and doc[0].rect.height < 792 + FORM_71B_OPENING_DELTA - .1)
+        reflow_71b_terms = (doc_id == "PEISC_71B"
+                            and doc[0].rect.height < 792 + FORM_71B_OPENING_DELTA
+                            + FORM_71B_TERMS_DELTA - .1)
+        # The terms reflow follows the opening reflow.  A pre-opening source
+        # needs one repair run to establish the first geometry before this
+        # second, independent band can be inserted.
+        reflow_71b_terms = reflow_71b_terms and not reflow_71b
         moved_rules = (doc_id == "PEISC_70A" and not reflow
                        and not has_moved_70a_rules(doc[1]))
         duplicate_71b_registrar = (doc_id == "PEISC_71B"
                                    and has_duplicate_71b_registrar(doc[0]))
-        changed += (int(reflow) + int(reflow_71b) + int(moved_rules)
+        changed += (int(reflow) + int(reflow_71b) + int(reflow_71b_terms) + int(moved_rules)
                     + cap_date_rules(doc_id, doc, apply_changes)
                     + int(duplicate_71b_registrar))
         if changed and apply_changes:
@@ -310,7 +337,8 @@ def repair(doc_id, apply_changes):
             for page, label_baseline, rule_baseline in court_addresses:
                 draw_court_address_reflow(page, label_baseline, rule_baseline)
             rebuilt = (reflow_peisc_70a(doc) if reflow
-                       else reflow_peisc_71b(doc) if reflow_71b else None)
+                       else reflow_peisc_71b(doc) if reflow_71b
+                       else reflow_peisc_71b_terms(doc) if reflow_71b_terms else None)
             if reflow:
                 draw_70a_moved_rules(rebuilt[1])
             elif moved_rules:

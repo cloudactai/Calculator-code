@@ -1185,6 +1185,9 @@ def pass_office_drop(doc_id, mapping, doc, taken):
 # from whatever is printed next. Named rather than detected, for the reason the
 # docstring below gives.
 NARRATIVE_AREAS = [
+    # Form 71B's "(c) (include any other terms)" instruction needs actual
+    # writing space.  The PDF reflow moves the signing block below this band.
+    ("PEISC_71B", 1, 180.10, 354.50, 504.00, 408.00),
     ("PEISC_70I_D", 1, 72.10, 348.21, 540.00, 381.40),   # Real Estate
     ("PEISC_70I_D", 3, 72.10, 678.06, 540.00, 704.80),   # Debts
     ("PEISC_70I_D", 4, 72.10, 177.56, 540.00, 242.34),   # Proposed assets/debts
@@ -1345,9 +1348,10 @@ def pass_71b_layout(doc_id, mapping, doc, taken):
         1750731700004: {"y": 271.08},
         1750731700005: {"y": 309.83, "width": 333.0},
         1750731700006: {"y": 327.25},
-        1750731700007: {"y": 350.42},
-        1750731700008: {"y": 389.67},
-        1750731700009: {"y": 412.75},
+        # The recognizant and registrar lines sit beneath the new terms area.
+        1750731700007: {"y": 410.42},
+        1750731700008: {"y": 449.67},
+        1750731700009: {"y": 472.75},
     }
     return {f["id"]: change for f in mapping["staticFields"]
             if f["id"] in targets
