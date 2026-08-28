@@ -1185,9 +1185,6 @@ def pass_office_drop(doc_id, mapping, doc, taken):
 # from whatever is printed next. Named rather than detected, for the reason the
 # docstring below gives.
 NARRATIVE_AREAS = [
-    # Form 71B's "(c) (include any other terms)" instruction needs actual
-    # writing space.  The PDF reflow moves the signing block below this band.
-    ("PEISC_71B", 1, 180.10, 354.50, 504.00, 416.00),
     ("PEISC_70I_D", 1, 72.10, 348.21, 540.00, 381.40),   # Real Estate
     ("PEISC_70I_D", 3, 72.10, 678.06, 540.00, 704.80),   # Debts
     ("PEISC_70I_D", 4, 72.10, 177.56, 540.00, 242.34),   # Proposed assets/debts
@@ -1332,40 +1329,9 @@ def pass_date_lengths(doc_id, mapping, doc, taken):
             and f["width"] > DATE_MAX * SCALE}
 
 
-def pass_71b_layout(doc_id, mapping, doc, taken):
-    """Reflow Form 71B's opening address without covering the legal text."""
-    if doc_id != "PEISC_71B":
-        return {}
-    targets = {
-        # The opening address is now on its own first line and is deliberately
-        # a little longer than the full-name rule.  The premises address below
-        # remains the original long rule: it can contain a full civic address.
-        1750731700002: {"y": 197.16},
-        1750731700003: {"x": 222.0, "y": 197.16, "width": 202.5},
-        1750731700005: {"width": 333.0},
-        # The opening sentence becomes two lines, so every later field moves
-        # with the source page's 16pt reflow.
-        1750731700001: {"y": 233.45},
-        1750731700004: {"y": 271.08},
-        1750731700005: {"y": 309.83, "width": 333.0},
-        1750731700006: {"y": 327.25},
-        # Separate date and signature rules beneath the new terms area.
-        1750731700007: {"x": 180.10, "y": 419.00, "width": 229.5},
-        1750731700008: {"y": 484.67},
-        1750731700009: {"y": 507.75},
-        1750731700010: {"x": 180.10, "y": 354.50, "width": 485.85,
-                          "height": 92.25},
-    }
-    return {f["id"]: change for f in mapping["staticFields"]
-            if f["id"] in targets
-            for change in (targets[f["id"]],)
-            if any(abs(f.get(key, 0) - value) > .01
-                   for key, value in change.items())}
-
-
 PASSES = ("ticks", "fit_ticks", "blanks", "cells", "subcells", "areas",
          "named", "to_layout", "compact_existing_names", "margin", "signatures",
-         "brackets", "office_drop", "stubs", "seat_flat", "70a_layout", "71b_layout", "date_lengths")
+         "brackets", "office_drop", "stubs", "seat_flat", "70a_layout", "date_lengths")
 
 
 def repair(doc_id, wanted, apply_changes):
@@ -1423,10 +1389,6 @@ def repair(doc_id, wanted, apply_changes):
     if "70a_layout" in wanted:
         got = pass_70a_layout(doc_id, mapping, doc, taken)
         report["70a_layout"] = len(got)
-        changes.update(got)
-    if "71b_layout" in wanted:
-        got = pass_71b_layout(doc_id, mapping, doc, taken)
-        report["71b_layout"] = len(got)
         changes.update(got)
     if "date_lengths" in wanted:
         got = pass_date_lengths(doc_id, mapping, doc, taken)

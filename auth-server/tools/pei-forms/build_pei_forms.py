@@ -95,8 +95,80 @@ def overlaps_any(rect, placed, slack=1.0):
     return False
 
 
+def detect_reflowed_71b(background, doc_id):
+    """Map the deliberate answer rules in the source-reflowed Form 71B.
+
+    Most PEI forms can be inferred from underscore glyphs.  Form 71B now uses
+    Word-native table rules for its opening, address, narrative, and signing
+    layout so those rules stay crisp and participate in source flow.  Their
+    semantic IDs are retained here to keep saved answers compatible with the
+    earlier template.  Signature rules are intentionally absent.
+    """
+    doc = fitz.open(background)
+    try:
+        if doc.page_count != 1 or tuple(round(v, 1) for v in
+                                        (doc[0].rect.width, doc[0].rect.height)) != (612.0, 792.0):
+            raise ValueError("PEISC_71B reflow must remain one letter-size page")
+        page = doc[0]
+        text = page.get_text()
+        required = ("(full name)", "(address)", "(include any other terms)",
+                    "(Date of court order)", "Registrar")
+        if any(token not in text for token in required):
+            raise ValueError("PEISC_71B source reflow markers are missing")
+
+        def mapped(field_id, kind, x0, y0, x1, y1, font_size=7):
+            item = {
+                "id": field_id,
+                "type": kind,
+                "x": round(x0, 2),
+                "y": round(y0, 2),
+                "width": round((x1 - x0) * SCALE, 2),
+                "height": round((y1 - y0) * SCALE, 2),
+                "value": "",
+                "fontSize": font_size,
+                "color": [0, 0, 0],
+                "background": "none",
+                "border": "none",
+                "page": 1,
+            }
+            if kind == "TextField":
+                item.update(compact=True, rule="bottom")
+            return item
+
+        fields = [
+            mapped(1750731700002, "TextField", 163.0, 120.92, 257.0, 130.92),
+            mapped(1750731700003, "TextField", 285.0, 120.92, 457.0, 130.92),
+            mapped(1750731700001, "TextField", 393.2, 143.5, 443.2, 153.5),
+            mapped(1750731700004, "TextField", 149.5, 193.5, 211.5, 203.5),
+            mapped(1750731700005, "TextField", 293.8, 230.92, 513.9, 240.92),
+            mapped(1750731700006, "TextField", 403.8, 253.92, 513.9, 263.92),
+            mapped(1750731700010, "TextArea", 133.8, 291.0, 499.8, 350.4, 9),
+            mapped(1750731700007, "TextField", 133.8, 353.92, 286.8, 363.92),
+            mapped(1750731700008, "TextField", 133.8, 394.92, 268.4, 404.92),
+            mapped(1750731700009, "TextField", 133.8, 419.92, 286.8, 429.92),
+        ]
+        audit = {
+            "docId": doc_id,
+            "pages": 1,
+            "fields": len(fields),
+            "checkboxes": 0,
+            "textAreas": 1,
+            "signaturesSkipped": 2,
+            "signatureDetail": ["recognizant", "Registrar"],
+            "widgetNames": [],
+            "pageSizes": [[612.0, 792.0]],
+            "anchors": {"token": 0, "tick": 0, "underscore": 0,
+                        "cell": 10, "dropped": 2},
+        }
+        return fields, audit
+    finally:
+        doc.close()
+
+
 def detect(background, doc_id):
     """Every box on the form, in page order, from the printed anchors."""
+    if doc_id == "PEISC_71B":
+        return detect_reflowed_71b(background, doc_id)
     doc = fitz.open(background)
     fields, index = [], 0
     counts = {"token": 0, "tick": 0, "underscore": 0, "cell": 0, "dropped": 0}

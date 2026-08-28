@@ -49,13 +49,7 @@ COURT_ADDRESS_REFLOWS = [
 # lower part of the printed page is shifted down intact, creating answer space
 # rather than drawing an input over a heading or legal text.
 PEISC_70A_PAGE_REFLOWS = ((1, 189.0, 30.0), (2, 176.0, 34.0))
-NORMAL_DATE_FIELDS = {("PEISC_70A", 1750805871157), ("PEISC_70A", 1750805871159), ("PEISC_70A", 1750805871161), ("PEISC_70AA", 1750460040010), ("PEISC_70A_JOINT", 1750047614147), ("PEISC_70A_JOINT", 1750047614153), ("PEISC_70A_JOINT", 1750047614155), ("PEISC_70A_JOINT", 1750047614157), ("PEISC_70S", 1750131303020), ("PEISC_71B", 1750731700008), ("PEISC_71B", 1750731700009), ("PEISC_71E", 1750796887018)}
-
-FORM_71B_DUPLICATE_REGISTRAR = (459.0, 401.0, 510.0, 428.0)
-FORM_71B_OPENING_SPLIT = 198.0
-FORM_71B_OPENING_DELTA = 35.0
-FORM_71B_TERMS_SOURCE_SPLIT = 316.0
-FORM_71B_TERMS_DELTA = 95.0
+NORMAL_DATE_FIELDS = {("PEISC_70A", 1750805871157), ("PEISC_70A", 1750805871159), ("PEISC_70A", 1750805871161), ("PEISC_70AA", 1750460040010), ("PEISC_70A_JOINT", 1750047614147), ("PEISC_70A_JOINT", 1750047614153), ("PEISC_70A_JOINT", 1750047614155), ("PEISC_70A_JOINT", 1750047614157), ("PEISC_70S", 1750131303020), ("PEISC_71E", 1750796887018)}
 
 
 def has_duplicate_prompt(page, rect):
@@ -158,114 +152,6 @@ def cap_date_rules(doc_id, doc, apply_changes):
     return changed
 
 
-def has_duplicate_71b_registrar(page):
-    # The legitimate label moves down with the opening reflow; only the second
-    # label, which sat another 23pt below it in the source, is redundant.
-    threshold = 540 if has_71b_full_reflow(page) else 405 + (page.rect.height - 792)
-    return any(word[4] == "Registrar" and word[1] > threshold
-               for word in page.get_text("words"))
-
-
-def draw_71b_opening_reflow(page):
-    """Put the opening address on a clear line, with the prose below it."""
-    page.draw_rect(fitz.Rect(140.0, 170.0, 506.0, 235.0), color=None,
-                   fill=(1, 1, 1), overlay=True)
-    page.insert_text(fitz.Point(267.25, 183.5), "RECOGNIZANCE", fontsize=10,
-                     fontname="tiro", color=(0, 0, 0))
-    page.insert_text(fitz.Point(144.1, 205.0), "I,", fontsize=10,
-                     fontname="tiro", color=(0, 0, 0))
-    page.draw_line(fitz.Point(153.4, 207.16), fitz.Point(197.23, 207.16),
-                   color=(0, 0, 0), width=.7)
-    page.insert_text(fitz.Point(199.7, 205.0), ", of", fontsize=10,
-                     fontname="tiro", color=(0, 0, 0))
-    page.draw_line(fitz.Point(222.0, 207.16), fitz.Point(357.0, 207.16),
-                   color=(0, 0, 0), width=.7)
-    page.insert_text(fitz.Point(359.5, 205.0), ",", fontsize=10,
-                     fontname="tiro", color=(0, 0, 0))
-    page.insert_text(fitz.Point(153.4, 214.2), "(full name)", fontsize=5.6,
-                     fontname="tiit", color=(0, 0, 0))
-    page.insert_text(fitz.Point(222.0, 214.2), "(address)", fontsize=5.6,
-                     fontname="tiit", color=(0, 0, 0))
-    page.insert_text(fitz.Point(144.1, 228.0),
-                     "acknowledge that I am indebted to Her Majesty the Queen in",
-                     fontsize=10, fontname="tiro", color=(0, 0, 0))
-    # Restore the full premises-address rule that was shortened in the prior
-    # pass.  It is intentionally long enough for a civic address.
-    y = 285.18 + FORM_71B_OPENING_DELTA
-    page.draw_line(fitz.Point(278.43, y), fitz.Point(500.43, y),
-                   color=(0, 0, 0), width=.7)
-
-
-def reflow_peisc_71b(doc):
-    """Insert one prose line in the opening sentence without scaling it."""
-    existing_delta = doc[0].rect.height - 792.0
-    remaining_delta = FORM_71B_OPENING_DELTA - existing_delta
-    if remaining_delta <= .1:
-        return None
-    source = doc[0]
-    width, height = source.rect.width, source.rect.height
-    rebuilt = fitz.open()
-    split = FORM_71B_OPENING_SPLIT + existing_delta
-    page = rebuilt.new_page(width=width, height=height + remaining_delta)
-    page.show_pdf_page(fitz.Rect(0, 0, width, split), doc, 0,
-                       clip=fitz.Rect(0, 0, width, split))
-    page.show_pdf_page(fitz.Rect(0, split + remaining_delta,
-                                 width, height + remaining_delta), doc, 0,
-                       clip=fitz.Rect(0, split, width, height))
-    draw_71b_opening_reflow(page)
-    return rebuilt
-
-
-def has_71b_full_reflow(page):
-    return any(item[0] == "l" and abs(item[1].x - 350.0) < .2
-               and abs(item[1].y - 429.0) < .2 and abs(item[2].x - 504.0) < .2
-               for drawing in page.get_drawings() for item in drawing["items"])
-
-
-def reflow_peisc_71b_full(doc):
-    """Reflow 71B inside a letter page; the viewer's field scale stays valid."""
-    source = doc[0]
-    width, height = source.rect.width, source.rect.height
-    rebuilt = fitz.open()
-    page = rebuilt.new_page(width=width, height=height)
-    # Opening address gets one line; the terms block gets 95pt.  The footer
-    # remains comfortably above the original page number, so the page itself
-    # never changes height (critical for overlay alignment in the viewer).
-    page.show_pdf_page(fitz.Rect(0, 0, width, FORM_71B_OPENING_SPLIT), doc, 0,
-                       clip=fitz.Rect(0, 0, width, FORM_71B_OPENING_SPLIT))
-    page.show_pdf_page(fitz.Rect(0, FORM_71B_OPENING_SPLIT + FORM_71B_OPENING_DELTA,
-                                 width, FORM_71B_TERMS_SOURCE_SPLIT + FORM_71B_OPENING_DELTA), doc, 0,
-                       clip=fitz.Rect(0, FORM_71B_OPENING_SPLIT, width,
-                                      FORM_71B_TERMS_SOURCE_SPLIT))
-    lower_top = FORM_71B_TERMS_SOURCE_SPLIT + FORM_71B_OPENING_DELTA + FORM_71B_TERMS_DELTA
-    page.show_pdf_page(fitz.Rect(0, lower_top, width, 650.0 + FORM_71B_OPENING_DELTA + FORM_71B_TERMS_DELTA), doc, 0,
-                       clip=fitz.Rect(0, FORM_71B_TERMS_SOURCE_SPLIT, width, 650.0))
-    # Keep only the original page number/footer area in its normal place.
-    page.show_pdf_page(fitz.Rect(0, 650.0, width, height), doc, 0,
-                       clip=fitz.Rect(0, 650.0, width, height))
-    draw_71b_opening_reflow(page)
-    page.draw_line(fitz.Point(180.1, 416.0), fitz.Point(504.0, 416.0),
-                   color=(0, 0, 0), width=.7)
-    # The source's combined Date/Signature line is ambiguous.  Draw distinct
-    # rules for the recognizant's date and signature before the certification.
-    page.draw_rect(fitz.Rect(365.0, 447.0, 510.0, 472.4), color=None,
-                   fill=(1, 1, 1), overlay=True)
-    page.draw_line(fitz.Point(180.1, 429.0), fitz.Point(333.1, 429.0),
-                   color=(0, 0, 0), width=.7)
-    page.draw_line(fitz.Point(350.0, 429.0), fitz.Point(504.0, 429.0),
-                   color=(0, 0, 0), width=.7)
-    page.insert_text(fitz.Point(180.1, 438.2), "(Date)", fontsize=7,
-                     fontname="tiro", color=(0, 0, 0))
-    page.insert_text(fitz.Point(458.7, 438.2), "(Signature)", fontsize=10,
-                     fontname="tiro", color=(0, 0, 0))
-    # Cap the registrar-certification date after it has moved with the footer.
-    page.draw_rect(fitz.Rect(260.6, 515.0, 455.0, 521.0), color=None,
-                   fill=(1, 1, 1), overlay=True)
-    page.draw_line(fitz.Point(108.1, 517.15), fitz.Point(261.1, 517.15),
-                   color=(0, 0, 0), width=.7)
-    return rebuilt
-
-
 def draw_70a_moved_rules(page):
     """Place page-two writing rules directly beneath their relocated fields."""
     for old, start, end, baseline in (
@@ -303,9 +189,9 @@ def reflow_peisc_70a(doc):
     return rebuilt
 
 
-def repair(doc_id, apply_changes, source_path=None):
+def repair(doc_id, apply_changes):
     path = os.path.join(EXPORT, "%s.pdf" % doc_id)
-    doc = fitz.open(source_path or path)
+    doc = fitz.open(path)
     changed = 0
     try:
         for did, page_no, coords in MASKS:
@@ -343,25 +229,18 @@ def repair(doc_id, apply_changes, source_path=None):
                 page.add_redact_annot(fitz.Rect(coords), fill=(1, 1, 1))
         reflow = (doc_id == "PEISC_70A"
                   and doc[1].rect.height <= 800 and doc[2].rect.height <= 800)
-        reflow_71b = (doc_id == "PEISC_71B" and not has_71b_full_reflow(doc[0]))
         moved_rules = (doc_id == "PEISC_70A" and not reflow
                        and not has_moved_70a_rules(doc[1]))
-        duplicate_71b_registrar = (doc_id == "PEISC_71B"
-                                   and has_duplicate_71b_registrar(doc[0]))
-        changed += (int(reflow) + int(reflow_71b) + int(moved_rules)
-                    + cap_date_rules(doc_id, doc, apply_changes)
-                    + int(duplicate_71b_registrar))
+        changed += (int(reflow) + int(moved_rules)
+                    + cap_date_rules(doc_id, doc, apply_changes))
         if changed and apply_changes:
-            if duplicate_71b_registrar:
-                doc[0].add_redact_annot(fitz.Rect(FORM_71B_DUPLICATE_REGISTRAR), fill=(1, 1, 1))
             for page in doc:
                 page.apply_redactions(images=fitz.PDF_REDACT_IMAGE_NONE)
             for page, did in contacts:
                 draw_contact_rules(page, did)
             for page, label_baseline, rule_baseline in court_addresses:
                 draw_court_address_reflow(page, label_baseline, rule_baseline)
-            rebuilt = (reflow_peisc_70a(doc) if reflow
-                       else reflow_peisc_71b_full(doc) if reflow_71b else None)
+            rebuilt = reflow_peisc_70a(doc) if reflow else None
             if reflow:
                 draw_70a_moved_rules(rebuilt[1])
             elif moved_rules:
@@ -384,12 +263,10 @@ def repair(doc_id, apply_changes, source_path=None):
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--check", action="store_true")
-    ap.add_argument("--source-71b", help="one-time pristine Form 71B source for a full rebuild")
     args = ap.parse_args()
     total = 0
     for doc_id in sorted({row[0] for row in MASKS + CONTACT_BLOCKS + COURT_ADDRESS_REFLOWS} | {did for did, _ in NORMAL_DATE_FIELDS}):
-        source = args.source_71b if doc_id == "PEISC_71B" else None
-        count = repair(doc_id, not args.check, source)
+        count = repair(doc_id, not args.check)
         print("%s duplicate_prompts=%d" % (doc_id, count))
         total += count
     print(("would change" if args.check else "changed") + ": duplicate_prompts=%d" % total)

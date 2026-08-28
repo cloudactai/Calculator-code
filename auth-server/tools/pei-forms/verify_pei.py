@@ -23,7 +23,7 @@ Checks, and what each is guarding against:
 * **catalogue agrees with the mapping** -- pageCount against the PDF.
 
 Every Prince Edward Island form is anchor-built from a LibreOffice render, so there is no
-widget path here and no reduced set: all 84 run the same checks.
+widget path here and no reduced set: all 34 run the same checks.
 """
 import json
 import os

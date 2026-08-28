@@ -223,8 +223,9 @@ ROWS = {
  "PEISC_71A": {1: ("Dropped the box on '(Signature of judge)'.",
                    "The warrant then carries no field: every other slot on it "
                    "is a bracketed instruction with no rule.")},
- "PEISC_71B": {1: ("Dropped the box on '(Signature)'.",
-                   "The recognizance amount blank is kept.")},
+ "PEISC_71B": {1: ("Rebuilt the legacy Word source and left both signature rules unboxed.",
+                   "Name and address no longer collide; item (c) has a full writing band; "
+                   "the recognizant, court-order and Registrar dates are labelled distinctly.")},
  "PEISC_71E": {1: ("The 'Travel allowance $___' and 'TOTAL $___' blanks had no "
                    "fields.",
                    "Attendance money block now adds up on the page.")},

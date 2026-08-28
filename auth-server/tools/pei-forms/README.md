@@ -4,12 +4,12 @@ Builds the PEI templates in `form-template-export/` from the Courts of PEI's own
 forms page. Staging lives in the gitignored
 `form-template-export/_incoming_pei/`.
 
-Requires Python 3 with PyMuPDF (`fitz`) and **LibreOffice**. No Chrome, no
-Adobe.
+Requires Python 3 with PyMuPDF (`fitz`), `python-docx`, and **LibreOffice**. No
+Chrome, no Adobe.
 
 ## Scope
 
-**34 forms, 64 pages, 954 fields, 4 binds, zero findings.** Catalogue rows
+**34 forms, 64 pages, 1,143 fields, 4 binds, zero findings.** Catalogue rows
 3601–3634.
 
 > **Reviewed page by page, 2026-08-27 and 2026-08-28.** All 64 pages were
@@ -91,8 +91,39 @@ page and "70I(A)" in its index — but strictly on the right-hand boundary, so
 python3 build_pei_forms.py [--only PEISC_70A] [--category Financial] [--promote]
 ```
 
-The detectors are **Nova Scotia's, unchanged** (`tools/ns-forms/ns_anchors.py`),
-because PEI prints the same vocabulary from the same kind of LibreOffice render.
+### Form 71B is reflowed in Word, not patched in PDF
+
+Form 71B is the one source-layout exception.  The published legacy `.doc`
+places its short name and address placeholders inside one dense paragraph,
+leaves no writing space after item (c), separates two signing roles
+ambiguously, and ends with a duplicate `Registrar` label.  Earlier repairs
+masked that rendered paragraph and drew replacement PDF text.  Browser zoom
+made the underlying and replacement text diverge, producing the overlap and
+mixed-font result that a source rebuild is supposed to prevent.
+
+`fetch_pei.py` now runs `reflow_pei_71b_source.py` before LibreOffice renders
+this form.  The tool validates the legal copy against the government Word
+file, rebuilds the page as a native DOCX in Times New Roman, and lets Word flow
+all content normally.  It provides:
+
+- separate, fixed-width opening name and address rules, with the address rule
+  longer than the name rule and clear of the word `of`;
+- a source-created writing band and matching bottom rule after item (c);
+- distinct recognizant and Registrar signature rules, as the published source
+  requires, with no text fields on either signature;
+- explicit labels for the recognizant date, court-order date, and Registrar
+  date; and
+- one Registrar label.
+
+The reflow script is part of Form 71B's render-cache key, so changing it forces
+a new source PDF.  `build_pei_forms.py` maps the source-created rules while
+retaining the form's existing semantic field IDs.  No Form 71B code remains in
+`repair_pei_background.py`; rerunning the review repairs cannot layer text over
+this source-generated page again.
+
+For the other 33 forms, the detectors are **Nova Scotia's, unchanged**
+(`tools/ns-forms/ns_anchors.py`), because PEI prints the same vocabulary from
+the same kind of LibreOffice render.
 The bracket token that dominates Nova Scotia is nearly absent here — PEI writes
 its blanks as underscore runs, closer to Saskatchewan — but the detector costs
 nothing to run and catches the handful that exist.

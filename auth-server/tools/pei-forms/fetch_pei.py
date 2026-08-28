@@ -37,6 +37,7 @@ import fitz
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
 from pei_sources import all_sources  # noqa: E402
+from reflow_pei_71b_source import build as reflow_pei_71b_source  # noqa: E402
 
 STAGE = os.path.join(
     os.path.dirname(os.path.dirname(HERE)), "form-template-export", "_incoming_pei")
@@ -118,15 +119,28 @@ def main():
 
         blob = open(word, "rb").read()
         digest = hashlib.sha256(blob).hexdigest()
-        if force or cache.get(did) != digest or not os.path.exists(rendered):
+        render_digest = digest
+        render_source = word
+        if did == "PEISC_71B":
+            # Form 71B needs source-level flow changes.  Include this script in
+            # the cache key so a layout correction always triggers a rerender,
+            # while the manifest continues to record the government file's
+            # own digest.
+            reflow_script = os.path.join(HERE, "reflow_pei_71b_source.py")
+            render_digest = hashlib.sha256(
+                blob + open(reflow_script, "rb").read()).hexdigest()
+            render_source = os.path.join(STAGE, "%s_reflow.docx" % did)
+        if force or cache.get(did) != render_digest or not os.path.exists(rendered):
             try:
-                produced = render(word, STAGE)
+                if did == "PEISC_71B":
+                    reflow_pei_71b_source(word, render_source)
+                produced = render(render_source, STAGE)
             except Exception as exc:                       # noqa: BLE001
                 problems.append((did, "render failed: %s" % exc))
                 continue
             if produced != rendered:
                 os.replace(produced, rendered)
-            cache[did] = digest
+            cache[did] = render_digest
 
         pages, widgets, is_xfa, text = classify(rendered)
         named = identifies_itself(src, text)
