@@ -132,6 +132,11 @@ LINE_RISE = 3.45
 # private-use on these forms and is the apostrophe in "child=s", not a square.
 MISSED_TICKS = {0xF0F0, 0xF091, 0xF039, 0xF071}
 
+# Every codepoint PEI uses for its option square, known and missed alike --
+# the seat_ticks pass below needs the full set, not just the ones the builder
+# never boxed.
+TICK_GLYPHS = MISSED_TICKS | {0x25A1, 0x2610, 0x2611, 0x2612}
+
 # Above this share of its length carrying a glyph, a stroke underlines text
 # rather than waiting for writing.
 INKED = 0.34
@@ -169,6 +174,40 @@ BRACKET_BOXES = [
     ('PEISC_70I_D', 3, 78.1, 227.01), ('PEISC_70I_D', 3, 78.1, 497.01),
 ]
 
+# A blank whose printed underscore run is short relative to what the form is
+# actually asking for -- a surname, given names, a place of residence -- with
+# nothing else printed to its right on the same line. Widened out to the
+# page's own right margin (540pt on Form 70A's letter-size page, the edge
+# `pass_areas` and the CHILDREN table both already use), which is real blank
+# paper on every one of these lines, not invented space. Read from the actual
+# renders: a name run to a 60-75pt box overflows it badly enough that the tail
+# of the typed value has no box behind it at all.
+#
+# (docId, page, field's own x/y corner, new right edge)
+MARGIN_WIDEN = [
+    ("PEISC_70A", 2, 372.77, 458.24, 540.0),   # item 9, surname
+    ("PEISC_70A", 2, 360.10, 552.89, 540.0),   # item 14, birthplace
+    ("PEISC_70A", 2, 402.48, 575.99, 540.0),   # item 16, given names
+    ("PEISC_70A", 3, 430.85, 195.65, 540.0),   # item 20, resided in
+    ("PEISC_70A", 3, 431.25, 218.75, 540.0),   # item 21, resided in
+]
+
+
+def pass_margin(doc_id, mapping, doc, taken):
+    changes = {}
+    for did, page, x, y, right in MARGIN_WIDEN:
+        if did != doc_id:
+            continue
+        field = _at(mapping["staticFields"], page, x, y)
+        if field is None:
+            continue
+        new_width = round((right - field["x"]) * SCALE, 2)
+        if new_width <= field["width"]:
+            continue          # already widened, or the page shrank under it
+        changes[field["id"]] = {"width": new_width}
+    return changes
+
+
 # Signature rules the caption test cannot see, keyed on the rule's left end and
 # baseline. On the jurat the deponent signs a rule in the right-hand column
 # while the only caption on the page -- "A Commissioner for taking Affidavits"
@@ -177,6 +216,10 @@ BRACKET_BOXES = [
 BARE_RULES = [
     ('PEISC_70I_A', 3, 270.40, 654.01), ('PEISC_70I_B', 3, 277.00, 584.61),
     ('PEISC_70I_C', 2, 324.10, 298.68), ('PEISC_70A', 8, 374.12, 522.96),
+    # The registrar's rule OFFICE_ONLY_DROP just cleared. Without this,
+    # pass_blanks reads the now-uncovered underscore run underneath and puts
+    # a client-facing box straight back on it on the very next run.
+    ('PEISC_70A_JOINT', 1, 394.12, 287.96),
 ]
 
 
@@ -363,6 +406,54 @@ def caption_near(page, rect, lines=None):
 
 # ------------------------------------------------------------------- the passes
 
+def pass_seat_ticks(doc_id, mapping, doc, taken):
+    """Move every checkbox down onto the glyph it actually ticks.
+
+    Every checkbox in the batch -- the ones the original builder placed and
+    the 81 `pass_ticks` adds above -- is anchored at the *top* of its glyph's
+    reported bounding box, using the glyph's width as the side of a square.
+    That is wrong for the same reason across all six of PEI's tick
+    vocabularies: a character's bounding box is its full type-cell, ascent to
+    descent, and the visible mark -- a small square drawn near the baseline --
+    occupies only the bottom slice of it. Boxing off the top of that cell
+    leaves the field hovering well above the printed square, with the actual
+    ink showing underneath through the gap.
+
+    Measured on Form 70A: the glyph cell for a `☐` here is 5.4pt wide by
+    9.96pt tall. A field sized to that width and anchored at the cell's top
+    sits 4.5pt above where the mark is actually drawn. On Form 70R's `U+F0F0`
+    glyphs the cell is 7.9 x 11.25 -- the same shape, the same direction of
+    error, on every vocabulary this batch uses.
+
+    **The fix is one line: anchor at the bottom of the cell instead of the
+    top**, keeping the field's existing width as the side of the square. It
+    is intentionally the identity function on anything not already sitting
+    exactly on a glyph's top-left corner, which is what makes it idempotent
+    without a separate "already seated" list: once a box is moved, its top no
+    longer lines up with `glyph.y0`, so the match test that triggers the move
+    stops firing on it.
+    """
+    changes = {}
+    for number in range(1, doc.page_count + 1):
+        page = doc[number - 1]
+        here = [rect for char, _font, rect in glyphs(page)
+                if ord(char) in TICK_GLYPHS]
+        for field in page_fields(mapping["staticFields"], number):
+            if field["type"] != "CheckBox":
+                continue
+            match = next((r for r in here
+                         if abs(r.x0 - field["x"]) < 0.6
+                         and abs(r.y0 - field["y"]) < 0.6), None)
+            if match is None:
+                continue
+            side = field["width"] / SCALE
+            new_y = round(match.y1 - side, 2)
+            if abs(new_y - field["y"]) < 0.05:
+                continue
+            changes[field["id"]] = {"y": new_y}
+    return changes
+
+
 def pass_ticks(doc_id, mapping, doc, taken):
     added = []
     for number in range(1, doc.page_count + 1):
@@ -450,8 +541,8 @@ def pass_brackets(doc_id, mapping, doc, taken):
 
 
 def pass_stubs(doc_id, mapping, doc, taken):
-    """Weld a stub box into the rule beside it; returns (widen, drop)."""
-    widen, drop = {}, []
+    """Weld a stub box into the rule beside it; returns (changes, drop)."""
+    changes, drop = {}, []
     for did, page, sx, sy, rx, ry in STUB_PAIRS:
         if did != doc_id:
             continue
@@ -465,9 +556,9 @@ def pass_stubs(doc_id, mapping, doc, taken):
                              "threshold; these are two blanks, not one"
                              % (did, page, gap, MERGE_GAP))
         right = rule["x"] + rule["width"] / SCALE
-        widen[stub["id"]] = round((right - stub["x"]) * SCALE, 2)
+        changes[stub["id"]] = {"width": round((right - stub["x"]) * SCALE, 2)}
         drop.append(rule["id"])
-    return widen, drop
+    return changes, drop
 
 
 def grid(page):
@@ -564,6 +655,75 @@ def pass_cells(doc_id, mapping, doc, taken):
     return added
 
 
+# Explicit field additions the review missed and a reviewer asked for by
+# name after seeing the live app: a real party-name box where Form 70A*
+# prints "(Name)" as a bare placeholder rather than a rule, a "TO:" box Form
+# 70A never gave the respondent's name and address anywhere to go, the court
+# file number instruction, and the claim list's growable (ii)/(iii) slots
+# under both Acts. None of these have a printed rule underneath them -- PEI's
+# usual anchors (an underscore run, a ruled cell) find nothing here -- so
+# they are named and measured against the page the same way NARRATIVE_AREAS
+# is, rather than detected.
+#
+# (docId, page, x0, y0, x1, y1, type)
+NAMED_FIELDS = [
+    # Form 70A -- respondent's name and address. Sits on the "TO:" line only,
+    # so the printed second caption line ("each respondent)") is left visible
+    # underneath the box, matching the label-then-caption convention used
+    # everywhere else in this batch.
+    ("PEISC_70A", 1, 126.0, 516.0, 504.6, 529.3, "TextField"),
+    # Form 70A -- the claim's growable slots. (a)(i) already prints "a
+    # divorce" and is left alone; (ii)/(iii) under both Acts get a box, since
+    # the published form lets the petitioner add relief here.
+    ("PEISC_70A", 1, 170.0, 585.3, 504.6, 598.6, "TextArea"),   # (a)(ii)
+    ("PEISC_70A", 1, 170.0, 596.8, 504.6, 610.1, "TextArea"),   # (a)(iii)
+    ("PEISC_70A", 1, 170.0, 619.9, 504.6, 633.2, "TextArea"),   # (b)(i)
+    ("PEISC_70A", 1, 170.0, 631.5, 504.6, 644.8, "TextArea"),   # (b)(ii)
+    ("PEISC_70A", 1, 170.0, 643.0, 504.6, 656.3, "TextArea"),   # (b)(iii)
+    # Form 70A* -- the court file number instruction.
+    ("PEISC_70A_JOINT", 1, 108.1, 157.9, 260.0, 171.2, "TextField"),
+    # Form 70A* -- Spouse One's and Spouse Two's names. "(Name)" prints as a
+    # bare placeholder with the party's role underneath, the same shape as
+    # the bracket-token instructions on the financial statements: the box
+    # replaces the placeholder, not the role label below it.
+    ("PEISC_70A_JOINT", 1, 300.0, 181.0, 504.6, 194.3, "TextField"),  # Spouse One
+    ("PEISC_70A_JOINT", 1, 300.0, 227.2, 504.6, 240.5, "TextField"),  # Spouse Two
+    # Form 70A* -- the same growable claim slots as 70A, one column further
+    # right because the joint form indents (i)/(ii)/(iii) under (a)/(b).
+    ("PEISC_70A_JOINT", 1, 188.0, 357.6, 504.6, 370.9, "TextArea"),   # (a)(ii)
+    ("PEISC_70A_JOINT", 1, 188.0, 369.7, 504.6, 383.0, "TextArea"),   # (a)(iii)
+    ("PEISC_70A_JOINT", 1, 188.0, 406.0, 504.6, 419.3, "TextArea"),   # (b)(i)
+    ("PEISC_70A_JOINT", 1, 188.0, 418.1, 504.6, 431.4, "TextArea"),   # (b)(ii)
+    ("PEISC_70A_JOINT", 1, 188.0, 430.2, 504.6, 443.5, "TextArea"),   # (b)(iii)
+]
+
+# A field that was never a blank to begin with: Form 70A*'s "Issued by
+# ______  Registrar" line is the court's own signature rule, not a client
+# field, the same class this batch otherwise leaves bare (BARE_RULES,
+# SIGNATURE_BOXES) -- this one shipped with a typeable box by mistake and is
+# dropped on request rather than left as a further asymmetry.
+OFFICE_ONLY_DROP = [
+    ("PEISC_70A_JOINT", 1, 394.12, 273.4),
+]
+
+
+def pass_named(doc_id, mapping, doc, taken):
+    added = []
+    for did, page, x0, y0, x1, y1, kind in NAMED_FIELDS:
+        if did != doc_id:
+            continue
+        existing = [rect_of(f) for f in page_fields(mapping["staticFields"], page)]
+        band = fitz.Rect(x0, y0, x1, y1)
+        if any((r & band).get_area() > 0.5 * band.get_area() for r in existing):
+            continue          # already added
+        added.append(make_field(kind, page, x0, y0, x1, y1, taken))
+    return added
+
+
+def pass_office_drop(doc_id, mapping, doc, taken):
+    return _resolve(OFFICE_ONLY_DROP, mapping, doc_id)
+
+
 # The unruled answer bands, measured off the page: left and right from the
 # column heading the band belongs to, top from the heading's baseline, bottom
 # from whatever is printed next. Named rather than detected, for the reason the
@@ -572,6 +732,11 @@ NARRATIVE_AREAS = [
     ("PEISC_70I_D", 1, 72.10, 348.21, 540.00, 381.40),   # Real Estate
     ("PEISC_70I_D", 3, 72.10, 678.06, 540.00, 704.80),   # Debts
     ("PEISC_70I_D", 4, 72.10, 177.56, 540.00, 242.34),   # Proposed assets/debts
+    # Item 34's "briefly outline the reasons here" band measures 23.6pt, under
+    # the generic detector's 26pt floor -- which is why the automatic pass
+    # left it out. Named in on request: it is genuinely short, but a filer
+    # would rather have a tight box than none.
+    ("PEISC_70A", 6, 108.10, 391.60, 540.00, 409.20),    # item 34
 ]
 
 
@@ -672,7 +837,8 @@ def pass_areas(doc_id, mapping, doc, taken):
     return added
 
 
-PASSES = ("ticks", "blanks", "cells", "subcells", "areas", "signatures", "brackets", "stubs")
+PASSES = ("ticks", "seat_ticks", "blanks", "cells", "subcells", "areas",
+         "named", "margin", "signatures", "brackets", "office_drop", "stubs")
 
 
 def repair(doc_id, wanted, apply_changes):
@@ -682,11 +848,19 @@ def repair(doc_id, wanted, apply_changes):
     taken = {int(f["id"]) for f in mapping["staticFields"]}
     report = {}
 
-    added, dropped, widened = [], [], {}
+    # add: new field dicts. drop: ids to remove. changes: id -> {key: value},
+    # applied to whatever field survives the drop -- the one shape every pass
+    # writes into, whether it is adding a box, deleting one, or nudging a
+    # single property of a box that is otherwise left alone.
+    added, dropped, changes = [], [], {}
     if "ticks" in wanted:
         got = pass_ticks(doc_id, mapping, doc, taken)
         report["ticks"] = len(got)
         added += got
+    if "seat_ticks" in wanted:
+        got = pass_seat_ticks(doc_id, mapping, doc, taken)
+        report["seat_ticks"] = len(got)
+        changes.update(got)
     if "blanks" in wanted:
         got = pass_blanks(doc_id, mapping, doc, taken)
         report["blanks"] = len(got)
@@ -703,6 +877,14 @@ def repair(doc_id, wanted, apply_changes):
         got = pass_areas(doc_id, mapping, doc, taken)
         report["areas"] = len(got)
         added += got
+    if "named" in wanted:
+        got = pass_named(doc_id, mapping, doc, taken)
+        report["named"] = len(got)
+        added += got
+    if "margin" in wanted:
+        got = pass_margin(doc_id, mapping, doc, taken)
+        report["margin"] = len(got)
+        changes.update(got)
     if "signatures" in wanted:
         got = pass_signatures(doc_id, mapping, doc, taken)
         report["signatures"] = len(got)
@@ -711,10 +893,14 @@ def repair(doc_id, wanted, apply_changes):
         got = pass_brackets(doc_id, mapping, doc, taken)
         report["brackets"] = len(got)
         dropped += got
+    if "office_drop" in wanted:
+        got = pass_office_drop(doc_id, mapping, doc, taken)
+        report["office_drop"] = len(got)
+        dropped += got
     if "stubs" in wanted:
-        widen, drop = pass_stubs(doc_id, mapping, doc, taken)
-        report["stubs"] = len(widen)
-        widened.update(widen)
+        stub_changes, drop = pass_stubs(doc_id, mapping, doc, taken)
+        report["stubs"] = len(stub_changes)
+        changes.update(stub_changes)
         dropped += drop
     doc.close()
 
@@ -723,13 +909,13 @@ def repair(doc_id, wanted, apply_changes):
 
     fields = [f for f in mapping["staticFields"] if f["id"] not in set(dropped)]
     for field in fields:
-        if field["id"] in widened:
-            field["width"] = widened[field["id"]]
+        if field["id"] in changes:
+            field.update(changes[field["id"]])
     fields += added
     fields.sort(key=lambda f: (f["page"], round(f["y"], 1), round(f["x"], 1)))
 
     # Everything not owned by a pass must be byte-identical.
-    owned = set(dropped) | set(widened) | {f["id"] for f in added}
+    owned = set(dropped) | set(changes) | {f["id"] for f in added}
     for field in fields:
         was = before.get(field["id"])
         if was is None or field["id"] in owned:
@@ -740,7 +926,7 @@ def repair(doc_id, wanted, apply_changes):
     # not touch would churn its whole file for an indentation change and bury
     # the real diff, so a no-op leaves the file byte-identical -- and the
     # export's own format is `indent=1`, not this tool's preference.
-    if not (added or dropped or widened):
+    if not (added or dropped or changes):
         return report
 
     mapping["staticFields"] = fields

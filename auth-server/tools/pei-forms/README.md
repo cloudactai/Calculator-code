@@ -12,13 +12,16 @@ Adobe.
 **34 forms, 64 pages, 954 fields, 4 binds, zero findings.** Catalogue rows
 3601–3634.
 
-> **Reviewed page by page, 2026-08-27.** All 64 pages were read twice against
-> their renders and 36 of them were corrected; the row-per-page record is in
-> `tools/review/ledger.json` and the repairs are in
+> **Reviewed page by page, 2026-08-27 and 2026-08-28.** All 64 pages were
+> read twice against their renders; 36 were corrected on the first pass and a
+> further 18 on the second, after the live app surfaced two defect classes
+> the first pass's renders had not made visible: every checkbox in the batch
+> was seated 4.5-6pt too high, and several pages had no field at all where
+> the published form expects one (a respondent's name and address, a joint
+> petition's two spouses, a claim list's growable slots). The row-per-page
+> record is in `tools/review/ledger.json`, the repairs in
 > `tools/review/repair_pei_fields.py`. See **What the page-by-page review
-> found**, below — the headline is that the builder knew two of PEI's *six*
-> option-square vocabularies, so 81 squares could not be ticked, 60 of them on
-> one form.
+> found**, below.
 
 | Rule | What it is | Forms |
 | --- | --- | --- |
@@ -215,6 +218,50 @@ and Spousal Support row is one row holding two numbered items, so it read as
 occupied and got nothing. Form 70I(D) sets Real Estate, Debts and the proposed
 additions as a row of column headings over open paper with no grid under them,
 so three whole sections were unenterable.
+
+### Every checkbox in the batch was seated on the wrong part of its glyph
+
+Confirmed only on the second pass, because the first pass's renders draw a
+number and an outline over each field and never show the printed glyph
+underneath at the same time a human is looking for a 4.5pt gap. Opening the
+live app did.
+
+A character's reported bounding box is its full type cell, ascent to
+descent; the printed square itself occupies only the bottom slice of it. The
+builder anchored every checkbox at the top of that cell using the glyph's
+width as the side of a square -- correct in width, wrong in y, on all six
+vocabularies and on every checkbox the earlier `pass_ticks` repair added
+too. Measured on Form 70A: a `☐` cell is 5.4 x 9.96pt; a box sized to that
+width and anchored at the cell's top sits 4.5pt above where the mark is
+actually drawn. On Form 70R's `U+F0F0` glyphs the cell is 7.9 x 11.25 -- same
+shape, same direction of error.
+
+**240 checkboxes were re-seated, the whole population.** The fix is
+anchoring at the bottom of the glyph's cell instead of the top, keeping the
+field's existing width as the side of the square; it is the identity
+function on anything not already sitting exactly on a glyph's top-left
+corner, so a second run touches nothing already fixed.
+
+### Fields added by name after the live app surfaced them
+
+Four more requests, none of them anchored to a printed rule the way the rest
+of this batch is, so each is a named, measured entry rather than a detected
+one:
+
+* Form 70A's **"TO:"** line never had anywhere to put the respondent's name
+  and address -- the caption printed directly after the label with no rule.
+* Form 70A*'s two **"(Name)"** placeholders over "Spouse One" / "Spouse Two"
+  print as bare instructions, the same shape as a bracket-token elsewhere in
+  this batch; a field now replaces each placeholder rather than leaving the
+  role label with nothing above it.
+* Both forms' claim lists -- **(a)(ii)/(iii)** under the *Divorce Act* and
+  **(b)(i)/(ii)/(iii)** under the *Family Law Act* -- are growable slots on
+  the published form; (a)(i) prints "a divorce" as a fixed default and is
+  left alone, but the rest had never been boxed at all.
+* Form 70A*'s **"Issued by ______ Registrar"** line had a client-facing
+  field on it, which is backwards: it is the court's own signature rule, the
+  same class this batch otherwise leaves bare (`BARE_RULES`,
+  `SIGNATURE_BOXES`). Dropped, not left as a further asymmetry.
 
 ### What could not be repaired, and why
 

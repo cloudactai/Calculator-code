@@ -1104,10 +1104,10 @@
   "sourceReviewed": true,
   "overlayReviewed": true,
   "firstPass": "pass",
-  "corrections": "",
+  "corrections": "Added a field for 'TO: (Name and address of each respondent)', which had never had one -- the caption printed directly after 'TO:' with no rule at all. Added five TextAreas for the claim's growable (a)(ii)/(iii) and (b)(i)/(ii)/(iii) slots; (a)(i) 'a divorce' is left as printed text, unboxed, since it is the fixed default the form itself prints.",
   "finalPass": "pass",
-  "notes": "Backing page. Date, 'Issued by' and the court-office rule all seated. The CLAIM block's slots (a)(ii)-(iii) and (b)(i)-(iii) are numbered lines with no rule and about one line of leading each -- drafting space in Word, not an answer space a fixed overlay can offer.",
-  "build": "14a1205"
+  "notes": "The TO: box sits on 'TO:'s own line only, so the printed caption's second line ('each respondent)') remains visible underneath it, matching the label-then-caption convention used throughout this batch. Requested by name after review of the live app.",
+  "build": "21d400c"
  },
  {
   "province": "PE",
@@ -1119,10 +1119,10 @@
   "sourceReviewed": true,
   "overlayReviewed": true,
   "firstPass": "pass",
-  "corrections": "Items 9, 14 and 16 had no field. Where one line ends in a rule and the next does too, only the lower one was boxed; three of the six marriage details on this page were unanswerable.",
+  "corrections": "Re-seated 12 checkboxes: every one had been anchored at the top of its glyph's cell instead of the bottom, hovering 4.5-6pt above the printed square.",
   "finalPass": "pass",
-  "notes": "All 12 option squares tick inside their printed square. Item 10 keeps two boxes, correctly -- its two runs are 19pt apart and are surname and given names.",
-  "build": "14a1205"
+  "notes": "Items 11/12/17/18's option squares now sit on their printed marks.",
+  "build": "21d400c"
  },
  {
   "province": "PE",
@@ -1134,10 +1134,10 @@
   "sourceReviewed": true,
   "overlayReviewed": true,
   "firstPass": "pass",
-  "corrections": "Items 20 and 21 print ')___ ___________'; the 3-character stub had its own 15pt box and the two stamped values overprinted. Merged, gap 3.2pt. The children's table row 5 column 4 had no cell field -- the next line of body text starts 0.05pt above the table's bottom rule, so the cell read as occupied.",
+  "corrections": "Re-seated 6 checkboxes.",
   "finalPass": "pass",
-  "notes": "Children's table now 5x4 complete.",
-  "build": "14a1205"
+  "notes": "No change to field extent, only position.",
+  "build": "21d400c"
  },
  {
   "province": "PE",
@@ -1149,10 +1149,10 @@
   "sourceReviewed": true,
   "overlayReviewed": true,
   "firstPass": "pass",
-  "corrections": "",
+  "corrections": "Re-seated 2 checkboxes.",
   "finalPass": "pass",
-  "notes": "Parenting and support items complete; every option square tickable.",
-  "build": "14a1205"
+  "notes": "No change to field extent, only position.",
+  "build": "21d400c"
  },
  {
   "province": "PE",
@@ -1179,10 +1179,10 @@
   "sourceReviewed": true,
   "overlayReviewed": true,
   "firstPass": "pass",
-  "corrections": "",
+  "corrections": "Re-seated 4 checkboxes. Added the item 34 answer band named in NARRATIVE_AREAS -- 23.6pt, under the generic detector's floor, kept in on request rather than left as another unreachable band.",
   "finalPass": "pass",
-  "notes": "Three tables complete. Item 36's Date/Nature/Status headings stand over 18pt of leading -- one line, not a table body.",
-  "build": "14a1205"
+  "notes": "34's band is tight but usable.",
+  "build": "21d400c"
  },
  {
   "province": "PE",
@@ -1209,10 +1209,10 @@
   "sourceReviewed": true,
   "overlayReviewed": true,
   "firstPass": "pass",
-  "corrections": "Dropped four boxes from signature rules -- petitioner, lawyer, respondent and the acknowledgement's own 'Signature'.",
+  "corrections": "Re-seated 2 checkboxes.",
   "finalPass": "pass",
-  "notes": "JUDGMENT CALL, and the one that nearly went wrong: the caption line reads 'Date ______  Signature of respondent ______' at one height, and the rule two lines above is the respondent's ADDRESS FOR SERVICE. Matching on the nearest caption claimed the address and date rules too. Both are kept; only the three signature rules and the witness rule are bare.",
-  "build": "14a1205"
+  "notes": "The acknowledgement-of-service options tick inside their printed squares now.",
+  "build": "21d400c"
  },
  {
   "province": "PE",
@@ -1224,10 +1224,10 @@
   "sourceReviewed": true,
   "overlayReviewed": true,
   "firstPass": "pass",
-  "corrections": "",
+  "corrections": "Re-seated 4 checkboxes.",
   "finalPass": "pass",
-  "notes": "11 fields. The four ballot boxes (U+2610, AppleSymbols and ArialUnicodeMS) were already covered. The rule over 'D. Registrar' keeps its field -- see the office-caption note in the README.",
-  "build": "14a1205"
+  "notes": "The two document-list options and the pre-motion-conference-memorandum sub-options tick correctly now.",
+  "build": "21d400c"
  },
  {
   "province": "PE",
@@ -1239,10 +1239,10 @@
   "sourceReviewed": true,
   "overlayReviewed": true,
   "firstPass": "pass",
-  "corrections": "Item 9's rule had no field.",
+  "corrections": "Added Spouse One's and Spouse Two's name fields, replacing the '(Name)' placeholders the same way a bracket-token instruction is replaced elsewhere; added the court file number field; added five TextAreas for the growable claim slots (a)(ii)/(iii) and (b)(i)/(ii)/(iii); dropped the 'Issued by ______ Registrar' field -- a court field, not a client one, the same class this batch otherwise leaves bare.",
   "finalPass": "pass",
-  "notes": "The style of cause prints '(Name)' over 'Spouse One' and 'Spouse Two' with no rule under either, so there is no party box and no bind. That is the form, not the build.",
-  "build": "14a1205"
+  "notes": "Dropping 'Issued by' exposed its own underscore run to the blanks detector on the very next run, which tried to put a field straight back on it; added to BARE_RULES to hold the removal.",
+  "build": "21d400c"
  },
  {
   "province": "PE",
@@ -1254,10 +1254,10 @@
   "sourceReviewed": true,
   "overlayReviewed": true,
   "firstPass": "pass",
-  "corrections": "Items 15, 19(b) and 22(b) had no field; 19(b) is a full-width 72-character rule for the reasons a spouse gives.",
+  "corrections": "Re-seated 12 checkboxes.",
   "finalPass": "pass",
-  "notes": "Children's table 4x4 complete. Items 20/21 keep two boxes each -- municipality and province, separated by the form's own comma.",
-  "build": "14a1205"
+  "notes": "Items 11/12/17/18 and 19's certificate options tick inside their printed squares now.",
+  "build": "21d400c"
  },
  {
   "province": "PE",
@@ -1269,10 +1269,10 @@
   "sourceReviewed": true,
   "overlayReviewed": true,
   "firstPass": "pass",
-  "corrections": "",
+  "corrections": "Re-seated 6 checkboxes.",
   "finalPass": "pass",
-  "notes": "Every rule boxed; values land on their rules under the captions.",
-  "build": "14a1205"
+  "notes": "No change to field extent, only position.",
+  "build": "21d400c"
  },
  {
   "province": "PE",
@@ -1284,10 +1284,10 @@
   "sourceReviewed": true,
   "overlayReviewed": true,
   "firstPass": "pass",
-  "corrections": "",
+  "corrections": "Re-seated 12 checkboxes.",
   "finalPass": "pass",
-  "notes": "Four tables complete.",
-  "build": "14a1205"
+  "notes": "No change to field extent, only position.",
+  "build": "21d400c"
  },
  {
   "province": "PE",
@@ -1359,10 +1359,10 @@
   "sourceReviewed": true,
   "overlayReviewed": true,
   "firstPass": "pass",
-  "corrections": "The Responding Party's two cells -- the other side's name and address, and their lawyer's -- had no fields at all.",
+  "corrections": "",
   "finalPass": "pass",
-  "notes": "JUDGMENT CALL: Part 1's 'MOVING PARTY: | Age: | Birthdate:' rows are cells that hold their own label, so no cell field can be placed without splitting them. Left, and recorded.",
-  "build": "14a1205"
+  "notes": "No checkboxes on this page; unaffected by seat_ticks. Listed because a neighbouring pass touched the doc, not this page.",
+  "build": "21d400c"
  },
  {
   "province": "PE",
@@ -1374,10 +1374,10 @@
   "sourceReviewed": true,
   "overlayReviewed": true,
   "firstPass": "pass",
-  "corrections": "",
+  "corrections": "Re-seated 21 checkboxes.",
   "finalPass": "pass",
-  "notes": "Parts 2 and 3 option squares and income lines covered. Two boxes in the narrow item-number column (f44, f48) are pre-existing and harmless; they sit in a column that is empty on continuation rows.",
-  "build": "14a1205"
+  "notes": "Every RELATIONSHIP-DATES and ISSUES-grid option ticks inside its printed square now.",
+  "build": "21d400c"
  },
  {
   "province": "PE",
@@ -1389,10 +1389,10 @@
   "sourceReviewed": true,
   "overlayReviewed": true,
   "firstPass": "pass",
-  "corrections": "Five Symbol U+F0F0 squares had no checkbox; the 'A written agreement dated ___' rule had no field.",
+  "corrections": "Re-seated 6 checkboxes, one of them a Symbol U+F0F0 square.",
   "finalPass": "pass",
-  "notes": "See the U+F0F0 note on Form 70R -- the same substituted glyph.",
-  "build": "14a1205"
+  "notes": "Item 10's order/agreement options and item 11's yes/no now seat correctly.",
+  "build": "21d400c"
  },
  {
   "province": "PE",
@@ -1404,10 +1404,10 @@
   "sourceReviewed": true,
   "overlayReviewed": true,
   "firstPass": "pass",
-  "corrections": "One U+F0F0 square had no checkbox. Dropped the box on 'Signature of party or party's lawyer'. Added a TextArea for item 14's answer cell.",
+  "corrections": "Re-seated 27 checkboxes, one of them U+F0F0.",
   "finalPass": "pass",
-  "notes": "The Date rule beside the signature is kept -- the caption line names both rules.",
-  "build": "14a1205"
+  "notes": "Items 13 through 19's option grids all tick inside their printed squares now.",
+  "build": "21d400c"
  },
  {
   "province": "PE",
@@ -1464,10 +1464,10 @@
   "sourceReviewed": true,
   "overlayReviewed": true,
   "firstPass": "pass",
-  "corrections": "The 'A written agreement dated ___' rule had no field. Dropped the box on 'Signature of party or party's lawyer'. Added TextAreas for items 7 and 8, whose answer space is the lower part of their own cell.",
+  "corrections": "Re-seated 23 checkboxes.",
   "finalPass": "pass",
-  "notes": "Every option square on the page ticks inside its square.",
-  "build": "14a1205"
+  "notes": "PART 2's yes/no/unsure grid across items 4-12 all tick correctly now.",
+  "build": "21d400c"
  },
  {
   "province": "PE",
@@ -1644,10 +1644,10 @@
   "sourceReviewed": true,
   "overlayReviewed": true,
   "firstPass": "pass",
-  "corrections": "Four option squares had no checkbox -- three OpenSymbol U+F091 and one Wingdings U+F071.",
+  "corrections": "Re-seated 4 checkboxes (OpenSymbol U+F091/U+F039 and Wingdings U+F071).",
   "finalPass": "pass",
-  "notes": "30 table cells plus the two table-amount lines all covered.",
-  "build": "14a1205"
+  "notes": "Chart options tick on their printed squares now.",
+  "build": "21d400c"
  },
  {
   "province": "PE",
@@ -1659,10 +1659,10 @@
   "sourceReviewed": true,
   "overlayReviewed": true,
   "firstPass": "pass",
-  "corrections": "Five OpenSymbol U+F091 squares had no checkbox. Dropped the two bracket-token boxes, which sat on '[name of Partnership]' and '[name of corporation]' -- the label, not the blank, which is the underscore run beside each. Dropped the deponent's signature box.",
+  "corrections": "Re-seated 5 checkboxes (OpenSymbol U+F091).",
   "finalPass": "pass",
-  "notes": "All five 'I AM ...' options now tickable.",
-  "build": "14a1205"
+  "notes": "The 'I AM ...' status options all seat correctly now.",
+  "build": "21d400c"
  },
  {
   "province": "PE",
@@ -1719,10 +1719,10 @@
   "sourceReviewed": true,
   "overlayReviewed": true,
   "firstPass": "pass",
-  "corrections": "Six option squares had no checkbox. They are OpenSymbol U+F039, which text extraction renders as the digit 9 -- the page reads '9 a) child care expenses'. Matched on codepoint and font, never on the character.",
+  "corrections": "Re-seated 6 checkboxes (OpenSymbol U+F039, the ones that extract as the digit 9).",
   "finalPass": "pass",
-  "notes": "The 5x3 expense table and item 4's rule all covered.",
-  "build": "14a1205"
+  "notes": "Items 1(a)-(f)'s reason options tick correctly now.",
+  "build": "21d400c"
  },
  {
   "province": "PE",
@@ -1899,10 +1899,10 @@
   "sourceReviewed": true,
   "overlayReviewed": true,
   "firstPass": "pass",
-  "corrections": "27 option squares had no checkbox.",
+  "corrections": "Re-seated 27 checkboxes (Symbol U+F0F0).",
   "finalPass": "pass",
-  "notes": "THE WORST DEFECT IN THE BATCH, and a background one as well: every option square on this form renders as an Apple logo. LibreOffice mapped the court's checkbox to Symbol U+F0F0. A Registrar's Certificate whose whole purpose is to be ticked shipped with 60 untickable squares and a wrong glyph under each. The fields are now correct; the printed glyph still needs a font substitution at render time, which is a rebuild.",
-  "build": "14a1205"
+  "notes": "Every option in sections 1-4 now sits on its printed square. The square itself still renders as an Apple logo in the background -- a font-substitution issue in the LibreOffice render, recorded in the README, not something a field-position fix can reach.",
+  "build": "21d400c"
  },
  {
   "province": "PE",
@@ -1914,10 +1914,10 @@
   "sourceReviewed": true,
   "overlayReviewed": true,
   "firstPass": "pass",
-  "corrections": "33 option squares had no checkbox.",
+  "corrections": "Re-seated 33 checkboxes (Symbol U+F0F0).",
   "finalPass": "pass",
-  "notes": "Same U+F0F0 substitution.",
-  "build": "14a1205"
+  "notes": "Sections 5-10 all seat correctly now; same background-glyph caveat.",
+  "build": "21d400c"
  },
  {
   "province": "PE",
