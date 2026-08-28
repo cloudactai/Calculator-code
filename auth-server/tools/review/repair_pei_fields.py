@@ -1314,6 +1314,10 @@ NORMAL_DATE_FIELDS = {
     ("PEISC_70A_JOINT", 1750047614147), ("PEISC_70A_JOINT", 1750047614153),
     ("PEISC_70A_JOINT", 1750047614155), ("PEISC_70A_JOINT", 1750047614157),
     ("PEISC_70S", 1750131303020), ("PEISC_71B", 1750731700008),
+    # Form 71B's registrar-certification date was a 345pt drafting rule.
+    # It is a normal date, not a narrative answer, so keep it to the same
+    # one-quarter-page maximum as the other standalone dates.
+    ("PEISC_71B", 1750731700009),
     ("PEISC_71E", 1750796887018),
 }
 
@@ -1325,9 +1329,18 @@ def pass_date_lengths(doc_id, mapping, doc, taken):
             and f["width"] > DATE_MAX * SCALE}
 
 
+def pass_71b_layout(doc_id, mapping, doc, taken):
+    """Keep Form 71B's address rule proportionate to the nearby name rule."""
+    if doc_id != "PEISC_71B":
+        return {}
+    target = 135.0 * SCALE
+    return {f["id"]: {"width": target} for f in mapping["staticFields"]
+            if f["id"] == 1750731700005 and abs(f["width"] - target) > .01}
+
+
 PASSES = ("ticks", "fit_ticks", "blanks", "cells", "subcells", "areas",
          "named", "to_layout", "compact_existing_names", "margin", "signatures",
-         "brackets", "office_drop", "stubs", "seat_flat", "70a_layout", "date_lengths")
+         "brackets", "office_drop", "stubs", "seat_flat", "70a_layout", "71b_layout", "date_lengths")
 
 
 def repair(doc_id, wanted, apply_changes):
@@ -1385,6 +1398,10 @@ def repair(doc_id, wanted, apply_changes):
     if "70a_layout" in wanted:
         got = pass_70a_layout(doc_id, mapping, doc, taken)
         report["70a_layout"] = len(got)
+        changes.update(got)
+    if "71b_layout" in wanted:
+        got = pass_71b_layout(doc_id, mapping, doc, taken)
+        report["71b_layout"] = len(got)
         changes.update(got)
     if "date_lengths" in wanted:
         got = pass_date_lengths(doc_id, mapping, doc, taken)

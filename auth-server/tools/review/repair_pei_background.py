@@ -49,7 +49,14 @@ COURT_ADDRESS_REFLOWS = [
 # lower part of the printed page is shifted down intact, creating answer space
 # rather than drawing an input over a heading or legal text.
 PEISC_70A_PAGE_REFLOWS = ((1, 189.0, 30.0), (2, 176.0, 34.0))
-NORMAL_DATE_FIELDS = {("PEISC_70A", 1750805871157), ("PEISC_70A", 1750805871159), ("PEISC_70A", 1750805871161), ("PEISC_70AA", 1750460040010), ("PEISC_70A_JOINT", 1750047614147), ("PEISC_70A_JOINT", 1750047614153), ("PEISC_70A_JOINT", 1750047614155), ("PEISC_70A_JOINT", 1750047614157), ("PEISC_70S", 1750131303020), ("PEISC_71B", 1750731700008), ("PEISC_71E", 1750796887018)}
+NORMAL_DATE_FIELDS = {("PEISC_70A", 1750805871157), ("PEISC_70A", 1750805871159), ("PEISC_70A", 1750805871161), ("PEISC_70AA", 1750460040010), ("PEISC_70A_JOINT", 1750047614147), ("PEISC_70A_JOINT", 1750047614153), ("PEISC_70A_JOINT", 1750047614155), ("PEISC_70A_JOINT", 1750047614157), ("PEISC_70S", 1750131303020), ("PEISC_71B", 1750731700008), ("PEISC_71B", 1750731700009), ("PEISC_71E", 1750796887018)}
+
+# Form 71B has an address rule after condition 1(a).  The original 222pt
+# drafting line crowds the condition; 135pt still accommodates an address and
+# is intentionally a little longer than the 75pt name rule in 1(b).
+FORM_71B_ADDRESS_FIELD = ("PEISC_71B", 1750731700005)
+FORM_71B_ADDRESS_BASELINE = 285.18
+FORM_71B_DUPLICATE_REGISTRAR = (459.0, 401.0, 510.0, 428.0)
 
 
 def has_duplicate_prompt(page, rect):
@@ -152,6 +159,40 @@ def cap_date_rules(doc_id, doc, apply_changes):
     return changed
 
 
+def cap_71b_address_rule(doc_id, doc, apply_changes):
+    if doc_id != FORM_71B_ADDRESS_FIELD[0]:
+        return 0
+    mapping = json.load(open(os.path.join(EXPORT, "%s.json" % doc_id)))
+    field = next((f for f in mapping["staticFields"]
+                  if f["id"] == FORM_71B_ADDRESS_FIELD[1]), None)
+    if field is None:
+        return 0
+    page = doc[field["page"] - 1]
+    x0 = field["x"]
+    x1 = x0 + field["width"] / 1.5
+    lines = [(item[1], item[2]) for drawing in page.get_drawings()
+             for item in drawing["items"] if item[0] == "l"
+             and abs(item[1].x - x0) < 1 and abs(item[1].y - FORM_71B_ADDRESS_BASELINE) < 1]
+    if any(abs(end.x - x1) < .3 for _, end in lines):
+        return 0
+    old_x1 = max((end.x for _, end in lines), default=x1)
+    if old_x1 <= x1 + 1:
+        return 0
+    if apply_changes:
+        page.draw_rect(fitz.Rect(x1 - .5, FORM_71B_ADDRESS_BASELINE - 2,
+                                 old_x1 + 1, FORM_71B_ADDRESS_BASELINE + 2),
+                       color=None, fill=(1, 1, 1), overlay=True)
+        page.draw_line(fitz.Point(x0, FORM_71B_ADDRESS_BASELINE),
+                       fitz.Point(x1, FORM_71B_ADDRESS_BASELINE),
+                       color=(0, 0, 0), width=.7)
+    return 1
+
+
+def has_duplicate_71b_registrar(page):
+    return any(word[4] == "Registrar" and word[1] > 400
+               for word in page.get_text("words"))
+
+
 def draw_70a_moved_rules(page):
     """Place page-two writing rules directly beneath their relocated fields."""
     for old, start, end, baseline in (
@@ -231,8 +272,14 @@ def repair(doc_id, apply_changes):
                   and doc[1].rect.height <= 800 and doc[2].rect.height <= 800)
         moved_rules = (doc_id == "PEISC_70A" and not reflow
                        and not has_moved_70a_rules(doc[1]))
-        changed += int(reflow) + int(moved_rules) + cap_date_rules(doc_id, doc, apply_changes)
+        duplicate_71b_registrar = (doc_id == "PEISC_71B"
+                                   and has_duplicate_71b_registrar(doc[0]))
+        changed += (int(reflow) + int(moved_rules) + cap_date_rules(doc_id, doc, apply_changes)
+                    + cap_71b_address_rule(doc_id, doc, apply_changes)
+                    + int(duplicate_71b_registrar))
         if changed and apply_changes:
+            if duplicate_71b_registrar:
+                doc[0].add_redact_annot(fitz.Rect(FORM_71B_DUPLICATE_REGISTRAR), fill=(1, 1, 1))
             for page in doc:
                 page.apply_redactions(images=fitz.PDF_REDACT_IMAGE_NONE)
             for page, did in contacts:
