@@ -1090,13 +1090,14 @@ def pass_compact_existing_names(doc_id, mapping, doc, taken):
                 changes[field["id"]] = target
     return changes
 
-# A field that was never a blank to begin with: Form 70A*'s "Issued by
-# ______  Registrar" line is the court's own signature rule, not a client
-# field, the same class this batch otherwise leaves bare (BARE_RULES,
-# SIGNATURE_BOXES) -- this one shipped with a typeable box by mistake and is
-# dropped on request rather than left as a further asymmetry.
+# An "Issued by ____ Registrar" rule is completed by court staff, not the
+# party using this application.  Treat every PEI instance as a signature rule
+# and leave it unboxed.  These are keyed to the field's own corner so the pass
+# is idempotent and cannot reach the nearby Date or court-office-address fields.
 OFFICE_ONLY_DROP = [
-    ("PEISC_70A_JOINT", 1, 394.12, 295.04),
+    ("PEISC_70A", 1, 389.62, 481.30),
+    ("PEISC_70B", 1, 394.12, 599.56),
+    ("PEISC_70R", 3, 341.37, 134.80),
 ]
 
 
