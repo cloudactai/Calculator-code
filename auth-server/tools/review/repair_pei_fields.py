@@ -1340,7 +1340,8 @@ def pass_71b_layout(doc_id, mapping, doc, taken):
         # The opening address is now on its own first line and is deliberately
         # a little longer than the full-name rule.  The premises address below
         # remains the original long rule: it can contain a full civic address.
-        1750731700003: {"width": 99.0},
+        1750731700002: {"y": 197.16},
+        1750731700003: {"y": 197.16, "width": 99.0},
         1750731700005: {"width": 333.0},
         # The opening sentence becomes two lines, so every later field moves
         # with the source page's 16pt reflow.
