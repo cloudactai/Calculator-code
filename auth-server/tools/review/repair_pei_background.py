@@ -8,6 +8,7 @@ the shipped background; they never touch legal prose or a real writing rule.
     python3 repair_pei_background.py
 """
 import argparse
+import json
 import os
 import tempfile
 
@@ -48,6 +49,7 @@ COURT_ADDRESS_REFLOWS = [
 # lower part of the printed page is shifted down intact, creating answer space
 # rather than drawing an input over a heading or legal text.
 PEISC_70A_PAGE_REFLOWS = ((1, 189.0, 30.0), (2, 176.0, 34.0))
+NORMAL_DATE_FIELDS = {("PEISC_70A", 1750805871157), ("PEISC_70A", 1750805871159), ("PEISC_70A", 1750805871161), ("PEISC_70AA", 1750460040010), ("PEISC_70A_JOINT", 1750047614147), ("PEISC_70A_JOINT", 1750047614153), ("PEISC_70A_JOINT", 1750047614155), ("PEISC_70A_JOINT", 1750047614157), ("PEISC_70S", 1750131303020), ("PEISC_71B", 1750731700008), ("PEISC_71E", 1750796887018)}
 
 
 def has_duplicate_prompt(page, rect):
@@ -124,6 +126,30 @@ def has_moved_70a_rules(page):
                        and abs(end.x - x1) < 0.2 and abs(end.y - y) < 0.2
                        for start, end in lines)
                for x0, y, x1 in expected)
+
+
+def cap_date_rules(doc_id, doc, apply_changes):
+    mapping = json.load(open(os.path.join(EXPORT, "%s.json" % doc_id)))
+    changed = 0
+    for field in mapping["staticFields"]:
+        if (doc_id, field["id"]) not in NORMAL_DATE_FIELDS:
+            continue
+        page = doc[field["page"] - 1]
+        x0, y0 = field["x"], field["y"]
+        x1, y1 = x0 + field["width"] / 1.5, y0 + field["height"] / 1.5
+        baseline = y1 - .6
+        if any(item[0] == "l" and abs(item[1].x-x0)<.3 and abs(item[2].x-x1)<.3 and abs(item[1].y-baseline)<.3 for d in page.get_drawings() for item in d["items"]):
+            continue
+        ends = [w[2] for w in page.get_text("words") if set(w[4]) == {"_"} and abs(w[0]-x0)<2 and y0-4 <= w[1] <= y1+4]
+        ends += [item[2].x for d in page.get_drawings() for item in d["items"] if item[0] == "l" and abs(item[1].x-x0)<2 and abs(item[1].y-baseline)<3]
+        old_x1 = max(ends, default=x1)
+        if old_x1 <= x1 + 1:
+            continue
+        changed += 1
+        if apply_changes:
+            page.draw_rect(fitz.Rect(x1-.5,y0-1,old_x1+1,y1+2), color=None, fill=(1,1,1), overlay=True)
+            page.draw_line(fitz.Point(x0,baseline), fitz.Point(x1,baseline), color=(0,0,0), width=.7)
+    return changed
 
 
 def draw_70a_moved_rules(page):
@@ -205,7 +231,7 @@ def repair(doc_id, apply_changes):
                   and doc[1].rect.height <= 800 and doc[2].rect.height <= 800)
         moved_rules = (doc_id == "PEISC_70A" and not reflow
                        and not has_moved_70a_rules(doc[1]))
-        changed += int(reflow) + int(moved_rules)
+        changed += int(reflow) + int(moved_rules) + cap_date_rules(doc_id, doc, apply_changes)
         if changed and apply_changes:
             for page in doc:
                 page.apply_redactions(images=fitz.PDF_REDACT_IMAGE_NONE)
@@ -238,7 +264,7 @@ def main():
     ap.add_argument("--check", action="store_true")
     args = ap.parse_args()
     total = 0
-    for doc_id in sorted({row[0] for row in MASKS + CONTACT_BLOCKS + COURT_ADDRESS_REFLOWS}):
+    for doc_id in sorted({row[0] for row in MASKS + CONTACT_BLOCKS + COURT_ADDRESS_REFLOWS} | {did for did, _ in NORMAL_DATE_FIELDS}):
         count = repair(doc_id, not args.check)
         print("%s duplicate_prompts=%d" % (doc_id, count))
         total += count

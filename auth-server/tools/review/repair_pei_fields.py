@@ -1307,9 +1307,27 @@ def pass_areas(doc_id, mapping, doc, taken):
     return added
 
 
+DATE_MAX = 153.0
+NORMAL_DATE_FIELDS = {
+    ("PEISC_70A", 1750805871157), ("PEISC_70A", 1750805871159),
+    ("PEISC_70A", 1750805871161), ("PEISC_70AA", 1750460040010),
+    ("PEISC_70A_JOINT", 1750047614147), ("PEISC_70A_JOINT", 1750047614153),
+    ("PEISC_70A_JOINT", 1750047614155), ("PEISC_70A_JOINT", 1750047614157),
+    ("PEISC_70S", 1750131303020), ("PEISC_71B", 1750731700008),
+    ("PEISC_71E", 1750796887018),
+}
+
+
+def pass_date_lengths(doc_id, mapping, doc, taken):
+    return {f["id"]: {"width": min(f["width"], DATE_MAX * SCALE)}
+            for f in mapping["staticFields"]
+            if (doc_id, f["id"]) in NORMAL_DATE_FIELDS
+            and f["width"] > DATE_MAX * SCALE}
+
+
 PASSES = ("ticks", "fit_ticks", "blanks", "cells", "subcells", "areas",
          "named", "to_layout", "compact_existing_names", "margin", "signatures",
-         "brackets", "office_drop", "stubs", "seat_flat", "70a_layout")
+         "brackets", "office_drop", "stubs", "seat_flat", "70a_layout", "date_lengths")
 
 
 def repair(doc_id, wanted, apply_changes):
@@ -1367,6 +1385,10 @@ def repair(doc_id, wanted, apply_changes):
     if "70a_layout" in wanted:
         got = pass_70a_layout(doc_id, mapping, doc, taken)
         report["70a_layout"] = len(got)
+        changes.update(got)
+    if "date_lengths" in wanted:
+        got = pass_date_lengths(doc_id, mapping, doc, taken)
+        report["date_lengths"] = len(got)
         changes.update(got)
     if "margin" in wanted:
         got = pass_margin(doc_id, mapping, doc, taken)
