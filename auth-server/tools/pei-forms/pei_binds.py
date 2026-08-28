@@ -50,6 +50,13 @@ ROLE_RIGHT = [
 # Read to the left of the box: the only caption worth taking from that side.
 CAPTION_LEFT = [
     (re.compile(r"^court file (no|number)$"), "court_info.courtFileNumber"),
+    # PEI writes the file number as a bare "No." -- that is what 70I(A) prints
+    # and what `pei_general_heading` draws on the 22 forms that used to print
+    # only "(General heading)". Anchored and exact: a loose match would take
+    # every numbered item and every "No." column heading in the batch. Run
+    # against the shipped 34 templates before the heading pass, this pattern
+    # adds nothing, so it can only fire on a heading block.
+    (re.compile(r"^no\.?$"), "court_info.courtFileNumber"),
 ]
 
 # "SECOND APPLICANT"/"SECOND RESPONDENT" and the possessive forms must never

@@ -160,6 +160,9 @@ import fitz
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 EXPORT = os.path.abspath(os.path.join(HERE, "..", "..", "form-template-export"))
+sys.path.insert(0, os.path.join(os.path.dirname(HERE), "pei-forms"))
+
+import pei_general_heading as PGH  # noqa: E402
 SCALE = 1.5
 
 # The builder's line metrics, measured off fields it placed correctly: a blank
@@ -925,6 +928,28 @@ def pass_cells(doc_id, mapping, doc, taken):
 # is, rather than detected.
 #
 # (docId, page, x0, y0, x1, y1, type)
+def _heading_shifted(entries):
+    """Move measured coordinates onto pages the general-heading pass moved.
+
+    Every coordinate in this file is what a page says, measured on the shipped
+    template -- so when `pei_general_heading` reflows a page to make room for a
+    style of cause, the tables below are describing the page as it was. They
+    are translated here, at load, from the shift that pass recorded, rather
+    than being re-measured: the two passes then compose in either order, and a
+    rebuilt-from-source template with no heading yet reads its own numbers
+    unchanged.
+    """
+    out = []
+    for entry in entries:
+        doc_id, page = entry[0], entry[1]
+        moved = list(entry)
+        for index in (3, 5):          # y0, y1
+            if index < len(moved) and isinstance(moved[index], (int, float)):
+                moved[index] = PGH.shifted(doc_id, page, moved[index])
+        out.append(tuple(moved))
+    return out
+
+
 NAMED_FIELDS = [
     # Form 70A -- respondent's name and address. Sits on the "TO:" line only,
     # so the printed second caption line ("each respondent)") is left visible
@@ -1001,6 +1026,8 @@ NAMED_FIELDS = [
 # A TO writing line needs room for its printed instruction beneath it. Keep
 # its rule at the measured bottom edge, but use a compact field above that
 # rule so the instruction is no longer covered by the control.
+NAMED_FIELDS = _heading_shifted(NAMED_FIELDS)
+
 TO_NAMED_FIELDS = {
     ("PEISC_70B", 1, 150.0, 668.91),
 }
