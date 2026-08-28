@@ -39,6 +39,11 @@ COURT_ADDRESS_REFLOWS = [
     ("PEISC_70A", 1, (351.0, 504.0, 506.0, 520.0)),
 ]
 
+# (zero-based page, split y, added height).  These are true reflows: the
+# lower part of the printed page is shifted down intact, creating answer space
+# rather than drawing an input over a heading or legal text.
+PEISC_70A_PAGE_REFLOWS = ((1, 189.0, 30.0), (2, 176.0, 34.0))
+
 
 def has_duplicate_prompt(page, rect):
     # A text block can span the whole answer paragraph, so its geometry is too
@@ -82,6 +87,76 @@ def draw_court_address_reflow(page):
                    color=(0, 0, 0), width=0.7)
 
 
+def draw_reflowed_answer_rules(page, page_index):
+    if page_index == 1:
+        # Replace the single cohabitation-date rule with the lower edge of the
+        # new multi-line writing area.  Its caption remains directly above it.
+        page.draw_rect(fitz.Rect(182.0, 170.0, 506.0, 185.0),
+                       color=None, fill=(1, 1, 1), overlay=True)
+        page.insert_text(fitz.Point(122.5, 183.4), "Date(s) of cohabitation",
+                         fontsize=7, fontname="tiro", color=(0, 0, 0))
+        page.draw_line(fitz.Point(122.5, 218.0), fitz.Point(504.0, 218.0),
+                       color=(0, 0, 0), width=0.7)
+    elif page_index == 2:
+        # The original five-character rule after "because:" is replaced by
+        # the bottom edge of the paragraph area below the prompt.
+        page.draw_rect(fitz.Rect(466.0, 156.0, 496.0, 176.0),
+                       color=None, fill=(1, 1, 1), overlay=True)
+        page.draw_line(fitz.Point(144.1, 208.0), fitz.Point(504.0, 208.0),
+                       color=(0, 0, 0), width=0.7)
+
+
+def has_moved_70a_rules(page):
+    expected = ((331.0, 357.0, 504.0), (192.0, 426.25, 276.0),
+                (223.0, 595.0, 384.0))
+    lines = []
+    for drawing in page.get_drawings():
+        for item in drawing["items"]:
+            if item[0] == "l":
+                lines.append((item[1], item[2]))
+    return all(any(abs(start.x - x0) < 0.2 and abs(start.y - y) < 0.2
+                       and abs(end.x - x1) < 0.2 and abs(end.y - y) < 0.2
+                       for start, end in lines)
+               for x0, y, x1 in expected)
+
+
+def draw_70a_moved_rules(page):
+    """Place page-two writing rules directly beneath their relocated fields."""
+    for old, start, end, baseline in (
+        ((397.0, 344.0, 505.0, 359.0), 331.0, 504.0, 357.0),  # item 4
+        ((214.0, 413.0, 278.0, 428.0), 192.0, 276.0, 426.25), # item 5
+        ((322.0, 582.0, 386.0, 597.0), 223.0, 384.0, 595.0), # item 13
+    ):
+        page.draw_rect(fitz.Rect(old), color=None, fill=(1, 1, 1), overlay=True)
+        page.draw_line(fitz.Point(start, baseline), fitz.Point(end, baseline),
+                       color=(0, 0, 0), width=0.7)
+
+
+def reflow_peisc_70a(doc):
+    """Insert measured answer bands on pages 2 and 3 without scaling text."""
+    if doc[1].rect.height > 800 or doc[2].rect.height > 800:
+        return None
+    rebuilt = fitz.open()
+    by_page = {page_index: (split, delta)
+               for page_index, split, delta in PEISC_70A_PAGE_REFLOWS}
+    for page_index in range(doc.page_count):
+        source = doc[page_index]
+        details = by_page.get(page_index)
+        if details is None:
+            rebuilt.insert_pdf(doc, from_page=page_index, to_page=page_index)
+            continue
+        split, delta = details
+        width, height = source.rect.width, source.rect.height
+        page = rebuilt.new_page(width=width, height=height + delta)
+        page.show_pdf_page(fitz.Rect(0, 0, width, split), doc, page_index,
+                           clip=fitz.Rect(0, 0, width, split))
+        page.show_pdf_page(fitz.Rect(0, split + delta, width, height + delta),
+                           doc, page_index,
+                           clip=fitz.Rect(0, split, width, height))
+        draw_reflowed_answer_rules(page, page_index)
+    return rebuilt
+
+
 def repair(doc_id, apply_changes):
     path = os.path.join(EXPORT, "%s.pdf" % doc_id)
     doc = fitz.open(path)
@@ -120,6 +195,11 @@ def repair(doc_id, apply_changes):
             court_addresses.append(page)
             if apply_changes:
                 page.add_redact_annot(fitz.Rect(coords), fill=(1, 1, 1))
+        reflow = (doc_id == "PEISC_70A"
+                  and doc[1].rect.height <= 800 and doc[2].rect.height <= 800)
+        moved_rules = (doc_id == "PEISC_70A" and not reflow
+                       and not has_moved_70a_rules(doc[1]))
+        changed += int(reflow) + int(moved_rules)
         if changed and apply_changes:
             for page in doc:
                 page.apply_redactions(images=fitz.PDF_REDACT_IMAGE_NONE)
@@ -127,12 +207,19 @@ def repair(doc_id, apply_changes):
                 draw_contact_rules(page, did)
             for page in court_addresses:
                 draw_court_address_reflow(page)
+            rebuilt = reflow_peisc_70a(doc) if reflow else None
+            if reflow:
+                draw_70a_moved_rules(rebuilt[1])
+            elif moved_rules:
+                draw_70a_moved_rules(doc[1])
             fd, temp_path = tempfile.mkstemp(suffix=".pdf", dir=EXPORT)
             os.close(fd)
             try:
-                doc.save(temp_path, garbage=4, deflate=True)
+                (rebuilt or doc).save(temp_path, garbage=4, deflate=True)
                 os.replace(temp_path, path)
             finally:
+                if rebuilt is not None:
+                    rebuilt.close()
                 if os.path.exists(temp_path):
                     os.unlink(temp_path)
     finally:

@@ -1100,9 +1100,13 @@ PEISC_70A_LAYOUT = {
     1750805871018: {"x": 192.0, "width": 126.0},   # item 5
     1750805871024: {"x": 223.0, "width": 241.5},   # item 13
     1750805871003: {"x": 369.0, "width": 202.5},   # court office address
+    1750805871152: {
+        "type": "TextArea", "x": 122.5, "y": 186.0,
+        "width": 572.25, "height": 48.0, "fontSize": 8,
+    },                                                # item 2 cohabitation dates
     1750805871032: {
-        "type": "TextArea", "x": 144.1, "y": 168.0,
-        "width": 539.85, "height": 42.0, "fontSize": 8,
+        "type": "TextArea", "x": 144.1, "y": 178.0,
+        "width": 539.85, "height": 45.0, "fontSize": 8,
     },                                                # item 19(b)
 }
 
@@ -1115,6 +1119,20 @@ def pass_70a_layout(doc_id, mapping, doc, taken):
         target = PEISC_70A_LAYOUT.get(field["id"])
         if target and any(field.get(key) != value for key, value in target.items()):
             changes[field["id"]] = target
+    # Match the two PDF background reflows.  The sentinel field makes the pass
+    # idempotent without writing application-only metadata into the mapping.
+    page_two = doc[1]
+    item_four = next(f for f in mapping["staticFields"] if f["id"] == 1750805871017)
+    if page_two.rect.height > 800 and item_four["y"] < 340:
+        for field in page_fields(mapping["staticFields"], 2):
+            if field["y"] >= 189.0:
+                changes.setdefault(field["id"], {})["y"] = round(field["y"] + 30.0, 2)
+    page_three = doc[2]
+    residence = next(f for f in mapping["staticFields"] if f["id"] == 1750805871039)
+    if page_three.rect.height > 800 and residence["y"] < 280:
+        for field in page_fields(mapping["staticFields"], 3):
+            if field["id"] != 1750805871032 and field["y"] >= 176.0:
+                changes.setdefault(field["id"], {})["y"] = round(field["y"] + 34.0, 2)
     return changes
 
 # An "Issued by ____ Registrar" rule is completed by court staff, not the
