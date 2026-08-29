@@ -40,9 +40,21 @@ CONTACT_BLOCKS = [
 # baseline).  Every replacement uses the same 135pt answer rule.
 COURT_ADDRESS_REFLOWS = [
     ("PEISC_70A", 1, (265.0, 504.0, 506.0, 520.0), 516.8, 518.0),
-    ("PEISC_70A_JOINT", 1, (265.0, 323.0, 506.0, 340.0), 335.3, 336.5),
+    # Shifted -50.57pt: pei_general_heading's box-format conversion pulled
+    # everything below the old heading up when it replaced it (see
+    # convert_70a_joint_heading.py, heading_shifts.json). This reflow itself
+    # was already applied before that conversion; the coordinates just have
+    # to move with the content they describe, or `has_court_address_reflow`
+    # reads the old baseline, finds nothing there any more, and tries to
+    # redo a reflow that's already on the page.
+    ("PEISC_70A_JOINT", 1, (265.0, 272.43, 506.0, 289.43), 284.73, 285.93),
     ("PEISC_70B", 1, (265.0, 623.0, 506.0, 640.0), 635.1, 636.3),
-    ("PEISC_71E", 1, (265.0, 655.0, 506.0, 671.0), 666.7, 667.9),
+    # Moved to page 2: this content was on 71E's page 1, past the general-
+    # heading pass's own spill split, so it followed its tail onto the
+    # continuation page that pass spliced in (heading_shifts.json). Same
+    # reflow, same reason to move as 70A_JOINT's above -- content described
+    # by a fixed coordinate has to follow it when the page reflows.
+    ("PEISC_71E", 2, (265.0, 98.03, 506.0, 114.03), 109.73, 110.93),
 ]
 
 # (zero-based page, split y, added height).  These are true reflows: the

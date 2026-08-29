@@ -977,6 +977,7 @@ def _heading_shifted_corners(entries):
 # as it was. Reassigned here (rather than immediately after the list literal
 # above) because `_heading_shifted_corners` has to exist first.
 SIGNATURE_BOXES = _heading_shifted_corners(SIGNATURE_BOXES)
+BARE_RULES = _heading_shifted_corners(BARE_RULES)
 
 
 NAMED_FIELDS = [

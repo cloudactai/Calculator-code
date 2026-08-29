@@ -1239,10 +1239,10 @@
   "sourceReviewed": true,
   "overlayReviewed": true,
   "firstPass": "pass",
-  "corrections": "Added Spouse One's and Spouse Two's name fields, replacing the '(Name)' placeholders the same way a bracket-token instruction is replaced elsewhere; added the court file number field; added five TextAreas for the growable claim slots (a)(ii)/(iii) and (b)(i)/(ii)/(iii); dropped the 'Issued by ______ Registrar' field -- a court field, not a client one, the same class this batch otherwise leaves bare.",
+  "corrections": "Replaced the prior pass's unbound underscore-rule heading (court file number, court, Spouse One, Spouse Two, none of them bound) with the batch's label-then-box heading: a seal ring, a Court File No. box bound to court_info.courtFileNumber, and Spouse One/Spouse Two boxes bound to applicant.fullLegalName/respondent.fullLegalName. See convert_70a_joint_heading.py.",
   "finalPass": "pass",
-  "notes": "Dropping 'Issued by' exposed its own underscore run to the blanks detector on the very next run, which tried to put a field straight back on it; added to BARE_RULES to hold the removal.",
-  "build": "21d400c"
+  "notes": "The two party rows read 'Spouse One:'/'Spouse Two:' rather than 'Applicant/Petitioner:'/'Respondent:' -- the words this document actually uses for a joint petition -- so pei_binds.py's caption reader (which only recognizes the latter) does not independently confirm these two binds the way it does on every other headed form; they are set explicitly by convert_70a_joint_heading.py instead. BARE_RULES' and SIGNATURE_BOXES' page-1 entries for this doc now translate through heading_shifts.json the same way NAMED_FIELDS already did.",
+  "build": "3471bb3"
  },
  {
   "province": "PE",

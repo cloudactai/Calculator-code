@@ -160,7 +160,7 @@ def block_bottom(second_title=False):
     return columns_top + TOP_PAD + FIELD_H + (rows - 1) * FIELD_ROW + BOTTOM_PAD
 
 
-def draw_block(page, left, right, top, seal, second_title=False):
+def draw_block(page, left, right, top, seal, second_title=False, party_rows=None):
     """Draw the heading and return the fields that belong on it.
 
     The court name and `(Family Section)` are centred across the **whole**
@@ -173,6 +173,12 @@ def draw_block(page, left, right, top, seal, second_title=False):
     `Respondent:` all line up on the same edge and no box is longer than
     another. The **left** column, otherwise empty paper below the title,
     carries a seal ring sized to fill the room the right column's rows define.
+
+    `party_rows` overrides the two (or four, with `second_title`) party rows
+    below Court File No. -- 70A_JOINT's own "Spouse One"/"Spouse Two", rather
+    than "Applicant/Petitioner"/"Respondent", the way its two spouses jointly
+    petition together rather than opposing each other. The row count and
+    layout are unchanged; only the label text and bind differ.
     """
     mid = (left + right) / 2.0
 
@@ -193,9 +199,10 @@ def draw_block(page, left, right, top, seal, second_title=False):
     centred(top + 2 * CENTRE_ROW, SECTION, bold=True)
     columns_top = top + 2 * CENTRE_ROW + SEAL_GAP
 
-    rows = [("Court File No.:", "court_info.courtFileNumber"),
-           ("Applicant/Petitioner:", "applicant.fullLegalName"),
-           ("Respondent:", "respondent.fullLegalName")]
+    rows = list(party_rows) if party_rows else [
+        ("Applicant/Petitioner:", "applicant.fullLegalName"),
+        ("Respondent:", "respondent.fullLegalName")]
+    rows = [("Court File No.:", "court_info.courtFileNumber")] + rows
     if second_title:
         rows += [("Petitioner by Counterpetition:", None),
                 ("Respondent by Counterpetition:", None)]
@@ -441,7 +448,7 @@ def band(doc, page_no, keep):
 
 
 def rebuild(doc, page_no, left, right, title_top, hold_top, hold_bottom, seal,
-           second_title=False, page_fields=()):
+           second_title=False, page_fields=(), party_rows=None):
     """Rebuild the page from bands. Returns (block fields, lift, drop, spill).
 
     On most forms the placeholder's 11-22pt and the top gap are room enough
@@ -547,7 +554,7 @@ def rebuild(doc, page_no, left, right, title_top, hold_top, hold_bottom, seal,
     if footer is not None:
         page.show_pdf_page(fitz.Rect(0, 0, w, h), footer, 0)   # unshifted
         footer.close()
-    fields = draw_block(page, left, right, top, seal, second_title)
+    fields = draw_block(page, left, right, top, seal, second_title, party_rows)
 
     bottom = max(b[3] for b in page.get_text("blocks"))
     if bottom > h - MARGIN_BOTTOM:
