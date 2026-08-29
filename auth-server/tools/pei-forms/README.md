@@ -9,8 +9,15 @@ Chrome, no Adobe.
 
 ## Scope
 
-**34 forms, 64 pages, 1,143 fields, 4 binds, zero findings.** Catalogue rows
+**34 forms, 81 pages, 1,232 fields, 67 binds, zero findings.** Catalogue rows
 3601–3634.
+
+> Was 34 forms / 64 pages / 1,143 fields / 4 binds as first shipped. The binds
+> came from the general-heading pass (`GENERAL_HEADING_PLAN.md`), which put a
+> real style of cause on 20 forms that had printed only `(General heading)`;
+> the pages and most of the fields came from that pass and from the
+> answer-space pass below, both of which add a continuation page where a
+> reflow no longer fits on the sheet it started on.
 
 > **Reviewed page by page, 2026-08-27 and 2026-08-28.** All 64 pages were
 > read twice against their renders; 36 were corrected on the first pass and a
@@ -296,6 +303,11 @@ one:
 
 ### What could not be repaired, and why
 
+> **Superseded in round 6 — see "Sixth pass: making the answer space" below.**
+> The reasoning here was sound while it was written, and it is left standing
+> because the conclusion it reached was reversed by a change in what the batch
+> could do, not by anyone deciding it had been wrong.
+
 **PEI has far less blank paper than it looks like it has.** The gap under "If
 yes, provide details." on Form 70A page 7 measures **20.6pt** — one line of
 leading. Form 70A page 7 and Form 70A* page 5 are full pages of such questions
@@ -358,6 +370,83 @@ python3 repair_pei_fields.py
 python3 record_pe_round3.py
 ```
 
+## Sixth pass: making the answer space
+
+`pei_answer_space.py`. **33 answer areas on 18 pages of 11 forms.**
+
+Round 3 found the narrative prompts and, in "What could not be repaired",
+refused them: the gap under a prompt was leading, not answer space, and boxing
+20pt of leading gives nobody room to write. That was right. What changed is not
+the reading but the toolkit — `pei_general_heading` built a band reflow that
+copies vector content with `show_pdf_page` and spills a tail it can no longer
+fit onto a continuation page. With that, the answer to an undersized prompt is
+to **make** the paper rather than to look for it, and the refusal's premise is
+gone. Recorded rather than quietly reversed: the old section is left standing
+with a pointer here.
+
+Worst of it, and the reason this was worth doing: **seven of the batch's
+pleadings ask a party to plead their whole case "in separate, consecutively
+numbered paragraphs" and gave them at most one line — four gave them nothing at
+all.** 70B, 70B*, 70D, 70E, 70F, 70G and 70A's item 35 now each get the rest of
+their page, 12 to 31 writing lines, with the date/signature/service block that
+followed spilled behind them.
+
+Sizing is read off the prompt's own wording, never off the size of the gap it
+was given: a numbered-paragraph instruction gets a third to half a page, an "if
+yes, provide details" gets three to five lines, a table gets nothing (70A's
+item 36 and the child-support grids are answered row by row and were already
+boxed). 70A's item 34 — "briefly outline the reasons here" — was already
+correctly brief and is untouched.
+
+**The pass adds no ink.** Backgrounds are only ever cut into bands and
+re-placed lower; the answer space is empty paper carrying a `TextArea`, which
+is what `NARRATIVE_AREAS`, `pass_cells` and `pass_subcells` already do. Nothing
+is scaled — this batch has refused that three times now.
+
+Three things it had to learn, none of which the field tables would have shown:
+
+* **A cut must land in clear paper, and "clear" includes the invisible.**
+  LibreOffice leaves white-on-white rectangles all over these pages. A band
+  redaction keeps art it does not wholly cover, so a cut through one duplicates
+  it and the copy paints white over whatever the lower band lands on. 70D's and
+  70G's natural cuts both sit inside one. `validate_cut` refuses any cut
+  crossing type, art or a field; `scrub_whiteouts` removes a crossed rectangle
+  only where no glyph sits inside it, on a hairline band so a second whiteout
+  stacked below it is left alone.
+* **A rebuilt page has to be re-seated and re-fitted.** The shift is exact at
+  two decimals but the ink rides an XObject matrix, so re-extracted extents
+  round differently — 0.04pt on text boxes, 0.09pt on option squares. `reseat`
+  (the heading pass's) and `refit_ticks` correct that rounding scale and
+  nothing larger, so `repair_pei_fields --check` reports **exactly what it
+  reported before this pass ran.**
+* **Nine forms gain pages, so the ledger renumbers.** A continuation is spliced
+  in behind the page it spilled from, so 70A's own page 3 is now page 4.
+  `record_pe_round6.py` derives the remap from `answer_space_shifts.json`
+  rather than hardcoding it.
+
+### What this pass still does not fix
+
+* **70A's item 42** (condonation/connivance — "give details and set out the
+  facts") gets no box. Page 7 has 7.5pt of slack; four disclosure items already
+  spill its tail, and item 42 lands on the continuation immediately followed by
+  the TRIAL heading, with the free paper below *that*. Boxing the leading under
+  it would repeat the mistake this pass exists to correct. It needs a cut on
+  the continuation page — a second round over a page this pass created — which
+  is a mechanism, not a measurement, and is left for its own change.
+* **70BB and 70BB.1** are ruled tables end to end. A band cut through a table
+  slices its vertical rules, which `validate_cut` refuses outright — the
+  refusal is the proof, not an oversight. Their prompts need the grid redrawn,
+  not the page reflowed.
+* **70I(C)'s item 4** ("unable to obtain receipts, for the following reasons")
+  sits at the foot of a full page with nothing below it to displace, so there
+  is no band to grow into without separating the prompt from its answer.
+
+```
+python3 pei_answer_space.py --check      # validates every cut, writes nothing
+python3 pei_answer_space.py
+python3 ../review/record_pe_round6.py
+```
+
 ## Catalogue, binds, verify
 
 ```
@@ -366,6 +455,16 @@ python3 rebind_pei_forms.py [--check]
 python3 verify_pei.py
 npm run forms:validate-export     # from auth-server/
 ```
+
+> **`merge_pei_catalog.py` is not free to re-run just to correct a page
+> count.** It rebuilds the whole PEI block and re-derives `sortOrder` from
+> whatever the catalogue currently occupies (its own docstring says so), and
+> another province has grown past 3600 since PEI was merged — so running it in
+> round 6 moved all 34 PEI rows from 3601–3634 to 4101–4134 as a side effect of
+> a nine-row `pageCount` change. Round 6 therefore updated `pageCount` in place
+> and left `sortOrder` alone. `audit.json` is separately stale (its field counts
+> lag several provinces, Nova Scotia included) and was left as found rather than
+> regenerated inside an unrelated change.
 
 **PEI captions its party lines below-right**, which is a third convention: NL and
 NS print the role beside the box, BC and SK print it to the left, and PEI puts it
@@ -393,11 +492,19 @@ do print a full style of cause are the two that get bound.
 
 ## Reviewing it again
 
-The source and the shipped background render **pixel-identical on all 64
-pages** — which follows from the build path, since `flatten_background` copies
-a LibreOffice render rather than modifying it. So for this province the
-`combined` view of `tools/review/render_review.py` carries both reads on the
-authoritative page:
+The source and the shipped background once rendered **pixel-identical on all 64
+pages**, which followed from the build path: `flatten_background` copies a
+LibreOffice render rather than modifying it.
+
+**That invariant no longer holds, and a reviewer should not trust it.** Three
+passes now rewrite the background itself — `reflow_pei_71b_source.py` (71B),
+`pei_general_heading.py` plus `convert_70a_joint_heading.py` (a style of cause
+on 20 forms) and `pei_answer_space.py` (answer space on 18 pages of 11 forms).
+Every one of them reflows the page in bands copied with `show_pdf_page`, so
+nothing is re-typeset and nothing drifts, but the shipped page is no longer the
+source page and the source is no longer the only thing worth reading. On a
+reflowed page read the **shipped background**, not the `.doc`; on the rest the
+`combined` view still carries both reads at once:
 
 ```
 python3 ../review/render_review.py PEISC_70R --views combined

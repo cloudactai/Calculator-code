@@ -163,6 +163,7 @@ EXPORT = os.path.abspath(os.path.join(HERE, "..", "..", "form-template-export"))
 sys.path.insert(0, os.path.join(os.path.dirname(HERE), "pei-forms"))
 
 import pei_general_heading as PGH  # noqa: E402
+import pei_answer_space as PAS  # noqa: E402
 SCALE = 1.5
 
 # The builder's line metrics, measured off fields it placed correctly: a blank
@@ -928,23 +929,40 @@ def pass_cells(doc_id, mapping, doc, taken):
 # is, rather than detected.
 #
 # (docId, page, x0, y0, x1, y1, type)
-def _heading_shifted(entries):
-    """Move measured coordinates onto pages the general-heading pass moved.
+def _translate(doc_id, page, y):
+    """One measured (page, y) carried through both reflow passes, in order.
+
+    `pei_general_heading` moved page 1 to fit a style of cause;
+    `pei_answer_space` then cut answer bands into whatever page needed one. The
+    second pass measured its own cuts against the page the first pass left, so
+    the translations compose in that order and only in that order -- reading a
+    coordinate through the answer-space tables first would look it up against a
+    page that never existed.
+    """
+    headed_page = PGH.page_for(doc_id, page, y)
+    headed_y = PGH.shifted(doc_id, page, y)
+    return (PAS.page_for(doc_id, headed_page, headed_y),
+            PAS.shifted(doc_id, headed_page, headed_y))
+
+
+def _reflowed(entries):
+    """Move measured coordinates onto pages the reflow passes moved.
 
     Every coordinate in this file is what a page says, measured on the shipped
     template -- so when `pei_general_heading` reflows a page to make room for a
-    style of cause, the tables below are describing the page as it was. They
-    are translated here, at load, from the shift that pass recorded, rather
-    than being re-measured: the two passes then compose in either order, and a
-    rebuilt-from-source template with no heading yet reads its own numbers
+    style of cause, or `pei_answer_space` cuts an answer band into one, the
+    tables below are describing the page as it was. They are translated here,
+    at load, from the shifts those passes recorded, rather than being
+    re-measured: the passes then compose in any order with this file, and a
+    rebuilt-from-source template that has had neither run reads its own numbers
     unchanged.
 
-    On the forms where the block was taller than the page had room for, the
-    tail of the page spilled onto its own continuation page (appended at the
-    end of the document, not inserted where the tail used to be -- see
-    `pei_general_heading.rebuild`). An entry naming a y at or past that split
-    is naming content that isn't on `page` any more, so the page number moves
-    too, worked out from the same pre-heading y this function already reads.
+    Where a reflow was taller than the page had room for, the tail spilled onto
+    a continuation page spliced in directly behind it (`rebuild`, in both
+    tools). An entry naming a y at or past that split is naming content that
+    isn't on `page` any more, so the page number moves too -- and so does every
+    entry on a *later* page of the same form, which is why `_translate` reads
+    the page number as well as the y.
     """
     out = []
     for entry in entries:
@@ -952,32 +970,32 @@ def _heading_shifted(entries):
         moved = list(entry)
         y0 = moved[3] if len(moved) > 3 and isinstance(moved[3], (int, float)) else None
         if y0 is not None:
-            moved[1] = PGH.page_for(doc_id, page, y0)
-        for index in (3, 5):          # y0, y1
-            if index < len(moved) and isinstance(moved[index], (int, float)):
-                moved[index] = PGH.shifted(doc_id, page, moved[index])
+            moved[1], moved[3] = _translate(doc_id, page, y0)
+        if len(moved) > 5 and isinstance(moved[5], (int, float)):
+            _page, moved[5] = _translate(doc_id, page, moved[5])
         out.append(tuple(moved))
     return out
 
 
-def _heading_shifted_corners(entries):
-    """The same translation as `_heading_shifted`, for `(docId, page, x, y)`
+def _reflowed_corners(entries):
+    """The same translation as `_reflowed`, for `(docId, page, x, y)`
     corner tables (`SIGNATURE_BOXES`, `OFFICE_ONLY_DROP`, and the rest) rather
     than `(docId, page, x0, y0, x1, y1, ...)` rectangles. Returns a list;
     callers that need a `set` wrap the result themselves.
     """
     out = []
     for doc_id, page, x, y in entries:
-        out.append((doc_id, PGH.page_for(doc_id, page, y), x, PGH.shifted(doc_id, page, y)))
+        new_page, new_y = _translate(doc_id, page, y)
+        out.append((doc_id, new_page, x, new_y))
     return out
 
 
 # Keyed to the box's own top-left corner, measured on the shipped template --
 # so on a form the heading pass reflowed, this table is describing the page
 # as it was. Reassigned here (rather than immediately after the list literal
-# above) because `_heading_shifted_corners` has to exist first.
-SIGNATURE_BOXES = _heading_shifted_corners(SIGNATURE_BOXES)
-BARE_RULES = _heading_shifted_corners(BARE_RULES)
+# above) because `_reflowed_corners` has to exist first.
+SIGNATURE_BOXES = _reflowed_corners(SIGNATURE_BOXES)
+BARE_RULES = _reflowed_corners(BARE_RULES)
 
 
 NAMED_FIELDS = [
@@ -1056,9 +1074,9 @@ NAMED_FIELDS = [
 # A TO writing line needs room for its printed instruction beneath it. Keep
 # its rule at the measured bottom edge, but use a compact field above that
 # rule so the instruction is no longer covered by the control.
-NAMED_FIELDS = _heading_shifted(NAMED_FIELDS)
+NAMED_FIELDS = _reflowed(NAMED_FIELDS)
 
-TO_NAMED_FIELDS = set(_heading_shifted_corners({
+TO_NAMED_FIELDS = set(_reflowed_corners({
     ("PEISC_70B", 1, 150.0, 668.91),
 }))
 
@@ -1071,7 +1089,7 @@ TO_NAMED_FIELDS = set(_heading_shifted_corners({
 # and the switch unions this with LAWYER_CONTACT_FIELDS.
 RULED_NAME_FIELDS = set()
 
-LAWYER_CONTACT_FIELDS = set(_heading_shifted_corners({
+LAWYER_CONTACT_FIELDS = set(_reflowed_corners({
     ("PEISC_70D", 1, 337.0, 660.13),
     ("PEISC_70D", 1, 343.0, 670.13),
     ("PEISC_70D", 1, 337.0, 680.13),
@@ -1084,10 +1102,10 @@ LAWYER_CONTACT_FIELDS = set(_heading_shifted_corners({
     ("PEISC_70U", 1, 345.0, 286.87),
 }))
 
-COMPACT_EXISTING_NAME_RULES = [
+COMPACT_EXISTING_NAME_RULES = _reflowed_corners([
     ("PEISC_70A_JOINT", 1, 300.0, 193.6),
     ("PEISC_70A_JOINT", 1, 300.0, 244.32),
-]
+])
 
 TO_FIELD_HEIGHT = 10.0
 
@@ -1209,7 +1227,7 @@ def pass_70a_layout(doc_id, mapping, doc, taken):
 # party using this application.  Treat every PEI instance as a signature rule
 # and leave it unboxed.  These are keyed to the field's own corner so the pass
 # is idempotent and cannot reach the nearby Date or court-office-address fields.
-OFFICE_ONLY_DROP = _heading_shifted_corners([
+OFFICE_ONLY_DROP = _reflowed_corners([
     ("PEISC_70A", 1, 389.62, 481.30),
     ("PEISC_70B", 1, 394.12, 599.56),
     ("PEISC_70R", 3, 341.37, 134.80),
@@ -1265,6 +1283,14 @@ NARRATIVE_AREAS = [
     ("PEISC_70BB", 3, 141.10, 128.60, 510.90, 145.40),
     ("PEISC_70BB_1", 2, 105.60, 154.40, 473.50, 171.20),
 ]
+
+# Measured on the shipped page like every other table here, and translated for
+# the same reason. This one needed no translation until `pei_answer_space` ran:
+# the heading pass only ever moved page 1, and nothing in this list is on a
+# page 1. The answer-space pass cuts pages 6 of 70A and 5 of 70A*, and spills
+# earlier pages of both, so item 34's band on each is now a page further on
+# than the number written here.
+NARRATIVE_AREAS = _reflowed(NARRATIVE_AREAS)
 
 
 def pass_subcells(doc_id, mapping, doc, taken):
