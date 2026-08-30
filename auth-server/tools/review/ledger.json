@@ -1256,7 +1256,7 @@
   "firstPass": "pass",
   "corrections": "Re-seated 2 checkboxes.",
   "finalPass": "pass",
-  "notes": "The acknowledgement-of-service options tick inside their printed squares now. Round 6: pei_answer_space.py cut an answer area into this page for a narrative prompt that shipped with one line or none. The background is band-reflowed rather than re-typeset, so every field on the page moved by its own band's constant and nothing was re-detected.",
+  "notes": "The acknowledgement-of-service options tick inside their printed squares now. Round 6: pei_answer_space.py cut an answer area into this page for a narrative prompt that shipped with one line or none. The background is band-reflowed rather than re-typeset, so every field on the page moved by its own band's constant and nothing was re-detected. Round 7: the Statement of Lawyer's first line was reflowed by pei_inline_name_rules.py. The lawyer's name blank was 28pt -- the court's own measure -- and a name of ordinary length overflowed it and printed over the following words. The tail of the line now sits on its own line at the paragraph's continuation indent and the blank runs the width of line 1. The moved text is copied as a clipped XObject, not re-set; only the rule's extension and the (name) caption, which straddles the band edge, are drawn. Affects item 46.",
   "build": "21d400c"
  },
  {
@@ -1391,7 +1391,7 @@
   "firstPass": "pass",
   "corrections": "Dropped four boxes from the two spouses' and two lawyers' signature rules.",
   "finalPass": "pass",
-  "notes": "The four date rules are kept and correctly seated. Round 6: pei_answer_space.py cut an answer area into this page for a narrative prompt that shipped with one line or none. The background is band-reflowed rather than re-typeset, so every field on the page moved by its own band's constant and nothing was re-detected.",
+  "notes": "The four date rules are kept and correctly seated. Round 6: pei_answer_space.py cut an answer area into this page for a narrative prompt that shipped with one line or none. The background is band-reflowed rather than re-typeset, so every field on the page moved by its own band's constant and nothing was re-detected. Round 7: the Statement of Lawyer's first line was reflowed by pei_inline_name_rules.py. The lawyer's name blank was 28pt -- the court's own measure -- and a name of ordinary length overflowed it and printed over the following words. The tail of the line now sits on its own line at the paragraph's continuation indent and the blank runs the width of line 1. The moved text is copied as a clipped XObject, not re-set; only the rule's extension and the (name) caption, which straddles the band edge, are drawn. Affects items 42(a) and 43(a), both lawyers' statements.",
   "build": "14a1205"
  },
  {
@@ -1451,7 +1451,7 @@
   "firstPass": "pass",
   "corrections": "New page carrying the Declaration of Respondent, the respondent's address block and the Statement of Lawyer.",
   "finalPass": "pass",
-  "notes": "New page, spliced in directly behind the page it spilled from so the form still reads start to finish in physical page order. It carries the Declaration of Respondent, the respondent's address block and the Statement of Lawyer, displaced when pei_answer_space.py cut an answer area into that page. Background is band-reflowed, never scaled, and the pass adds no ink. See pei_answer_space.py.",
+  "notes": "New page, spliced in directly behind the page it spilled from so the form still reads start to finish in physical page order. It carries the Declaration of Respondent, the respondent's address block and the Statement of Lawyer, displaced when pei_answer_space.py cut an answer area into that page. Background is band-reflowed, never scaled, and the pass adds no ink. See pei_answer_space.py. Round 7: the Statement of Lawyer's first line was reflowed by pei_inline_name_rules.py. The lawyer's name blank was 28pt -- the court's own measure -- and a name of ordinary length overflowed it and printed over the following words. The tail of the line now sits on its own line at the paragraph's continuation indent and the blank runs the width of line 1. The moved text is copied as a clipped XObject, not re-set; only the rule's extension and the (name) caption, which straddles the band edge, are drawn. Affects the Statement of Lawyer.",
   "build": "d2de4c4"
  },
  {
@@ -1601,7 +1601,7 @@
   "firstPass": "pass",
   "corrections": "New page carrying the Declaration of Respondent, the respondent's address block and the Statement of Lawyer.",
   "finalPass": "pass",
-  "notes": "New page, spliced in directly behind the page it spilled from so the form still reads start to finish in physical page order. It carries the Declaration of Respondent, the respondent's address block and the Statement of Lawyer, displaced when pei_answer_space.py cut an answer area into that page. Background is band-reflowed, never scaled, and the pass adds no ink. See pei_answer_space.py.",
+  "notes": "New page, spliced in directly behind the page it spilled from so the form still reads start to finish in physical page order. It carries the Declaration of Respondent, the respondent's address block and the Statement of Lawyer, displaced when pei_answer_space.py cut an answer area into that page. Background is band-reflowed, never scaled, and the pass adds no ink. See pei_answer_space.py. Round 7: the Statement of Lawyer's first line was reflowed by pei_inline_name_rules.py. The lawyer's name blank was 28pt -- the court's own measure -- and a name of ordinary length overflowed it and printed over the following words. The tail of the line now sits on its own line at the paragraph's continuation indent and the blank runs the width of line 1. The moved text is copied as a clipped XObject, not re-set; only the rule's extension and the (name) caption, which straddles the band edge, are drawn. Affects the Statement of Lawyer.",
   "build": "d2de4c4"
  },
  {

@@ -447,6 +447,62 @@ python3 pei_answer_space.py
 python3 ../review/record_pe_round6.py
 ```
 
+## Seventh pass: the lawyer's name had 28pt
+
+`pei_inline_name_rules.py`. **5 instances on 4 pages.**
+
+Five forms print "I, ____, lawyer for the petitioner, certify to this court
+that I have complied with the requirements of section 7.7 …", and the court's
+own typesetting gives the name **28pt** — about eight characters. The mapping
+had honoured that rule exactly, which is why nothing flagged it: the box was a
+faithful copy of the blank. `render_review`'s **filled** view is what showed the
+defect, and it is the reason that view exists — a name of ordinary length
+overflows in red and prints across the word "lawyer". It had been there since
+the first build.
+
+Nothing could be widened in place. The line is justified to the right margin, so
+a wider box covers the court's own words. The line is reflowed instead: its tail
+moves onto its own line at the paragraph's continuation indent, and the blank
+takes the whole of line 1 — 28pt becomes 334–422pt.
+
+    46. I, ____, lawyer for the petitioner, certify to this court that I have
+        complied with the requirements of section 7.7 ...
+
+    46. I, ______________________________________________ ,
+          (name)
+        lawyer for the petitioner, certify to this court that I have
+        complied with the requirements of section 7.7 ...
+
+**The sentence is copied, not re-typeset** — lifted as a clipped form XObject
+and re-placed, so its glyphs, spacing and justification are the page's own. Two
+things are drawn: the rule's extension (the same 0.6pt stroke) and the `(name)`
+caption, six glyphs of Times-Italic 5.6 re-drawn at its own origin because it
+straddles the band edge and cannot ride across it. That is the move
+`repair_pei_background.COURT_ADDRESS_REFLOWS` already makes to widen a 55pt
+court-office rule to 135pt.
+
+Three things this pass had to learn, none of them visible on a render:
+
+* **A redaction takes the glyphs it touches.** Boxing the `(name)` caption to
+  remove it reached a point and a half into the line below and took letters out
+  of the middle of a word — the first render printed `re    ments of section
+  7.7`. The caption straddles the cut, so the band edges delete it anyway; it
+  needs no redaction of its own.
+* **A strip keeps the art its surround merely touches.** Each relocated strip
+  carried its own copy of the writing rule and both whiteouts, +6 drawings per
+  instance, all of them invisible. Strips are carved with
+  `REMOVE_IF_TOUCHED`; bands are not, and must not be.
+* **Scrubbing a stroked rectangle by its own box does not scrub it.** The
+  stroke is centred on the path, so the box does not cover the ink and
+  `REMOVE_IF_COVERED` keeps it. Scrub on a hairline at the cut instead, the way
+  `pei_answer_space` does.
+
+```
+python3 pei_inline_name_rules.py --check
+python3 pei_inline_name_rules.py
+python3 ../review/record_pe_round7.py
+```
+
 ## Catalogue, binds, verify
 
 ```
@@ -496,10 +552,11 @@ The source and the shipped background once rendered **pixel-identical on all 64
 pages**, which followed from the build path: `flatten_background` copies a
 LibreOffice render rather than modifying it.
 
-**That invariant no longer holds, and a reviewer should not trust it.** Three
+**That invariant no longer holds, and a reviewer should not trust it.** Four
 passes now rewrite the background itself — `reflow_pei_71b_source.py` (71B),
 `pei_general_heading.py` plus `convert_70a_joint_heading.py` (a style of cause
-on 20 forms) and `pei_answer_space.py` (answer space on 18 pages of 11 forms).
+on 20 forms), `pei_answer_space.py` (answer space on 18 pages of 11 forms) and
+`pei_inline_name_rules.py` (the Statement of Lawyer's first line on 4 pages).
 Every one of them reflows the page in bands copied with `show_pdf_page`, so
 nothing is re-typeset and nothing drifts, but the shipped page is no longer the
 source page and the source is no longer the only thing worth reading. On a

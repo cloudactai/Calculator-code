@@ -164,6 +164,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(HERE), "pei-forms"))
 
 import pei_general_heading as PGH  # noqa: E402
 import pei_answer_space as PAS  # noqa: E402
+import pei_inline_name_rules as PIN  # noqa: E402
 SCALE = 1.5
 
 # The builder's line metrics, measured off fields it placed correctly: a blank
@@ -933,16 +934,19 @@ def _translate(doc_id, page, y):
     """One measured (page, y) carried through both reflow passes, in order.
 
     `pei_general_heading` moved page 1 to fit a style of cause;
-    `pei_answer_space` then cut answer bands into whatever page needed one. The
-    second pass measured its own cuts against the page the first pass left, so
+    `pei_answer_space` then cut answer bands into whatever page needed one;
+    `pei_inline_name_rules` then reflowed the Statement of Lawyer's first line.
+    Each pass measured its own cuts against the page the one before it left, so
     the translations compose in that order and only in that order -- reading a
-    coordinate through the answer-space tables first would look it up against a
+    coordinate through a later pass's tables first would look it up against a
     page that never existed.
     """
     headed_page = PGH.page_for(doc_id, page, y)
     headed_y = PGH.shifted(doc_id, page, y)
-    return (PAS.page_for(doc_id, headed_page, headed_y),
-            PAS.shifted(doc_id, headed_page, headed_y))
+    spaced_page = PAS.page_for(doc_id, headed_page, headed_y)
+    spaced_y = PAS.shifted(doc_id, headed_page, headed_y)
+    return (PIN.page_for(doc_id, spaced_page, spaced_y),
+            PIN.shifted(doc_id, spaced_page, spaced_y))
 
 
 def _reflowed(entries):
