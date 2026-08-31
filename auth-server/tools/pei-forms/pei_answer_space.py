@@ -554,14 +554,25 @@ PLAN = {
     ("PEISC_70E", 1): [
         (305.47, None, 108.1, 504.1, "item 4, reply -- numbered paragraphs"),
     ],
-    ("PEISC_70F", 1): [
-        (442.50, None, 108.1, 506.6, "item 4, answer to counterpetition"),
-    ],
-    ("PEISC_70G", 1): [
-        (389.62, None, 108.1, 506.6, "item 4, reply to answer to counterpetition"),
-    ],
     ("PEISC_70A", 6): [
         (487.03, None, 108.1, 506.6, "item 35, grounds for relief"),
+    ],
+
+    # The last two pleadings are sized instead of given the rest of the page.
+    # Both are short forms whose prompt sits low and whose tail -- date, name,
+    # address, phone, and the TO: block -- is all that follows: `None` bought
+    # them 17 and 21 writing lines and paid a whole extra sheet for it, a sheet
+    # carrying nothing but that tail. The height here is what the page has
+    # under the tail instead (136.40 and 194.15 of clear paper), rounded down,
+    # so the box stops just above the block and the form stays one page. The
+    # loss is 17 -> 10 and 21 -> 15 lines, which still answers the prompt; the
+    # five above keep `None` because their tails are longer and their prompts
+    # sit higher, so sizing them would cost far more than a page is worth.
+    ("PEISC_70F", 1): [
+        (442.50, 136.0, 108.1, 506.6, "item 4, answer to counterpetition"),
+    ],
+    ("PEISC_70G", 1): [
+        (389.62, 194.0, 108.1, 506.6, "item 4, reply to answer to counterpetition"),
     ],
 
     # ---- Form 70A, the petition ----------------------------------------
