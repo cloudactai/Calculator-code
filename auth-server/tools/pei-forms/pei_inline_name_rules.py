@@ -67,8 +67,12 @@ CAPTION_SIZE = 5.6
 #   (docId, page, first line's y0, field id)
 INSTANCES = [
     ("PEISC_70A", 11, 214.99, 1750805871167),
-    ("PEISC_70B", 3, 280.35, 1750081877025),
-    ("PEISC_70B_JOINT", 2, 268.35, 1750487331009),
+    # 70B and 70B* no longer spill: `pei_answer_space` sizes their answer box
+    # to the paper above the tail instead of taking the rest of the page, so
+    # the Statement of Lawyer stays on the sheet it starts on. Re-measured
+    # there, not translated -- the page it sits on is a different page.
+    ("PEISC_70B", 2, 610.71, 1750081877025),
+    ("PEISC_70B_JOINT", 1, 591.01, 1750487331009),
     ("PEISC_70A_JOINT", 8, 306.77, 1750047614166),
     ("PEISC_70A_JOINT", 8, 521.42, 1750047614167),
 ]

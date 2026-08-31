@@ -542,17 +542,8 @@ PLAN = {
     # of them shipped with 13.3pt or nothing. `None` gives the prompt the rest
     # of its page and sends the date/signature/service block -- which is all
     # that follows it -- to a continuation.
-    ("PEISC_70B", 2): [
-        (212.12, None, 108.1, 506.6, "counterpetition, relief claimed"),
-    ],
-    ("PEISC_70B_JOINT", 1): [
-        (284.42, None, 90.1, 524.7, "counterpetition, relief claimed"),
-    ],
     ("PEISC_70D", 1): [
         (305.47, None, 108.1, 506.6, "item 4, answer -- numbered paragraphs"),
-    ],
-    ("PEISC_70E", 1): [
-        (305.47, None, 108.1, 504.1, "item 4, reply -- numbered paragraphs"),
     ],
     ("PEISC_70A", 6): [
         (487.03, None, 108.1, 506.6, "item 35, grounds for relief"),
@@ -568,6 +559,15 @@ PLAN = {
     # loss is 17 -> 10 and 21 -> 15 lines, which still answers the prompt; the
     # five above keep `None` because their tails are longer and their prompts
     # sit higher, so sizing them would cost far more than a page is worth.
+    ("PEISC_70B", 2): [
+        (212.12, 190.0, 108.1, 506.6, "counterpetition, relief claimed"),
+    ],
+    ("PEISC_70B_JOINT", 1): [
+        (284.42, 110.0, 90.1, 524.7, "counterpetition, relief claimed"),
+    ],
+    ("PEISC_70E", 1): [
+        (305.47, 284.0, 108.1, 504.1, "item 4, reply -- numbered paragraphs"),
+    ],
     ("PEISC_70F", 1): [
         (442.50, 136.0, 108.1, 506.6, "item 4, answer to counterpetition"),
     ],

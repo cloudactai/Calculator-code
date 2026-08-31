@@ -9,7 +9,7 @@ Chrome, no Adobe.
 
 ## Scope
 
-**34 forms, 77 pages, 1,231 fields, 67 binds, zero findings.** Catalogue rows
+**34 forms, 74 pages, 1,231 fields, 67 binds, zero findings.** Catalogue rows
 3601–3634.
 
 > Was 34 forms / 64 pages / 1,143 fields / 4 binds as first shipped. The binds
@@ -641,6 +641,66 @@ touch them.** Both are recorded here because they are real and still open:
 python3 pei_box_clearance.py --check     # measures and reports, writes nothing
 python3 pei_box_clearance.py
 python3 ../review/record_pe_round8.py
+```
+
+## Tenth pass: the sheets the sixth pass bought
+
+**70B, 70B\* and 70E, one page shorter each. 77 → 74 pages.**
+
+Round 6 gave a narrative prompt `None` for its box height — "take the rest of
+the page" — and spilled whatever followed onto a sheet of its own. The eighth
+pass already found that trade wrong for 70F and 70G. Reading the whole batch
+the same way says it is wrong for three more:
+
+| form | box was | tail on the new sheet | now | pages |
+| --- | --- | --- | --- | --- |
+| 70B | 38 lines | 326pt of content, 334 blank | 13 lines | 3 → 2 |
+| 70B\* | 33 lines | 334pt of content, 326 blank | 7 lines | 2 → 1 |
+| 70E | 27 lines | 83pt of content, 577 blank | 20 lines | 2 → 1 |
+
+**Round 7 has to be paid for out of the same paper.** Its Statement of Lawyer
+reflow lands on the very page 70B's and 70B\*'s tails come back to, and pushes
+everything under it down a line. Sized to the bare tail both pages cleared the
+margin by under a point and then overflowed it once round 7 ran, so the plan
+reserves round 7's 16.32pt and takes another 3pt of headroom on top — free,
+because neither costs a writing line at this size. They now clear by 3.1 and
+3.5pt.
+
+Rebuilding a form means re-running its whole chain in order — answer space,
+then round 7, then round 9's clearance — against a `.pdf`/`.json` reverted to
+the pre-answer-space commit, with that form's entry deleted from
+`answer_space_shifts.json` and `inline_name_shifts.json` first. Each pass
+refuses a form it has already run on, which is what makes the revert
+necessary rather than optional.
+
+**Round 7's anchors are re-measured, never translated.** `INSTANCES` keys an
+instance by `(docId, page, y)` read off the page as round 6 left it, and both
+of those move when the form stops spilling — 70B's Statement of Lawyer goes
+from page 3 at 280.35 to page 2 at 610.71. The new anchor is read off the
+rebuilt page; `measure` wants it within 1pt and says so loudly, so a wrong
+number fails rather than reflows the wrong line.
+
+### What is left, and what it would take
+
+Ten spills remain and **none of them is a sizing decision**: 70A pages 2, 6 and
+7, 70A\* pages 3 and 5, 70D page 1 and 71E page 1 have between −9 and 29pt of
+paper above their own tail, so the box that would keep them on one page is
+nought to one writing line — the leading-not-answer-space case round 3 refused
+and round 6 was built to fix. 70A\* page 6 is the one exception, free at three
+lines either way, but it is the page `pei_signature_space` pins by number and
+is left with that pass.
+
+The blank paper those ten leave is real — 70A page 8 carries 138pt on a 720pt
+sheet — but reclaiming it is **re-pagination**, not sizing: flowing the next
+page's content up into the tail. That moves every field's page and `y`, needs
+a ledger remap like round 6's, and `repair_pei_fields`' tables are absolute
+`(page, y)`. Its own change.
+
+```
+python3 pei_answer_space.py --only PEISC_70B
+python3 pei_inline_name_rules.py --only PEISC_70B
+python3 pei_box_clearance.py
+python3 ../review/record_pe_round10.py
 ```
 
 ## Catalogue, binds, verify

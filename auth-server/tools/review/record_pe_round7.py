@@ -31,8 +31,10 @@ NOTE = ("Round 7: the Statement of Lawyer's first line was reflowed by "
 
 PAGES = [
     ("PEISC_70A", 11, "item 46"),
-    ("PEISC_70B", 3, "the Statement of Lawyer"),
-    ("PEISC_70B_JOINT", 2, "the Statement of Lawyer"),
+    # Round 10 sized these two forms' answer boxes so they no longer spill,
+    # so the Statement of Lawyer sits on the page it starts on.
+    ("PEISC_70B", 2, "the Statement of Lawyer"),
+    ("PEISC_70B_JOINT", 1, "the Statement of Lawyer"),
     ("PEISC_70A_JOINT", 8, "items 42(a) and 43(a), both lawyers' statements"),
 ]
 

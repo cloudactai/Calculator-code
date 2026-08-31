@@ -1436,23 +1436,8 @@
   "firstPass": "pass",
   "corrections": "The second of the respondent's two address rules had no field. Dropped two boxes from the respondent's and lawyer's signature rules.",
   "finalPass": "pass",
-  "notes": "Both address lines now answerable. Round 6: pei_answer_space.py cut an answer area into this page for a narrative prompt that shipped with one line or none. The background is band-reflowed rather than re-typeset, so every field on the page moved by its own band's constant and nothing was re-detected.",
+  "notes": "Both address lines now answerable. Round 6: pei_answer_space.py cut an answer area into this page for a narrative prompt that shipped with one line or none. The background is band-reflowed rather than re-typeset, so every field on the page moved by its own band's constant and nothing was re-detected. Round 10: this form no longer spills. Round 6's answer box had taken the rest of the page and pushed the tail onto a sheet of its own; it now takes an explicit height measured off the paper above that tail, so the Declaration of Respondent, the respondent's address block and the Statement of Lawyer is back on this page and the sheet behind it is gone. The answer space is smaller for it and still answers the prompt. Round 7: the Statement of Lawyer's first line was reflowed by pei_inline_name_rules.py. The lawyer's name blank was 28pt -- the court's own measure -- and a name of ordinary length overflowed it and printed over the following words. The tail of the line now sits on its own line at the paragraph's continuation indent and the blank runs the width of line 1. The moved text is copied as a clipped XObject, not re-set; only the rule's extension and the (name) caption, which straddles the band edge, are drawn. Affects the Statement of Lawyer. Round 8: writing boxes on this page were shortened from the top by pei_box_clearance.py, which measures printed ink off a render rather than off font boxes and takes each box off the line of type above it. The bottom edge is unchanged -- it stays seated on its rule -- so the box is shorter, not lower, and no box was left under 10pt. 2 boxes here, between them covering \"number, and email address\"; \"respondent, set out the circumstances.\".",
   "build": "14a1205"
- },
- {
-  "province": "PE",
-  "docId": "PEISC_70B",
-  "formNo": "70B",
-  "title": "Counterpetition (Against Petitioner and Person not Already Party to Main Action)",
-  "category": "Pleadings",
-  "page": 3,
-  "sourceReviewed": true,
-  "overlayReviewed": true,
-  "firstPass": "pass",
-  "corrections": "New page carrying the Declaration of Respondent, the respondent's address block and the Statement of Lawyer.",
-  "finalPass": "pass",
-  "notes": "New page, spliced in directly behind the page it spilled from so the form still reads start to finish in physical page order. It carries the Declaration of Respondent, the respondent's address block and the Statement of Lawyer, displaced when pei_answer_space.py cut an answer area into that page. Background is band-reflowed, never scaled, and the pass adds no ink. See pei_answer_space.py. Round 7: the Statement of Lawyer's first line was reflowed by pei_inline_name_rules.py. The lawyer's name blank was 28pt -- the court's own measure -- and a name of ordinary length overflowed it and printed over the following words. The tail of the line now sits on its own line at the paragraph's continuation indent and the blank runs the width of line 1. The moved text is copied as a clipped XObject, not re-set; only the rule's extension and the (name) caption, which straddles the band edge, are drawn. Affects the Statement of Lawyer. Round 8: writing boxes on this page were shortened from the top by pei_box_clearance.py, which measures printed ink off a render rather than off font boxes and takes each box off the line of type above it. The bottom edge is unchanged -- it stays seated on its rule -- so the box is shorter, not lower, and no box was left under 10pt. 2 boxes here, between them covering \"number, and email address\"; \"respondent, set out the circumstances.\".",
-  "build": "d2de4c4"
  },
  {
   "province": "PE",
@@ -1556,23 +1541,8 @@
   "firstPass": "pass",
   "corrections": "Second address rule had no field; two signature boxes dropped.",
   "finalPass": "pass",
-  "notes": "Same shape as 70B page 2, on one page. Round 6: pei_answer_space.py cut an answer area into this page for a narrative prompt that shipped with one line or none. The background is band-reflowed rather than re-typeset, so every field on the page moved by its own band's constant and nothing was re-detected.",
+  "notes": "Same shape as 70B page 2, on one page. Round 6: pei_answer_space.py cut an answer area into this page for a narrative prompt that shipped with one line or none. The background is band-reflowed rather than re-typeset, so every field on the page moved by its own band's constant and nothing was re-detected. Round 10: this form no longer spills. Round 6's answer box had taken the rest of the page and pushed the tail onto a sheet of its own; it now takes an explicit height measured off the paper above that tail, so the Declaration of Respondent, the respondent's address block and the Statement of Lawyer is back on this page and the sheet behind it is gone. The answer space is smaller for it and still answers the prompt. Round 7: the Statement of Lawyer's first line was reflowed by pei_inline_name_rules.py. The lawyer's name blank was 28pt -- the court's own measure -- and a name of ordinary length overflowed it and printed over the following words. The tail of the line now sits on its own line at the paragraph's continuation indent and the blank runs the width of line 1. The moved text is copied as a clipped XObject, not re-set; only the rule's extension and the (name) caption, which straddles the band edge, are drawn. Affects the Statement of Lawyer. Round 8: writing boxes on this page were shortened from the top by pei_box_clearance.py, which measures printed ink off a render rather than off font boxes and takes each box off the line of type above it. The bottom edge is unchanged -- it stays seated on its rule -- so the box is shorter, not lower, and no box was left under 10pt. 3 boxes here, between them covering \"certify to this court that I am\"; \"matters in section 7.7(1) and/or\"; \"number, and email address\".",
   "build": "14a1205"
- },
- {
-  "province": "PE",
-  "docId": "PEISC_70B_JOINT",
-  "formNo": "70B*",
-  "title": "Counterpetition (Against Parties to Main Action Only)",
-  "category": "Pleadings",
-  "page": 2,
-  "sourceReviewed": true,
-  "overlayReviewed": true,
-  "firstPass": "pass",
-  "corrections": "New page carrying the Declaration of Respondent, the respondent's address block and the Statement of Lawyer.",
-  "finalPass": "pass",
-  "notes": "New page, spliced in directly behind the page it spilled from so the form still reads start to finish in physical page order. It carries the Declaration of Respondent, the respondent's address block and the Statement of Lawyer, displaced when pei_answer_space.py cut an answer area into that page. Background is band-reflowed, never scaled, and the pass adds no ink. See pei_answer_space.py. Round 7: the Statement of Lawyer's first line was reflowed by pei_inline_name_rules.py. The lawyer's name blank was 28pt -- the court's own measure -- and a name of ordinary length overflowed it and printed over the following words. The tail of the line now sits on its own line at the paragraph's continuation indent and the blank runs the width of line 1. The moved text is copied as a clipped XObject, not re-set; only the rule's extension and the (name) caption, which straddles the band edge, are drawn. Affects the Statement of Lawyer. Round 8: writing boxes on this page were shortened from the top by pei_box_clearance.py, which measures printed ink off a render rather than off font boxes and takes each box off the line of type above it. The bottom edge is unchanged -- it stays seated on its rule -- so the box is shorter, not lower, and no box was left under 10pt. 3 boxes here, between them covering \"certify to this court that am\"; \"matters in section 7.7(1) and/or\"; \"number, and email address\".",
-  "build": "d2de4c4"
  },
  {
   "province": "PE",
@@ -1691,23 +1661,8 @@
   "firstPass": "pass",
   "corrections": "Added a TextField for 'TO (Name and address of respondent's lawyer or respondent)'.",
   "finalPass": "pass",
-  "notes": "Added a TextField for the bare 'TO: (Name and address of ...)' instruction, which had never had a field -- the same gap 70A's own 'TO:' fix closed, extended here on request to the other PEISC forms that print the same shape. The right edge is each page's own rightmost printed ink, not a number carried over from 70A. Round 6: pei_answer_space.py cut an answer area into this page for a narrative prompt that shipped with one line or none. The background is band-reflowed rather than re-typeset, so every field on the page moved by its own band's constant and nothing was re-detected. Round 8: writing boxes on this page were shortened from the top by pei_box_clearance.py, which measures printed ink off a render rather than off font boxes and takes each box off the line of type above it. The bottom edge is unchanged -- it stays seated on its rule -- so the box is shorter, not lower, and no box was left under 10pt. One box here, which had been covering \"The petitioner\".",
+  "notes": "Added a TextField for the bare 'TO: (Name and address of ...)' instruction, which had never had a field -- the same gap 70A's own 'TO:' fix closed, extended here on request to the other PEISC forms that print the same shape. The right edge is each page's own rightmost printed ink, not a number carried over from 70A. Round 6: pei_answer_space.py cut an answer area into this page for a narrative prompt that shipped with one line or none. The background is band-reflowed rather than re-typeset, so every field on the page moved by its own band's constant and nothing was re-detected. Round 8: writing boxes on this page were shortened from the top by pei_box_clearance.py, which measures printed ink off a render rather than off font boxes and takes each box off the line of type above it. The bottom edge is unchanged -- it stays seated on its rule -- so the box is shorter, not lower, and no box was left under 10pt. One box here, which had been covering \"The petitioner\". Round 10: this form no longer spills. Round 6's answer box had taken the rest of the page and pushed the tail onto a sheet of its own; it now takes an explicit height measured off the paper above that tail, so the Date/Name/Address/Phone block and the TO: block is back on this page and the sheet behind it is gone. The answer space is smaller for it and still answers the prompt.",
   "build": "6f5d232"
- },
- {
-  "province": "PE",
-  "docId": "PEISC_70E",
-  "formNo": "70E",
-  "title": "Reply (Divorce)",
-  "category": "Pleadings",
-  "page": 2,
-  "sourceReviewed": true,
-  "overlayReviewed": true,
-  "firstPass": "pass",
-  "corrections": "New page carrying the Date/Name/Address/Phone block and the TO: block.",
-  "finalPass": "pass",
-  "notes": "New page, spliced in directly behind the page it spilled from so the form still reads start to finish in physical page order. It carries the Date/Name/Address/Phone block and the TO: block, displaced when pei_answer_space.py cut an answer area into that page. Background is band-reflowed, never scaled, and the pass adds no ink. See pei_answer_space.py.",
-  "build": "d2de4c4"
  },
  {
   "province": "PE",

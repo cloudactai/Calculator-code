@@ -257,8 +257,15 @@ def run(check):
              sum(1 for r in other if "middle" in r[3]),
              sum(1 for r in other if "below" in r[3])))
     if not check:
+        # Merged, never replaced. This pass is convergent, so a re-run finds
+        # only the forms whose geometry has changed since -- a form rebuilt by
+        # an earlier pass and re-cleared, say. Writing `log` straight out would
+        # then leave a record naming those forms alone and silently drop the
+        # rest of the batch's, which is the audit trail the ledger cites.
+        merged = json.load(open(LOG)) if os.path.exists(LOG) else {}
+        merged.update(log)
         with open(LOG, "w") as handle:
-            json.dump(log, handle, indent=2, sort_keys=True)
+            json.dump(merged, handle, indent=2, sort_keys=True)
     return 0
 
 
