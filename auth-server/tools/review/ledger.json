@@ -1106,7 +1106,7 @@
   "firstPass": "pass",
   "corrections": "Added a field for 'TO: (Name and address of each respondent)', which had never had one -- the caption printed directly after 'TO:' with no rule at all. Added five TextAreas for the claim's growable (a)(ii)/(iii) and (b)(i)/(ii)/(iii) slots; (a)(i) 'a divorce' is left as printed text, unboxed, since it is the fixed default the form itself prints.",
   "finalPass": "pass",
-  "notes": "The TO: box sits on 'TO:'s own line only, so the printed caption's second line ('each respondent)') remains visible underneath it, matching the label-then-caption convention used throughout this batch. Requested by name after review of the live app.",
+  "notes": "The TO: box sits on 'TO:'s own line only, so the printed caption's second line ('each respondent)') remains visible underneath it, matching the label-then-caption convention used throughout this batch. Requested by name after review of the live app. Round 8: writing boxes on this page were shortened from the top by pei_box_clearance.py, which measures printed ink off a render rather than off font boxes and takes each box off the line of type above it. The bottom edge is unchanged -- it stays seated on its rule -- so the box is shorter, not lower, and no box was left under 10pt. 2 boxes here, between them covering \"divorce\"; \"the Family Law Act ,\".",
   "build": "21d400c"
  },
  {
@@ -1166,7 +1166,7 @@
   "firstPass": "pass",
   "corrections": "Re-seated 2 checkboxes.",
   "finalPass": "pass",
-  "notes": "No change to field extent, only position. Round 6: pei_answer_space.py cut an answer area into this page for a narrative prompt that shipped with one line or none. The background is band-reflowed rather than re-typeset, so every field on the page moved by its own band's constant and nothing was re-detected.",
+  "notes": "No change to field extent, only position. Round 6: pei_answer_space.py cut an answer area into this page for a narrative prompt that shipped with one line or none. The background is band-reflowed rather than re-typeset, so every field on the page moved by its own band's constant and nothing was re-detected. Round 8: writing boxes on this page were shortened from the top by pei_box_clearance.py, which measures printed ink off a render rather than off font boxes and takes each box off the line of type above it. The bottom edge is unchanged -- it stays seated on its rule -- so the box is shorter, not lower, and no box was left under 10pt. 2 boxes here, between them covering \"changes in the circumstances of the spouses are expected ...\"; \"parenting order sought is the best interests of the ...\".",
   "build": "21d400c"
  },
  {
@@ -1256,7 +1256,7 @@
   "firstPass": "pass",
   "corrections": "Re-seated 2 checkboxes.",
   "finalPass": "pass",
-  "notes": "The acknowledgement-of-service options tick inside their printed squares now. Round 6: pei_answer_space.py cut an answer area into this page for a narrative prompt that shipped with one line or none. The background is band-reflowed rather than re-typeset, so every field on the page moved by its own band's constant and nothing was re-detected. Round 7: the Statement of Lawyer's first line was reflowed by pei_inline_name_rules.py. The lawyer's name blank was 28pt -- the court's own measure -- and a name of ordinary length overflowed it and printed over the following words. The tail of the line now sits on its own line at the paragraph's continuation indent and the blank runs the width of line 1. The moved text is copied as a clipped XObject, not re-set; only the rule's extension and the (name) caption, which straddles the band edge, are drawn. Affects item 46.",
+  "notes": "The acknowledgement-of-service options tick inside their printed squares now. Round 6: pei_answer_space.py cut an answer area into this page for a narrative prompt that shipped with one line or none. The background is band-reflowed rather than re-typeset, so every field on the page moved by its own band's constant and nothing was re-detected. Round 7: the Statement of Lawyer's first line was reflowed by pei_inline_name_rules.py. The lawyer's name blank was 28pt -- the court's own measure -- and a name of ordinary length overflowed it and printed over the following words. The tail of the line now sits on its own line at the paragraph's continuation indent and the blank runs the width of line 1. The moved text is copied as a clipped XObject, not re-set; only the rule's extension and the (name) caption, which straddles the band edge, are drawn. Affects item 46. Round 8: writing boxes on this page were shortened from the top by pei_box_clearance.py, which measures printed ink off a render rather than off font boxes and takes each box off the line of type above it. The bottom edge is unchanged -- it stays seated on its rule -- so the box is shorter, not lower, and no box was left under 10pt. One box here, which had been covering \"this petition. My address for service of documents\".",
   "build": "21d400c"
  },
  {
@@ -1286,7 +1286,7 @@
   "firstPass": "pass",
   "corrections": "Replaced the prior pass's unbound underscore-rule heading (court file number, court, Spouse One, Spouse Two, none of them bound) with the batch's label-then-box heading: a seal ring, a Court File No. box bound to court_info.courtFileNumber, and Spouse One/Spouse Two boxes bound to applicant.fullLegalName/respondent.fullLegalName. See convert_70a_joint_heading.py.",
   "finalPass": "pass",
-  "notes": "The two party rows read 'Spouse One:'/'Spouse Two:' rather than 'Applicant/Petitioner:'/'Respondent:' -- the words this document actually uses for a joint petition -- so pei_binds.py's caption reader (which only recognizes the latter) does not independently confirm these two binds the way it does on every other headed form; they are set explicitly by convert_70a_joint_heading.py instead. BARE_RULES' and SIGNATURE_BOXES' page-1 entries for this doc now translate through heading_shifts.json the same way NAMED_FIELDS already did. Round 6: pei_answer_space.py cut an answer area into this page for a narrative prompt that shipped with one line or none. The background is band-reflowed rather than re-typeset, so every field on the page moved by its own band's constant and nothing was re-detected.",
+  "notes": "The two party rows read 'Spouse One:'/'Spouse Two:' rather than 'Applicant/Petitioner:'/'Respondent:' -- the words this document actually uses for a joint petition -- so pei_binds.py's caption reader (which only recognizes the latter) does not independently confirm these two binds the way it does on every other headed form; they are set explicitly by convert_70a_joint_heading.py instead. BARE_RULES' and SIGNATURE_BOXES' page-1 entries for this doc now translate through heading_shifts.json the same way NAMED_FIELDS already did. Round 6: pei_answer_space.py cut an answer area into this page for a narrative prompt that shipped with one line or none. The background is band-reflowed rather than re-typeset, so every field on the page moved by its own band's constant and nothing was re-detected. Round 8: writing boxes on this page were shortened from the top by pei_box_clearance.py, which measures printed ink off a render rather than off font boxes and takes each box off the line of type above it. The bottom edge is unchanged -- it stays seated on its rule -- so the box is shorter, not lower, and no box was left under 10pt. 5 boxes here, between them covering \"The following efforts to reconcile have been made:\"; \"divorce;\"; \"possible, copy the information\"; \"spouses.\".",
   "build": "3471bb3"
  },
  {
@@ -1316,7 +1316,7 @@
   "firstPass": "pass",
   "corrections": "Re-seated 6 checkboxes.",
   "finalPass": "pass",
-  "notes": "No change to field extent, only position. Round 6: pei_answer_space.py cut an answer area into this page for a narrative prompt that shipped with one line or none. The background is band-reflowed rather than re-typeset, so every field on the page moved by its own band's constant and nothing was re-detected.",
+  "notes": "No change to field extent, only position. Round 6: pei_answer_space.py cut an answer area into this page for a narrative prompt that shipped with one line or none. The background is band-reflowed rather than re-typeset, so every field on the page moved by its own band's constant and nothing was re-detected. Round 8: writing boxes on this page were shortened from the top by pei_box_clearance.py, which measures printed ink off a render rather than off font boxes and takes each box off the line of type above it. The bottom edge is unchanged -- it stays seated on its rule -- so the box is shorter, not lower, and no box was left under 10pt. 10 boxes here, between them covering \"Current arrangements\"; \"Name of child\"; \"Terms of the order requested\"; \"The parenting order sought is in the best interests ...\".",
   "build": "21d400c"
  },
  {
@@ -1451,7 +1451,7 @@
   "firstPass": "pass",
   "corrections": "New page carrying the Declaration of Respondent, the respondent's address block and the Statement of Lawyer.",
   "finalPass": "pass",
-  "notes": "New page, spliced in directly behind the page it spilled from so the form still reads start to finish in physical page order. It carries the Declaration of Respondent, the respondent's address block and the Statement of Lawyer, displaced when pei_answer_space.py cut an answer area into that page. Background is band-reflowed, never scaled, and the pass adds no ink. See pei_answer_space.py. Round 7: the Statement of Lawyer's first line was reflowed by pei_inline_name_rules.py. The lawyer's name blank was 28pt -- the court's own measure -- and a name of ordinary length overflowed it and printed over the following words. The tail of the line now sits on its own line at the paragraph's continuation indent and the blank runs the width of line 1. The moved text is copied as a clipped XObject, not re-set; only the rule's extension and the (name) caption, which straddles the band edge, are drawn. Affects the Statement of Lawyer.",
+  "notes": "New page, spliced in directly behind the page it spilled from so the form still reads start to finish in physical page order. It carries the Declaration of Respondent, the respondent's address block and the Statement of Lawyer, displaced when pei_answer_space.py cut an answer area into that page. Background is band-reflowed, never scaled, and the pass adds no ink. See pei_answer_space.py. Round 7: the Statement of Lawyer's first line was reflowed by pei_inline_name_rules.py. The lawyer's name blank was 28pt -- the court's own measure -- and a name of ordinary length overflowed it and printed over the following words. The tail of the line now sits on its own line at the paragraph's continuation indent and the blank runs the width of line 1. The moved text is copied as a clipped XObject, not re-set; only the rule's extension and the (name) caption, which straddles the band edge, are drawn. Affects the Statement of Lawyer. Round 8: writing boxes on this page were shortened from the top by pei_box_clearance.py, which measures printed ink off a render rather than off font boxes and takes each box off the line of type above it. The bottom edge is unchanged -- it stays seated on its rule -- so the box is shorter, not lower, and no box was left under 10pt. 2 boxes here, between them covering \"number, and email address\"; \"respondent, set out the circumstances.\".",
   "build": "d2de4c4"
  },
  {
@@ -1466,7 +1466,7 @@
   "firstPass": "pass",
   "corrections": "",
   "finalPass": "pass",
-  "notes": "No checkboxes on this page; unaffected by seat_ticks. Listed because a neighbouring pass touched the doc, not this page.",
+  "notes": "No checkboxes on this page; unaffected by seat_ticks. Listed because a neighbouring pass touched the doc, not this page. Round 8: writing boxes on this page were shortened from the top by pei_box_clearance.py, which measures printed ink off a render rather than off font boxes and takes each box off the line of type above it. The bottom edge is unchanged -- it stays seated on its rule -- so the box is shorter, not lower, and no box was left under 10pt. One box here, which had been covering \"Court File Number:\".",
   "build": "21d400c"
  },
  {
@@ -1481,7 +1481,7 @@
   "firstPass": "pass",
   "corrections": "Re-seated 21 checkboxes.",
   "finalPass": "pass",
-  "notes": "Every RELATIONSHIP-DATES and ISSUES-grid option ticks inside its printed square now.",
+  "notes": "Every RELATIONSHIP-DATES and ISSUES-grid option ticks inside its printed square now. Round 8: writing boxes on this page were shortened from the top by pei_box_clearance.py, which measures printed ink off a render rather than off font boxes and takes each box off the line of type above it. The bottom edge is unchanged -- it stays seated on its rule -- so the box is shorter, not lower, and no box was left under 10pt. One box here, which had been covering \"Responding\".",
   "build": "21d400c"
  },
  {
@@ -1526,7 +1526,7 @@
   "firstPass": "pass",
   "corrections": "All four Moving and Responding Party cells were empty of fields. Items 1 and 2 -- relationship of each party to the children -- are 60pt cells holding only their heading, with the answer space beneath; added a TextArea for the clear part of each.",
   "finalPass": "pass",
-  "notes": "Children's table 5x5 complete.",
+  "notes": "Children's table 5x5 complete. Round 8: writing boxes on this page were shortened from the top by pei_box_clearance.py, which measures printed ink off a render rather than off font boxes and takes each box off the line of type above it. The bottom edge is unchanged -- it stays seated on its rule -- so the box is shorter, not lower, and no box was left under 10pt. One box here, which had been covering \"Court File Number:\".",
   "build": "14a1205"
  },
  {
@@ -1541,7 +1541,7 @@
   "firstPass": "pass",
   "corrections": "Re-seated 23 checkboxes.",
   "finalPass": "pass",
-  "notes": "PART 2's yes/no/unsure grid across items 4-12 all tick correctly now.",
+  "notes": "PART 2's yes/no/unsure grid across items 4-12 all tick correctly now. Round 8: writing boxes on this page were shortened from the top by pei_box_clearance.py, which measures printed ink off a render rather than off font boxes and takes each box off the line of type above it. The bottom edge is unchanged -- it stays seated on its rule -- so the box is shorter, not lower, and no box was left under 10pt. One box here, which had been covering \"(\".",
   "build": "21d400c"
  },
  {
@@ -1571,7 +1571,7 @@
   "firstPass": "pass",
   "corrections": "New page carrying the Declaration of Respondent, the respondent's address block and the Statement of Lawyer.",
   "finalPass": "pass",
-  "notes": "New page, spliced in directly behind the page it spilled from so the form still reads start to finish in physical page order. It carries the Declaration of Respondent, the respondent's address block and the Statement of Lawyer, displaced when pei_answer_space.py cut an answer area into that page. Background is band-reflowed, never scaled, and the pass adds no ink. See pei_answer_space.py. Round 7: the Statement of Lawyer's first line was reflowed by pei_inline_name_rules.py. The lawyer's name blank was 28pt -- the court's own measure -- and a name of ordinary length overflowed it and printed over the following words. The tail of the line now sits on its own line at the paragraph's continuation indent and the blank runs the width of line 1. The moved text is copied as a clipped XObject, not re-set; only the rule's extension and the (name) caption, which straddles the band edge, are drawn. Affects the Statement of Lawyer.",
+  "notes": "New page, spliced in directly behind the page it spilled from so the form still reads start to finish in physical page order. It carries the Declaration of Respondent, the respondent's address block and the Statement of Lawyer, displaced when pei_answer_space.py cut an answer area into that page. Background is band-reflowed, never scaled, and the pass adds no ink. See pei_answer_space.py. Round 7: the Statement of Lawyer's first line was reflowed by pei_inline_name_rules.py. The lawyer's name blank was 28pt -- the court's own measure -- and a name of ordinary length overflowed it and printed over the following words. The tail of the line now sits on its own line at the paragraph's continuation indent and the blank runs the width of line 1. The moved text is copied as a clipped XObject, not re-set; only the rule's extension and the (name) caption, which straddles the band edge, are drawn. Affects the Statement of Lawyer. Round 8: writing boxes on this page were shortened from the top by pei_box_clearance.py, which measures printed ink off a render rather than off font boxes and takes each box off the line of type above it. The bottom edge is unchanged -- it stays seated on its rule -- so the box is shorter, not lower, and no box was left under 10pt. 3 boxes here, between them covering \"certify to this court that am\"; \"matters in section 7.7(1) and/or\"; \"number, and email address\".",
   "build": "d2de4c4"
  },
  {
@@ -1616,7 +1616,7 @@
   "firstPass": "pass",
   "corrections": "Added a TextField for 'TO:  (Name and address of petitioner's lawyer or petitioner)', printed inline on one line with no rule.",
   "finalPass": "pass",
-  "notes": "Added a TextField for the bare 'TO: (Name and address of ...)' instruction, which had never had a field -- the same gap 70A's own 'TO:' fix closed, extended here on request to the other PEISC forms that print the same shape. The right edge is each page's own rightmost printed ink, not a number carried over from 70A. Round 6: pei_answer_space.py cut an answer area into this page for a narrative prompt that shipped with one line or none. The background is band-reflowed rather than re-typeset, so every field on the page moved by its own band's constant and nothing was re-detected.",
+  "notes": "Added a TextField for the bare 'TO: (Name and address of ...)' instruction, which had never had a field -- the same gap 70A's own 'TO:' fix closed, extended here on request to the other PEISC forms that print the same shape. The right edge is each page's own rightmost printed ink, not a number carried over from 70A. Round 6: pei_answer_space.py cut an answer area into this page for a narrative prompt that shipped with one line or none. The background is band-reflowed rather than re-typeset, so every field on the page moved by its own band's constant and nothing was re-detected. Round 8: writing boxes on this page were shortened from the top by pei_box_clearance.py, which measures printed ink off a render rather than off font boxes and takes each box off the line of type above it. The bottom edge is unchanged -- it stays seated on its rule -- so the box is shorter, not lower, and no box was left under 10pt. One box here, which had been covering \"The respondent\".",
   "build": "6f5d232"
  },
  {
@@ -1631,7 +1631,7 @@
   "firstPass": "pass",
   "corrections": "New page carrying the respondent's lawyer contact block, the Dated and Signature rules, the TO: block and the Declaration.",
   "finalPass": "pass",
-  "notes": "New page, spliced in directly behind the page it spilled from so the form still reads start to finish in physical page order. It carries the respondent's lawyer contact block, the Dated and Signature rules, the TO: block and the Declaration, displaced when pei_answer_space.py cut an answer area into that page. Background is band-reflowed, never scaled, and the pass adds no ink. See pei_answer_space.py.",
+  "notes": "New page, spliced in directly behind the page it spilled from so the form still reads start to finish in physical page order. It carries the respondent's lawyer contact block, the Dated and Signature rules, the TO: block and the Declaration, displaced when pei_answer_space.py cut an answer area into that page. Background is band-reflowed, never scaled, and the pass adds no ink. See pei_answer_space.py. Round 8: writing boxes on this page were shortened from the top by pei_box_clearance.py, which measures printed ink off a render rather than off font boxes and takes each box off the line of type above it. The bottom edge is unchanged -- it stays seated on its rule -- so the box is shorter, not lower, and no box was left under 10pt. 2 boxes here, between them covering \"number, and email address\"; \"respondent, set out the circumstances.\".",
   "build": "d2de4c4"
  },
  {
@@ -1691,7 +1691,7 @@
   "firstPass": "pass",
   "corrections": "Added a TextField for 'TO (Name and address of respondent's lawyer or respondent)'.",
   "finalPass": "pass",
-  "notes": "Added a TextField for the bare 'TO: (Name and address of ...)' instruction, which had never had a field -- the same gap 70A's own 'TO:' fix closed, extended here on request to the other PEISC forms that print the same shape. The right edge is each page's own rightmost printed ink, not a number carried over from 70A. Round 6: pei_answer_space.py cut an answer area into this page for a narrative prompt that shipped with one line or none. The background is band-reflowed rather than re-typeset, so every field on the page moved by its own band's constant and nothing was re-detected.",
+  "notes": "Added a TextField for the bare 'TO: (Name and address of ...)' instruction, which had never had a field -- the same gap 70A's own 'TO:' fix closed, extended here on request to the other PEISC forms that print the same shape. The right edge is each page's own rightmost printed ink, not a number carried over from 70A. Round 6: pei_answer_space.py cut an answer area into this page for a narrative prompt that shipped with one line or none. The background is band-reflowed rather than re-typeset, so every field on the page moved by its own band's constant and nothing was re-detected. Round 8: writing boxes on this page were shortened from the top by pei_box_clearance.py, which measures printed ink off a render rather than off font boxes and takes each box off the line of type above it. The bottom edge is unchanged -- it stays seated on its rule -- so the box is shorter, not lower, and no box was left under 10pt. One box here, which had been covering \"The petitioner\".",
   "build": "6f5d232"
  },
  {
@@ -1736,7 +1736,7 @@
   "firstPass": "pass",
   "corrections": "Added a TextField for 'TO (Name and address of respondent's lawyer or respondent)'.",
   "finalPass": "pass",
-  "notes": "Added a TextField for the bare 'TO: (Name and address of ...)' instruction, which had never had a field -- the same gap 70A's own 'TO:' fix closed, extended here on request to the other PEISC forms that print the same shape. The right edge is each page's own rightmost printed ink, not a number carried over from 70A. Round 6: pei_answer_space.py cut an answer area into this page for a narrative prompt that shipped with one line or none. The background is band-reflowed rather than re-typeset, so every field on the page moved by its own band's constant and nothing was re-detected.",
+  "notes": "Added a TextField for the bare 'TO: (Name and address of ...)' instruction, which had never had a field -- the same gap 70A's own 'TO:' fix closed, extended here on request to the other PEISC forms that print the same shape. The right edge is each page's own rightmost printed ink, not a number carried over from 70A. Round 6: pei_answer_space.py cut an answer area into this page for a narrative prompt that shipped with one line or none. The background is band-reflowed rather than re-typeset, so every field on the page moved by its own band's constant and nothing was re-detected. Round 8: writing boxes on this page were shortened from the top by pei_box_clearance.py, which measures printed ink off a render rather than off font boxes and takes each box off the line of type above it. The bottom edge is unchanged -- it stays seated on its rule -- so the box is shorter, not lower, and no box was left under 10pt. 3 boxes here, between them covering \"petitioner ( or\"; \"petitioner ( or respondent\"; \"the counterpetition\".",
   "build": "6f5d232"
  },
  {
@@ -1751,7 +1751,7 @@
   "firstPass": "pass",
   "corrections": "Added a TextField for 'TO (Name and address of lawyer or party to be served)'.",
   "finalPass": "pass",
-  "notes": "Added a TextField for the bare 'TO: (Name and address of ...)' instruction, which had never had a field -- the same gap 70A's own 'TO:' fix closed, extended here on request to the other PEISC forms that print the same shape. The right edge is each page's own rightmost printed ink, not a number carried over from 70A. Round 6: pei_answer_space.py cut an answer area into this page for a narrative prompt that shipped with one line or none. The background is band-reflowed rather than re-typeset, so every field on the page moved by its own band's constant and nothing was re-detected.",
+  "notes": "Added a TextField for the bare 'TO: (Name and address of ...)' instruction, which had never had a field -- the same gap 70A's own 'TO:' fix closed, extended here on request to the other PEISC forms that print the same shape. The right edge is each page's own rightmost printed ink, not a number carried over from 70A. Round 6: pei_answer_space.py cut an answer area into this page for a narrative prompt that shipped with one line or none. The background is band-reflowed rather than re-typeset, so every field on the page moved by its own band's constant and nothing was re-detected. Round 8: writing boxes on this page were shortened from the top by pei_box_clearance.py, which measures printed ink off a render rather than off font boxes and takes each box off the line of type above it. The bottom edge is unchanged -- it stays seated on its rule -- so the box is shorter, not lower, and no box was left under 10pt. One box here, which had been covering \"The respondent\".",
   "build": "6f5d232"
  },
  {
@@ -1781,7 +1781,7 @@
   "firstPass": "pass",
   "corrections": "Chart 1's 'Every second week' CONVERSION FORMULA cell had no field: the row prints '$', a run of spaces and 'x 26 / 12' and draws its rule as geometry, so no underscore audit could see it.",
   "finalPass": "pass",
-  "notes": "Both conversion charts and the gross-income table complete. The two shaded Monthly cells keep a box -- the cost the builder's README accepts, and it is still only two.",
+  "notes": "Both conversion charts and the gross-income table complete. The two shaded Monthly cells keep a box -- the cost the builder's README accepts, and it is still only two. Round 8: writing boxes on this page were shortened from the top by pei_box_clearance.py, which measures printed ink off a render rather than off font boxes and takes each box off the line of type above it. The bottom edge is unchanged -- it stays seated on its rule -- so the box is shorter, not lower, and no box was left under 10pt. One box here, which had been covering \"The following chart converts my gross income as stated ...\".",
   "build": "14a1205"
  },
  {
@@ -1811,7 +1811,7 @@
   "firstPass": "pass",
   "corrections": "Re-seated 5 checkboxes (OpenSymbol U+F091).",
   "finalPass": "pass",
-  "notes": "The 'I AM ...' status options all seat correctly now.",
+  "notes": "The 'I AM ...' status options all seat correctly now. Round 8: writing boxes on this page were shortened from the top by pei_box_clearance.py, which measures printed ink off a render rather than off font boxes and takes each box off the line of type above it. The bottom edge is unchanged -- it stays seated on its rule -- so the box is shorter, not lower, and no box was left under 10pt. One box here, which had been covering \"(i) Attached are true\".",
   "build": "21d400c"
  },
  {
@@ -1826,7 +1826,7 @@
   "firstPass": "pass",
   "corrections": "",
   "finalPass": "pass",
-  "notes": "43 fields; party lines bound; expense table rows 1-16 complete.",
+  "notes": "43 fields; party lines bound; expense table rows 1-16 complete. Round 8: writing boxes on this page were shortened from the top by pei_box_clearance.py, which measures printed ink off a render rather than off font boxes and takes each box off the line of type above it. The bottom edge is unchanged -- it stays seated on its rule -- so the box is shorter, not lower, and no box was left under 10pt. One box here, which had been covering \"Statement of Expenses\".",
   "build": "14a1205"
  },
  {
@@ -1856,7 +1856,7 @@
   "firstPass": "pass",
   "corrections": "Dropped the deponent's signature box.",
   "finalPass": "pass",
-  "notes": "Summary table, name/occupation table and jurat complete. The SUMMARY heading row keeps two boxes: shaded-cell cost, as recorded.",
+  "notes": "Summary table, name/occupation table and jurat complete. The SUMMARY heading row keeps two boxes: shaded-cell cost, as recorded. Round 8: writing boxes on this page were shortened from the top by pei_box_clearance.py, which measures printed ink off a render rather than off font boxes and takes each box off the line of type above it. The bottom edge is unchanged -- it stays seated on its rule -- so the box is shorter, not lower, and no box was left under 10pt. One box here, which had been covering \"Sworn to / Affirmed before\".",
   "build": "14a1205"
  },
  {
@@ -1871,7 +1871,7 @@
   "firstPass": "pass",
   "corrections": "Re-seated 6 checkboxes (OpenSymbol U+F039, the ones that extract as the digit 9).",
   "finalPass": "pass",
-  "notes": "Items 1(a)-(f)'s reason options tick correctly now.",
+  "notes": "Items 1(a)-(f)'s reason options tick correctly now. Round 8: writing boxes on this page were shortened from the top by pei_box_clearance.py, which measures printed ink off a render rather than off font boxes and takes each box off the line of type above it. The bottom edge is unchanged -- it stays seated on its rule -- so the box is shorter, not lower, and no box was left under 10pt. 2 boxes here, between them covering \"Statement of Special or Extraordinary Expenses\"; \"am unable to obtain receipts or other documentation, for ...\".",
   "build": "21d400c"
  },
  {
@@ -1886,7 +1886,7 @@
   "firstPass": "pass",
   "corrections": "Three of item 5's answer rules had no field. Dropped the deponent's signature box.",
   "finalPass": "pass",
-  "notes": "The commissioner's rule is drawn in three pieces 6.5 and 11.9pt apart; welded before testing, it reads as one 180pt office rule and is left bare.",
+  "notes": "The commissioner's rule is drawn in three pieces 6.5 and 11.9pt apart; welded before testing, it reads as one 180pt office rule and is left bare. Round 8: writing boxes on this page were shortened from the top by pei_box_clearance.py, which measures printed ink off a render rather than off font boxes and takes each box off the line of type above it. The bottom edge is unchanged -- it stays seated on its rule -- so the box is shorter, not lower, and no box was left under 10pt. One box here, which had been covering \"Affirmed\".",
   "build": "14a1205"
  },
  {
@@ -1901,7 +1901,7 @@
   "firstPass": "pass",
   "corrections": "Item 1's 'jointly with ___' blank had no field. Added a TextArea for the Real Estate body: the section is a row of column headings over 33pt of open paper with no grid at all, so nothing was enterable.",
   "finalPass": "pass",
-  "notes": "Household items and Vehicles tables complete.",
+  "notes": "Household items and Vehicles tables complete. Round 8: writing boxes on this page were shortened from the top by pei_box_clearance.py, which measures printed ink off a render rather than off font boxes and takes each box off the line of type above it. The bottom edge is unchanged -- it stays seated on its rule -- so the box is shorter, not lower, and no box was left under 10pt. 2 boxes here, between them covering \"1. The particulars\"; \"Statement of Property\".",
   "build": "14a1205"
  },
  {
@@ -2051,7 +2051,7 @@
   "firstPass": "pass",
   "corrections": "Re-seated 27 checkboxes (Symbol U+F0F0).",
   "finalPass": "pass",
-  "notes": "Every option in sections 1-4 now sits on its printed square. The square itself still renders as an Apple logo in the background -- a font-substitution issue in the LibreOffice render, recorded in the README, not something a field-position fix can reach.",
+  "notes": "Every option in sections 1-4 now sits on its printed square. The square itself still renders as an Apple logo in the background -- a font-substitution issue in the LibreOffice render, recorded in the README, not something a field-position fix can reach. Round 8: writing boxes on this page were shortened from the top by pei_box_clearance.py, which measures printed ink off a render rather than off font boxes and takes each box off the line of type above it. The bottom edge is unchanged -- it stays seated on its rule -- so the box is shorter, not lower, and no box was left under 10pt. 3 boxes here, between them covering \"(address)\"; \"Respondent\"; \"by the box. )\".",
   "build": "21d400c"
  },
  {
@@ -2081,7 +2081,7 @@
   "firstPass": "pass",
   "corrections": "",
   "finalPass": "pass",
-  "notes": "Date and the court-office rule; no option squares on this page.",
+  "notes": "Date and the court-office rule; no option squares on this page. Round 8: writing boxes on this page were shortened from the top by pei_box_clearance.py, which measures printed ink off a render rather than off font boxes and takes each box off the line of type above it. The bottom edge is unchanged -- it stays seated on its rule -- so the box is shorter, not lower, and no box was left under 10pt. One box here, which had been covering \"divorce on this ground of\".",
   "build": "14a1205"
  },
  {
@@ -2111,7 +2111,7 @@
   "firstPass": "pass",
   "corrections": "The second of item 2's two rules had no field.",
   "finalPass": "pass",
-  "notes": "The rest of the page is bracketed alternative recitals.",
+  "notes": "The rest of the page is bracketed alternative recitals. Round 8: writing boxes on this page were shortened from the top by pei_box_clearance.py, which measures printed ink off a render rather than off font boxes and takes each box off the line of type above it. The bottom edge is unchanged -- it stays seated on its rule -- so the box is shorter, not lower, and no box was left under 10pt. One box here, which had been covering \"THIS COURT ORDERS, under the Divorce Act (or as ...\".",
   "build": "14a1205"
  },
  {
@@ -2141,7 +2141,7 @@
   "firstPass": "pass",
   "corrections": "The 'solemnized at ___' and 'on ___' blanks had no fields.",
   "finalPass": "pass",
-  "notes": "The Registrar's rule is left bare, consistent with the other jurat and office rules this pass does not add to.",
+  "notes": "The Registrar's rule is left bare, consistent with the other jurat and office rules this pass does not add to. Round 8: writing boxes on this page were shortened from the top by pei_box_clearance.py, which measures printed ink off a render rather than off font boxes and takes each box off the line of type above it. The bottom edge is unchanged -- it stays seated on its rule -- so the box is shorter, not lower, and no box was left under 10pt. 3 boxes here, between them covering \", on\"; \"judgment of this court which became\"; \"marriage of\".",
   "build": "14a1205"
  },
  {
@@ -2216,7 +2216,7 @@
   "firstPass": "pass",
   "corrections": "Added a TextField for 'TO (Name and address of person summoned)'.",
   "finalPass": "pass",
-  "notes": "Added a TextField for the bare 'TO: (Name and address of ...)' instruction, which had never had a field -- the same gap 70A's own 'TO:' fix closed, extended here on request to the other PEISC forms that print the same shape. The right edge is each page's own rightmost printed ink, not a number carried over from 70A. Round 6: pei_answer_space.py cut an answer area into this page for a narrative prompt that shipped with one line or none. The background is band-reflowed rather than re-typeset, so every field on the page moved by its own band's constant and nothing was re-detected.",
+  "notes": "Added a TextField for the bare 'TO: (Name and address of ...)' instruction, which had never had a field -- the same gap 70A's own 'TO:' fix closed, extended here on request to the other PEISC forms that print the same shape. The right edge is each page's own rightmost printed ink, not a number carried over from 70A. Round 6: pei_answer_space.py cut an answer area into this page for a narrative prompt that shipped with one line or none. The background is band-reflowed rather than re-typeset, so every field on the page moved by its own band's constant and nothing was re-detected. Round 8: writing boxes on this page were shortened from the top by pei_box_clearance.py, which measures printed ink off a render rather than off font boxes and takes each box off the line of type above it. The bottom edge is unchanged -- it stays seated on its rule -- so the box is shorter, not lower, and no box was left under 10pt. 4 boxes here, between them covering \"$\"; \"paragraph. )\".",
   "build": "6f5d232"
  },
  {

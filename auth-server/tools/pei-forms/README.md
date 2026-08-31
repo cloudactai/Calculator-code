@@ -566,6 +566,83 @@ python3 pei_answer_space.py --check --only PEISC_70F
 python3 pei_answer_space.py --only PEISC_70F
 ```
 
+## Ninth pass: the box was covering the caption
+
+`pei_box_clearance.py`. **58 boxes shortened across 18 forms and 28 pages.**
+
+The live app fills a field's rect, so whatever a box covers is gone from the
+page. Seventy-six boxes in this batch reached up into the line of type above
+them, and on Form 70A*'s items 25 to 30 that took whole captions with it —
+"Terms of the order requested" and "Current arrangements" both vanished under
+their own writing box, and so did the whole of item 29's prompt.
+
+The cause is a mismatch neither the field table nor a background render can
+show. **PEI sets a caption directly over its rule with almost no leading**, and
+a writing box is `LINE_HEIGHT` — 13.3pt — whatever the gap it has to live in.
+Where the gap is 10pt, the box takes the missing 3.3pt out of the caption. The
+page-by-page review read these pages twice and passed them, fairly: nothing is
+wrong with the paper, and the overlap only appears once something paints the
+box.
+
+**The bottom edge does not move.** It sits on the printed rule, which is this
+province's own convention — `pass_seat_flat` seats PEI flat where the other
+seven keep `SEAT_GAP` 1.26 — and every one of these boxes was reviewed and
+seated there. So the room comes off the top: the box gets shorter, never lower,
+and still starts and ends on the paper review put it on. That is also what
+makes the change provable — `repair_pei_fields --check` reports **exactly** what
+it reported before the pass, because `pass_seat_flat` measures `rect.y1` and
+`rect.y1` is what did not change. The worst bottom-edge drift over 58 boxes is
+0.0033pt against that pass's 0.02pt settle threshold.
+
+### Ink is measured, not inferred
+
+Two things had to be measured off a render rather than read out of the text
+layer, and both of them flip the answer:
+
+* **A word's bbox is its font box**, ascender to descender. A caption of
+  lowercase letters reports about 1.8pt of empty air below its baseline, so a
+  box tucked into that air looks like an overlap while covering nothing — and a
+  'q' or a 'g' fills the same air completely, so an identical measurement is a
+  real collision. Ink is taken at 400dpi, where a point is five and a half
+  pixels.
+* **A word is not a unit.** PEI glues a label to its own rule —
+  `dated______________`, `$______________`, `Source:_______`, `____________,` —
+  so a word token spans both the rule the box is entitled to sit on and the
+  label it must not cover. Runs are cut at the character instead: an underscore
+  is rule, an option square belongs to the checkbox fitted to it, everything
+  else is type. Measuring by word instead of by character reported 34 false
+  collisions.
+
+### What it refuses, and what is not its problem
+
+Two boxes cannot be shortened enough to clear their caption and still hold a
+9pt line, so they keep the overlap — a slot too small to write in is worse:
+70A*'s page 2 marriage-certificate box (4.46pt into "It is impossible to obtain
+a certificate …") and 70D's page 3 signature box (2.89pt into "Signature of
+lawyer"). Contact under 0.5pt is left alone as well; at 400dpi that is the
+render's own resolution rather than a measurement.
+
+**Two further shapes of overlap are width, not height, and this pass does not
+touch them.** Both are recorded here because they are real and still open:
+
+* **A label inside the box's own column** — 27 boxes, of which 21 are grazes of
+  0.03–0.16pt where the box edge merely touches the neighbouring glyph. Six are
+  real: 70U and 70V each carry a box sitting across "Supreme Court of Prince
+  Edward Island" itself, and **23 of the 25 PEI forms that print that heading
+  have no field over it at all**, so those two look spurious rather than
+  mis-sized. 70EE, 70BB page 2 and 71E have a box starting on a "20", a row
+  label and a "$".
+* **The punctuation that closes the sentence a rule is embedded in** — 34
+  boxes, 25 of them touching by under 0.2pt. The comma or full stop sits on the
+  writing line's own baseline, so no height can clear it; it needs the box to
+  stop short of the punctuation, which is a width decision.
+
+```
+python3 pei_box_clearance.py --check     # measures and reports, writes nothing
+python3 pei_box_clearance.py
+python3 ../review/record_pe_round8.py
+```
+
 ## Catalogue, binds, verify
 
 ```
