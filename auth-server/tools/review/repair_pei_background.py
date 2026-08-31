@@ -359,6 +359,100 @@ def draw_70bb_income_labels(page):
                          fontname="tiro", color=(0, 0, 0))
 
 
+def reflow_70bb_income_chart(force=False):
+    """Rebuild Form 70BB's income grid inside its printed table.
+
+    The Word conversion emitted a 504pt-wide inner table at x=108, so its
+    right edge ran off the 612pt page and its final blank appeared to continue
+    into item 9.  The four income rows belong in the content cell only
+    (x=135.6..513.45), with a compact amount column and a clear employer
+    writing column.
+    """
+    doc_id = "PEISC_70BB"
+    path = os.path.join(EXPORT, "%s.pdf" % doc_id)
+    doc = fitz.open(path)
+    try:
+        page = doc[1]
+        broken = any(
+            drawing["rect"].x1 > 600.0
+            and 557.0 <= drawing["rect"].y0 <= 637.0
+            for drawing in page.get_drawings()
+        )
+        if not broken and not force:
+            return False
+
+        page.add_redact_annot(fitz.Rect(135.6, 558.0, 612.0, 637.0),
+                              fill=(1, 1, 1))
+        page.apply_redactions(images=fitz.PDF_REDACT_IMAGE_NONE)
+
+        left, label_right, amount_right, right = 135.6, 225.0, 285.0, 513.45
+        top, row, bottom = 558.5, 18.0, 630.5
+        page.draw_rect(fitz.Rect(left, top, right, bottom),
+                       color=(0, 0, 0), width=0.55)
+        for y in (top + row, top + row * 2, top + row * 3):
+            page.draw_line(fitz.Point(left, y), fitz.Point(right, y),
+                           color=(0, 0, 0), width=0.55)
+        page.draw_line(fitz.Point(label_right, top), fitz.Point(label_right, top + row * 2),
+                       color=(0, 0, 0), width=0.55)
+        page.draw_line(fitz.Point(amount_right, top), fitz.Point(amount_right, bottom),
+                       color=(0, 0, 0), width=0.55)
+
+        rows = (
+            ("Moving Party:", 571.3),
+            ("Responding Party:", 589.3),
+            ("Moving Party's Employer:", 607.3),
+            ("Responding Party's Employer:", 625.3),
+        )
+        for label, baseline in rows:
+            page.insert_text(fitz.Point(141.0, baseline), label, fontsize=11,
+                             fontname="tiro", color=(0, 0, 0))
+        for baseline in (571.3, 589.3):
+            page.insert_text(fitz.Point(230.0, baseline), "$", fontsize=11,
+                             fontname="tiro", color=(0, 0, 0))
+            page.insert_text(fitz.Point(290.0, baseline),
+                             "per year for the year 20__", fontsize=11,
+                             fontname="tiro", color=(0, 0, 0))
+        for baseline in (607.3, 625.3):
+            page.draw_line(fitz.Point(287.0, baseline + 1.2), fitz.Point(507.0, baseline + 1.2),
+                           color=(0, 0, 0), width=0.55)
+
+        fd, temp_path = tempfile.mkstemp(suffix=".pdf", dir=EXPORT)
+        os.close(fd)
+        try:
+            doc.save(temp_path, garbage=4, deflate=True)
+            os.replace(temp_path, path)
+        finally:
+            if os.path.exists(temp_path):
+                os.unlink(temp_path)
+    finally:
+        doc.close()
+
+    mapping_path = os.path.join(EXPORT, "%s.json" % doc_id)
+    with open(mapping_path) as handle:
+        mapping = json.load(handle)
+    geometry = {
+        1750127377063: {"x": 242.0, "y": 559.0, "width": 41.0, "height": 15.0},
+        1750127377066: {"x": 242.0, "y": 577.0, "width": 41.0, "height": 15.0},
+        1750127377139: {"x": 406.0, "y": 559.0, "width": 43.0, "height": 15.0},
+        1750127377140: {"x": 406.0, "y": 577.0, "width": 43.0, "height": 15.0},
+        1750127377141: {"x": 287.0, "y": 595.0, "width": 220.0, "height": 15.0},
+        1750127377142: {"x": 287.0, "y": 613.0, "width": 220.0, "height": 15.0},
+    }
+    mapping["staticFields"] = [
+        field for field in mapping["staticFields"]
+        if field["id"] != 1750127377072
+    ]
+    for field in mapping["staticFields"]:
+        if field["id"] in geometry:
+            field.update(geometry[field["id"]])
+            field["rule"] = "bottom"
+            field["compact"] = True
+    with open(mapping_path, "w") as handle:
+        json.dump(mapping, handle, indent=2)
+        handle.write("\n")
+    return True
+
+
 def shorten_date_field(doc_id, field_id, short_width):
     mapping_path = os.path.join(EXPORT, "%s.json" % doc_id)
     with open(mapping_path) as handle:

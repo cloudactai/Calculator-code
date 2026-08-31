@@ -1195,10 +1195,10 @@
     {
       "id": 1750127377063,
       "type": "TextField",
-      "x": 225.0,
-      "y": 561.5,
-      "width": 38.0,
-      "height": 19.5,
+      "x": 242.0,
+      "y": 559.0,
+      "width": 41.0,
+      "height": 15.0,
       "value": "",
       "fontSize": 9,
       "color": [
@@ -1208,15 +1208,17 @@
       ],
       "background": "none",
       "border": "none",
-      "page": 2
+      "page": 2,
+      "rule": "bottom",
+      "compact": true
     },
     {
       "id": 1750127377066,
       "type": "TextField",
-      "x": 239.0,
-      "y": 577.5,
-      "width": 24.0,
-      "height": 19.5,
+      "x": 242.0,
+      "y": 577.0,
+      "width": 41.0,
+      "height": 15.0,
       "value": "",
       "fontSize": 9,
       "color": [
@@ -1226,25 +1228,9 @@
       ],
       "background": "none",
       "border": "none",
-      "page": 2
-    },
-    {
-      "id": 1750127377072,
-      "type": "TextField",
-      "x": 137.1,
-      "y": 638.98,
-      "width": 562.65,
-      "height": 15.15,
-      "value": "",
-      "fontSize": 9,
-      "color": [
-        0,
-        0,
-        0
-      ],
-      "background": "none",
-      "border": "none",
-      "page": 2
+      "page": 2,
+      "rule": "bottom",
+      "compact": true
     },
     {
       "id": 1750127377073,
@@ -1915,9 +1901,9 @@
     {
       "id": 1750127377139,
       "type": "TextField",
-      "x": 383.0,
-      "y": 561.5,
-      "width": 42.0,
+      "x": 406.0,
+      "y": 559.0,
+      "width": 43.0,
       "height": 15.0,
       "value": "",
       "fontSize": 9,
@@ -1928,14 +1914,16 @@
       ],
       "background": "none",
       "border": "none",
-      "page": 2
+      "page": 2,
+      "rule": "bottom",
+      "compact": true
     },
     {
       "id": 1750127377140,
       "type": "TextField",
-      "x": 383.0,
-      "y": 577.5,
-      "width": 42.0,
+      "x": 406.0,
+      "y": 577.0,
+      "width": 43.0,
       "height": 15.0,
       "value": "",
       "fontSize": 9,
@@ -1946,14 +1934,16 @@
       ],
       "background": "none",
       "border": "none",
-      "page": 2
+      "page": 2,
+      "rule": "bottom",
+      "compact": true
     },
     {
       "id": 1750127377141,
       "type": "TextField",
-      "x": 260.0,
-      "y": 593.5,
-      "width": 247.0,
+      "x": 287.0,
+      "y": 595.0,
+      "width": 220.0,
       "height": 15.0,
       "value": "",
       "fontSize": 9,
@@ -1964,14 +1954,16 @@
       ],
       "background": "none",
       "border": "none",
-      "page": 2
+      "page": 2,
+      "rule": "bottom",
+      "compact": true
     },
     {
       "id": 1750127377142,
       "type": "TextField",
-      "x": 278.0,
-      "y": 609.5,
-      "width": 229.0,
+      "x": 287.0,
+      "y": 613.0,
+      "width": 220.0,
       "height": 15.0,
       "value": "",
       "fontSize": 9,
@@ -1982,7 +1974,9 @@
       ],
       "background": "none",
       "border": "none",
-      "page": 2
+      "page": 2,
+      "rule": "bottom",
+      "compact": true
     }
   ]
 }
