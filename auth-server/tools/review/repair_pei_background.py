@@ -343,6 +343,22 @@ def draw_lawyer_signature_caption(page, baseline):
                      fontsize=11, fontname="tiro", color=(0, 0, 0))
 
 
+def draw_70bb_income_labels(page):
+    """Seat the income labels in the content column, not the number column."""
+    labels = (
+        ("Moving Party:", 571.3),
+        ("Responding Party:", 587.3),
+        ("Moving Party's Employer:", 603.3),
+        ("Responding Party's Employer:", 619.3),
+    )
+    for label, baseline in labels:
+        page.insert_text(fitz.Point(141.0, baseline), label, fontsize=11,
+                         fontname="tiro", color=(0, 0, 0))
+    for baseline in (571.3, 587.3):
+        page.insert_text(fitz.Point(213.6, baseline), "$", fontsize=11,
+                         fontname="tiro", color=(0, 0, 0))
+
+
 def shorten_date_field(doc_id, field_id, short_width):
     mapping_path = os.path.join(EXPORT, "%s.json" % doc_id)
     with open(mapping_path) as handle:
@@ -478,6 +494,518 @@ def reflow_peisc_70a(doc):
                            clip=fitz.Rect(0, split, width, height))
         draw_reflowed_answer_rules(page, page_index)
     return rebuilt
+
+
+def expand_70a_item42_answer_space():
+    """Insert a writing band below item 42 on Form 70A, page 10."""
+    doc_id = "PEISC_70A"
+    path = os.path.join(EXPORT, "%s.pdf" % doc_id)
+    doc = fitz.open(path)
+    try:
+        page_index, split, delta = 9, 145.0, 90.0
+        source = doc[page_index]
+        if not any(word[4] == "TRIAL" and word[1] < 180.0
+                   for word in source.get_text("words")):
+            return False
+        rebuilt = fitz.open()
+        try:
+            for index in range(doc.page_count):
+                if index != page_index:
+                    rebuilt.insert_pdf(doc, from_page=index, to_page=index)
+                    continue
+                width, height = source.rect.width, source.rect.height
+                target = rebuilt.new_page(width=width, height=height)
+                target.show_pdf_page(fitz.Rect(0, 0, width, split), doc, index,
+                                     clip=fitz.Rect(0, 0, width, split))
+                target.show_pdf_page(fitz.Rect(0, split + delta, width, height), doc, index,
+                                     clip=fitz.Rect(0, split, width, height - delta))
+            fd, temp_path = tempfile.mkstemp(suffix=".pdf", dir=EXPORT)
+            os.close(fd)
+            try:
+                rebuilt.save(temp_path, garbage=4, deflate=True)
+                os.replace(temp_path, path)
+            finally:
+                if os.path.exists(temp_path):
+                    os.unlink(temp_path)
+        finally:
+            rebuilt.close()
+    finally:
+        doc.close()
+
+    mapping_path = os.path.join(EXPORT, "%s.json" % doc_id)
+    with open(mapping_path) as handle:
+        mapping = json.load(handle)
+    for field in mapping["staticFields"]:
+        if field["id"] == 1750805871162 and field["page"] == 10:
+            field["y"] += delta
+    with open(mapping_path, "w") as handle:
+        json.dump(mapping, handle, indent=2)
+    return True
+
+
+def remove_70bb_special_expense_glyphs():
+    """Remove the stray Wingdings marks beside Form 70BB's expense choices."""
+    path = os.path.join(EXPORT, "PEISC_70BB.pdf")
+    doc = fitz.open(path)
+    try:
+        glyphs = [(page, word) for page in doc for word in page.get_text("words")
+                  if word[4] == "\uf0f0"]
+        if not glyphs:
+            return False
+        for page, word in glyphs:
+            page.add_redact_annot(fitz.Rect(word[:4]), fill=(1, 1, 1))
+        for page in doc:
+            page.apply_redactions(images=fitz.PDF_REDACT_IMAGE_NONE)
+        fd, temp_path = tempfile.mkstemp(suffix=".pdf", dir=EXPORT)
+        os.close(fd)
+        try:
+            doc.save(temp_path, garbage=4, deflate=True)
+            os.replace(temp_path, path)
+        finally:
+            if os.path.exists(temp_path):
+                os.unlink(temp_path)
+    finally:
+        doc.close()
+    return True
+
+
+def remove_70bb_number_column_fields():
+    """Drop fields that were mistakenly placed over 70BB's item numbers."""
+    mapping_path = os.path.join(EXPORT, "PEISC_70BB.json")
+    with open(mapping_path) as handle:
+        mapping = json.load(handle)
+    original = mapping["staticFields"]
+    mapping["staticFields"] = [
+        field for field in original
+        if not (field["type"] in {"TextField", "TextArea"}
+                and 108.0 <= field.get("x", 0) <= 111.0
+                and field.get("width", 0) <= 40.0)
+    ]
+    if len(mapping["staticFields"]) == len(original):
+        return False
+    with open(mapping_path, "w") as handle:
+        json.dump(mapping, handle, indent=2)
+    return True
+
+
+def remove_70bb_1_number_column_fields():
+    """Drop fields mistakenly placed over Form 70BB_1's item-number column."""
+    mapping_path = os.path.join(EXPORT, "PEISC_70BB_1.json")
+    with open(mapping_path) as handle:
+        mapping = json.load(handle)
+    original = mapping["staticFields"]
+    mapping["staticFields"] = [
+        field for field in original
+        if not (field["type"] in {"TextField", "TextArea"}
+                and 72.0 <= field.get("x", 0) <= 75.0
+                and field.get("width", 0) <= 40.0)
+    ]
+    if len(mapping["staticFields"]) == len(original):
+        return False
+    with open(mapping_path, "w") as handle:
+        json.dump(mapping, handle, indent=2)
+    return True
+
+
+def remove_70r_apple_symbols():
+    """Remove Form 70R's broken Wingdings glyphs and their duplicate overlays."""
+    doc_id = "PEISC_70R"
+    path = os.path.join(EXPORT, "%s.pdf" % doc_id)
+    doc = fitz.open(path)
+    try:
+        glyphs = [(page, word) for page in doc for word in page.get_text("words")
+                  if word[4] == "\uf0f0"]
+        if glyphs:
+            for page, word in glyphs:
+                page.add_redact_annot(fitz.Rect(word[:4]), fill=(1, 1, 1))
+            for page in doc:
+                page.apply_redactions(images=fitz.PDF_REDACT_IMAGE_NONE)
+            fd, temp_path = tempfile.mkstemp(suffix=".pdf", dir=EXPORT)
+            os.close(fd)
+            try:
+                doc.save(temp_path, garbage=4, deflate=True)
+                os.replace(temp_path, path)
+            finally:
+                if os.path.exists(temp_path):
+                    os.unlink(temp_path)
+    finally:
+        doc.close()
+
+    mapping_path = os.path.join(EXPORT, "%s.json" % doc_id)
+    with open(mapping_path) as handle:
+        mapping = json.load(handle)
+    original = mapping["staticFields"]
+    mapping["staticFields"] = [field for field in original if field["type"] != "CheckBox"]
+    if len(mapping["staticFields"]) != len(original):
+        with open(mapping_path, "w") as handle:
+            json.dump(mapping, handle, indent=2)
+    return bool(glyphs) or len(mapping["staticFields"]) != len(original)
+
+
+def apply_70s_case_header():
+    """Replace Form 70S's placeholder rules with the standard PEI case header."""
+    path = os.path.join(EXPORT, "PEISC_70S.pdf")
+    doc = fitz.open(path)
+    try:
+        page = doc[0]
+        if not any(word[4] == "(Court)" and 170.0 < word[1] < 190.0
+                   for word in page.get_text("words")):
+            return False
+        page.add_redact_annot(fitz.Rect(105.0, 150.0, 510.0, 270.0), fill=(1, 1, 1))
+        page.apply_redactions(images=fitz.PDF_REDACT_IMAGE_NONE)
+        page.draw_circle(fitz.Point(150.0, 208.0), 38.0, color=(0.5, 0.5, 0.5), width=0.8)
+        page.insert_text(fitz.Point(131.0, 211.5), "Court seal", fontsize=8.5,
+                         fontname="tiro", color=(0.5, 0.5, 0.5))
+        page.insert_text(fitz.Point(218.9, 156.0), "Supreme Court of Prince Edward Island",
+                         fontsize=14, fontname="tibo", color=(0, 0, 0))
+        page.insert_text(fitz.Point(270.6, 168.5), "(Family Section)", fontsize=14,
+                         fontname="tibo", color=(0, 0, 0))
+        page.insert_text(fitz.Point(238.9, 189.0), "Court File No.:", fontsize=13.5,
+                         fontname="tiro", color=(0, 0, 0))
+        page.insert_text(fitz.Point(215.8, 217.0), "Applicant/Petitioner:", fontsize=13.5,
+                         fontname="tiro", color=(0, 0, 0))
+        page.insert_text(fitz.Point(249.7, 245.0), "Respondent:", fontsize=13.5,
+                         fontname="tiro", color=(0, 0, 0))
+        fd, temp_path = tempfile.mkstemp(suffix=".pdf", dir=EXPORT)
+        os.close(fd)
+        try:
+            doc.save(temp_path, garbage=4, deflate=True)
+            os.replace(temp_path, path)
+        finally:
+            if os.path.exists(temp_path):
+                os.unlink(temp_path)
+    finally:
+        doc.close()
+
+    mapping_path = os.path.join(EXPORT, "PEISC_70S.json")
+    with open(mapping_path) as handle:
+        mapping = json.load(handle)
+    mapping["staticFields"] = [field for field in mapping["staticFields"]
+                               if field["id"] not in {1750131303004, 1750131303005,
+                                                      1750131303006, 1750131303007}]
+    mapping["staticFields"].extend([
+        {"id": 1750131303021, "type": "TextField", "x": 305.72, "y": 175.17,
+         "width": 296.43, "height": 22.5, "value": "", "fontSize": 9,
+         "color": [0, 0, 0], "background": "none", "border": "none", "page": 1,
+         "bind": "court_info.courtFileNumber"},
+        {"id": 1750131303022, "type": "TextField", "x": 305.72, "y": 203.17,
+         "width": 296.43, "height": 22.5, "value": "", "fontSize": 9,
+         "color": [0, 0, 0], "background": "none", "border": "none", "page": 1,
+         "bind": "applicant.fullLegalName"},
+        {"id": 1750131303023, "type": "TextField", "x": 305.72, "y": 231.17,
+         "width": 296.43, "height": 22.5, "value": "", "fontSize": 9,
+         "color": [0, 0, 0], "background": "none", "border": "none", "page": 1,
+         "bind": "respondent.fullLegalName"},
+    ])
+    with open(mapping_path, "w") as handle:
+        json.dump(mapping, handle, indent=2)
+    return True
+
+
+def apply_70t_case_header():
+    """Give Form 70T the same usable PEI case header as Forms 70R/70S.
+
+    The source's court and file-number rules occupy the space needed for the
+    party names.  Preserve the certificate wording by moving the body down,
+    then redraw the complete, aligned header above it.
+    """
+    doc_id = "PEISC_70T"
+    path = os.path.join(EXPORT, "%s.pdf" % doc_id)
+    doc = fitz.open(path)
+    delta = 85.0
+    split = 205.0
+    try:
+        source = doc[0]
+        if not any(word[4] == "(Court)" and 175.0 < word[1] < 195.0
+                   for word in source.get_text("words")):
+            return False
+
+        # Remove the partial header before copying the top of the page.
+        source.add_redact_annot(fitz.Rect(100.0, 165.0, 520.0, 210.0),
+                                fill=(1, 1, 1))
+        source.apply_redactions(images=fitz.PDF_REDACT_IMAGE_NONE)
+
+        rebuilt = fitz.open()
+        page = rebuilt.new_page(width=source.rect.width, height=source.rect.height)
+        page.show_pdf_page(fitz.Rect(0, 0, source.rect.width, split), doc, 0,
+                           clip=fitz.Rect(0, 0, source.rect.width, split))
+        page.show_pdf_page(
+            fitz.Rect(0, split + delta, source.rect.width, source.rect.height),
+            doc, 0,
+            clip=fitz.Rect(0, split, source.rect.width, source.rect.height - delta),
+        )
+        for page_number in range(1, len(doc)):
+            rebuilt.insert_pdf(doc, from_page=page_number, to_page=page_number)
+
+        page = rebuilt[0]
+        page.draw_circle(fitz.Point(150.0, 225.0), 38.0,
+                         color=(0.5, 0.5, 0.5), width=0.8)
+        page.insert_text(fitz.Point(131.0, 228.5), "Court seal", fontsize=8.5,
+                         fontname="tiro", color=(0.5, 0.5, 0.5))
+        page.insert_text(fitz.Point(218.9, 175.0),
+                         "Supreme Court of Prince Edward Island", fontsize=14,
+                         fontname="tibo", color=(0, 0, 0))
+        page.insert_text(fitz.Point(270.6, 187.5), "(Family Section)", fontsize=14,
+                         fontname="tibo", color=(0, 0, 0))
+        page.insert_text(fitz.Point(238.9, 208.0), "Court File No.:", fontsize=13.5,
+                         fontname="tiro", color=(0, 0, 0))
+        page.insert_text(fitz.Point(215.8, 236.0), "Applicant/Petitioner:",
+                         fontsize=13.5, fontname="tiro", color=(0, 0, 0))
+        page.insert_text(fitz.Point(249.7, 264.0), "Respondent:", fontsize=13.5,
+                         fontname="tiro", color=(0, 0, 0))
+
+        fd, temp_path = tempfile.mkstemp(suffix=".pdf", dir=EXPORT)
+        os.close(fd)
+        try:
+            rebuilt.save(temp_path, garbage=4, deflate=True)
+            os.replace(temp_path, path)
+        finally:
+            rebuilt.close()
+            if os.path.exists(temp_path):
+                os.unlink(temp_path)
+    finally:
+        doc.close()
+
+    mapping_path = os.path.join(EXPORT, "%s.json" % doc_id)
+    with open(mapping_path) as handle:
+        mapping = json.load(handle)
+    fields = []
+    for field in mapping["staticFields"]:
+        if field["id"] in {1750760708007, 1750760708008}:
+            continue
+        if field.get("page") == 1 and field.get("y", 0) >= split:
+            field = dict(field)
+            field["y"] += delta
+        fields.append(field)
+    fields.extend([
+        {"id": 1750760708009, "type": "TextField", "x": 305.72, "y": 194.17,
+         "width": 296.43, "height": 22.5, "value": "", "fontSize": 9,
+         "color": [0, 0, 0], "background": "none", "border": "none", "page": 1,
+         "bind": "court_info.courtFileNumber"},
+        {"id": 1750760708010, "type": "TextField", "x": 305.72, "y": 222.17,
+         "width": 296.43, "height": 22.5, "value": "", "fontSize": 9,
+         "color": [0, 0, 0], "background": "none", "border": "none", "page": 1,
+         "bind": "applicant.fullLegalName"},
+        {"id": 1750760708011, "type": "TextField", "x": 305.72, "y": 250.17,
+         "width": 296.43, "height": 22.5, "value": "", "fontSize": 9,
+         "color": [0, 0, 0], "background": "none", "border": "none", "page": 1,
+         "bind": "respondent.fullLegalName"},
+    ])
+    mapping["staticFields"] = fields
+    with open(mapping_path, "w") as handle:
+        json.dump(mapping, handle, indent=2)
+    return True
+
+
+def shorten_70n_date_line():
+    """Trim Form 70N's oversized printed Date rule to a practical width."""
+    path = os.path.join(EXPORT, "PEISC_70N.pdf")
+    doc = fitz.open(path)
+    try:
+        page = doc[0]
+        # The source has a single 396pt rule for Date and the lawyer details.
+        # Keep a compact 62pt date rule and leave the right-hand labels alone.
+        long_rule = any(
+            drawing["type"] == "s" and drawing["rect"].x0 < 110.0
+            and drawing["rect"].x1 > 500.0 and 285.0 < drawing["rect"].y0 < 288.0
+            for drawing in page.get_drawings()
+        )
+        if not long_rule:
+            return False
+        # Stop before the separate right-hand Name label and its own rule.
+        page.add_redact_annot(fitz.Rect(169.5, 283.5, 327.0, 289.5), fill=(1, 1, 1))
+        page.apply_redactions(images=fitz.PDF_REDACT_IMAGE_NONE)
+        page.draw_line(fitz.Point(108.1, 286.5), fitz.Point(170.1, 286.5),
+                       color=(0, 0, 0), width=0.6)
+        fd, temp_path = tempfile.mkstemp(suffix=".pdf", dir=EXPORT)
+        os.close(fd)
+        try:
+            doc.save(temp_path, garbage=4, deflate=True)
+            os.replace(temp_path, path)
+        finally:
+            if os.path.exists(temp_path):
+                os.unlink(temp_path)
+    finally:
+        doc.close()
+    return True
+
+
+def apply_71a_case_header():
+    """Replace Form 71A's placeholder rules with the standard PEI case header."""
+    doc_id = "PEISC_71A"
+    path = os.path.join(EXPORT, "%s.pdf" % doc_id)
+    doc = fitz.open(path)
+    delta = 85.0
+    split = 205.0
+    try:
+        source = doc[0]
+        if not any(word[4] == "(Court)" and 160.0 < word[1] < 175.0
+                   for word in source.get_text("words")):
+            return False
+        source.add_redact_annot(fitz.Rect(100.0, 138.0, 520.0, 205.0),
+                                fill=(1, 1, 1))
+        source.apply_redactions(images=fitz.PDF_REDACT_IMAGE_NONE)
+
+        rebuilt = fitz.open()
+        page = rebuilt.new_page(width=source.rect.width, height=source.rect.height)
+        page.show_pdf_page(fitz.Rect(0, 0, source.rect.width, split), doc, 0,
+                           clip=fitz.Rect(0, 0, source.rect.width, split))
+        page.show_pdf_page(
+            fitz.Rect(0, split + delta, source.rect.width, source.rect.height),
+            doc, 0,
+            clip=fitz.Rect(0, split, source.rect.width, source.rect.height - delta),
+        )
+        for page_number in range(1, len(doc)):
+            rebuilt.insert_pdf(doc, from_page=page_number, to_page=page_number)
+
+        page = rebuilt[0]
+        page.draw_circle(fitz.Point(150.0, 208.0), 38.0,
+                         color=(0.5, 0.5, 0.5), width=0.8)
+        page.insert_text(fitz.Point(131.0, 211.5), "Court seal", fontsize=8.5,
+                         fontname="tiro", color=(0.5, 0.5, 0.5))
+        page.insert_text(fitz.Point(218.9, 156.0),
+                         "Supreme Court of Prince Edward Island", fontsize=14,
+                         fontname="tibo", color=(0, 0, 0))
+        page.insert_text(fitz.Point(270.6, 168.5), "(Family Section)", fontsize=14,
+                         fontname="tibo", color=(0, 0, 0))
+        page.insert_text(fitz.Point(238.9, 189.0), "Court File No.:", fontsize=13.5,
+                         fontname="tiro", color=(0, 0, 0))
+        page.insert_text(fitz.Point(215.8, 217.0), "Applicant/Petitioner:",
+                         fontsize=13.5, fontname="tiro", color=(0, 0, 0))
+        page.insert_text(fitz.Point(249.7, 245.0), "Respondent:", fontsize=13.5,
+                         fontname="tiro", color=(0, 0, 0))
+        fd, temp_path = tempfile.mkstemp(suffix=".pdf", dir=EXPORT)
+        os.close(fd)
+        try:
+            rebuilt.save(temp_path, garbage=4, deflate=True)
+            os.replace(temp_path, path)
+        finally:
+            rebuilt.close()
+            if os.path.exists(temp_path):
+                os.unlink(temp_path)
+    finally:
+        doc.close()
+
+    mapping_path = os.path.join(EXPORT, "%s.json" % doc_id)
+    with open(mapping_path) as handle:
+        mapping = json.load(handle)
+    fields = []
+    for field in mapping["staticFields"]:
+        if field["id"] in {1750805871001, 1750805871002,
+                           1750805871003, 1750805871004}:
+            continue
+        if field.get("page") == 1 and field.get("y", 0) >= split:
+            field = dict(field)
+            field["y"] += delta
+        fields.append(field)
+    fields.extend([
+        {"id": 1750805871009, "type": "TextField", "x": 305.72, "y": 175.17,
+         "width": 296.43, "height": 22.5, "value": "", "fontSize": 9,
+         "color": [0, 0, 0], "background": "none", "border": "none", "page": 1,
+         "bind": "court_info.courtFileNumber"},
+        {"id": 1750805871010, "type": "TextField", "x": 305.72, "y": 203.17,
+         "width": 296.43, "height": 22.5, "value": "", "fontSize": 9,
+         "color": [0, 0, 0], "background": "none", "border": "none", "page": 1,
+         "bind": "applicant.fullLegalName"},
+        {"id": 1750805871011, "type": "TextField", "x": 305.72, "y": 231.17,
+         "width": 296.43, "height": 22.5, "value": "", "fontSize": 9,
+         "color": [0, 0, 0], "background": "none", "border": "none", "page": 1,
+         "bind": "respondent.fullLegalName"},
+    ])
+    mapping["staticFields"] = fields
+    with open(mapping_path, "w") as handle:
+        json.dump(mapping, handle, indent=2)
+    return True
+
+
+def simplify_71e_court_office_notice():
+    """Make Form 71E's filing notice read cleanly and use one address line."""
+    doc_id = "PEISC_71E"
+    path = os.path.join(EXPORT, "%s.pdf" % doc_id)
+    doc = fitz.open(path)
+    try:
+        page = doc[1]
+        if not any(word[4] == "you" and 85.0 < word[1] < 102.0
+                   for word in page.get_text("words")):
+            return False
+        # Remove the duplicate inline address prompt, the stray "you", and
+        # the overlapping address label. The lower issued-by address block is
+        # unrelated and deliberately remains intact.
+        for rect in (
+            (442.0, 69.0, 513.0, 93.0),
+            (245.0, 85.0, 268.0, 102.0),
+            (269.0, 96.0, 506.0, 116.0),
+            (100.0, 134.0, 510.0, 142.0),
+        ):
+            page.add_redact_annot(fitz.Rect(rect), fill=(1, 1, 1))
+        page.apply_redactions(images=fitz.PDF_REDACT_IMAGE_NONE)
+        page.insert_text(fitz.Point(108.1, 132.5), "Address of court office:",
+                         fontsize=11, fontname="tiro", color=(0, 0, 0))
+        page.draw_line(fitz.Point(250.0, 138.4), fitz.Point(504.1, 138.4),
+                       color=(0, 0, 0), width=0.7)
+        fd, temp_path = tempfile.mkstemp(suffix=".pdf", dir=EXPORT)
+        os.close(fd)
+        try:
+            doc.save(temp_path, garbage=4, deflate=True)
+            os.replace(temp_path, path)
+        finally:
+            if os.path.exists(temp_path):
+                os.unlink(temp_path)
+    finally:
+        doc.close()
+
+    mapping_path = os.path.join(EXPORT, "%s.json" % doc_id)
+    with open(mapping_path) as handle:
+        mapping = json.load(handle)
+    fields = []
+    for field in mapping["staticFields"]:
+        if field["id"] == 1750796887016:  # removed inline address prompt
+            continue
+        if field["id"] == 1750796887018:
+            field = dict(field)
+            field.update({"x": 250.0, "y": 128.0, "width": 254.1,
+                          "height": 15.0})
+        fields.append(field)
+    mapping["staticFields"] = fields
+    with open(mapping_path, "w") as handle:
+        json.dump(mapping, handle, indent=2)
+    return True
+
+
+def remove_71e_orphaned_evidence_prompt():
+    """Remove Form 71E's evidence-prompt tail stranded on the notice page."""
+    doc_id = "PEISC_71E"
+    path = os.path.join(EXPORT, "%s.pdf" % doc_id)
+    doc = fitz.open(path)
+    try:
+        page = doc[1]
+        if not any(word[4] == "answered" and 100.0 < word[1] < 120.0
+                   for word in page.get_text("words")):
+            return False
+        page.add_redact_annot(fitz.Rect(100.0, 100.0, 270.0, 120.0),
+                              fill=(1, 1, 1))
+        page.apply_redactions(images=fitz.PDF_REDACT_IMAGE_NONE)
+        fd, temp_path = tempfile.mkstemp(suffix=".pdf", dir=EXPORT)
+        os.close(fd)
+        try:
+            doc.save(temp_path, garbage=4, deflate=True)
+            os.replace(temp_path, path)
+        finally:
+            if os.path.exists(temp_path):
+                os.unlink(temp_path)
+    finally:
+        doc.close()
+
+    mapping_path = os.path.join(EXPORT, "%s.json" % doc_id)
+    with open(mapping_path) as handle:
+        mapping = json.load(handle)
+    mapping["staticFields"] = [
+        field for field in mapping["staticFields"]
+        if field["id"] != 1750796887023
+    ]
+    with open(mapping_path, "w") as handle:
+        json.dump(mapping, handle, indent=2)
+    return True
 
 
 def repair(doc_id, apply_changes):
@@ -672,6 +1200,21 @@ def repair(doc_id, apply_changes):
                 changed += 1
                 lawyer_caption_reposition = True
                 page.add_redact_annot(fitz.Rect(430.0, 675.0, 535.0, 694.0), fill=(1, 1, 1))
+        income_label_reflow = False
+        if doc_id == "PEISC_70BB":
+            page = doc[1]
+            income_label_reflow = any(
+                word[4] == "Moving" and 555.0 < word[1] < 570.0 and word[0] < 160.0
+                for word in page.get_text("words")
+            )
+            if income_label_reflow:
+                changed += 1
+                if apply_changes:
+                    for rect in ((109.0, 558.0, 235.0, 573.5),
+                                 (109.0, 574.5, 235.0, 589.5),
+                                 (109.0, 590.5, 290.0, 605.5),
+                                 (109.0, 606.5, 290.0, 621.5)):
+                        page.add_redact_annot(fitz.Rect(rect), fill=(1, 1, 1))
         reflow = (doc_id == "PEISC_70A"
                   and doc[1].rect.height <= 800 and doc[2].rect.height <= 800)
         moved_rules = (doc_id == "PEISC_70A" and not reflow
@@ -725,6 +1268,8 @@ def repair(doc_id, apply_changes):
                                color=(0, 0, 0), width=0.7)
                 page.insert_text(fitz.Point(433.3, 688.3), "Signature of lawyer",
                                  fontsize=11, fontname="tiro", color=(0, 0, 0))
+            if income_label_reflow:
+                draw_70bb_income_labels(doc[1])
             rebuilt = reflow_peisc_70a(doc) if reflow else None
             if reflow:
                 draw_70a_moved_rules(rebuilt[1])
