@@ -5,7 +5,7 @@
       "type": "TextField",
       "x": 108.1,
       "y": 283.0,
-      "width": 594.15,
+      "width": 120.0,
       "height": 15.0,
       "value": "",
       "fontSize": 7,
@@ -103,9 +103,9 @@
     {
       "id": 1750805871006,
       "type": "TextField",
-      "x": 374.2,
-      "y": 362.75,
-      "width": 195.0,
+      "x": 108.1,
+      "y": 382.0,
+      "width": 120.0,
       "height": 15.0,
       "value": "",
       "fontSize": 7,
@@ -256,6 +256,38 @@
       "border": "none",
       "page": 1,
       "bind": "respondent.fullLegalName"
+    },
+    {
+      "id": 1750805871014,
+      "type": "TextField",
+      "x": 250.0,
+      "y": 283.0,
+      "width": 452.25,
+      "height": 15.0,
+      "value": "",
+      "fontSize": 7,
+      "color": [0, 0, 0],
+      "background": "none",
+      "border": "none",
+      "page": 1,
+      "compact": true,
+      "rule": "bottom"
+    },
+    {
+      "id": 1750805871015,
+      "type": "TextField",
+      "x": 250.0,
+      "y": 382.0,
+      "width": 452.25,
+      "height": 15.0,
+      "value": "",
+      "fontSize": 7,
+      "color": [0, 0, 0],
+      "background": "none",
+      "border": "none",
+      "page": 1,
+      "compact": true,
+      "rule": "bottom"
     }
   ]
 }
