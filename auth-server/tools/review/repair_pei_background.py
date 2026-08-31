@@ -116,6 +116,12 @@ DATE_FIELD_SHORTENINGS = [
     ("PEISC_70F", 1, 589.23, 108.1, 504.2, 218.1, 1750703948006),
 ]
 
+# Form 70B's lawyer signature rule is followed by its contact block; retain
+# the missing caption so the otherwise bare line has an unambiguous purpose.
+MISSING_LAWYER_SIGNATURE_CAPTIONS = [
+    ("PEISC_70B", 2, 678.0, 356.6, 501.6),
+]
+
 # Existing 70B* output already contains the first signature-spacing pass.
 # Re-seat those two blocks once at their roomier final positions; fresh builds
 # go straight to those positions through the tables above.
@@ -186,6 +192,20 @@ def has_first_short_70e_date_rule(page):
                and abs(item[2].x - 218.1) < 1.0
                and abs(item[1].y - 600.38) < 1.0
                for drawing in page.get_drawings() for item in drawing["items"])
+
+
+def has_uncaptioned_lawyer_signature_rule(page, baseline, start, end):
+    has_rule = any(item[0] == "l" and abs(item[1].x - start) < 1.0
+                   and abs(item[2].x - end) < 1.0
+                   and abs(item[1].y - baseline) < 1.0
+                   for drawing in page.get_drawings() for item in drawing["items"])
+    has_rule = has_rule or any(set(word[4]) == {"_"}
+                               and abs(word[0] - start) < 2.0
+                               and abs(word[1] - baseline) < 2.0
+                               for word in page.get_text("words"))
+    has_caption = any(word[4] == "Signature" and baseline < word[1] < baseline + 25
+                      for word in page.get_text("words"))
+    return has_rule and not has_caption
 
 
 def has_first_signature_spacing_pass(page):
@@ -289,6 +309,11 @@ def draw_short_date_field_rule(page, baseline, start, end):
                    color=(0, 0, 0), width=0.7)
     page.insert_text(fitz.Point(108.1, 595.5), "(Date)", fontsize=6.3,
                      fontname="tiit", color=(0, 0, 0))
+
+
+def draw_lawyer_signature_caption(page, baseline):
+    page.insert_text(fitz.Point(423.3, baseline + 12.0), "Signature of lawyer",
+                     fontsize=11, fontname="tiro", color=(0, 0, 0))
 
 
 def shorten_date_field(doc_id, field_id, short_width):
@@ -531,6 +556,14 @@ def repair(doc_id, apply_changes):
                 changed += 1
                 shorter_70e_date_rule = True
                 page.add_redact_annot(fitz.Rect(104.0, 598.0, 220.0, 603.0), fill=(1, 1, 1))
+        missing_lawyer_captions = []
+        for did, page_no, baseline, start, end in MISSING_LAWYER_SIGNATURE_CAPTIONS:
+            if did != doc_id:
+                continue
+            page = doc[page_no - 1]
+            if has_uncaptioned_lawyer_signature_rule(page, baseline, start, end):
+                changed += 1
+                missing_lawyer_captions.append((page, baseline))
         extra_signature_space = False
         if doc_id == EXTRA_70B_JOINT_SIGNATURE_SPACE[0]:
             page = doc[EXTRA_70B_JOINT_SIGNATURE_SPACE[1] - 1]
@@ -584,6 +617,8 @@ def repair(doc_id, apply_changes):
                                color=(0, 0, 0), width=0.7)
                 page.insert_text(fitz.Point(108.1, 606.6), "(Date)", fontsize=6.3,
                                  fontname="tiit", color=(0, 0, 0))
+            for page, baseline in missing_lawyer_captions:
+                draw_lawyer_signature_caption(page, baseline)
             if extra_signature_space:
                 page = doc[EXTRA_70B_JOINT_SIGNATURE_SPACE[1] - 1]
                 draw_respondent_signature_reflow(page)
@@ -620,7 +655,7 @@ def main():
     ap.add_argument("--check", action="store_true")
     args = ap.parse_args()
     total = 0
-    for doc_id in sorted({row[0] for row in MASKS + DUPLICATE_BLANKS + CONTACT_BLOCKS + COURT_ADDRESS_REFLOWS + RESPONDENT_SIGNATURE_REFLOWS + LAWYER_SIGNATURE_REFLOWS + LAWYER_SIGNATURE_LINE_RELOCATIONS + DATE_RULE_SHORTENINGS + DATE_FIELD_SHORTENINGS} | {did for did, _ in NORMAL_DATE_FIELDS}):
+    for doc_id in sorted({row[0] for row in MASKS + DUPLICATE_BLANKS + CONTACT_BLOCKS + COURT_ADDRESS_REFLOWS + RESPONDENT_SIGNATURE_REFLOWS + LAWYER_SIGNATURE_REFLOWS + LAWYER_SIGNATURE_LINE_RELOCATIONS + DATE_RULE_SHORTENINGS + DATE_FIELD_SHORTENINGS + MISSING_LAWYER_SIGNATURE_CAPTIONS} | {did for did, _ in NORMAL_DATE_FIELDS}):
         count = repair(doc_id, not args.check)
         print("%s duplicate_prompts=%d" % (doc_id, count))
         total += count
