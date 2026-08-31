@@ -165,6 +165,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(HERE), "pei-forms"))
 import pei_general_heading as PGH  # noqa: E402
 import pei_answer_space as PAS  # noqa: E402
 import pei_inline_name_rules as PIN  # noqa: E402
+import pei_repaginate as PRG  # noqa: E402
 SCALE = 1.5
 
 # The builder's line metrics, measured off fields it placed correctly: a blank
@@ -931,22 +932,26 @@ def pass_cells(doc_id, mapping, doc, taken):
 #
 # (docId, page, x0, y0, x1, y1, type)
 def _translate(doc_id, page, y):
-    """One measured (page, y) carried through both reflow passes, in order.
+    """One measured (page, y) carried through all four reflow passes, in order.
 
     `pei_general_heading` moved page 1 to fit a style of cause;
     `pei_answer_space` then cut answer bands into whatever page needed one;
-    `pei_inline_name_rules` then reflowed the Statement of Lawyer's first line.
-    Each pass measured its own cuts against the page the one before it left, so
-    the translations compose in that order and only in that order -- reading a
-    coordinate through a later pass's tables first would look it up against a
-    page that never existed.
+    `pei_inline_name_rules` then reflowed the Statement of Lawyer's first line;
+    `pei_repaginate` then absorbed whatever near-empty continuation pages that
+    left behind into the page in front of them. Each pass measured its own
+    cuts against the page the one before it left, so the translations compose
+    in that order and only in that order -- reading a coordinate through a
+    later pass's tables first would look it up against a page that never
+    existed.
     """
     headed_page = PGH.page_for(doc_id, page, y)
     headed_y = PGH.shifted(doc_id, page, y)
     spaced_page = PAS.page_for(doc_id, headed_page, headed_y)
     spaced_y = PAS.shifted(doc_id, headed_page, headed_y)
-    return (PIN.page_for(doc_id, spaced_page, spaced_y),
-            PIN.shifted(doc_id, spaced_page, spaced_y))
+    named_page = PIN.page_for(doc_id, spaced_page, spaced_y)
+    named_y = PIN.shifted(doc_id, spaced_page, spaced_y)
+    return (PRG.page_for(doc_id, named_page, named_y),
+            PRG.shifted(doc_id, named_page, named_y))
 
 
 def _reflowed(entries):

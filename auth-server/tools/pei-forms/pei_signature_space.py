@@ -79,8 +79,15 @@ import repair_pei_fields as R                                   # noqa: E402
 EXPORT = PGH.EXPORT
 SCALE = PGH.SCALE
 
+# Round 11 (`pei_repaginate.py`) absorbed this form's old page 5 into page 4,
+# which pushed every later page back by one -- the Statement of Lawyer block
+# this pass already fixed moved from page 8 to page 7 along with it. This
+# module is not wired into `repair_pei_fields._translate` (see the README's
+# eleventh pass), so nothing translates the number automatically; it is
+# corrected here by hand, the same one-time fix `signature_space_shifts.json`
+# needed.
 DOC_ID = "PEISC_70A_JOINT"
-PAGE_NO = 8
+PAGE_NO = 7
 
 # The clear paper the published form leaves between a signature block's caption
 # and the next block's signature rule, measured ink-to-ink on

@@ -9,7 +9,7 @@ Chrome, no Adobe.
 
 ## Scope
 
-**34 forms, 74 pages, 1,231 fields, 67 binds, zero findings.** Catalogue rows
+**34 forms, 69 pages, 1,231 fields, 67 binds, zero findings.** Catalogue rows
 3601–3634.
 
 > Was 34 forms / 64 pages / 1,143 fields / 4 binds as first shipped. The binds
@@ -701,6 +701,95 @@ python3 pei_answer_space.py --only PEISC_70B
 python3 pei_inline_name_rules.py --only PEISC_70B
 python3 pei_box_clearance.py
 python3 ../review/record_pe_round10.py
+```
+
+## Eleventh pass: reclaiming the pages that carried almost nothing
+
+`pei_repaginate.py`. **Five whole-page absorptions. 74 -> 69 pages.**
+
+Round 10 fixed the trade where a narrative prompt's answer box took the rest
+of its page and bought a whole sheet for a short tail. What was left after
+that -- ten spills across 70A, 70A\*, 70D and 71E -- isn't a sizing problem:
+each has between −9 and 29pt of paper above its own tail, so no box could
+keep it on one page. That is a *pagination* problem instead: some of those
+continuation pages carry only a few lines while the page in front of them
+still has hundreds of points of clear paper below its own content. The fix
+is the mirror image of a spill -- pull the next page's content up into the
+page in front of it, drop the page that emptied out, and renumber everything
+after it back by one.
+
+**Only whole-page absorptions are made.** A page is dropped only where its
+entire content, unshifted internally, fits into the paper already free below
+the page in front of it -- no cut through the middle of either page, so
+nothing for `validate_cut` to refuse and nothing for a whiteout to
+duplicate. Reused rather than reinvented: `pei_general_heading.band()`
+copies the page's ink with `show_pdf_page` the same way every other reflow in
+this batch does, and the same footer-aware margin math (`footer_top`,
+`MARGIN_BOTTOM`) decides how much room a page actually has, since some of the
+pages being absorbed still carry their own page-number stamp and that stamp
+has to land with the content it belongs to.
+
+| Form | Was | Now | What came back |
+| --- | --- | --- | --- |
+| 70DD | 2 | 1 | the Respondent's own Name/Address/Phone/Email block |
+| 71E | 3 | 2 | the Date/Issued by/Address of court office block |
+| 70D | 3 | 2 | the lawyer's own Name/Address/Phone/Email rules |
+| 70R | 4 | 3 | items 5 through 10, restoring the form's own original page 2 |
+| 70A\* (JOINT) | 9 | 8 | item 32's remaining child-support options |
+
+Each of these five is a page the earlier `pei_general_heading`/
+`pei_answer_space` spill inserted and left with no printed page number of its
+own. Where the page it absorbed *did* carry a stamp -- 70R's "2", 70A\*'s
+"4" -- that stamp moves with its own content and becomes correct again for
+the shorter document, restoring the government form's own original numbering
+rather than inventing new labels.
+
+**70A's own three unlabeled pages (3, 8, 10) are not touched.** Page 3's
+content doesn't fit in either neighbour's free room without cutting through
+a table (item 24's children grid, which `validate_cut` refuses outright, the
+same refusal `pei_answer_space`'s README records for 70BB). Page 10 is
+similar. Page 8 does end on the same defect this batch was warned about --
+"37. Family law proceedings or orders" with item 37's own body starting on
+page 9 -- and item 37's body alone (115.19-215.93, well short of the whole
+page) would clear; joining just that much doesn't reduce 70A's own page count
+on its own, since what is left on page 9 after removing it still fills a
+sheet, and folding the remainder forward into page 10 in turn runs into the
+same table-boundary refusal that stops page 3. Left as a defect recorded
+rather than a break quietly preserved, and as further work for a change that
+can spend the time a document this dense needs page by page: 70A is the
+largest single form in the batch (11 pages) and the one whose remaining spills
+interleave with a ruled table on almost every page they touch.
+
+**Composes as the fourth link in `_translate`,** after `pei_general_heading`,
+`pei_answer_space` and `pei_inline_name_rules`: `pei_repaginate.shifted()`/
+`page_for()` read the page exactly as those three left it, and
+`repair_pei_fields.py --check` reports **exactly what it reported before this
+pass ran** -- the proof that nothing this pass moved landed on a coordinate
+any repair table didn't already expect.
+
+**A merge can change what a live detector sees, and that has to be designed
+around rather than accepted.** Form 70D's own "Date ___ Signature of lawyer
+___" rule had been split from its own caption by the very spill this pass
+undoes -- the caption is "Signature of lawyer / Name:", the first line of the
+page being absorbed -- and `repair_pei_fields.caption_near` reads up to 20pt
+below a rule for its caption. Landed any closer than that, the merge would
+silently re-caption the rule and `pass_blanks` would stop flagging it: true,
+and arguably a second defect this same move happens to fix, but not
+provable as *only* a page-count change, and not this pass's decision to make
+quietly. Every `beforeGap` in `PLAN` clears that window (`CAPTION_WINDOW`)
+for exactly this reason.
+
+**A merge must not "fix" a field it didn't move, either.** `pei_answer_space
+.refit_ticks` scopes itself by page, correct where a whole page was rebuilt
+and everything on it shifted. Here only the absorbed page's fields moved --
+the keep page's own pre-existing fields never did -- so this pass carries its
+own `refit_ticks`, scoped by field id instead, and reseats only the fields it
+actually brought across.
+
+```
+python3 pei_repaginate.py --check
+python3 pei_repaginate.py
+python3 ../review/record_pe_round11.py
 ```
 
 ## Catalogue, binds, verify
