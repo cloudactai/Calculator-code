@@ -87,6 +87,14 @@ RESPONDENT_SIGNATURE_REFLOWS = [
     ("PEISC_70B_JOINT", 1, (220.0, 451.0, 523.0, 522.5)),
 ]
 
+# In-person contact details are collected in the dedicated block below these
+# signatures. Keep only the italic strike-out instruction beside the signature
+# so the direction is concise and does not duplicate the contact fields.
+RESPONDENT_STRIKEOUT_REFLOWS = [
+    ("PEISC_70B", 2, (200.0, 470.0, 506.0, 531.0), 315.05, 482.73, 484.0, 510.0),
+    ("PEISC_70D", 2, (200.0, 244.0, 506.0, 327.0), 315.05, 256.82, 258.0, 284.0),
+]
+
 # The lawyer's signature rule sits directly above its contact block.  Move the
 # complete right-hand signing block down together so the signature has a clear
 # signing band without crowding the contact fields below it.
@@ -113,13 +121,26 @@ DATE_RULE_SHORTENINGS = [
 # an editable field seated on that rule.  Its field width must shrink with the
 # printed rule.
 DATE_FIELD_SHORTENINGS = [
-    ("PEISC_70F", 1, 589.23, 108.1, 504.2, 218.1, 1750703948006),
+    ("PEISC_70F", 1, 589.23, 108.1, 504.2, 218.1, 1750703948006, 378.0, 595.5),
+    ("PEISC_70G", 1, 594.25, 108.1, 504.2, 218.1, 1750599130007, 348.0, 600.5),
 ]
 
 # Form 70B's lawyer signature rule is followed by its contact block; retain
 # the missing caption so the otherwise bare line has an unambiguous purpose.
 MISSING_LAWYER_SIGNATURE_CAPTIONS = [
     ("PEISC_70B", 2, 678.0, 356.6, 501.6),
+]
+
+# The labelled lawyer contact rules are self-explanatory; remove the redundant
+# bracketed instruction beneath them on Form 70B*.
+LAWYER_CONTACT_CAPTION_REMOVALS = [
+    ("PEISC_70B_JOINT", 1, (380.0, 759.0, 522.0, 779.0)),
+]
+
+# Keep Form 70E's Name label consistent with Address and Phone, and leave a
+# clear gap before its editable field.
+NAME_LABEL_FIELD_REPAIRS = [
+    ("PEISC_70E", 1, (356.0, 594.0, 386.0, 611.0), 1750861110006, 388.0, 504.1),
 ]
 
 # Existing 70B* output already contains the first signature-spacing pass.
@@ -267,6 +288,17 @@ def draw_respondent_signature_reflow(page):
     )
 
 
+def draw_respondent_strikeout_reflow(page, label_x, label_baseline, text_top, text_bottom):
+    page.insert_text(fitz.Point(label_x, label_baseline), "Signature of respondent",
+                     fontsize=11, fontname="tiro", color=(0, 0, 0))
+    page.insert_textbox(
+        fitz.Rect(206.5, text_top, 504.2, text_bottom),
+        "(Where the counterpetition does not include a claim for a divorce, "
+        "strike out the statement of lawyer appearing below.)",
+        fontsize=9.5, fontname="tiit", color=(0, 0, 0), align=fitz.TEXT_ALIGN_CENTER,
+    )
+
+
 def draw_lawyer_signature_reflow(page, delta):
     line_y = 646.75 + delta
     page.draw_line(fitz.Point(367.1, line_y), fitz.Point(522.1, line_y),
@@ -283,11 +315,6 @@ def draw_lawyer_signature_reflow(page, delta):
                          fontsize=9.3, fontname="tiro", color=(0, 0, 0))
         page.draw_line(fitz.Point(x0, baseline), fitz.Point(522.0, baseline),
                        color=(0, 0, 0), width=0.7)
-    page.insert_textbox(
-        fitz.Rect(382.5, 732.0 + delta, 522.0, 750.0 + delta),
-        "(Name, address, telephone number and email address of lawyer)",
-        fontsize=6.3, fontname="tiit", color=(0, 0, 0),
-    )
 
 
 def draw_lawyer_signature_line(page, baseline):
@@ -300,14 +327,14 @@ def draw_short_date_rule(page, baseline, start, end):
                    color=(0, 0, 0), width=0.7)
     page.insert_text(fitz.Point(108.1, 606.6), "(Date)", fontsize=6.3,
                      fontname="tiit", color=(0, 0, 0))
-    page.insert_text(fitz.Point(358.44, 606.67), "Name:", fontsize=9.3,
+    page.insert_text(fitz.Point(358.44, 606.67), "Name:", fontsize=7,
                      fontname="tiro", color=(0, 0, 0))
 
 
-def draw_short_date_field_rule(page, baseline, start, end):
+def draw_short_date_field_rule(page, baseline, start, end, label_baseline):
     page.draw_line(fitz.Point(start, baseline), fitz.Point(end, baseline),
                    color=(0, 0, 0), width=0.7)
-    page.insert_text(fitz.Point(108.1, 595.5), "(Date)", fontsize=6.3,
+    page.insert_text(fitz.Point(108.1, label_baseline), "(Date)", fontsize=6.3,
                      fontname="tiit", color=(0, 0, 0))
 
 
@@ -323,6 +350,20 @@ def shorten_date_field(doc_id, field_id, short_width):
     for field in mapping["staticFields"]:
         if field["id"] == field_id:
             field["width"] = short_width
+            with open(mapping_path, "w") as handle:
+                json.dump(mapping, handle, indent=2)
+            return
+    raise KeyError("%s field %s not found" % (doc_id, field_id))
+
+
+def repair_name_field_geometry(doc_id, field_id, x, right):
+    mapping_path = os.path.join(EXPORT, "%s.json" % doc_id)
+    with open(mapping_path) as handle:
+        mapping = json.load(handle)
+    for field in mapping["staticFields"]:
+        if field["id"] == field_id:
+            field["x"] = x
+            field["width"] = round((right - x) * 1.5, 2)
             with open(mapping_path, "w") as handle:
                 json.dump(mapping, handle, indent=2)
             return
@@ -499,6 +540,18 @@ def repair(doc_id, apply_changes):
             respondent_signatures.append(page)
             if apply_changes:
                 page.add_redact_annot(rect, fill=(1, 1, 1))
+        respondent_strikeout_reflows = []
+        for did, page_no, coords, label_x, label_baseline, text_top, text_bottom in RESPONDENT_STRIKEOUT_REFLOWS:
+            if did != doc_id:
+                continue
+            page = doc[page_no - 1]
+            rect = fitz.Rect(coords)
+            if not has_respondent_signature_prompt(page, rect):
+                continue
+            changed += 1
+            respondent_strikeout_reflows.append((page, label_x, label_baseline, text_top, text_bottom))
+            if apply_changes:
+                page.add_redact_annot(rect, fill=(1, 1, 1))
         lawyer_signatures = []
         for did, page_no, coords, delta in LAWYER_SIGNATURE_REFLOWS:
             if did != doc_id:
@@ -538,17 +591,17 @@ def repair(doc_id, apply_changes):
                 # row, and are re-set with the replacement rule below.
                 page.add_redact_annot(fitz.Rect(104.0, 598.0, 506.0, 603.0), fill=(1, 1, 1))
         short_date_fields = []
-        for did, page_no, baseline, start, end, short_end, field_id in DATE_FIELD_SHORTENINGS:
+        for did, page_no, baseline, start, end, short_end, field_id, underscore_start, label_baseline in DATE_FIELD_SHORTENINGS:
             if did != doc_id:
                 continue
             page = doc[page_no - 1]
             if not has_long_date_rule(page, baseline, start, end):
                 continue
             changed += 1
-            short_date_fields.append((page, baseline, start, short_end, field_id))
+            short_date_fields.append((page, baseline, start, short_end, field_id, label_baseline))
             if apply_changes:
-                page.add_redact_annot(fitz.Rect(104.0, 587.0, 506.0, 592.0), fill=(1, 1, 1))
-                page.add_redact_annot(fitz.Rect(378.0, 594.0, 506.0, 608.0), fill=(1, 1, 1))
+                page.add_redact_annot(fitz.Rect(104.0, baseline - 2.23, 506.0, baseline + 2.77), fill=(1, 1, 1))
+                page.add_redact_annot(fitz.Rect(underscore_start, baseline + 4.77, 506.0, baseline + 18.77), fill=(1, 1, 1))
         shorter_70e_date_rule = False
         if doc_id == "PEISC_70E":
             page = doc[0]
@@ -564,6 +617,39 @@ def repair(doc_id, apply_changes):
             if has_uncaptioned_lawyer_signature_rule(page, baseline, start, end):
                 changed += 1
                 missing_lawyer_captions.append((page, baseline))
+        lawyer_contact_caption_removals = []
+        for did, page_no, coords in LAWYER_CONTACT_CAPTION_REMOVALS:
+            if did != doc_id:
+                continue
+            page = doc[page_no - 1]
+            rect = fitz.Rect(coords)
+            if not any(word[4].startswith("(Name,") and rect.intersects(fitz.Rect(word[:4]))
+                       for word in page.get_text("words")):
+                continue
+            changed += 1
+            lawyer_contact_caption_removals.append((page, rect))
+            if apply_changes:
+                page.add_redact_annot(rect, fill=(1, 1, 1))
+        name_label_repairs = []
+        for did, page_no, coords, field_id, field_x, field_right in NAME_LABEL_FIELD_REPAIRS:
+            if did != doc_id:
+                continue
+            page = doc[page_no - 1]
+            name = next((word for word in page.get_text("words")
+                         if word[4] == "Name:" and fitz.Rect(coords).intersects(fitz.Rect(word[:4]))), None)
+            if name is None or name[3] - name[1] < 11.0:
+                continue
+            changed += 1
+            name_label_repairs.append((page, field_id, field_x, field_right))
+            if apply_changes:
+                page.add_redact_annot(fitz.Rect(coords), fill=(1, 1, 1))
+        missing_address_label = False
+        if doc_id == "PEISC_70E":
+            page = doc[0]
+            missing_address_label = not any(word[4] == "Address:" and 605.0 < word[1] < 620.0
+                                            for word in page.get_text("words"))
+            if missing_address_label:
+                changed += 1
         extra_signature_space = False
         if doc_id == EXTRA_70B_JOINT_SIGNATURE_SPACE[0]:
             page = doc[EXTRA_70B_JOINT_SIGNATURE_SPACE[1] - 1]
@@ -601,6 +687,8 @@ def repair(doc_id, apply_changes):
                 draw_court_address_reflow(page, label_baseline, rule_baseline)
             for page in respondent_signatures:
                 draw_respondent_signature_reflow(page)
+            for page, label_x, label_baseline, text_top, text_bottom in respondent_strikeout_reflows:
+                draw_respondent_strikeout_reflow(page, label_x, label_baseline, text_top, text_bottom)
             for page, page_no, delta in lawyer_signatures:
                 draw_lawyer_signature_reflow(page, delta)
                 shift_lawyer_contact_fields(doc_id, page_no, delta)
@@ -608,8 +696,8 @@ def repair(doc_id, apply_changes):
                 draw_lawyer_signature_line(page, baseline)
             for page, baseline, start, end in short_date_rules:
                 draw_short_date_rule(page, baseline, start, end)
-            for page, baseline, start, end, field_id in short_date_fields:
-                draw_short_date_field_rule(page, baseline, start, end)
+            for page, baseline, start, end, field_id, label_baseline in short_date_fields:
+                draw_short_date_field_rule(page, baseline, start, end, label_baseline)
                 shorten_date_field(doc_id, field_id, (end - start) * 1.5)
             if shorter_70e_date_rule:
                 page = doc[0]
@@ -619,6 +707,13 @@ def repair(doc_id, apply_changes):
                                  fontname="tiit", color=(0, 0, 0))
             for page, baseline in missing_lawyer_captions:
                 draw_lawyer_signature_caption(page, baseline)
+            for page, field_id, field_x, field_right in name_label_repairs:
+                page.insert_text(fitz.Point(358.44, 606.67), "Name:", fontsize=7,
+                                 fontname="tiro", color=(0, 0, 0))
+                repair_name_field_geometry(doc_id, field_id, field_x, field_right)
+            if missing_address_label:
+                doc[0].insert_text(fitz.Point(352.21, 618.17), "Address:", fontsize=7,
+                                   fontname="tiro", color=(0, 0, 0))
             if extra_signature_space:
                 page = doc[EXTRA_70B_JOINT_SIGNATURE_SPACE[1] - 1]
                 draw_respondent_signature_reflow(page)
@@ -655,7 +750,7 @@ def main():
     ap.add_argument("--check", action="store_true")
     args = ap.parse_args()
     total = 0
-    for doc_id in sorted({row[0] for row in MASKS + DUPLICATE_BLANKS + CONTACT_BLOCKS + COURT_ADDRESS_REFLOWS + RESPONDENT_SIGNATURE_REFLOWS + LAWYER_SIGNATURE_REFLOWS + LAWYER_SIGNATURE_LINE_RELOCATIONS + DATE_RULE_SHORTENINGS + DATE_FIELD_SHORTENINGS + MISSING_LAWYER_SIGNATURE_CAPTIONS} | {did for did, _ in NORMAL_DATE_FIELDS}):
+    for doc_id in sorted({row[0] for row in MASKS + DUPLICATE_BLANKS + CONTACT_BLOCKS + COURT_ADDRESS_REFLOWS + RESPONDENT_SIGNATURE_REFLOWS + RESPONDENT_STRIKEOUT_REFLOWS + LAWYER_SIGNATURE_REFLOWS + LAWYER_SIGNATURE_LINE_RELOCATIONS + DATE_RULE_SHORTENINGS + DATE_FIELD_SHORTENINGS + MISSING_LAWYER_SIGNATURE_CAPTIONS + LAWYER_CONTACT_CAPTION_REMOVALS + NAME_LABEL_FIELD_REPAIRS} | {did for did, _ in NORMAL_DATE_FIELDS}):
         count = repair(doc_id, not args.check)
         print("%s duplicate_prompts=%d" % (doc_id, count))
         total += count
