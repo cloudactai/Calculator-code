@@ -25,6 +25,21 @@ MASKS = [
     ("PEISC_70D", 1, (106.0, 251.0, 136.5, 267.5)),
 ]
 
+# A second, shorter printed blank the source repeats immediately after the
+# first. Form 70A*'s items 20 and 21 both read "has resided in (municipality
+# and province, state or country) _____, _________ since (date) ______" --
+# two separate underscore runs before "since", not one. 70A's own equivalent
+# item 20 prints the same shape without the comma between them, and there the
+# two runs sit close enough that this batch's own detector already reads them
+# as one continuous rule; here the comma splits them, and the second run
+# carries no caption of its own anywhere on the page -- it duplicates the
+# first blank's own answer rather than asking for a second one. Removed the
+# same way `MASKS` above removes a duplicate printed cue, and its field with
+# it (`DUPLICATE_BLANK_DROP` in `repair_pei_fields.py`).
+DUPLICATE_BLANKS = [
+    ("PEISC_70A_JOINT", 2, (440.0, 345.0, 484.5, 359.0)),
+]
+
 # A lawyer signature is not contact information.  Where the form provides a
 # dedicated block beneath that signature, replace its dense parenthetical with
 # compact labelled writing rules.
@@ -68,6 +83,18 @@ def has_duplicate_prompt(page, rect):
     # A text block can span the whole answer paragraph, so its geometry is too
     # broad for an idempotence check.  Match the exact standalone prompt.
     return any(word[4] == "(Date)" and rect.intersects(fitz.Rect(word[:4]))
+               for word in page.get_text("words"))
+
+
+def has_underscore_run(page, rect):
+    """A word of nothing but underscores sitting inside `rect`.
+
+    Matched at the word level (`set(w[4]) == {"_"}`), the same test
+    `repair_pei_background.cap_date_rules` already uses to find a printed
+    rule -- a run this short is always one word, never glued to a caption the
+    way a label-and-rule pair elsewhere in this batch can be.
+    """
+    return any(set(word[4]) == {"_"} and rect.intersects(fitz.Rect(word[:4]))
                for word in page.get_text("words"))
 
 
@@ -216,6 +243,16 @@ def repair(doc_id, apply_changes):
             changed += 1
             if apply_changes:
                 page.add_redact_annot(rect, fill=(1, 1, 1))
+        for did, page_no, coords in DUPLICATE_BLANKS:
+            if did != doc_id:
+                continue
+            page = doc[page_no - 1]
+            rect = fitz.Rect(coords)
+            if not has_underscore_run(page, rect):
+                continue
+            changed += 1
+            if apply_changes:
+                page.add_redact_annot(rect, fill=(1, 1, 1))
         contacts = []
         for did, page_no, coords in CONTACT_BLOCKS:
             if did != doc_id:
@@ -277,7 +314,7 @@ def main():
     ap.add_argument("--check", action="store_true")
     args = ap.parse_args()
     total = 0
-    for doc_id in sorted({row[0] for row in MASKS + CONTACT_BLOCKS + COURT_ADDRESS_REFLOWS} | {did for did, _ in NORMAL_DATE_FIELDS}):
+    for doc_id in sorted({row[0] for row in MASKS + DUPLICATE_BLANKS + CONTACT_BLOCKS + COURT_ADDRESS_REFLOWS} | {did for did, _ in NORMAL_DATE_FIELDS}):
         count = repair(doc_id, not args.check)
         print("%s duplicate_prompts=%d" % (doc_id, count))
         total += count

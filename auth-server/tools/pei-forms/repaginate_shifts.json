@@ -1,52 +1,42 @@
 {
-  "PEISC_70A_JOINT": {
-    "entries": [
-      {
-        "dropPage": 5,
-        "keepPage": 4,
-        "shift": 48.97
-      }
-    ],
-    "oldCount": 9
-  },
-  "PEISC_70D": {
-    "entries": [
-      {
-        "dropPage": 3,
-        "keepPage": 2,
-        "shift": 419.94
-      }
-    ],
-    "oldCount": 3
-  },
-  "PEISC_70DD": {
-    "entries": [
-      {
-        "dropPage": 2,
-        "keepPage": 1,
-        "shift": 569.55
-      }
-    ],
-    "oldCount": 2
-  },
-  "PEISC_70R": {
-    "entries": [
-      {
-        "dropPage": 3,
-        "keepPage": 2,
-        "shift": 38.68
-      }
-    ],
-    "oldCount": 4
-  },
-  "PEISC_71E": {
-    "entries": [
-      {
-        "dropPage": 3,
-        "keepPage": 2,
-        "shift": 245.0
-      }
-    ],
-    "oldCount": 3
-  }
+  "PEISC_70A_JOINT": [
+    {
+      "dropPage": 5,
+      "keepPage": 4,
+      "shift": 48.97
+    },
+    {
+      "keepPage": 7,
+      "dropPage": 8,
+      "shift": 537.78
+    }
+  ],
+  "PEISC_70D": [
+    {
+      "dropPage": 3,
+      "keepPage": 2,
+      "shift": 419.94
+    }
+  ],
+  "PEISC_70DD": [
+    {
+      "dropPage": 2,
+      "keepPage": 1,
+      "shift": 569.55
+    }
+  ],
+  "PEISC_70R": [
+    {
+      "dropPage": 3,
+      "keepPage": 2,
+      "shift": 38.68
+    }
+  ],
+  "PEISC_71E": [
+    {
+      "dropPage": 3,
+      "keepPage": 2,
+      "shift": 245.0
+    }
+  ]
 }

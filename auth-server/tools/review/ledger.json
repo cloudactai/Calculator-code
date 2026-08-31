@@ -1361,7 +1361,7 @@
   "firstPass": "pass",
   "corrections": "New page carrying the No Collusion section (item 40) and the Declaration of Spouses (item 41(a)-(d)).",
   "finalPass": "pass",
-  "notes": "New page, spliced in directly behind the page it spilled from so the form still reads start to finish in physical page order. It carries the No Collusion section (item 40) and the Declaration of Spouses (item 41(a)-(d)), displaced when pei_answer_space.py cut an answer area into that page. Background is band-reflowed, never scaled, and the pass adds no ink. See pei_answer_space.py.",
+  "notes": "New page, spliced in directly behind the page it spilled from so the form still reads start to finish in physical page order. It carries the No Collusion section (item 40) and the Declaration of Spouses (item 41(a)-(d)), displaced when pei_answer_space.py cut an answer area into that page. Background is band-reflowed, never scaled, and the pass adds no ink. See pei_answer_space.py. Round 12: pei_repaginate.py front-trimmed this page. Spouse One's own Date/Signature and Name/Address/Phone/Email block moved off the top of page 7 onto this page's own tail -- band-reflowed, not re-typeset. See pei_repaginate.py.",
   "build": "d2de4c4"
  },
  {
@@ -1376,23 +1376,8 @@
   "firstPass": "pass",
   "corrections": "Dropped four boxes from the two spouses' and two lawyers' signature rules.",
   "finalPass": "pass",
-  "notes": "The four date rules are kept and correctly seated. Round 6: pei_answer_space.py cut an answer area into this page for a narrative prompt that shipped with one line or none. The background is band-reflowed rather than re-typeset, so every field on the page moved by its own band's constant and nothing was re-detected. Round 7: the Statement of Lawyer's first line was reflowed by pei_inline_name_rules.py. The lawyer's name blank was 28pt -- the court's own measure -- and a name of ordinary length overflowed it and printed over the following words. The tail of the line now sits on its own line at the paragraph's continuation indent and the blank runs the width of line 1. The moved text is copied as a clipped XObject, not re-set; only the rule's extension and the (name) caption, which straddles the band edge, are drawn. Affects items 42(a) and 43(a), both lawyers' statements.",
+  "notes": "The four date rules are kept and correctly seated. Round 6: pei_answer_space.py cut an answer area into this page for a narrative prompt that shipped with one line or none. The background is band-reflowed rather than re-typeset, so every field on the page moved by its own band's constant and nothing was re-detected. Round 7: the Statement of Lawyer's first line was reflowed by pei_inline_name_rules.py. The lawyer's name blank was 28pt -- the court's own measure -- and a name of ordinary length overflowed it and printed over the following words. The tail of the line now sits on its own line at the paragraph's continuation indent and the blank runs the width of line 1. The moved text is copied as a clipped XObject, not re-set; only the rule's extension and the (name) caption, which straddles the band edge, are drawn. Affects items 42(a) and 43(a), both lawyers' statements. Round 12: this page's own head -- Spouse One's Date/Signature and Name/Address/Phone/Email block -- moved to page 6, and the tail that stayed was shifted up to close the gap. The room that opened at this page's own tail is what let it absorb the closing Date/Signature rule for Spouse Two's lawyer, the very last line of the Statement of Lawyer next. See pei_repaginate.py.",
   "build": "14a1205"
- },
- {
-  "province": "PE",
-  "docId": "PEISC_70A_JOINT",
-  "formNo": "70A*",
-  "title": "Joint Petition for Divorce",
-  "category": "Pleadings",
-  "page": 8,
-  "sourceReviewed": true,
-  "overlayReviewed": true,
-  "firstPass": "pass",
-  "corrections": "New page carrying the Date and Signature of lawyer rules closing the Statement of Lawyer for Spouse Two.",
-  "finalPass": "pass",
-  "notes": "New page, spliced in directly behind the page it spilled from so the form still reads start to finish in physical page order. It carries the Date and Signature of lawyer rules closing the Statement of Lawyer for Spouse Two, displaced when pei_answer_space.py cut an answer area into that page. Background is band-reflowed, never scaled, and the pass adds no ink. See pei_answer_space.py.",
-  "build": "d2de4c4"
  },
  {
   "province": "PE",

@@ -1242,6 +1242,15 @@ OFFICE_ONLY_DROP = _reflowed_corners([
     ("PEISC_70R", 3, 341.37, 134.80),
 ])
 
+# A second, shorter blank printed immediately after the first, with no
+# caption of its own -- see `repair_pei_background.DUPLICATE_BLANKS`, which
+# removes the printed run this field sat on. Keyed to the field's own corner
+# for the same reason `OFFICE_ONLY_DROP` is: idempotent, and it cannot reach
+# the real answer field beside it.
+DUPLICATE_BLANK_DROP = _reflowed_corners([
+    ("PEISC_70A_JOINT", 2, 442.1, 343.37),
+])
+
 
 def pass_named(doc_id, mapping, doc, taken):
     added = []
@@ -1262,6 +1271,10 @@ def pass_named(doc_id, mapping, doc, taken):
 
 def pass_office_drop(doc_id, mapping, doc, taken):
     return _resolve(OFFICE_ONLY_DROP, mapping, doc_id)
+
+
+def pass_duplicate_blank_drop(doc_id, mapping, doc, taken):
+    return _resolve(DUPLICATE_BLANK_DROP, mapping, doc_id)
 
 
 # The unruled answer bands, measured off the page: left and right from the
@@ -1423,7 +1436,8 @@ def pass_date_lengths(doc_id, mapping, doc, taken):
 
 PASSES = ("ticks", "fit_ticks", "blanks", "cells", "subcells", "areas",
          "named", "to_layout", "compact_existing_names", "margin", "signatures",
-         "brackets", "office_drop", "stubs", "seat_flat", "70a_layout", "date_lengths")
+         "brackets", "office_drop", "duplicate_blank_drop", "stubs", "seat_flat",
+         "70a_layout", "date_lengths")
 
 
 def repair(doc_id, wanted, apply_changes):
@@ -1501,6 +1515,10 @@ def repair(doc_id, wanted, apply_changes):
     if "office_drop" in wanted:
         got = pass_office_drop(doc_id, mapping, doc, taken)
         report["office_drop"] = len(got)
+        dropped += got
+    if "duplicate_blank_drop" in wanted:
+        got = pass_duplicate_blank_drop(doc_id, mapping, doc, taken)
+        report["duplicate_blank_drop"] = len(got)
         dropped += got
     if "stubs" in wanted:
         stub_changes, drop = pass_stubs(doc_id, mapping, doc, taken)

@@ -9,7 +9,7 @@ Chrome, no Adobe.
 
 ## Scope
 
-**34 forms, 69 pages, 1,231 fields, 67 binds, zero findings.** Catalogue rows
+**34 forms, 68 pages, 1,230 fields, 67 binds, zero findings.** Catalogue rows
 3601–3634.
 
 > Was 34 forms / 64 pages / 1,143 fields / 4 binds as first shipped. The binds
@@ -790,6 +790,85 @@ actually brought across.
 python3 pei_repaginate.py --check
 python3 pei_repaginate.py
 python3 ../review/record_pe_round11.py
+```
+
+## Twelfth pass: a front-trim, and the second blank item 20 never needed
+
+`pei_repaginate.py` gained a second mechanism. **70A\* (JOINT), 8 -> 7 pages.**
+
+Round 11 left 70A\*'s page 7 essentially full (2.7pt free) and its neighbours
+either full (page 6 had none to spare either -- wrong, see below) or already
+merged. Reading the page itself rather than just its free-space total: page 7
+opens with two complete, near-identical blocks -- a Date/Signature rule, then
+Name/Address/Phone/Email and its caption -- one for each spouse, before
+"STATEMENT OF LAWYER FOR SPOUSE ONE" begins. The two spouse blocks read as one
+continuous run in the text layer (the caption closing Spouse Two's block
+overlaps the heading's own line by 1.3pt, so no cut is possible between them
+and the heading), but the **gap between the two spouses' own blocks** is a
+clean 13.01pt, clear of every line, drawing and field on the page.
+
+A **front-trim** cuts there: everything above the cut -- Spouse One's whole
+block -- moves onto page 6's tail, exactly like a whole-page merge's own
+band-and-shift. Everything at or below the cut stays on page 7, re-based to
+the top margin the trimmed head used to open the page with, which closes the
+gap the same way removing a row from a list closes it. Unlike a merge, no
+page is dropped -- page 7 still exists, just shorter at the top -- so this
+never renumbers anything on its own.
+
+**Trimming a page's head can free enough of its own tail for an ordinary
+merge to follow it**, and here it does: closing that gap opens 101.58pt at
+page 7's own tail, comfortably more than page 8's own 26pt of content (the
+closing Date/Signature rule for Spouse Two's lawyer, previously alone on a
+page of its own). That merge is a second, ordinary `PLAN` entry -- the
+mechanism already described above, unchanged -- not a special case, which is
+why `FRONT_TRIM` entries are always applied before `PLAN` in `main()`: a merge
+that depends on the room a front-trim opens has to run after it.
+
+**The two mechanisms compose through the same four `_translate` hooks**,
+front-trim first, since it always runs first on the page it touches.
+
+### The ledger remap this round needed was not `page_for`
+
+`record_pe_round12.py` cannot hand the ledger's own current page numbers to
+`PRG.page_for` the way `record_pe_round11.py` could: `page_for` walks a
+document's *entire* merge history from its pre-repagination numbering, but
+the ledger's rows are themselves the *output* of round 11's own remap.
+Handing them back in would re-apply round 11's merge a second time -- and
+filtering by which page numbers the ledger currently holds does not catch
+this, because round 11's own entry drops "page 5" in the numbering *before*
+round 11 ran, and the post-round-11 ledger also happens to have a live row
+numbered 5: a different page, the same number, by coincidence. The fix is to
+name the one entry a round actually added -- `pei_repaginate.record` only
+ever appends, never re-sorts, so the *last* entry for a document is always
+its most recent merge, which is the one a ledger sync immediately following
+that pass is written to record.
+
+### A stray second blank, found while reading the page for the cut
+
+Items 20 and 21 both print "has resided in (municipality and province, state
+or country) `_____`, `_________` since (date) `______`" -- two separate
+underscore runs before "since", not one. 70A's own equivalent item 20 prints
+the same shape without the comma between the two runs, close enough that this
+batch's own detector already reads them as a single rule; 70A\*'s comma
+splits them into two, and the second run carries no caption of its own
+anywhere on the page. It duplicates the first blank's own answer rather than
+asking for a second one. Fixed on item 20, where it was found; item 21 is
+left as printed -- the same shape, not reviewed, and not this round's finding
+to extend on inference alone.
+
+Removed the way this batch already removes a duplicate printed cue
+(`repair_pei_background.MASKS`) and a field with nowhere real to go
+(`repair_pei_fields.OFFICE_ONLY_DROP`): a new `DUPLICATE_BLANKS` mask redacts
+the printed run, `DUPLICATE_BLANK_DROP` drops the field that sat on it, both
+keyed to their own fixed corners so a second run touches nothing already
+fixed.
+
+```
+python3 pei_repaginate.py --check
+python3 pei_repaginate.py
+python3 ../review/repair_pei_background.py
+python3 ../review/repair_pei_fields.py --only PEISC_70A_JOINT
+python3 ../review/record_pe_round12.py
 ```
 
 ## Catalogue, binds, verify
