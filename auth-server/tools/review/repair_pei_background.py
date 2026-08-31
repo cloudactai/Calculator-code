@@ -25,6 +25,12 @@ MASKS = [
     ("PEISC_70D", 1, (106.0, 251.0, 136.5, 267.5)),
 ]
 
+# Form 70U's heading conversion left a short rule after the court name.  It is
+# neither a case-caption rule nor an answer line, and interrupts the heading.
+HEADER_RULE_REMOVALS = [
+    ("PEISC_70U", 1, (195.0, 103.0, 475.5, 133.0)),
+]
+
 # A second, shorter printed blank the source repeats immediately after the
 # first. Form 70A*'s items 20 and 21 both read "has resided in (municipality
 # and province, state or country) _____, _________ since (date) ______" --
@@ -1107,6 +1113,7 @@ def repair(doc_id, apply_changes):
     doc = fitz.open(path)
     changed = 0
     try:
+        header_rule_reflows = []
         for did, page_no, coords in MASKS:
             if did != doc_id:
                 continue
@@ -1115,6 +1122,25 @@ def repair(doc_id, apply_changes):
             if not has_duplicate_prompt(page, rect):
                 continue
             changed += 1
+            if apply_changes:
+                page.add_redact_annot(rect, fill=(1, 1, 1))
+        for did, page_no, coords in HEADER_RULE_REMOVALS:
+            if did != doc_id:
+                continue
+            page = doc[page_no - 1]
+            rect = fitz.Rect(coords)
+            if any(
+                drawing["type"] == "fs"
+                and drawing["rect"].width >= rect.width - 1.0
+                and drawing["rect"].height >= rect.height - 1.0
+                and rect.intersects(drawing["rect"])
+                for drawing in page.get_drawings()
+            ):
+                continue
+            if not any(rect.intersects(drawing["rect"]) for drawing in page.get_drawings()):
+                continue
+            changed += 1
+            header_rule_reflows.append(page)
             if apply_changes:
                 page.add_redact_annot(rect, fill=(1, 1, 1))
         for did, page_no, coords in DUPLICATE_BLANKS:
@@ -1320,6 +1346,12 @@ def repair(doc_id, apply_changes):
                 page.apply_redactions(images=fitz.PDF_REDACT_IMAGE_NONE)
             for page, did in contacts:
                 draw_contact_rules(page, did)
+            for page in header_rule_reflows:
+                page.insert_text(fitz.Point(196.29, 118.9),
+                                 "Supreme Court of Prince Edward Island",
+                                 fontsize=14, fontname="tibo", color=(0, 0, 0))
+                page.insert_text(fitz.Point(247.96, 131.4), "(Family Section)",
+                                 fontsize=14, fontname="tibo", color=(0, 0, 0))
             for page, label_baseline, rule_baseline in court_addresses:
                 draw_court_address_reflow(page, label_baseline, rule_baseline)
             for page in respondent_signatures:
@@ -1389,7 +1421,7 @@ def main():
     ap.add_argument("--check", action="store_true")
     args = ap.parse_args()
     total = 0
-    for doc_id in sorted({row[0] for row in MASKS + DUPLICATE_BLANKS + CONTACT_BLOCKS + COURT_ADDRESS_REFLOWS + RESPONDENT_SIGNATURE_REFLOWS + RESPONDENT_STRIKEOUT_REFLOWS + LAWYER_SIGNATURE_REFLOWS + LAWYER_SIGNATURE_LINE_RELOCATIONS + DATE_RULE_SHORTENINGS + DATE_FIELD_SHORTENINGS + MISSING_LAWYER_SIGNATURE_CAPTIONS + LAWYER_CONTACT_CAPTION_REMOVALS + NAME_LABEL_FIELD_REPAIRS} | {did for did, _ in NORMAL_DATE_FIELDS}):
+    for doc_id in sorted({row[0] for row in MASKS + HEADER_RULE_REMOVALS + DUPLICATE_BLANKS + CONTACT_BLOCKS + COURT_ADDRESS_REFLOWS + RESPONDENT_SIGNATURE_REFLOWS + RESPONDENT_STRIKEOUT_REFLOWS + LAWYER_SIGNATURE_REFLOWS + LAWYER_SIGNATURE_LINE_RELOCATIONS + DATE_RULE_SHORTENINGS + DATE_FIELD_SHORTENINGS + MISSING_LAWYER_SIGNATURE_CAPTIONS + LAWYER_CONTACT_CAPTION_REMOVALS + NAME_LABEL_FIELD_REPAIRS} | {did for did, _ in NORMAL_DATE_FIELDS}):
         count = repair(doc_id, not args.check)
         print("%s duplicate_prompts=%d" % (doc_id, count))
         total += count
