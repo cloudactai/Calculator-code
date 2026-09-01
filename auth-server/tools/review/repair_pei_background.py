@@ -25,6 +25,13 @@ MASKS = [
     ("PEISC_70D", 1, (106.0, 251.0, 136.5, 267.5)),
 ]
 
+# Form 70BB prints an unintended `1` immediately before the Married checkbox.
+# It is not part of the relationship-date choices and makes that option look
+# numbered while the remaining choices are not.
+STRAY_NUMBER_MASKS = [
+    ("PEISC_70BB", 1, (135.2, 464.5, 141.2, 477.0)),
+]
+
 # Form 70U's heading conversion left a short rule after the court name.  It is
 # neither a case-caption rule nor an answer line, and interrupts the heading.
 HEADER_RULE_REMOVALS = [
@@ -99,6 +106,13 @@ RESPONDENT_SIGNATURE_REFLOWS = [
 RESPONDENT_STRIKEOUT_REFLOWS = [
     ("PEISC_70B", 2, (200.0, 470.0, 506.0, 531.0), 315.05, 482.73, 484.0, 510.0),
     ("PEISC_70D", 2, (200.0, 244.0, 506.0, 327.0), 315.05, 256.82, 258.0, 284.0),
+]
+
+# Form 70D's already-reflowed respondent signing block was missing its writing
+# rule. This is kept separate from the text reflow so it also repairs PDFs
+# that have already had their caption and instruction cleaned up.
+RESPONDENT_SIGNATURE_RULE_ADDITIONS = [
+    ("PEISC_70D", 2, 315.05, 450.05, 241.0),
 ]
 
 # The lawyer's signature rule sits directly above its contact block.  Move the
@@ -211,6 +225,13 @@ def has_long_date_rule(page, baseline, start, end):
     return any(item[0] == "l" and abs(item[1].x - start) < 1.0
                and abs(item[2].x - end) < 1.0
                and abs(item[1].y - baseline) < 1.0
+               for drawing in page.get_drawings() for item in drawing["items"])
+
+
+def has_signature_rule(page, x0, x1, y):
+    return any(item[0] == "l" and abs(item[1].x - x0) < 1.0
+               and abs(item[2].x - x1) < 1.0
+               and abs(item[1].y - y) < 1.0
                for drawing in page.get_drawings() for item in drawing["items"])
 
 
@@ -1124,6 +1145,19 @@ def repair(doc_id, apply_changes):
             changed += 1
             if apply_changes:
                 page.add_redact_annot(rect, fill=(1, 1, 1))
+        for did, page_no, coords in STRAY_NUMBER_MASKS:
+            if did != doc_id:
+                continue
+            page = doc[page_no - 1]
+            rect = fitz.Rect(coords)
+            if not any(word[4] == "1□" and rect.intersects(fitz.Rect(word[:4]))
+                       for word in page.get_text("words")):
+                continue
+            changed += 1
+            if apply_changes:
+                # The source combines the `1` and checkbox into one text run.
+                # Paint only the number's glyph bounds so the checkbox stays.
+                page.draw_rect(rect, color=None, fill=(1, 1, 1), overlay=True)
         for did, page_no, coords in HEADER_RULE_REMOVALS:
             if did != doc_id:
                 continue
@@ -1200,6 +1234,15 @@ def repair(doc_id, apply_changes):
             respondent_strikeout_reflows.append((page, label_x, label_baseline, text_top, text_bottom))
             if apply_changes:
                 page.add_redact_annot(rect, fill=(1, 1, 1))
+        respondent_signature_rules = []
+        for did, page_no, x0, x1, y in RESPONDENT_SIGNATURE_RULE_ADDITIONS:
+            if did != doc_id:
+                continue
+            page = doc[page_no - 1]
+            if has_signature_rule(page, x0, x1, y):
+                continue
+            changed += 1
+            respondent_signature_rules.append((page, x0, x1, y))
         lawyer_signatures = []
         for did, page_no, coords, delta in LAWYER_SIGNATURE_REFLOWS:
             if did != doc_id:
@@ -1358,6 +1401,9 @@ def repair(doc_id, apply_changes):
                 draw_respondent_signature_reflow(page)
             for page, label_x, label_baseline, text_top, text_bottom in respondent_strikeout_reflows:
                 draw_respondent_strikeout_reflow(page, label_x, label_baseline, text_top, text_bottom)
+            for page, x0, x1, y in respondent_signature_rules:
+                page.draw_line(fitz.Point(x0, y), fitz.Point(x1, y),
+                               color=(0, 0, 0), width=0.7)
             for page, page_no, delta in lawyer_signatures:
                 draw_lawyer_signature_reflow(page, delta)
                 shift_lawyer_contact_fields(doc_id, page_no, delta)
@@ -1421,7 +1467,7 @@ def main():
     ap.add_argument("--check", action="store_true")
     args = ap.parse_args()
     total = 0
-    for doc_id in sorted({row[0] for row in MASKS + HEADER_RULE_REMOVALS + DUPLICATE_BLANKS + CONTACT_BLOCKS + COURT_ADDRESS_REFLOWS + RESPONDENT_SIGNATURE_REFLOWS + RESPONDENT_STRIKEOUT_REFLOWS + LAWYER_SIGNATURE_REFLOWS + LAWYER_SIGNATURE_LINE_RELOCATIONS + DATE_RULE_SHORTENINGS + DATE_FIELD_SHORTENINGS + MISSING_LAWYER_SIGNATURE_CAPTIONS + LAWYER_CONTACT_CAPTION_REMOVALS + NAME_LABEL_FIELD_REPAIRS} | {did for did, _ in NORMAL_DATE_FIELDS}):
+    for doc_id in sorted({row[0] for row in MASKS + STRAY_NUMBER_MASKS + HEADER_RULE_REMOVALS + DUPLICATE_BLANKS + CONTACT_BLOCKS + COURT_ADDRESS_REFLOWS + RESPONDENT_SIGNATURE_REFLOWS + RESPONDENT_STRIKEOUT_REFLOWS + RESPONDENT_SIGNATURE_RULE_ADDITIONS + LAWYER_SIGNATURE_REFLOWS + LAWYER_SIGNATURE_LINE_RELOCATIONS + DATE_RULE_SHORTENINGS + DATE_FIELD_SHORTENINGS + MISSING_LAWYER_SIGNATURE_CAPTIONS + LAWYER_CONTACT_CAPTION_REMOVALS + NAME_LABEL_FIELD_REPAIRS} | {did for did, _ in NORMAL_DATE_FIELDS}):
         count = repair(doc_id, not args.check)
         print("%s duplicate_prompts=%d" % (doc_id, count))
         total += count

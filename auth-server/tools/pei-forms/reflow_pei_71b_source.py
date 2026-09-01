@@ -128,6 +128,72 @@ def set_cell_bottom_border(cell, size=8):
     bottom.set(qn("w:val"), "single")
     bottom.set(qn("w:sz"), str(size))
     bottom.set(qn("w:space"), "0")
+
+
+def set_cell_box_border(cell, size=6):
+    """Give a heading answer cell the same compact, complete box as PEI's
+    standard generated general headings."""
+    tc_pr = cell._tc.get_or_add_tcPr()
+    borders = tc_pr.first_child_found_in("w:tcBorders")
+    if borders is None:
+        borders = OxmlElement("w:tcBorders")
+        tc_pr.append(borders)
+    for edge in ("top", "left", "bottom", "right"):
+        node = borders.find(qn("w:" + edge))
+        if node is None:
+            node = OxmlElement("w:" + edge)
+            borders.append(node)
+        node.set(qn("w:val"), "single")
+        node.set(qn("w:sz"), str(size))
+        node.set(qn("w:space"), "0")
+
+
+def add_general_heading(doc):
+    """Add Form 71B's standard court heading in native Word flow.
+
+    The old source printed ``(General heading)`` only.  A small three-row
+    table keeps the court file and party fields on real, compact boxes while a
+    merged left cell carries the court-seal ring.  Unlike a PDF overlay, this
+    participates in repagination and remains stable at every viewer zoom.
+    """
+    p = set_paragraph(doc.add_paragraph(), align=WD_ALIGN_PARAGRAPH.CENTER,
+                      exact=11, before=1, after=0, keep=True)
+    add_text(p, "Supreme Court of Prince Edward Island", bold=True)
+    p = set_paragraph(doc.add_paragraph(), align=WD_ALIGN_PARAGRAPH.CENTER,
+                      exact=11, after=2, keep=True)
+    add_text(p, "(Family Section)", bold=True)
+
+    # Field rows are 15pt high, matching the generated PEI heading fields.
+    # The intervening 13pt rows create the same 28pt row-to-row rhythm without
+    # turning each answer box into a tall, visually heavy rectangle.
+    table = doc.add_table(rows=5, cols=3)
+    clear_table_borders(table)
+    set_table_fixed(table)
+    set_table_widths(table, (92, 112, 242))
+    for index, row in enumerate(table.rows):
+        row.height_rule = WD_ROW_HEIGHT_RULE.EXACTLY
+        row.height = Pt(15 if index % 2 == 0 else 13)
+        for cell in row.cells:
+            set_cell_margins(cell, top=0, start=0, bottom=0, end=0)
+            remove_cell_paragraph_padding(cell)
+
+    seal = table.cell(0, 0).merge(table.cell(4, 0))
+    p = set_paragraph(seal.paragraphs[0], align=WD_ALIGN_PARAGRAPH.CENTER,
+                      exact=43, after=0)
+    add_text(p, "○", size=Pt(43))
+    p = set_paragraph(seal.add_paragraph(), align=WD_ALIGN_PARAGRAPH.CENTER,
+                      exact=7)
+    add_text(p, "Court seal", size=Pt(7))
+
+    for row, label in zip(table.rows[::2],
+                          ("Court File No.:", "Applicant/Petitioner:",
+                           "Respondent:")):
+        p = set_paragraph(row.cells[1].paragraphs[0],
+                          align=WD_ALIGN_PARAGRAPH.RIGHT, exact=11)
+        add_text(p, label)
+        set_cell_box_border(row.cells[2])
+        set_paragraph(row.cells[2].paragraphs[0], exact=11)
+    return table
     bottom.set(qn("w:color"), "000000")
 
 
@@ -389,9 +455,7 @@ def build(source, output):
                       exact=13, after=12, keep=True)
     add_text(p, "RECOGNIZANCE", size=Pt(12), bold=True)
 
-    p = set_paragraph(doc.add_paragraph(), align=WD_ALIGN_PARAGRAPH.CENTER,
-                      exact=12, keep=True)
-    add_text(p, "(General heading)", italic=True)
+    add_general_heading(doc)
     p = set_paragraph(doc.add_paragraph(), align=WD_ALIGN_PARAGRAPH.CENTER,
                       exact=12, after=5, keep=True)
     add_text(p, "RECOGNIZANCE")

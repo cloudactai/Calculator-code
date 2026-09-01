@@ -123,8 +123,19 @@ FORMS = {
     "PEISC_70U": {"seal": True},
     "PEISC_70V": {"seal": True},
     "PEISC_71E": {"seal": True},
-    "PEISC_70F": {"seal": False, "second_title": True},
-    "PEISC_70G": {"seal": False, "second_title": True},
+    # The counterpetition captions are longer than the ordinary party labels.
+    # Give their right-aligned text a 12pt gutter before the unchanged field
+    # column, so the final two labels never meet the control border.
+    "PEISC_70F": {"seal": False, "second_title": True, "label_gap": 12.0},
+    "PEISC_70G": {"seal": False, "second_title": True, "label_gap": 12.0},
+    # These three forms print fragments of the court heading rather than the
+    # literal ``(General heading)`` instruction.  They used to be repaired by
+    # a separate, oversized PDF overlay.  Treat their complete fragment as the
+    # placeholder band so they get this module's compact, source-reflowed
+    # heading too.
+    "PEISC_70S": {"seal": True},
+    "PEISC_70T": {"seal": True},
+    "PEISC_71A": {"seal": True},
     # PEISC_70B is out of scope for this pass, like 71B: unlike every other
     # second_title form, its own source already carries a full "AND BETWEEN"
     # party block (a name rule, "Petitioner by counterpetition", "and",
@@ -133,6 +144,16 @@ FORMS = {
     # Petitioner/Respondent-by-Counterpetition rows are meant to replace, not
     # sit above. Removing that block too is a 70B-specific change, not a
     # generic one; left for its own pass rather than shipped half done.
+}
+
+# The legacy forms above have no single placeholder line to measure.  These
+# are the complete printed heading fragments, measured from their clean
+# LibreOffice backgrounds.  The lower edge deliberately stops before the
+# first real title/body line, so the band reflow preserves legal text exactly.
+LEGACY_BANDS = {
+    "PEISC_70S": (149.5, 230.5),
+    "PEISC_70T": (172.5, 207.5),
+    "PEISC_71A": (138.0, 207.5),
 }
 
 
@@ -160,7 +181,8 @@ def block_bottom(second_title=False):
     return columns_top + TOP_PAD + FIELD_H + (rows - 1) * FIELD_ROW + BOTTOM_PAD
 
 
-def draw_block(page, left, right, top, seal, second_title=False, party_rows=None):
+def draw_block(page, left, right, top, seal, second_title=False, party_rows=None,
+               label_gap=LABEL_GAP):
     """Draw the heading and return the fields that belong on it.
 
     The court name and `(Family Section)` are centred across the **whole**
@@ -190,7 +212,7 @@ def draw_block(page, left, right, top, seal, second_title=False, party_rows=None
         text((left + right) / 2 - width(s, bold) / 2, y, s, bold)
 
     def field_row(y, label, bind):
-        text(mid - LABEL_GAP - width(label), y - 4.0, label)
+        text(mid - label_gap - width(label), y - 4.0, label)
         rect = fitz.Rect(mid, y - FIELD_H, right, y)
         page.draw_rect(rect, color=(0, 0, 0), width=STROKE)
         return (rect, bind)
@@ -222,7 +244,7 @@ def draw_block(page, left, right, top, seal, second_title=False, party_rows=None
         # "Applicant/Petitioner:" reaches further left than "Respondent:"
         # does, and a radius sized off the column's raw width read past it
         # and printed the ring under the label's own text.
-        seal_x1 = min(mid - LABEL_GAP - width(label) for label, _ in rows) - 8.0
+        seal_x1 = min(mid - label_gap - width(label) for label, _ in rows) - 8.0
         radius = min((bottom - columns_top) / 2.0 - 3.0,
                     (seal_x1 - left) / 2.0 - 2.0)
         centre = fitz.Point(left + (seal_x1 - left) / 2.0, columns_top + radius + 3.0)
@@ -366,13 +388,17 @@ def page_lines(page):
     return lines
 
 
-def measure(page):
+def measure(page, doc_id=None):
     """The page's own margins and the placeholder band, read off the page."""
     words = [w for w in page.get_text("words") if w[4].strip()]
     left = min(w[0] for w in words)
     right = max(w[2] for w in words)
     blocks = page.get_text("blocks")
     title_top = min(b[1] for b in blocks)
+
+    if doc_id in LEGACY_BANDS:
+        hold_top, hold_bottom = LEGACY_BANDS[doc_id]
+        return left, right, title_top, hold_top, hold_bottom
 
     lines = page_lines(page)
     holder_idx = [i for i, l in enumerate(lines) if "General heading" in l[2]]
@@ -448,7 +474,7 @@ def band(doc, page_no, keep):
 
 
 def rebuild(doc, page_no, left, right, title_top, hold_top, hold_bottom, seal,
-           second_title=False, page_fields=(), party_rows=None):
+           second_title=False, page_fields=(), party_rows=None, label_gap=LABEL_GAP):
     """Rebuild the page from bands. Returns (block fields, lift, drop, spill).
 
     On most forms the placeholder's 11-22pt and the top gap are room enough
@@ -554,7 +580,8 @@ def rebuild(doc, page_no, left, right, title_top, hold_top, hold_bottom, seal,
     if footer is not None:
         page.show_pdf_page(fitz.Rect(0, 0, w, h), footer, 0)   # unshifted
         footer.close()
-    fields = draw_block(page, left, right, top, seal, second_title, party_rows)
+    fields = draw_block(page, left, right, top, seal, second_title, party_rows,
+                        label_gap)
 
     bottom = max(b[3] for b in page.get_text("blocks"))
     if bottom > h - MARGIN_BOTTOM:
@@ -665,9 +692,10 @@ def add_fields(mapping, page_no, placed):
         mapping["staticFields"].append(field)
 
 
-def apply(doc_id, spec, out_dir, check):
-    pdf_in = os.path.join(EXPORT, "%s.pdf" % doc_id)
-    json_in = os.path.join(EXPORT, "%s.json" % doc_id)
+def apply(doc_id, spec, out_dir, check, baseline_dir=None):
+    source_dir = baseline_dir or EXPORT
+    pdf_in = os.path.join(source_dir, "%s.pdf" % doc_id)
+    json_in = os.path.join(source_dir, "%s.json" % doc_id)
     doc = fitz.open(pdf_in)
     mapping = json.load(open(json_in))
     before = json.dumps(mapping["staticFields"], sort_keys=True)
@@ -685,7 +713,7 @@ def apply(doc_id, spec, out_dir, check):
             and already_headed(fitz.open(os.path.join(out_dir, "%s.pdf" % doc_id))[0].get_text())):
         print("%-12s already headed, skipped" % doc_id)
         return 0
-    left, right, title_top, hold_top, hold_bottom = measure(doc[0])
+    left, right, title_top, hold_top, hold_bottom = measure(doc[0], doc_id)
     if check:
         print("%-12s would head: margins %.1f-%.1f, placeholder %.1f-%.1f"
               % (doc_id, left, right, hold_top, hold_bottom))
@@ -696,7 +724,7 @@ def apply(doc_id, spec, out_dir, check):
     placed, lift, drop, spill = rebuild(doc, 1, left, right, title_top,
                                        hold_top, hold_bottom, spec["seal"],
                                        spec.get("second_title", False),
-                                       page1_fields)
+                                       page1_fields, label_gap=spec.get("label_gap", LABEL_GAP))
     dropped = shift_fields(mapping, 1, hold_top, hold_bottom, lift, drop, spill)
     moved = json.loads(before)
     assert len(moved) == len(mapping["staticFields"]) + len(dropped), (
@@ -743,13 +771,15 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--only")
     parser.add_argument("--out-dir")
+    parser.add_argument("--baseline-dir",
+                        help="clean source template directory; output remains --out-dir or the export")
     parser.add_argument("--check", action="store_true")
     args = parser.parse_args()
     changed = 0
     for doc_id, spec in sorted(FORMS.items()):
         if args.only and doc_id != args.only:
             continue
-        changed += apply(doc_id, spec, args.out_dir, args.check)
+        changed += apply(doc_id, spec, args.out_dir, args.check, args.baseline_dir)
     print("%d form(s) %s" % (changed, "to change" if args.check else "changed"))
     return 0
 
