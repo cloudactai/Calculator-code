@@ -509,3 +509,174 @@ flagging here so the next NB or NL session watches for it explicitly on
 every dot-leader/underscore-run field and fixes it via the same
 --check/apply, geometry-only convention (adjust y so the field's bottom
 sits at/near the printed rule's y, not straddling or hanging below it).
+
+
+## Session 4 (2026-09-01): NLPC batch COMPLETE
+
+Baseline confirmed exact on pickup: verify_nb 48/242/4047/79 zero findings;
+verify_nl 96/413/5725/106 zero findings. Working tree clean on branch
+nl-nb-form-push-20260901.
+
+### Count correction to the handoff
+The handoff described NLPC as "34 forms, 61 pages". It is **22 forms, 43
+pages, 900 fields**. 12 NLEPO + 22 NLPC + 62 NLSC = 96, which is exactly the
+template count both the verifier and the catalogue report, so the totals were
+never wrong -- only the NLPC line of the handoff was. NLSC's 62/352 is correct.
+
+### New instrument: pixel-based rule detection
+`audit_anchors.py` finds blanks typed as underscore runs; `audit_drawn_rules.py`
+finds blanks emitted as vector geometry. NLPC_AF003 p2 prints a jurat
+("at ______, NL / on ______, 2____,") that **neither** can see: `get_text`
+returns only the words with a whitespace gap between them, and
+`get_drawings()` returns three rectangles, none of them these rules. They exist
+only as ink in the content stream. Confirmed by a 600dpi pixel-darkness row
+scan: rules at y=326.18 (x 85.44-225.12) and y=338.30 (x 87.84-183.00 and
+196.68-222.00).
+
+Built `auth-server/tools/review/audit_pixel_rules.py` -- renders each page
+greyscale, finds horizontal dark runs, drops those that underline text (same
+INKED=0.34 test as the drawn-rule audit), those longer than a writing rule,
+those thicker than a rule, those forming a ruled table cell, and those a field
+already covers. 6.5s for all 43 NLPC pages. It reproduced every hit the
+underscore audit found *and* the invisible AF003 rules. **Use all three
+detectors on NLSC and on any future province** -- a text-side audit alone
+would have shipped AF003's jurat unfielded.
+
+### Systemic check: caption overlap (issue class 1) -- NO fixes needed in NL
+NB needed two general fixes for fields whose top oversat the caption above
+(trim_nb_textarea_tops.py, shift_nb_textfields_off_captions.py); NL never had
+that treatment, so it was measured properly. Three passes were needed to get a
+trustworthy number:
+- field top inside any printed line's bbox: 2766 hits -- meaningless, 1744 are
+  CheckBoxes whose top legitimately sits inside the text line carrying their
+  printed square.
+- excluding checkboxes and comparing against line bboxes: still dominated by
+  each field's OWN line (a line's bbox spans the full width including the part
+  under the field, so text sitting to the LEFT of a field counts as overlap).
+- the correct test, and the one the NB session had already learned: **word-level
+  boxes measured against the printed BASELINE**, not the line bbox (a bbox
+  bottom includes descender space below the visible ink), excluding words on
+  the field's own line.
+Result: across the whole NL corpus (NLEPO + NLPC + NLSC), the deepest intrusion
+into printed letter bodies is **3.88pt**, and only **7 fields** exceed 2pt --
+all on NLPC FORM4/5/7/8A/8B page 1. Each was measured individually and each is
+**geometrically unavoidable**: the field is correctly seated on its own printed
+rule (verified against drawn rules for 8B, underscore runs for the others), and
+the printed line pitch on those rows is 9.2-11.5pt while the one approved
+control is 13.3pt tall. A box seated on its rule MUST rise into the line above.
+Moving any of them down would unseat it from its own rule -- issue class 9, the
+defect the user actually reported. Left unchanged, documented. This also
+retro-validates NLEPO and NB, whose equivalents sit at 0.04-0.36pt.
+
+### FIX: cross-type stacked duplicates (issue class 8)
+`dedupe_nl_fields.py` clusters only *same-type* fields -- it explicitly skips
+any pair whose `type` differs. A corpus-wide scan for cross-type pairs
+overlapping >60% of the smaller box found exactly four, all NLPC_AF002 p1:
+TextAreas ...013/...017/...018/...019 sitting on the same blanks as TextFields
+...004/...008/...009/...010, with **identical width to the hundredth of a point
+and identical bottom edge** (same printed rule). The TextArea is 4.2pt taller,
+so it draws on top and hides the TextField -- in the render the pair showed as
+an empty green box (the TextArea's long sample does not fit, and it covers the
+TextField that does).
+The TextField was kept on the page's own evidence: these are single ruled
+blanks with captions underneath, the page's convention for them is a TextField
+at the standard 19.95 height, and the clinching case is "1. My name is"
+(...007) -- same 582.12 width as "3. I know that" (...009), same kind of blank
+-- which has a TextField and no TextArea twin. The twins are the anomaly.
+Script: `dedupe_nl_crosstype.py` (refuses any pair whose widths or bottom edges
+differ, or where the TextArea carries a bind the TextField lacks).
+5725 -> 5721. Zero findings before/after, idempotent, re-rendered clean.
+
+### FIX: 25 missing fields on printed blanks (issue class 7)
+`add_nlpc_missing_blanks.py`. Every hit from all three detectors was read on a
+rendered page; signature, witness, commissioner and Court-Clerk rules were left
+bare throughout per the corpus convention.
+- **Jurat place-and-date blanks, 4 forms (14 fields).** NLPC fields these
+  consistently -- FORM3 p1, SCHEDULE_D p1, SUPPORTING_AFFIDAVIT p7 and AF004 p2
+  all carry them, as does every NLEPO and NLSC jurat -- but AF002 p2, AF003 p2,
+  AF005 p1 and FORM7 p1 shipped with the whole block bare. They are the
+  outliers, so the omission is theirs.
+- **FORM3 p1** (1): the Address block prints three rules; only two were fielded,
+  while the Telephone(s) column beside it prints only two.
+- **SCHEDULE_D p2** (1): "(name and address of corporation)" prints two answer
+  rules; only the second was fielded.
+- **SCHEDULE_D p4** (1): the Transportation "Car payment" amount cell is a fully
+  drawn, empty ruled cell (x 301.50-386.82, y 450.24-468.12) with no field,
+  while the identical cells for "Insurance" and "Licenses" below it each have
+  one. The government's page omits only the "$" glyph on that row, not the cell.
+  Confirmed at 6x zoom before adding.
+- **SCHEDULE_D p6** (8): the third entry row of the Part E special-expenses
+  table (y 505.92-547.50, all four columns) had no field at all, while the row
+  above -- same height to a fifth of a point, same four columns -- carries
+  eight. Item 2(a) tells the filer to use "the boxes below", so a printed row
+  with no box is a row they cannot use. Added by mirroring the populated row,
+  translated down by the measured 42.54pt row pitch.
+Geometry is measured fresh from the PDF each run (per-document median seating
+offset taken from that form's own existing fields: AF002 1.14, AF003 0.82,
+AF005 1.14, FORM7 1.73, FORM3 2.41, SCHEDULE_D 2.15), so the script is
+idempotent. **Widths are stored as measured PDF points x 1.5** -- the session-3
+lesson, applied deliberately here.
+5721 -> 5746. Zero findings before/after, idempotent (second --check adds 0),
+every changed page re-rendered and re-inspected.
+
+### FIX: one field far too narrow for its blank (issue class 4)
+A scan of every NLPC field sitting on an underscore run, comparing right edges,
+found exactly one outlier: NLPC_AF002 p2 id ...020 ("Print adult's name") ended
+59.4pt before its rule (field 306.55-456.55, rule 306.00-515.98); every other
+NLPC field reaches within 18pt of its rule's end. `fix_nlpc_af002_name_width.py`
+widens it to the rule (width only; x, y, height untouched). Idempotent by
+construction -- once the right edge is within 2pt of the rule there is nothing
+to do.
+
+### Deliberately left unchanged, with evidence
+- **SCHEDULE_D p7**, "legal duty to support a child ... give details": four
+  printed answer rules (baselines 498.06, 507.24, 516.48, 525.66), fields on the
+  first and third only. Not corrected: the rules are on a 9.2pt pitch against a
+  13.3pt control, so fielding every rule would stack four boxes each overlapping
+  its neighbours by ~4pt -- the stacked-box defect this audit removes elsewhere.
+  The filer can already answer in the two boxes that exist, so the gain would be
+  space, not access. (Contrast the jurat/service-date additions above, on
+  equally tight pitches, where NO field existed at all.)
+- **AF006 p1** (Adoption Order) and the "Court Clerk" rules on AF001, FORM3 and
+  FORM4: judge/registry-completed blanks, left bare per the NBKB_18A and
+  NLEPO_011 precedent. Noted: NLPC is internally inconsistent here -- FORM1,
+  FORM6, FORM7 and FORM8A/8B DO field their Court Clerk / Judge-Clerk lines.
+  Not resolved either way; changing it needs a decision, not a measurement.
+- **FORM6 p1** three wide CheckBoxes on underscore runs: the documented
+  INK_EXEMPT case (verify_nl lists ("NLPC_FORM6",1)); the Provincial Court marks
+  those options with a line, not a square.
+- The 7 unavoidable caption intrusions described above.
+
+### NLPC page-by-page ledger (22 forms, 43 pages) -- all reviewed with fresh renders
+- AF001 p1: OK (Court Clerk rule correctly bare).
+- AF002 p1: FIX (4 cross-type duplicates dropped). p2: FIX (4 jurat fields
+  added, "Print adult's name" widened).
+- AF003 p1: OK. p2: FIX (3 jurat fields added, rules found only by pixel scan).
+- AF004 p1, p2: OK (jurat already fielded; signature rules bare).
+- AF005 p1: FIX (4 date fields added).
+- AF006 p1: OK/LEFT (judge-completed blanks, see above).
+- FINANCIAL_INFORMATION_SHEET p1: OK -- a pure instruction page with no blanks;
+  zero fields is correct, not a gap.
+- FORM1 p1: OK. FORM2 p1: OK.
+- FORM3 p1: FIX (Address third rule).
+- FORM4 p1: OK. FORM5 p1: OK. FORM6 p1: OK.
+- FORM7 p1: FIX (3 service-date fields).
+- FORM8A p1, p2: OK. FORM8B p1-p4: OK.
+- RECALCULATION_CLAUSE p1: OK. p2: OK -- substantive printed notice text, not a
+  reclaimable blank page.
+- SCHEDULE_A p1, SCHEDULE_B p1, SCHEDULE_C p1: OK. (SCHEDULE_C's 28
+  "empty ruled cells" are cross-column blanks in shared table rows whose label
+  lives in another column -- checked and ruled out.)
+- SCHEDULE_D p1: OK. p2: FIX. p3: OK. p4: FIX. p5: OK. p6: FIX. p7: OK/LEFT.
+  p8: OK.
+- SUPPORTING_AFFIDAVIT p1-p7: OK (jurat on p7 already fielded).
+
+## NLPC (22 forms, 43 pages) -- COMPLETE. Repair scripts, all --check/apply, all
+verified zero-findings + idempotent + re-rendered: dedupe_nl_crosstype.py,
+add_nlpc_missing_blanks.py, fix_nlpc_af002_name_width.py.
+verify_nl end of NLPC batch: 96 templates, 413 pages, 5746 fields, 106 binds,
+zero findings (5725 - 4 cross-type duplicates + 25 additions).
+verify_nb: unchanged, 48/242/4047/79, zero findings.
+`npm run forms:validate-export` passes.
+
+## NLSC (62 forms, 352 pages) -- NOT STARTED. Next.
