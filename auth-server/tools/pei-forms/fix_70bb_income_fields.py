@@ -52,9 +52,9 @@ FIELD_GEOMETRY = {
                      "rule": "bottom", "compact": True},   # amount, Moving
     1750127377066: {"x": 242.0, "y": 582.39, "width": 41.0, "height": 15.0,
                      "rule": "bottom", "compact": True},   # amount, Responding
-    1750127377139: {"x": 390.0, "y": 564.39, "width": 23.0, "height": 15.0,
+    1750127377139: {"x": 394.0, "y": 564.39, "width": 23.0, "height": 15.0,
                      "rule": None, "compact": None},       # year, Moving
-    1750127377140: {"x": 390.0, "y": 582.39, "width": 23.0, "height": 15.0,
+    1750127377140: {"x": 394.0, "y": 582.39, "width": 23.0, "height": 15.0,
                      "rule": None, "compact": None},       # year, Responding
     1750127377141: {"x": 287.0, "y": 598.5, "width": 220.0, "height": 15.0,
                      "rule": None, "compact": None},       # employer, Moving
