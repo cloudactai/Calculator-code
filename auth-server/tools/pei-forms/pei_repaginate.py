@@ -56,6 +56,7 @@ SCALE = PGH.SCALE
 
 SHIFTS = os.path.join(HERE, "repaginate_shifts.json")
 FRONTCUT_SHIFTS = os.path.join(HERE, "frontcut_shifts.json")
+ANSWER_BAND_SHIFTS = os.path.join(HERE, "answer_band_shifts.json")
 
 # What a merge drops onto -- the gap between the keep page's own last content
 # and the paper it is absorbing, and the gap that paper's own tail must still
@@ -125,6 +126,12 @@ PLAN = [
 #   where the moved head used to start, so the page keeps its own original
 #   top margin rather than acquiring a new one.
 FRONT_TRIM = [
+    # Form 70A's page 8 closes with item 37's heading while page 9 starts
+    # with the question and answer area that belong to it.  The whole item is
+    # clear of item 38 by 9.9pt, so it can come back to its heading without
+    # touching the following disclosure section or its field.
+    ("PEISC_70A", 9, 8, 220.0, DEFAULT_BEFORE_GAP,
+     "item 37's question and answer area"),
     # 70A*'s page 7 opens with two complete signature blocks -- Date/
     # Signature rule, then Name/Address/Phone/Email and its caption -- one
     # for each spouse, before "STATEMENT OF LAWYER FOR SPOUSE ONE" begins.
@@ -136,6 +143,18 @@ FRONT_TRIM = [
     # stays with the heading it already touches.
     ("PEISC_70A_JOINT", 7, 6, 193.5, DEFAULT_BEFORE_GAP,
      "Spouse One's own Date/Signature and Name/Address/Phone/Email block"),
+]
+
+# (docId, page, cutY, addedHeight, x0, x1, fieldId, note)
+#
+# These are the few narrative areas found only after a previous continuation
+# left the prompt and its following section on the same page.  Unlike the
+# old overlay-only repair, this inserts real paper first, so the field cannot
+# cover the court text below it.  The existing answer-space pass owns source
+# pages; this late pass owns their already-reflowed final page numbers.
+ANSWER_BANDS = [
+    ("PEISC_70A", 10, 145.0, 200.0, 122.5, 506.6, 1750805871179,
+     "item 42, condonation or connivance details"),
 ]
 
 
@@ -155,6 +174,14 @@ def frontcut_entries_for(doc_id):
     return load_frontcut_shifts().get(doc_id, [])
 
 
+def load_answer_band_shifts():
+    return json.load(open(ANSWER_BAND_SHIFTS)) if os.path.exists(ANSWER_BAND_SHIFTS) else {}
+
+
+def answer_band_entries_for(doc_id):
+    return load_answer_band_shifts().get(doc_id, [])
+
+
 def record_frontcut(doc_id, source_page, keep_page, cut_y, shift_above, shift_below):
     shifts = load_frontcut_shifts()
     rows = [e for e in shifts.get(doc_id, []) if e["sourcePage"] != source_page]
@@ -163,6 +190,16 @@ def record_frontcut(doc_id, source_page, keep_page, cut_y, shift_above, shift_be
                 "shiftBelow": round(shift_below, 2)})
     shifts[doc_id] = sorted(rows, key=lambda e: e["sourcePage"])
     with open(FRONTCUT_SHIFTS, "w") as handle:
+        json.dump(shifts, handle, indent=2, sort_keys=True)
+
+
+def record_answer_band(doc_id, page_no, cut_y, shift):
+    shifts = load_answer_band_shifts()
+    rows = [e for e in shifts.get(doc_id, []) if e["page"] != page_no]
+    rows.append({"page": page_no, "cutY": round(cut_y, 2),
+                 "shift": round(shift, 2)})
+    shifts[doc_id] = sorted(rows, key=lambda e: e["page"])
+    with open(ANSWER_BAND_SHIFTS, "w") as handle:
         json.dump(shifts, handle, indent=2, sort_keys=True)
 
 
@@ -182,6 +219,14 @@ def _frontcut_translate(doc_id, page_no, y):
     return page_no, y
 
 
+def _answer_band_translate(doc_id, page_no, y):
+    """Translate a coordinate through a late, same-page answer-band insert."""
+    for entry in answer_band_entries_for(doc_id):
+        if entry["page"] == page_no and y >= entry["cutY"] - 0.01:
+            return round(y + entry["shift"], 2)
+    return y
+
+
 def shifted(doc_id, page_no, y):
     """Move one y measured on the page as `pei_inline_name_rules` left it.
 
@@ -193,8 +238,9 @@ def shifted(doc_id, page_no, y):
     page_no, y = _frontcut_translate(doc_id, page_no, y)
     for entry in entries_for(doc_id):
         if entry["dropPage"] == page_no:
-            return round(y + entry["shift"], 2)
-    return y
+            return _answer_band_translate(doc_id, page_no,
+                                           round(y + entry["shift"], 2))
+    return _answer_band_translate(doc_id, page_no, y)
 
 
 def page_for(doc_id, page_no, y):
@@ -593,6 +639,81 @@ def apply(doc_id, keep_page, drop_page, before_gap, footer_gap, check):
     return 1
 
 
+def apply_answer_band(doc_id, page_no, cut_y, height, x0, x1, field_id, check):
+    """Insert real paper for a late narrative field and re-seat its tail.
+
+    This deliberately reuses the answer-space pass's band rebuild rather than
+    placing a larger field over the existing page.  It is late only because
+    the prompt reached this final page through earlier continuations.
+    """
+    if any(e["page"] == page_no for e in answer_band_entries_for(doc_id)):
+        print("%-16s p%d answer band already spaced, skipped" % (doc_id, page_no))
+        return 0
+
+    pdf_in = os.path.join(EXPORT, "%s.pdf" % doc_id)
+    json_in = os.path.join(EXPORT, "%s.json" % doc_id)
+    doc = fitz.open(pdf_in)
+    mapping = json.load(open(json_in))
+    if not 1 <= page_no <= doc.page_count:
+        raise ValueError("%s: page %d out of range for %d pages"
+                         % (doc_id, page_no, doc.page_count))
+
+    field = next((f for f in mapping["staticFields"] if f["id"] == field_id), None)
+    if field is None:
+        raise ValueError("%s p%d: missing answer field %d" % (doc_id, page_no, field_id))
+    if field["page"] != page_no:
+        raise ValueError("%s: answer field %d is on page %d, not %d"
+                         % (doc_id, field_id, field["page"], page_no))
+
+    # The old field is an overlay placed on the free paper.  Remove it from
+    # the measurement before proving the new cut, then add it back inside the
+    # paper we create below the prompt.
+    mapping["staticFields"].remove(field)
+    page = doc[page_no - 1]
+    PAS.validate_cut(page, mapping, page_no, cut_y)
+    limit = PAS.usable_bottom(page, cut_y)
+    if height < PAS.LINE_HEIGHT + 2 * PAS.PAD:
+        raise ValueError("%s p%d: answer band is under one writing line" % (doc_id, page_no))
+
+    page_fields = [(f["y"], f["y"] + f["height"] / SCALE)
+                   for f in mapping["staticFields"] if f["page"] == page_no]
+    PAS.scrub_whiteouts(doc, page_no, [(cut_y, height)])
+    spill, _total = PAS.rebuild(doc, page_no, [(cut_y, height)], page_fields)
+    if spill:
+        raise ValueError("%s p%d: bounded answer band unexpectedly spilled" % (doc_id, page_no))
+    PAS.shift_fields(mapping, page_no, [(cut_y, height)], spill)
+
+    field.update({
+        "type": "TextArea", "x": round(x0, 2), "y": round(cut_y + PAS.PAD, 2),
+        "width": round((x1 - x0) * SCALE, 2),
+        "height": round((height - 2 * PAS.PAD) * SCALE, 2),
+        "fontSize": 9, "page": page_no,
+    })
+    mapping["staticFields"].append(field)
+    mapping["staticFields"].sort(key=lambda f: (f["page"], round(f["y"], 1), round(f["x"], 1)))
+
+    print("%-16s p%d item 42: +%.1fpt answer band, tail lands below %.2f%s"
+          % (doc_id, page_no, height, limit,
+             "  OVERFLOW" if max((b[3] for b in doc[page_no - 1].get_text("blocks")
+                                  if b[6] == 0 and b[4].strip()), default=0) > limit + 0.01 else ""))
+    if check:
+        doc.close()
+        return 1
+
+    PGH.reseat(doc[page_no - 1],
+               [f for f in mapping["staticFields"] if f["page"] == page_no and f["id"] != field_id])
+    tmp = pdf_in + ".tmp"
+    doc.save(tmp, deflate=True, garbage=3)
+    doc.close()
+    os.replace(tmp, pdf_in)
+    with open(json_in, "w") as handle:
+        json.dump(mapping, handle, indent=2)
+    record_answer_band(doc_id, page_no, cut_y, height)
+    print("%-16s p%d answer band added; field %d is %.1fpt wide"
+          % (doc_id, page_no, field_id, x1 - x0))
+    return 1
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--only")
@@ -610,6 +731,11 @@ def main():
         if args.only and doc_id != args.only:
             continue
         changed += apply(doc_id, keep_page, drop_page, before_gap, footer_gap, args.check)
+    for doc_id, page_no, cut_y, height, x0, x1, field_id, _note in ANSWER_BANDS:
+        if args.only and doc_id != args.only:
+            continue
+        changed += apply_answer_band(doc_id, page_no, cut_y, height, x0, x1,
+                                     field_id, args.check)
     print("%d %s" % (changed, "change(s) to make" if args.check else "change(s) made"))
     return 0
 
