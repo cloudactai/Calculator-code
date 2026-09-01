@@ -101,10 +101,24 @@ Three passes *are* run, each against a defect this batch actually has:
 | `drop_offpage_fields` | Form F4.03A's source carries a checkbox at y = 796.02 on a 792 pt page — wholly below the paper | 1 field dropped, and reported |
 
 **Two forms are flat** — the Settlement Conference Brief and the file-access
-Undertaking carry no widget layer. Their blanks print as underscore runs, so
-they take a printed-anchor path (the Saskatchewan vocabulary, and nothing more:
-they have no option squares and no ruled grids, so no other detector is guessed
-at).
+Undertaking carry no widget layer, so they take a printed-anchor path rather
+than copying the government's own controls.
+
+> **Correction (session 4).** This section used to say their blanks "print as
+> underscore runs" and that "they have no option squares and no ruled grids, so
+> no other detector is guessed at". That is true of the Undertaking. It is
+> **false of the Settlement Conference Brief**, which carries 36 Wingdings
+> option squares and heavy ruled grids (p2: 54 horizontal + 46 vertical rules;
+> p3: 60 + 80; p4: 16 + 16). Because both detectors were skipped on that
+> premise, the form shipped with **15 fields across 5 pages** — the party
+> names, the Part A background table, the relationship table, all four
+> children's columns, the income and employment tables, both issue lists and
+> the settlement-position box had none — and `verify_nl` passed it, because the
+> flat forms are exempt from the checkbox-ink check. Fixed by
+> `field_nlsc_settlement_brief.py`, which adds 116 fields measured against the
+> government's own widget layout for the same house tables on NLSC_F4_03A p6
+> and NLSC_F5_06A p6. Before assuming a flat form's blank vocabulary, count the
+> option glyphs and the rules on each page.
 
 ### The bug this batch cost, and how it was found
 
