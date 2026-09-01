@@ -440,3 +440,72 @@ batch -- only these two carryover items were cleared. NLPC's real
 page-by-page pass, watching for all the defect classes found this session
 (oversized fields running off the page or into the next caption/line, both
 now added to what to check for on every remaining form) starts next.
+
+## Session 3 CORRECTION (same day, before handoff): width-scale bug in the
+above NLEPO fixes -- found, fixed, re-verified, re-pushed
+
+While drafting the next handoff, re-checked FORM_FIXING_GUIDE.md's
+coordinate-system section and found it explicitly states width/height are
+stored in the JSON scaled by 1.5x relative to true PDF points
+(`width_in_pdf = field["width"] / 1.5`; render_review.py computes the
+on-page rect as `x + width / SCALE`, SCALE = 1.5). Every width this session
+set from a pixel/character-level measurement (a TRUE PDF-point value) was
+stored directly as the JSON width, omitting the required *1.5 -- so every
+one of those fields rendered at 2/3 of the intended width. Worse, reading
+*existing* fields' widths during diagnosis made the same omission, so most
+of this session's "field overlaps the next caption by Npt" findings were
+false positives caused by the math error, not real defects -- e.g.
+NLEPO_004's original "at" field (before this session touched it) already
+had its true right edge at 298.98pt against a true blank end of 299.0pt:
+already correct, no 90pt overlap ever existed. The width-narrowing this
+bug introduced was silent in renders because a too-narrow field can't
+create the overlap this session was watching for, and the same long
+generic sample text overflows a narrow OR correctly-sized invisible box
+about the same way, so the visual check didn't catch it either.
+
+Two things from this session's fixes remained genuinely valid regardless
+of the width bug (kept as-is): NLEPO_012 field 1750567230006's Y move
+(clearing a real intrusion into the printed line above it -- pure
+y-coordinate comparison, unaffected by width scale) and the *existence* of
+every genuinely-missing field this session added (NLEPO_001's 6-field
+table, NLEPO_003's Month/Year/Respondent-D.O.B./p4-year fields) -- those
+blanks were still genuinely unfielded before this session; only their
+stored widths needed the correction.
+
+Fix: `fix_session3_width_scale_bug.py` -- multiplies every width this
+session set by 1.5 (43 fields across NLEPO_001/002/003/004/006/007/008/
+009/010/011/012). x/y untouched. verify_nl.py zero findings before/after
+(5725 fields unchanged, geometry-only), idempotent confirmed, re-rendered
+and re-inspected NLEPO_001, 003 p2, 004, 012 -- all now correctly fill
+their printed blanks (previously-narrow boxes now span the full line with
+appropriate small gaps before the next caption, matching the target
+measurements this session actually derived from evidence -- the
+*measurements* were right all along, only the storage was wrong).
+
+Already-pushed branch `nl-nb-form-push-20260901` was corrected with this
+fix and re-pushed (force-with-lease after amending, or a follow-up commit
+-- see git log). **Lesson for future sessions**: when computing a NEW
+width from any pixel scan, get_text() bbox, or get_drawings() geometry,
+always multiply by 1.5 (SCALE) before storing it in the JSON -- the true
+PDF-point measurement is never the value that belongs in the width field.
+Re-verify this by spot-checking one already-correct existing field's
+width against its own printed blank (divide by 1.5, compare) before
+trusting any new geometry math on a form you haven't touched before.
+
+## User feedback, same session: fields floating below their printed line
+A user-provided screenshot (an NB "Name of solicitor:" dot-leader field,
+underscore-run pattern) showed the TextField's visible box sitting
+noticeably *below* the printed rule -- the printed line crosses near the
+TOP of the box instead of the box's text baseline sitting on/just above
+the line, so entered text would appear to float under the line rather
+than resting on it the way handwriting on a line normally reads. This is
+a distinct usability defect from the overlap/duplicate/narrow classes
+already tracked -- add it as **issue class 9: field vertically
+mis-seated relative to its printed line** (the box's own baseline, not
+just its horizontal extent, should coincide with the printed rule -- check
+this alongside class 2's checkbox-seating logic, same principle applied to
+text-line blanks). Not yet root-caused or fixed anywhere in this repo;
+flagging here so the next NB or NL session watches for it explicitly on
+every dot-leader/underscore-run field and fixes it via the same
+--check/apply, geometry-only convention (adjust y so the field's bottom
+sits at/near the printed rule's y, not straddling or hanging below it).
