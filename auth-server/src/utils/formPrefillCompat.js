@@ -198,10 +198,24 @@ function buildAssets(rows) {
       ...extra,
     };
   };
-  flat.bank = of("bank_accounts_savings_securities_pension").map((r) => mvMap(r, {
+  const basspRow = (r) => mvMap(r, {
     category: r.category_bassp || r.category || "", institution: r.institution || "",
     account_number: r.account_number || "", description: r.description_bassp || "",
-  }));
+  });
+  const bassp = of("bank_accounts_savings_securities_pension");
+  flat.bank = bassp.map(basspRow);
+  // Form 13's simpler Part 3 table splits this one intake category into three
+  // rows (Investments / Bank accounts / Savings, RRSP & pension plans) by the
+  // category the client picked (financialAssets in categoryData.js).
+  const basspCat = (r) => {
+    const s = String(r?.category_bassp || r?.category || "").toLowerCase();
+    if (/invest/.test(s)) return "investments";
+    if (/saving|rrsp|resp|pension/.test(s)) return "savingsPlans";
+    return "bankAccounts";
+  };
+  flat.investments = bassp.filter((r) => basspCat(r) === "investments").map(basspRow);
+  flat.bankAccounts = bassp.filter((r) => basspCat(r) === "bankAccounts").map(basspRow);
+  flat.savingsPlans = bassp.filter((r) => basspCat(r) === "savingsPlans").map(basspRow);
   flat.land = of("lands").map((r) => mvMap(r, { address: r.address_of_property || "", ownership: r.nature_and_type_of_ownership || "" }));
   // General household & vehicles split by their item category so each table row
   // (goods/furniture, vehicles, jewellery/art, other special) fills separately.
@@ -222,16 +236,18 @@ function buildAssets(rows) {
   flat.life = of("life_and_disability_insurance").map((r) => mvMap(r, { policy_no: r.policy_no || "", owner: r.owner || "", beneficiary: r.beneficiary || "", face_amount: asText(num(r.face_amount)) }));
   flat.moneyOwed = of("money_owed_to_you").map((r) => mvMap(r, { details: r.details_moty || "" }));
   flat.otherProperty = of("other_property").map((r) => mvMap(r, { category: r.category_op || "", details: r.details_op || "" }));
-  // Per-category asset totals (today, client). Liabilities are left blank/editable.
-  const totalToday = (t) => {
-    const sum = of(t).reduce((acc, r) => acc + (num(mvClient(r).today) || 0), 0);
+  // Per-category asset totals for Form 13.1's page-8 "Value ON DATE OF
+  // MARRIAGE" table (client). Liabilities have no distinct source per asset
+  // and are left blank/editable.
+  const totalOnMarriage = (t) => {
+    const sum = of(t).reduce((acc, r) => acc + (num(mvClient(r).on_date_of_marriage) || 0), 0);
     return { assets: asText(sum), liabilities: "" };
   };
   flat.property = {
-    bank: totalToday("bank_accounts_savings_securities_pension"), land: totalToday("lands"),
-    household: totalToday("general_household_items_and_vehicles"), interests: totalToday("business_interest"),
-    life: totalToday("life_and_disability_insurance"), moneyOwed: totalToday("money_owed_to_you"),
-    otherProperty: totalToday("other_property"), debts: { assets: "", liabilities: "" },
+    bank: totalOnMarriage("bank_accounts_savings_securities_pension"), land: totalOnMarriage("lands"),
+    household: totalOnMarriage("general_household_items_and_vehicles"), interests: totalOnMarriage("business_interest"),
+    life: totalOnMarriage("life_and_disability_insurance"), moneyOwed: totalOnMarriage("money_owed_to_you"),
+    otherProperty: totalOnMarriage("other_property"), debts: { assets: "", liabilities: "" },
   };
   return flat;
 }

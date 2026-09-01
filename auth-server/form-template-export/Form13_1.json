@@ -429,7 +429,8 @@
    ],
    "background": "none",
    "border": "none",
-   "page": 1
+   "page": 1,
+   "bind": "applicant.fullLegalName"
   },
   {
    "id": 1728124119206,
@@ -447,7 +448,8 @@
    ],
    "background": "none",
    "border": "none",
-   "page": 1
+   "page": 1,
+   "bind": "applicant.residence"
   },
   {
    "id": 1728375568820,
@@ -7392,8 +7394,13 @@
    "isCalculated": true,
    "calculationType": "add",
    "sourceFields": [
-    "calc-1731022812683",
-    "calc-1730577114807"
+    "calc-1730577114807",
+    "calc-1730577154447",
+    "calc-1730577214659",
+    "calc-1731022369820",
+    "calc-1731022554580",
+    "calc-1731022740098",
+    "calc-1731022812683"
    ],
    "calculationName": "22TotalValue",
    "isDerived": true

@@ -2595,7 +2595,7 @@
    "background": "none",
    "border": "none",
    "page": 4,
-   "bind": "assets[0].address, assets[0].ownership",
+   "bind": "assets.land[0].address, assets.land[0].ownership",
    "source": "realEstate"
   },
   {
@@ -2615,7 +2615,7 @@
    "background": "none",
    "border": "none",
    "page": 4,
-   "bind": "assets[0].today",
+   "bind": "assets.land[0].today",
    "source": "realEstate"
   },
   {
@@ -2635,7 +2635,7 @@
    "background": "none",
    "border": "none",
    "page": 4,
-   "bind": "assets[1].address",
+   "bind": "assets.land[1].address, assets.land[1].ownership",
    "source": "realEstate"
   },
   {
@@ -2655,7 +2655,7 @@
    "background": "none",
    "border": "none",
    "page": 4,
-   "bind": "assets[1].today",
+   "bind": "assets.land[1].today",
    "source": "realEstate"
   },
   {
@@ -2675,7 +2675,7 @@
    "background": "none",
    "border": "none",
    "page": 4,
-   "bind": "assets[2].address",
+   "bind": "assets.land[2].address, assets.land[2].ownership",
    "source": "realEstate"
   },
   {
@@ -2695,7 +2695,7 @@
    "background": "none",
    "border": "none",
    "page": 4,
-   "bind": "assets[2].today",
+   "bind": "assets.land[2].today",
    "source": "realEstate"
   },
   {
@@ -2715,7 +2715,7 @@
    "background": "none",
    "border": "none",
    "page": 4,
-   "bind": "assets[0].description",
+   "bind": "assets.vehicles[0].description",
    "source": "houseHold"
   },
   {
@@ -2735,7 +2735,7 @@
    "background": "none",
    "border": "none",
    "page": 4,
-   "bind": "assets[0].today",
+   "bind": "assets.vehicles[0].today",
    "source": "houseHold"
   },
   {
@@ -2755,7 +2755,7 @@
    "background": "none",
    "border": "none",
    "page": 4,
-   "bind": "assets[1].description",
+   "bind": "assets.vehicles[1].description",
    "source": "houseHold"
   },
   {
@@ -2775,7 +2775,7 @@
    "background": "none",
    "border": "none",
    "page": 4,
-   "bind": "assets[1].today",
+   "bind": "assets.vehicles[1].today",
    "source": "houseHold"
   },
   {
@@ -2795,7 +2795,7 @@
    "background": "none",
    "border": "none",
    "page": 4,
-   "bind": "assets[2].description",
+   "bind": "assets.vehicles[2].description",
    "source": "houseHold"
   },
   {
@@ -2815,7 +2815,7 @@
    "background": "none",
    "border": "none",
    "page": 4,
-   "bind": "assets[2].today",
+   "bind": "assets.vehicles[2].today",
    "source": "houseHold"
   },
   {
@@ -2854,7 +2854,7 @@
    "background": "none",
    "border": "none",
    "page": 5,
-   "bind": "assets[0].address",
+   "bind": "assets.jewellery[0].description",
    "source": "otherPossessions"
   },
   {
@@ -2874,7 +2874,7 @@
    "background": "none",
    "border": "none",
    "page": 5,
-   "bind": "assets[0].today",
+   "bind": "assets.jewellery[0].today",
    "source": "otherPossessions"
   },
   {
@@ -2894,7 +2894,7 @@
    "background": "none",
    "border": "none",
    "page": 5,
-   "bind": "assets[1].address",
+   "bind": "assets.jewellery[1].description",
    "source": "otherPossessions"
   },
   {
@@ -2914,7 +2914,7 @@
    "background": "none",
    "border": "none",
    "page": 5,
-   "bind": "assets[1].today",
+   "bind": "assets.jewellery[1].today",
    "source": "otherPossessions"
   },
   {
@@ -2934,7 +2934,7 @@
    "background": "none",
    "border": "none",
    "page": 5,
-   "bind": "assets[2].address",
+   "bind": "assets.jewellery[2].description",
    "source": "otherPossessions"
   },
   {
@@ -2954,7 +2954,7 @@
    "background": "none",
    "border": "none",
    "page": 5,
-   "bind": "assets[2].today",
+   "bind": "assets.jewellery[2].today",
    "source": "otherPossessions"
   },
   {
@@ -2974,7 +2974,7 @@
    "background": "none",
    "border": "none",
    "page": 5,
-   "bind": "assets[0].type",
+   "bind": "assets.investments[0].institution, assets.investments[0].description",
    "source": "investments"
   },
   {
@@ -2994,7 +2994,7 @@
    "background": "none",
    "border": "none",
    "page": 5,
-   "bind": "assets[0].today",
+   "bind": "assets.investments[0].today",
    "source": "investments"
   },
   {
@@ -3014,7 +3014,7 @@
    "background": "none",
    "border": "none",
    "page": 5,
-   "bind": "assets[1].type",
+   "bind": "assets.investments[1].institution, assets.investments[1].description",
    "source": "investments"
   },
   {
@@ -3034,7 +3034,7 @@
    "background": "none",
    "border": "none",
    "page": 5,
-   "bind": "assets[1].today",
+   "bind": "assets.investments[1].today",
    "source": "investments"
   },
   {
@@ -3054,7 +3054,7 @@
    "background": "none",
    "border": "none",
    "page": 5,
-   "bind": "assets[2].type",
+   "bind": "assets.investments[2].institution, assets.investments[2].description",
    "source": "investments"
   },
   {
@@ -3074,7 +3074,7 @@
    "background": "none",
    "border": "none",
    "page": 5,
-   "bind": "assets[2].today",
+   "bind": "assets.investments[2].today",
    "source": "investments"
   },
   {
@@ -3094,7 +3094,7 @@
    "background": "none",
    "border": "none",
    "page": 5,
-   "bind": "assets[0].category",
+   "bind": "assets.bankAccounts[0].institution, assets.bankAccounts[0].account_number",
    "source": "bank"
   },
   {
@@ -3114,7 +3114,7 @@
    "background": "none",
    "border": "none",
    "page": 5,
-   "bind": "assets[0].today",
+   "bind": "assets.bankAccounts[0].today",
    "source": "bank"
   },
   {
@@ -3134,7 +3134,7 @@
    "background": "none",
    "border": "none",
    "page": 5,
-   "bind": "assets[1].category",
+   "bind": "assets.bankAccounts[1].institution, assets.bankAccounts[1].account_number",
    "source": "bank"
   },
   {
@@ -3154,7 +3154,7 @@
    "background": "none",
    "border": "none",
    "page": 5,
-   "bind": "assets[1].today",
+   "bind": "assets.bankAccounts[1].today",
    "source": "bank"
   },
   {
@@ -3174,7 +3174,7 @@
    "background": "none",
    "border": "none",
    "page": 5,
-   "bind": "assets[2].category",
+   "bind": "assets.bankAccounts[2].institution, assets.bankAccounts[2].account_number",
    "source": "bank"
   },
   {
@@ -3194,7 +3194,7 @@
    "background": "none",
    "border": "none",
    "page": 5,
-   "bind": "assets[2].today",
+   "bind": "assets.bankAccounts[2].today",
    "source": "bank"
   },
   {
@@ -3214,7 +3214,7 @@
    "background": "none",
    "border": "none",
    "page": 5,
-   "bind": "assets[0].description",
+   "bind": "assets.savingsPlans[0].institution, assets.savingsPlans[0].description",
    "source": "savings"
   },
   {
@@ -3234,7 +3234,7 @@
    "background": "none",
    "border": "none",
    "page": 5,
-   "bind": "assets[0].today",
+   "bind": "assets.savingsPlans[0].today",
    "source": "savings"
   },
   {
@@ -3254,7 +3254,7 @@
    "background": "none",
    "border": "none",
    "page": 5,
-   "bind": "assets[1].description",
+   "bind": "assets.savingsPlans[1].institution, assets.savingsPlans[1].description",
    "source": "savings"
   },
   {
@@ -3274,7 +3274,7 @@
    "background": "none",
    "border": "none",
    "page": 5,
-   "bind": "assets[1].today",
+   "bind": "assets.savingsPlans[1].today",
    "source": "savings"
   },
   {
@@ -3294,7 +3294,7 @@
    "background": "none",
    "border": "none",
    "page": 5,
-   "bind": "assets[2].description",
+   "bind": "assets.savingsPlans[2].institution, assets.savingsPlans[2].description",
    "source": "savings"
   },
   {
@@ -3314,7 +3314,7 @@
    "background": "none",
    "border": "none",
    "page": 5,
-   "bind": "assets[2].today",
+   "bind": "assets.savingsPlans[2].today",
    "source": "savings"
   },
   {
@@ -3334,7 +3334,7 @@
    "background": "none",
    "border": "none",
    "page": 5,
-   "bind": "assets[0].category",
+   "bind": "assets.life[0].beneficiary, assets.life[0].policy_no",
    "source": "lifeInsurance"
   },
   {
@@ -3354,7 +3354,7 @@
    "background": "none",
    "border": "none",
    "page": 5,
-   "bind": "assets[0].today",
+   "bind": "assets.life[0].today",
    "source": "lifeInsurance"
   },
   {
@@ -3374,7 +3374,7 @@
    "background": "none",
    "border": "none",
    "page": 5,
-   "bind": "assets[1].category",
+   "bind": "assets.life[1].beneficiary, assets.life[1].policy_no",
    "source": "lifeInsurance"
   },
   {
@@ -3394,7 +3394,7 @@
    "background": "none",
    "border": "none",
    "page": 5,
-   "bind": "assets[1].today",
+   "bind": "assets.life[1].today",
    "source": "lifeInsurance"
   },
   {
@@ -3414,7 +3414,7 @@
    "background": "none",
    "border": "none",
    "page": 5,
-   "bind": "assets[2].category",
+   "bind": "assets.life[2].beneficiary, assets.life[2].policy_no",
    "source": "lifeInsurance"
   },
   {
@@ -3434,7 +3434,7 @@
    "background": "none",
    "border": "none",
    "page": 5,
-   "bind": "assets[2].today",
+   "bind": "assets.life[2].today",
    "source": "lifeInsurance"
   },
   {
@@ -3454,7 +3454,7 @@
    "background": "none",
    "border": "none",
    "page": 5,
-   "bind": "assets[0].firm_name",
+   "bind": "assets.interests[0].firm_name",
    "source": "interests"
   },
   {
@@ -3474,7 +3474,7 @@
    "background": "none",
    "border": "none",
    "page": 5,
-   "bind": "assets[0].today",
+   "bind": "assets.interests[0].today",
    "source": "interests"
   },
   {
@@ -3494,7 +3494,7 @@
    "background": "none",
    "border": "none",
    "page": 5,
-   "bind": "assets[1].firm_name",
+   "bind": "assets.interests[1].firm_name",
    "source": "interests"
   },
   {
@@ -3514,7 +3514,7 @@
    "background": "none",
    "border": "none",
    "page": 5,
-   "bind": "assets[1].today",
+   "bind": "assets.interests[1].today",
    "source": "interests"
   },
   {
@@ -3534,7 +3534,7 @@
    "background": "none",
    "border": "none",
    "page": 5,
-   "bind": "assets[2].firm_name",
+   "bind": "assets.interests[2].firm_name",
    "source": "interests"
   },
   {
@@ -3554,7 +3554,7 @@
    "background": "none",
    "border": "none",
    "page": 5,
-   "bind": "assets[2].today",
+   "bind": "assets.interests[2].today",
    "source": "interests"
   },
   {
@@ -3574,7 +3574,7 @@
    "background": "none",
    "border": "none",
    "page": 5,
-   "bind": "assets[0].category",
+   "bind": "assets.moneyOwed[0].details",
    "source": "moneyOwed"
   },
   {
@@ -3594,7 +3594,7 @@
    "background": "none",
    "border": "none",
    "page": 5,
-   "bind": "assets[0].today",
+   "bind": "assets.moneyOwed[0].today",
    "source": "moneyOwed"
   },
   {
@@ -3614,7 +3614,7 @@
    "background": "none",
    "border": "none",
    "page": 5,
-   "bind": "assets[1].category",
+   "bind": "assets.moneyOwed[1].details",
    "source": "moneyOwed"
   },
   {
@@ -3634,7 +3634,7 @@
    "background": "none",
    "border": "none",
    "page": 5,
-   "bind": "assets[1].today",
+   "bind": "assets.moneyOwed[1].today",
    "source": "moneyOwed"
   },
   {
@@ -3654,7 +3654,7 @@
    "background": "none",
    "border": "none",
    "page": 5,
-   "bind": "assets[2].category",
+   "bind": "assets.moneyOwed[2].details",
    "source": "moneyOwed"
   },
   {
@@ -3674,7 +3674,7 @@
    "background": "none",
    "border": "none",
    "page": 5,
-   "bind": "assets[2].today",
+   "bind": "assets.moneyOwed[2].today",
    "source": "moneyOwed"
   },
   {
@@ -3694,7 +3694,7 @@
    "background": "none",
    "border": "none",
    "page": 5,
-   "bind": "assets[0].description",
+   "bind": "assets.otherProperty[0].category, assets.otherProperty[0].details",
    "source": "Other"
   },
   {
@@ -3714,7 +3714,7 @@
    "background": "none",
    "border": "none",
    "page": 5,
-   "bind": "assets[0].today",
+   "bind": "assets.otherProperty[0].today",
    "source": "Other"
   },
   {
@@ -3734,7 +3734,7 @@
    "background": "none",
    "border": "none",
    "page": 5,
-   "bind": "assets[1].description",
+   "bind": "assets.otherProperty[1].category, assets.otherProperty[1].details",
    "source": "Other"
   },
   {
@@ -3754,7 +3754,7 @@
    "background": "none",
    "border": "none",
    "page": 5,
-   "bind": "assets[1].today",
+   "bind": "assets.otherProperty[1].today",
    "source": "Other"
   },
   {
@@ -3774,7 +3774,7 @@
    "background": "none",
    "border": "none",
    "page": 5,
-   "bind": "assets[2].description",
+   "bind": "assets.otherProperty[2].category, assets.otherProperty[2].details",
    "source": "Other"
   },
   {
@@ -3794,7 +3794,7 @@
    "background": "none",
    "border": "none",
    "page": 5,
-   "bind": "assets[2].today",
+   "bind": "assets.otherProperty[2].today",
    "source": "Other"
   },
   {

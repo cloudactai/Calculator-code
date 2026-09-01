@@ -4,7 +4,7 @@ const express = require("express");
 const path = require("path");
 const prisma = require("../../prismaClient");
 const { authMiddleware } = require("../middleware/authMiddleware");
-const { parseStoredJson, prefillFields, supportType } = require("../utils/formPrefillResolver");
+const { parseStoredJson, prefillFields, resolveBinding, supportType } = require("../utils/formPrefillResolver");
 const { buildLegacyPrefill } = require("../utils/formPrefillCompat");
 const {
   CHANGE_LOG_TYPE,
@@ -445,11 +445,40 @@ router.get("/matters/:matterNumber/forms", async (req, res) => {
   return res.json({ data: documents.map(documentDto) });
 });
 
+// Prefill runs once, at document creation (see POST .../forms below). If the
+// matter's data changes afterwards — background info added after generating
+// Form 8, an expense corrected or removed after generating Form 13.1 — a
+// field that was never manually edited would otherwise keep showing that
+// first snapshot forever, blank or stale, since nothing re-resolves it.
+// Refresh every bound field the user hasn't touched (provenance isn't
+// "manual") with the current matter data on every open, including clearing
+// it back to blank when its source data is gone. A field is "manual" the
+// moment the user has ever clicked Save, so this never overwrites their
+// input, and fields with no bind (nothing to resolve against) are untouched.
+function refreshUnmanualFields(document, prefillData) {
+  const fields = Array.isArray(document.templateVersion.fieldMapping?.staticFields)
+    ? document.templateVersion.fieldMapping.staticFields
+    : [];
+  const values = { ...(document.fieldValues || {}) };
+  const provenance = { ...(document.fieldProvenance || {}) };
+  for (const field of fields) {
+    if (!field?.id || !field.bind || provenance[field.id] === "manual") continue;
+    const resolved = resolveBinding(prefillData, field.bind);
+    const value = resolved == null ? "" : resolved;
+    if (values[field.id] === value) continue;
+    values[field.id] = value;
+    provenance[field.id] = "prefill";
+  }
+  return { values, provenance };
+}
+
 router.get("/matters/:matterNumber/forms/:documentId", async (req, res) => {
   const matter = await matterForUser(req.user.id, req.params.matterNumber);
   const document = matter && await prisma.matterFormDocument.findFirst({ where: { id: Number(req.params.documentId), matterId: matter.id }, include: { templateVersion: { include: { template: true } } } });
   if (!document) return res.status(404).json({ message: "Form document not found." });
-  return res.json({ data: { ...documentDto(document), fieldValues: document.fieldValues, fieldProvenance: document.fieldProvenance, mapping: document.templateVersion.fieldMapping } });
+  const prefillData = await buildPrefillData(matter, req.user.id);
+  const { values: fieldValues, provenance: fieldProvenance } = refreshUnmanualFields(document, prefillData);
+  return res.json({ data: { ...documentDto(document), fieldValues, fieldProvenance, mapping: document.templateVersion.fieldMapping } });
 });
 
 router.patch("/matters/:matterNumber/forms/:documentId", async (req, res) => {

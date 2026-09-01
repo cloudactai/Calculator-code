@@ -229,6 +229,22 @@ const VerticalTextEditor = ({ field, onSave, onCancel }) => {
 };
 
 
+// Native <input type="date"> only shows the picked date (and stays
+// clickable) when its `value` is a plain ISO "YYYY-MM-DD" string. Field
+// values are stored/printed in the form's own dateFormat (MM/DD/YYYY by
+// default), so convert back to ISO for display; an already-ISO value (a
+// fresh prefill from the backend) passes straight through.
+const toIsoDate = (value, format = 'MM/DD/YYYY') => {
+  if (!value) return '';
+  if (/^\d{4}-\d{2}-\d{2}$/.test(value)) return value;
+  const parts = String(value).split('/');
+  if (parts.length !== 3) return '';
+  const [p1, p2, year] = parts;
+  const [month, day] = format === 'DD/MM/YYYY' ? [p2, p1] : [p1, p2];
+  if (!/^\d{4}$/.test(year) || !month || !day) return '';
+  return `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+};
+
 // Helper function to render different field types
 const renderField = (field, handleEditField, handleSort, handleCellEdit, formatDate, setFields, openVerticalEditor) => {
 
@@ -315,11 +331,16 @@ const renderField = (field, handleEditField, handleSort, handleCellEdit, formatD
         <input
           id={field.id}
           type="date"
-          value={field.value}
+          value={toIsoDate(field.value, field.dateFormat)}
           onChange={(e) => {
-            const date = new Date(e.target.value);
-            const formattedDate = formatDate(date, field.dateFormat);
-            handleEditField(field.id, formattedDate);
+            // e.target.value is "YYYY-MM-DD" in local time already.
+            // `new Date("YYYY-MM-DD")` parses that as UTC midnight, and
+            // formatDate's getMonth/getDate/getFullYear read it back in
+            // local time — a day behind in any timezone west of UTC. Build
+            // the Date from the local Y/M/D components instead.
+            const [year, month, day] = e.target.value.split('-').map(Number);
+            const date = year && month && day ? new Date(year, month - 1, day) : null;
+            handleEditField(field.id, date ? formatDate(date, field.dateFormat) : '');
           }}
           style={getFieldStyle(field)}
         />
