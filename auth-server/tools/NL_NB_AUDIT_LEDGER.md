@@ -1,0 +1,442 @@
+# NL/NB form audit ledger (working notes)
+
+Legend: OK = reviewed, no issue. FIX = reviewed, repaired. LEFT = reviewed, issue found, left unchanged with evidence.
+
+## NBFSA (14 forms, 18 pages) — DONE
+- NBFSA_1_01 p1: FIX judge-signature box dropped (drop_nb_judge_signature.py)
+- NBFSA_1_02 p1: FIX judge-signature box dropped
+- NBFSA_1_03 p1: FIX judge-signature box dropped
+- NBFSA_1_04 p1: FIX judge-signature box dropped
+- NBFSA_1_1  p1: FIX judge-signature box dropped
+- NBFSA_1_2  p1: OK; p2: FIX judge-signature box dropped
+- NBFSA_1_3  p1: FIX judge-signature box dropped
+- NBFSA_1_4  p1: FIX judge-signature box dropped
+- NBFSA_1_5  p1: FIX judge-signature box dropped
+- NBFSA_22   p1: FIX judge-signature box dropped; LEFT "...DECLARED under [gap] of the Family
+  Services Act..." — plain whitespace gap (~35pt), no dot leader/underline/drawn rule anywhere
+  near it (contrast: "Birth registration number ......." on the line above IS a dot leader and
+  correctly has a field). No printed anchor = no field invented, per guide. Documented, unchanged.
+- NBFSA_23   p1,p2: OK (declarant/commissioner jurat blocks, no judge signature — this is a
+  statutory declaration, not a court order)
+- NBFSA_24   p1: OK (same jurat pattern as 23)
+- NBFSA_25   p1,p2: OK (registrar/clerk certificate form, no judge signature; "Sex" field width
+  44pt butts against "Birth date" label at <1pt gap — verified NOT an overlap, sample text
+  "Jordan A. Whitfield" simply overflows a field sized correctly for "M"/"Female"; false positive)
+
+Repair script: auth-server/tools/nb-forms/drop_nb_judge_signature.py (10 fields dropped,
+verify_nb zero findings before/after, idempotent confirmed)
+
+## NBKB (34 forms, 224 pages) — IN PROGRESS
+- NBKB_18A p1: OK. Blank space below "documents received" numbered-paragraph prompt and
+  signature line are correctly unfielded — this card is completed by hand by the SERVED
+  recipient after mailing, not by the filer in-app (day/month/year blanks and doc list are
+  plain underscores with no box in source, consistent with that).
+- NBKB_47B p1: OK. TextArea "Firm address" generously tall (99.8pt) but doesn't overlap
+  anything below (blank rest of page); not a defect.
+- NBKB_72C p1: OK. Same "Business address" TextArea pattern, fine.
+- NBKB_72E p1: OK. Narrative TextArea for paragraph 4 correctly sized/placed.
+- NBKB_72FF p1: FIX — was 0 fields despite genuine dot-leader blanks (solicitor's name,
+  DATED at/day/month/year). README's "zero dot leader runs" claim was wrong for this form
+  (confirmed via regex on extracted text). Added 4 TextFields via new
+  add_nb_dotline_fields.py; left trailing signature leader ("solicitor for petitioner")
+  unboxed per §5.
+- NBKB_72H p1: OK, narrative TextArea correct.
+- NBKB_72I p1: OK, narrative TextArea correct.
+- NBKB_72L p1: OK, correctly zero fields on both spouses' own signature lines.
+- NBKB_72M, 72N, 72O p1 each: OK — genuine dot leaders present but correctly left
+  unboxed: registrar/court-issued documents, not filer-entered (matches README rationale).
+- NBKB_7A p1: FIX — was 0 fields despite ~11 genuine English-column dot-leader blanks
+  (TO:, DATED at/day/month/year, solicitor/firm/address x2-line, plaintiff name). Added
+  via add_nb_dotline_fields.py, English column only (x<310); French column deliberately
+  left blank (app is English-medium, matches how a monolingual filer would leave it by
+  hand); signature leader excluded per §5.
+- NBKB_72K p1,p2: OK — item2 date-row visual jumble is generic-sample overflow noise on
+  correctly-sized day/month/year fields, not a real defect (verified via geometry).
+- NBKB_72G p1,p2: OK, same pattern, all fields/TextAreas correctly placed.
+- NBKB_37A p1-3: FIX — field for the English "DIVISION" header row (bilingual form) sat
+  directly on top of the printed word "DIVISION" (measured via pixel-darkness scan since
+  text-extraction is lossy for this form's English column, same font/ToUnicode defect NL's
+  README records for NLPC forms). Confirmed via the bilingual symmetry: every other
+  English/French field pair on the page shares an identical width; this was the only
+  mismatched pair (55.7pt vs French twin's 139.0pt). Moved to sit after "DIVISION" (mirroring
+  "DIVISION DE ___" on the French side) with the French twin's width, via new
+  fix_nb_field_geometry.py. Pages 2-3 unaffected (fields elsewhere untouched, confirmed by re-render).
+- NBKB_72D p1: OK (same Answer-form pattern as 72G/72H, correct).
+- NBKB_73I p1-3: OK. TextAreas correctly sized/placed; signature line correctly left unboxed.
+
+Repair script: auth-server/tools/nb-forms/fix_nb_field_geometry.py (1 field corrected,
+verify_nb zero findings before/after (still 4027 fields, geometry-only move), idempotent
+confirmed, visual render confirmed clean)
+
+- NBKB_72U p1-7: OK, all fields correctly placed (used as reference template for 73A/73F fix).
+- NBKB_73A p1: FIX — "The Applicant will apply to the Court at..." hearing-date/location/time
+  clause (5 blanks EN + 5 FR) had zero fields on either language column despite drawn-rule
+  blanks with printed labels, while the near-identical clause on 72U was correctly fielded.
+  Added via new add_nb_hearing_date_fields.py (geometry measured off drawn rules + one
+  underscore run). p2-5: OK.
+- NBKB_73AA p1-5: OK (no hearing-date clause on this variant; rest of page fine).
+- NBKB_73F p1: FIX — same hearing-date clause defect as 73A, same fix script. p2-7: OK.
+- NBKB_73G p1: OK. p2: FIX (via trim script, see below). p3: FIX (item 8 caption 2nd line
+  was covered by TextArea top — this was the finding that prompted the general trim script).
+  p4: OK.
+- NBKB_73H p1-4: OK (post-trim).
+- NBKB_37A p1-3: FIX documented above (DIVISION field). Also caught by trim script (0 TextArea
+  changes needed there beyond the DIVISION fix).
+
+### General fix: TextArea caption-overlap, whole NBKB batch
+Found via systematic scan (not just 73G): many NBKB TextAreas were cut to the standard
+single-line-caption offset without checking whether the caption wrapped to 2-3 lines, so the
+box top oversat the last line(s) of italic instruction text. Built
+auth-server/tools/nb-forms/trim_nb_textarea_tops.py — measures the actual printed line above
+each TextArea every run (not cached), iterates per field until no more overlap (handles 3-line
+captions), only moves y/height, bottom edge fixed, MIN_HEIGHT=20pt guard skips anything that
+would trim unsafely small (flags for manual look instead of forcing it).
+- Had to add a filter for whitespace-only "ghost" text lines (NBKB_72H p1 had 9 stacked
+  single-space lines from y=435-566, a Word-to-PDF artifact) that were falsely treated as
+  caption text and walked one field down through all of them (437.8 -> 553.8) before the fix.
+- 311 fields trimmed (310 in pass 1 covering most docs + NBKB_72A p4 needing a second pass
+  before the ghost-line fix; after the fix, exactly the same 311 total, idempotent, zero
+  ghost-line false positives).
+- 1 field left unchanged with documented reason: NBKB_81F p4 id=1750047115066 ("(Name of party
+  bringing motion.)", a single full-width EN+FR-shared field mirroring the page's "TO:" field
+  in the same shape) — already only 18pt tall; the caption overlap is real but trimming would
+  drop it to 15pt, below the safety floor. Left as-is; flagged, not forced. Genuinely marginal,
+  not a clear win either way — documented rather than guessed at.
+- verify_nb zero findings before/after (4047 fields unchanged, geometry-only), idempotent
+  confirmed, visually spot-checked across 73G/81H/81I/72A/72B/47B — all clean, no regressions,
+  answer space preserved (bottom edge never moved).
+
+### General fix: TextField caption-overlap (wrapped inline blanks), whole NBKB batch
+Same root cause class as the TextArea fix but for single-line TextFields, found while
+reviewing NBKB_72A p3: "(b) the petitioner intends to proceed in the ____ language;" doesn't
+fit on one line in the narrow two-column bilingual layout, wraps, and the field sat on the
+wrapped caption's own baseline instead of the row its trailing text ("language;") sits on —
+confirmed visually (descenders of "petitioner"/"proceed" clipped by the field's top border).
+Built auth-server/tools/nb-forms/shift_nb_textfields_off_captions.py — a TextField can't be
+trimmed (already at the one approved line height), so this SHIFTS it down instead, single
+pass only, capped at 10pt, refuses (skips + reports) anything needing a second pass or a
+larger jump. That safety cap mattered: an early uncapped/iterating version walked adjacent
+single-line rows (e.g. "Work:"/"Home:" phone fields sitting close together) two whole rows
+down onto the wrong row entirely — caught by spot-checking before applying broadly, fixed by
+capping to one short pass and refusing the rest. Also had to compare word-level boxes, not
+line bboxes, after a leading-space-in-bbox artifact produced a 0.2pt false "still overlapping"
+result that blocked the very case (72A p3) the script was written for.
+- 414 fields shifted total (279 + 135 after the word-box fix), zero verify_nb findings,
+  idempotent, field count unchanged (4047, geometry-only).
+- ~28 fields left unchanged (flagged "needs a manual look" — either >10pt or still-overlap
+  after one pass). Spot-checked several via render (NBKB_81H p14, NBKB_81F p15): both already
+  render cleanly with no visible defect, confirming these are detector false-positives (near
+  numbered-paragraph markers), not real issues. Left as-is; documented rather than forced.
+- Visually confirmed fix on NBKB_72A p3 (the original finding) — clean on both language
+  columns after the shift.
+
+### NBKB_72A — FULL 21-page pass complete (post-fix re-render). All pages clean after the
+DIVISION-style fix (n/a here), TextArea trim, and TextField shift fixes. Note: page 8 initially
+looked defective (4(b)/4(c) captions clipped) but that was a STALE pre-fix render I was viewing
+by mistake — re-rendering after the TextField shift fix confirmed it's clean. Lesson: always
+re-render after applying a fix before judging a page. No further issues found on 72A.
+Signature lines (p20 "X ___ SIGNATURE OF PETITIONER", p21 "X ___ SIGNATURE OF SOLICITOR")
+correctly left unboxed both languages. Table pages (10, 16) correctly zero-pre-filled (blank
+table rows for children/expenses, no printed content to clip). 72A: DONE, no unresolved items.
+
+### NBKB_72B — FULL 14-page pass complete (fresh post-fix renders). All clean. Noted rendering
+artifact (documented once, applies repo-wide): a handful of fields are typed TextArea instead
+of TextField (e.g. "PETITIONER" name p1, "Telephone number" p12-14) and render as an empty box
+in the QA tool because the generic long-paragraph SAMPLE text doesn't fit their narrow/short
+box — verified with a realistic short value (a name, a phone number) that it fits fine with
+room to spare. This is a render-tool sample-mismatch, NOT a form defect — the field itself
+works correctly for its real content. Cannot fix the type mismatch anyway (repair scripts may
+only touch x/y/width/height per the guide). Documented so it isn't re-investigated per
+instance; only worth flagging again if a REALISTIC short value also fails to fit. 72B: DONE.
+
+### NBKB_72F — FULL 14-page pass complete. All clean, no new issues, same known TextArea
+sample-mismatch non-issue seen throughout. DONE.
+
+### NBKB_72J — FULL 13-page pass complete. Large, dense financial-statement/appendix form
+(income, expenses, property, debts tables) — all table cells and totals correctly placed.
+Page 13's checkbox next to "IMPORTANT: Calculations will not work properly unless this box is
+checked" confirmed present/checked — this is the documented INK_EXEMPT case from the nb-forms
+README (widget with no printed square of its own). Minor cosmetic note, not fixed: TOTALS (j)/
+(k) and (a)/(b) column labels on pages 12-13 sit ~1-1.5pt from their field's edge — touching
+but not overlapping/clipping any character, well under the threshold that indicated a real
+defect elsewhere (5-6pt+ with visible letter clipping). Left as-is. DONE.
+
+### NBKB_81A — FULL 15-page pass complete. All clean. Checked closely and ruled out as
+false positives (documented so not re-investigated): p5/p15 "DATED at/on the day of/20"
+clause — narrow day/month/year TextFields correctly non-overlapping by geometry
+(search_for()-verified), messy-looking render is the generic 19-char sample overflowing
+short fields, same pattern as NBFSA_25's "Sex" field. p7/p8 "Resident in" and "Given
+name(s)" TextAreas render empty — too narrow for the canned paragraph but confirmed via
+one-off insert_textbox() with realistic values (city/province, a name) that they fit with
+room to spare. No fixes needed. DONE.
+
+### NBKB_81B — FULL 10-page pass complete. All clean. Same false-positive patterns as 81A
+(day/month/year fields on p10's jurat clause, empty-looking narrow TextAreas on p3/p4
+tables all confirmed fit realistic content via insert_textbox spot-check). One thing
+checked and ruled out: a single-line TextField at the standard STD_LINE=13.3 height always
+reports ~-1.76pt "overflow" from PyMuPDF's insert_textbox() regardless of text length —
+verified this is a fixed artifact of the function's internal line-height padding (confirmed
+on an unrelated already-clean field for comparison), not a real defect; every single-line
+TextField in the whole NB/NL corpus uses this same height, so this is not diagnostic and
+should not be used to flag pages going forward. DONE.
+
+### NBKB_81C — FULL 9-page pass complete. All clean, same established false-positive
+patterns (day/month/year clauses on p6/p8/p9 jurats). DONE.
+
+### NBKB_81F — FULL 16-page pass complete. All clean. Re-confirmed the pre-existing
+documented item (p4 id=1750047115066, marginal 18pt field, left as-is) is still correctly
+untouched. Same false-positive patterns throughout (day/month/year jurats p1/p15/p16,
+narrow "ext:"/"at (time)" fields p2/p4, empty-looking TextAreas on p10/p11 tables confirmed
+fit realistic content via insert_textbox spot-check, e.g. p11 "Terms of payment" column).
+DONE.
+
+### NBKB_81G — FULL 22-page pass complete. All clean. Same established false-positive
+patterns throughout (narrow "ext:" fields p1/p2, narrow "Birth Date" table columns p5/p8/p9
+confirmed fit realistic dates via insert_textbox spot-check, "Type of Expense" column p12
+confirmed fits, day/month/year jurats pp3/19/20/21/22). DONE.
+
+### NBKB_81H — FULL 22-page pass complete. All clean. Structurally near-identical to 81G
+(Response mirrors Change Information Form layout) — same false-positive patterns throughout.
+Checked closely: p15/p18/p22 "(name of recipient)" full-width TextField sitting directly
+below its own caption looked tight in the render but matches 81G's identical, already-
+confirmed-clean layout; no real clipping. DONE.
+
+### NBKB_81I — FULL 11-page pass complete. All clean. Same false-positive patterns
+(narrow Age/Sex columns p5 confirmed non-overlapping by geometry, day/month/year jurats).
+DONE.
+
+## NBKB (34 forms, 224 pages) — COMPLETE. Every page reviewed with fresh renders. Fixes:
+drop_nb_judge_signature.py, add_nb_dotline_fields.py, fix_nb_field_geometry.py,
+add_nb_hearing_date_fields.py, trim_nb_textarea_tops.py, shift_nb_textfields_off_captions.py
+(all documented above with before/after counts). One item left intentionally unfixed with
+evidence: NBKB_81F p4 id=1750047115066 (marginal 18pt field, trimming would go below the
+20pt safety floor). No other unresolved items in NBKB.
+
+
+Repair script: auth-server/tools/nb-forms/add_nb_dotline_fields.py (15 fields added across
+2 forms, verify_nb zero findings before/after 4012->4027, idempotent confirmed, visual
+render confirmed clean on both)
+
+## NLEPO (12 forms, 19 pages) — COMPLETE, see "Session 3" below for full detail
+## NLPC (34 forms, 61 pages) — NOT STARTED (two forms spot-checked only, see Session 3)
+## NLSC (62 forms, 352 pages) — NOT STARTED
+## NBFSA reg check: resolved. Directory scan (`ls NB*.json`) turned up NBFLA_1.json/.pdf —
+a 14th NB regulation form outside the NBFSA_/NBKB_ prefixes the ledger had been tracking
+(Family Law Act "Form 1" default/arrears certificate, S.N.B. 2020 c.23 s.31(1)). Not a
+duplicate of anything already reviewed. `verify_nb.py` already treats it like NBFSA_ (static
+exemption list), confirming it's meant to be part of this same regulation-forms family and
+in scope per "NBFSA_ forms (including regulation forms)". Rendered and reviewed both pages
+fresh: p1 (style block) clean; p2 (certificate) — day/month dot-leader TextFields sit right
+at the edge of the printed "day" word (field right edge 437.8 vs "day" glyph start 437.6,
+~0.2-2pt over) but confirmed via insert_textbox with realistic short values ("15th") this is
+the same fixed STD_LINE-height artifact (-1.76pt) seen everywhere else in the corpus, not a
+real overlap — the dot-leader itself sizes the field, and real day/month content is short
+enough to sit clear of "day"/"of". No fix needed. NBFLA: DONE, 1 form, 2 pages, no changes.
+
+Baseline verify_nl.py: 96 templates, 413 pages, 5889 fields, 107 binds, zero findings
+Baseline verify_nb.py (before NBFSA fix): 48 templates, 242 pages, 4022 fields, 79 binds, zero findings
+verify_nb.py (after NBFSA fix): 48 templates, 242 pages, 4012 fields, 79 binds, zero findings
+
+## Session 3 (2026-08-31): NL systemic fixes + NLEPO batch COMPLETE
+
+Picked up mid-NLEPO-batch per handoff. Baseline confirmed exact on pickup:
+verify_nb.py 48/242/4047/79 zero findings (unchanged from session 2's end
+state); verify_nl.py 96/413/5715/106 zero findings (5889 baseline minus
+174 dedup drops from session 2). NB required no further work this session.
+
+### Finished the carried-over NLEPO_003 fix, but the script needed a
+correction first
+The handoff's add_nlepo_003_datefields.py (Month/Year fields for item 2(b))
+had never been run. Ran --check, then rendered before applying broadly --
+caught that its 1.5x width-padding factor (back-derived from the shipped
+Day field's own width/segment ratio) made the new Month field visually
+overlap the Day field by ~14.8pt (confirmed in a render: sample text ran
+together with no gap). Rather than ship a known-bad width, wrote
+fix_nlepo_003_datefields.py to correct all three fields (Day included, the
+root cause) to the exact pixel-scanned underline widths with no padding:
+Day 52.0pt, Month 95.75pt, Year 71.75pt, leaving real printed gaps between
+them. Applied, verified, re-rendered -- clean (geometry-only, 5715->5717
+fields for the 2 additions, then a same-count geometry fix).
+
+### New finding on NLEPO_003 p1 during the full read-through: missing
+Respondent D.O.B. field
+Applicant D.O.B. is fielded (id 1750798505004); the identical Respondent
+D.O.B. blank two rows below has no field at all (bare underscore line in
+the render). get_text('words') and get_drawings() find nothing (same
+lossy-extraction pattern as item 2(b)); confirmed via pixel-darkness row
+scan: true underline x=385.2-520.8 at y=247-248. Added a new field
+(add_nlepo_003_respondent_dob.py) mirroring the Applicant field's width
+(193.35, anchored just after the caption) since nothing prints to its
+right on the page. 5717->5718 fields. Re-rendered p1 clean.
+NLEPO_003: DONE, all 4 pages reviewed and clean (p1 FIX, p2 FIX, p3 OK, p4
+FIX -- see jurat-dates finding below).
+
+### Systemic finding #3: "day of ___, 20__" signing-date fields oversized
+across most of the NLEPO batch
+Found while reviewing NLEPO_002 p1: the "Dated this ___ day of ___, 20___."
+row's 3 fields overlapped each other and the "day"/"20" captions (confirmed
+by geometry: field for the month blank alone overlapped the year field by
+27pt). Grepped every NLEPO PDF for 'SWORN TO'/'Dated this' text and found
+the same defect, in every single instance it appears: NLEPO_002 p1,
+NLEPO_003 p4 (the "SWORN TO (OR AFFIRMED) ... this ___ day of ___, 20__:"
+jurat -- this is what caused the "line struck through 'Province'" look
+noted in the prior handoff; turned out to be the oversized "at" field's
+right edge running under "in the Province", not a y-axis intrusion),
+NLEPO_004 p1, NLEPO_006 p1, NLEPO_007 p2, NLEPO_008 p1 (plus a second,
+unique single-field date blank on the same page, see below), NLEPO_009 p1,
+NLEPO_010 p1, NLEPO_011 p1 (two occurrences: an informational "Order made
+on the ___ day of ___" clause and the usual signing line).
+
+Root cause: the day/month/year TextFields were all generated wider than
+their printed underscore runs, overlapping the next caption word (and, in
+NLEPO_004 and NLEPO_009's "DATED at ___ in the Province..." lines,
+overlapping "in the Province..." by 55-90pt). Every true blank extent was
+read via get_text('rawdict') character-level boxes against the
+*unmodified* base PDF (word-level extraction merges some runs into the
+next caption word with no space, e.g. NLEPO_004's literal token
+"_________________day") -- exact evidence for all 25 fields is in the
+script's docstring. Two scripts: fix_nlepo_jurat_dates.py (NLEPO_002/003,
+6 fields + 1 addition for a second genuinely-missing year blank on
+NLEPO_003 p4 that the old oversized field 043 had been silently swallowing
+whole, next to "20") and fix_nlepo_signing_date_fields.py (the other 7
+forms, 25 fields, extended once more for NLEPO_008's unique single-field
+"(day)(month)(year)" format-hint blank at item... "swear/solemnly affirm
+... on the ___ serve the attached (day)(month)(year)" -- confirmed via
+text extraction that day/month/year are printed BELOW a single blank line
+as format hints, not 3 separate blanks, so this is correctly one field,
+just also oversized, fixed the same way).
+
+All fixes: only x/width changed on existing fields (one narrow exception:
+the new NLEPO_003 p4 year field, a genuine addition). Zero verify_nl
+findings before/after both scripts, idempotent confirmed (both, twice),
+field count moved only for the two additions (5718->5725 total across
+Respondent D.O.B. + jurat-dates additions). Visually re-rendered and
+re-inspected every affected page/row: NLEPO_002 p1, NLEPO_003 p4, NLEPO_004
+p1, NLEPO_006 p1, NLEPO_007 p2, NLEPO_008 p1, NLEPO_009 p1, NLEPO_010 p1,
+NLEPO_011 p1 (both occurrences) -- all clean, fields now stop before the
+next caption with a real gap. Remaining visual "crowding" in these renders
+is exclusively the QA tool's oversized generic sample text ("Jordan A.
+Whitfield") in narrow day/month-name/year fields overflowing past the
+(now correctly-sized) box border -- the established false-positive pattern
+documented throughout this ledger; a realistic value ("15"/"August"/"2026")
+fits with room to spare.
+
+One item deliberately left unfixed, documented: NLEPO_006/007/008/010 each
+have a pre-existing TextField sitting on the printed "Signature of
+Applicant"/"Affiant" line (harmless width-wise, page-bounded, nothing
+prints to its right) but its mere presence runs against the
+signature-lines-stay-bare convention established throughout the whole
+NB/NL corpus. Repair scripts may only delete a field when it's a confirmed
+redundant duplicate (dedupe_nl_fields.py's narrow exception); this isn't a
+duplicate of anything, so it's left untouched and flagged rather than
+forced.
+
+### New finding: NLEPO_012 p1 -- oversized field ran off the page edge, and
+a second field intruded into the line above it
+Full first-time review of NLEPO_012 (never touched by either session-2
+script). "I hereby withdraw my application to ___," field's right edge
+(661.03pt) exceeded the page's own width (595pt) -- fixed to the true
+blank end (507.8, before the comma). The very next field ("which was filed
+on ___.") had its top edge (y=326.44) sitting 3.96pt *above* the bottom of
+the line above it (330.4) with a horizontal range coincident with "my
+application to" -- confirmed visually as a stray line struck through that
+phrase. Row spacing on this page (11.2pt between the two printed lines) is
+tighter than the standard 19.95pt field height, so no y-offset following
+the usual "-1 to -3pt above own caption" convention could avoid intruding
+upward; fixed by setting y flush with the line above's own bottom edge
+(330.4, zero overlap) rather than relative to its own caption. Also
+tightened its width (was overshooting its own blank by 58pt). Script:
+fix_nlepo_012_withdrawal_fields.py, 2 fields, x/y/width only, zero
+verify_nl findings before/after, idempotent, re-rendered clean (no more
+stray line, both fields on-page).
+NLEPO_012: DONE, FIX.
+
+### Full page-by-page pass, remaining forms
+- NLEPO_001 (1 page, never touched by session-2 scripts): FIX. Bottom
+  summary table (APPLICANT:/RESPONDENT:/DOB:/DOB:/POLICE FILE #/COURT
+  LOCATION:) had a drawn 6-cell grid with printed labels and genuinely zero
+  fields anywhere in that y-range -- unlike NBKB_18A's precedent (filled by
+  a THIRD PARTY after the document leaves the app), this table sits
+  directly below the already-fielded TO:/FROM: fax-sender blocks on the
+  same page, filled by the same app user, using data (applicant/respondent
+  name + DOB) the app already captures elsewhere in this same form family.
+  Added 6 TextFields (add_nlepo_001_summary_table.py) sized from the
+  table's drawn cell borders (get_drawings()) and each caption's own text
+  extent, using the same inline label-then-field offset already used
+  elsewhere on this exact page (DATE:/TIME:, Name:/Address:). 5718->5724
+  fields (this ran before the jurat-dates fix). Zero findings, idempotent,
+  re-rendered clean.
+- NLEPO_002 (2 pages): FIX (jurat-dates, above), p2 (Appendix A conditions)
+  OK, all checkboxes/fields correctly placed.
+- NLEPO_003 (4 pages): FIX (Month/Year fields, Respondent D.O.B., jurat
+  widths -- all above). DONE.
+- NLEPO_004 (2 pages): FIX (jurat-dates + "at" blank overlapping "in the
+  Province" by 90pt, above). p2 (Appendix A) OK.
+- NLEPO_005 (1 page, 6 checkboxes reseated by session 2, never rendered):
+  OK. Rendered and reviewed fresh -- all fields/checkboxes correctly
+  placed, no further issues.
+- NLEPO_006 (1 page): FIX (jurat-dates, above). Signature-line field
+  observation documented above, left unfixed.
+- NLEPO_007 (2 pages): FIX (jurat-dates on p2, above; p2's 30-duplicate
+  dedup from session 2 re-confirmed clean). p1 (Application) OK, re-opened
+  per the prior handoff's flag -- clean.
+- NLEPO_008 (1 page): FIX (jurat-dates + the unique single-field
+  "(day)(month)(year)" blank, above). "Publishing it in ___ on Day/Month/
+  Year" clause's session-2 dedup re-confirmed clean (exactly 4 distinct
+  fields, no stacking).
+- NLEPO_009 (1 page): FIX (jurat-dates, above -- this form's variant wraps
+  "this ___ day" mid-blank across two text runs, same defect either way).
+- NLEPO_010 (1 page): FIX (jurat-dates, above). Session-2 dedup (~26
+  duplicate narrative lines) re-confirmed clean.
+- NLEPO_011 (1 page): FIX (jurat-dates, both occurrences, above). DATE:/
+  TIME:/PLACE: table correctly left unfielded -- this info (the review
+  hearing's actual date/time/place) is set by the court/clerk after
+  scheduling, not known to the app user drafting the Notice of Hearing;
+  same rationale as NBKB_18A.
+- NLEPO_012 (1 page): FIX (above). DONE.
+
+## NLEPO (12 forms, 19 pages) -- COMPLETE. Every page reviewed with fresh
+renders this session. Repair scripts (all --check/apply, all verified
+zero-findings + idempotent + re-rendered clean): fix_nlepo_003_datefields.py,
+add_nlepo_003_respondent_dob.py, add_nlepo_001_summary_table.py,
+fix_nlepo_jurat_dates.py, fix_nlepo_signing_date_fields.py,
+fix_nlepo_012_withdrawal_fields.py (plus session 2's seat_nl_checkboxes.py
+and dedupe_nl_fields.py, both re-confirmed by this session's fresh renders
+on every page they touched: NLEPO_002, 003, 004, 005, 006, 007, 008, 009,
+010, 011 checkboxes/dedups all visually clean). One item left
+intentionally unfixed with evidence: pre-existing TextFields on the
+Applicant/Affiant signature line in NLEPO_006/007/008/010 (harmless,
+flagged, not a confirmed duplicate so not eligible for deletion under the
+project's rules). No other unresolved items in NLEPO.
+
+verify_nl.py end-of-session: 96 templates, 413 pages, 5725 fields, 106
+binds, zero findings (5715 session-2 baseline + 10 net field additions:
++2 NLEPO_003 dates, +1 NLEPO_003 Respondent DOB, +6 NLEPO_001 summary
+table, +1 NLEPO_003 p4 year field; jurat-width fixes were geometry-only).
+verify_nb.py end-of-session: unchanged, 48 templates, 242 pages, 4047
+fields, 79 binds, zero findings. `npm run forms:validate-export` (from
+auth-server/) passes.
+
+### NLPC spot-check (NOT a substitute for NLPC's own full pass)
+Per the handoff, cleared the two specific carryover items:
+- NLPC_AF002 p2: rendered and read (previously unread). SWORN TO block is
+  almost entirely unfielded (bare "at ___", "day of ___, 20__," lines) --
+  plausibly a witness/notary-completed jurat rather than app-user-entered;
+  not investigated further, this is NLPC-phase work. "Print adult's name"
+  is fielded. p1 re-confirmed: the session-2 duplicate-Court-File-Number
+  dedup renders clean (exactly one field now).
+- NLPC_SUPPORTING_AFFIDAVIT (7 pages, 7 checkboxes reseated by session 2,
+  never rendered): rendered all 7 pages, read pp1-3 and p7 closely, skimmed
+  pp4-6. No severe structural defects found (nothing off-page, no
+  caption-strikethrough artifacts) -- same established narrow-inline-field
+  sample-text-overflow pattern seen throughout NB/NL, not a new class.
+  Reseated checkboxes render correctly seated. This is a spot-check only,
+  NOT the full page-by-page treatment (narrow inline date fields on pp1-2
+  were not individually geometry-checked the way NLEPO's were) -- do that
+  properly when NLPC's turn comes, don't treat this as done.
+
+Both forms belong to NLPC (34 forms, 61 pages), still NOT STARTED as a
+batch -- only these two carryover items were cleared. NLPC's real
+page-by-page pass, watching for all the defect classes found this session
+(oversized fields running off the page or into the next caption/line, both
+now added to what to check for on every remaining form) starts next.
