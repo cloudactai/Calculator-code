@@ -69,6 +69,40 @@ def words_beside(words, box, side):
     return " ".join(t for _, t in picked)
 
 
+# A role word one printed line above the box still labels it. Newfoundland
+# stacks the options for a party ("APPLICANT" over "CO-APPLICANT") and hangs
+# them off the TOP of the box on five forms, so the word that names the party
+# sits about one line-height above the box's centre instead of on it. Party
+# rows are ~36pt apart, so a window of one line cannot reach the row above:
+# the nearest competing role word on those pages is 33pt away. The window is
+# still required to be unambiguous, and the text it finds is passed through
+# bind_for_role, so ROLE_STOP keeps blocking "SECOND APPLICANT" and
+# "APPLICANT or CO-APPLICANT" exactly as before.
+NEAR_LINE = 13.0
+AMBIGUOUS = 15.0
+
+
+def role_line_beside(words, box):
+    """The nearest printed line to the right of a box, within one line of it."""
+    x0, y0, x1, y1 = box
+    middle = (y0 + y1) / 2.0
+    lines = {}
+    for wx0, wy0, wx1, wy1, text in words:
+        if not (0 <= wx0 - x1 <= REACH):
+            continue
+        lines.setdefault(round((wy0 + wy1) / 2.0, 1), []).append((wx0, text))
+    offsets = sorted(lines, key=lambda c: abs(c - middle))
+    near = [c for c in offsets if abs(c - middle) <= NEAR_LINE]
+    if not near:
+        return ""
+    rest = [c for c in offsets if c not in near]
+    if rest and abs(rest[0] - middle) - abs(near[0] - middle) < AMBIGUOUS:
+        # Another printed line is nearly as close; do not guess between them.
+        if len(near) > 1:
+            return ""
+    return " ".join(t for _, t in sorted(lines[near[0]]))
+
+
 def wanted_binds(doc_id):
     """id -> bind for one template, read off its printed background."""
     pdf = os.path.join(EXPORT, "%s.pdf" % doc_id)
@@ -99,6 +133,9 @@ def wanted_binds(doc_id):
                 if not bind:
                     bind = nl_binds.bind_for_role(
                         words_beside(words, box, "right"))
+                if not bind:
+                    bind = nl_binds.bind_for_role(
+                        role_line_beside(words, box))
                 if not bind:
                     bind = nl_binds.bind_for_caption(left)
                 if bind:
