@@ -78,12 +78,21 @@ def wanted_binds(doc_id):
                 if field["page"] != number or field["type"] == "CheckBox":
                     continue
                 box = rect_of(field)
-                bind = nl_binds.bind_for_role(words_beside(words, box, "right"))
+                left = words_beside(words, box, "left")
+                # The protection-order set captions its party boxes on the
+                # LEFT ("Applicant ______"), so the left word is read first
+                # there. Reading right-first on those forms picks up the NEXT
+                # column's header: NLEPO_001's summary table prints
+                # "APPLICANT: [box] RESPONDENT: [box]" on one row, and the
+                # applicant's box would take the respondent's bind.
+                bind = None
+                if doc_id.startswith("NLEPO_"):
+                    bind = nl_binds.bind_for_role_left(left)
                 if not bind:
-                    left = words_beside(words, box, "left")
+                    bind = nl_binds.bind_for_role(
+                        words_beside(words, box, "right"))
+                if not bind:
                     bind = nl_binds.bind_for_caption(left)
-                    if not bind and doc_id.startswith("NLEPO_"):
-                        bind = nl_binds.bind_for_role_left(left)
                 if bind:
                     out[field["id"]] = bind
     finally:
@@ -118,7 +127,7 @@ def rebind(doc_id, apply_changes):
 
     if apply_changes:
         with open(path, "w") as fh:
-            json.dump(mapping, fh, indent=1)
+            json.dump(mapping, fh, indent=2)
     return added
 
 
