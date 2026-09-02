@@ -679,4 +679,138 @@ zero findings (5725 - 4 cross-type duplicates + 25 additions).
 verify_nb: unchanged, 48/242/4047/79, zero findings.
 `npm run forms:validate-export` passes.
 
-## NLSC (62 forms, 352 pages) -- NOT STARTED. Next.
+## Session 5 (2026-09-01): NLSC batch
+
+Baseline confirmed exact on pickup: verify_nl 96/413/5861/106 zero findings;
+verify_nb 48/242/4047/79 zero findings. The seven modified NLSC JSONs and the
+two untracked scripts from session 4 (`fix_nlsc_seating.py`,
+`drop_nlsc_f4_04a_stray.py`) were present, applied and idempotent, and are
+committed with this session's work.
+
+### FIX: the carried-over open item -- two Settlement Brief fields covering caption
+`field_nlsc_settlement_brief.py` placed "Relationship of the parties" and
+"Place of marriage" with its FILLS rule (start just after the label word, run to
+a right-hand limit). That rule suits the inline "Month:/Day:/Year:" and "$"
+blanks it was written for, but both of these rows are two-column ruled table
+rows whose answer belongs in the right-hand cell. The relationship field started
+at 192.43, one point after the word "parties", and ran straight over the printed
+parenthetical "(eg. married)" (193.49-235.64), hiding it -- `audit_fields.py`
+reported it as `p2 f44 COVERS-TEXT ' (egeg. mamarried)d) '`. The marriage-place
+field started at 154.37, inside the label column, crossing the cell's own left
+rule at 264.41.
+Corrected to the CELLS convention the same script already uses for the
+"Applicant's/Respondent's Full Name" rows on that page (inset 1.0pt from the
+side rules, bottom 0.78pt above the cell's bottom rule). Cross-checked against
+the sibling AcroForm NLSC_F4_03A p6, which prints this identical relationship
+table and whose government widgets sit at x=265.85 w=284.40 and x=265.63
+w=182.49; the cell-derived values land at x=265.89 w=283.55 and x=265.89
+w=184.77 -- within 0.26pt and 2.3pt of the government's own boxes.
+`fix_nlsc_settlement_brief_cells.py` re-seats the two shipped fields; the two
+FILLS entries were moved to CELLS in the main script so a fresh run places them
+correctly too. Zero findings before/after, idempotent, re-rendered: "(eg.
+married)" is visible again and both fields sit inside their value cells.
+`audit_fields.py` over all 62 NLSC forms now reports **0**.
+
+### New instrument: compare every form against the government's own AcroForm
+The decisive fact for this province, which the earlier sessions did not use:
+**sixty of the 62 NLSC forms are built from the Supreme Court's own AcroForm
+widgets, and the staged originals are still on disk** as
+`form-template-export/_incoming_nl/<DOCID>_source.pdf`. (The shipped background
+is that same PDF flattened, so it has no widget layer of its own -- which is why
+this was easy to miss.) That makes the government's widget list ground truth: a
+blank the government fields is one the app should field, and a blank it leaves
+bare is a deliberate omission, not a gap.
+
+This distinction is **not one the eye can make from a render**, and getting it
+wrong in either direction is expensive. Worked example from this session:
+NLSC_F25_03A p4's Part B "Divorce:" row prints a colon and every sibling row in
+the same table carries a description box, so it reads as an obvious omission --
+but the government's widget list has only a checkbox ("DivorceB") on that row
+and no text field. Adding one would have been inventing. It was only the source
+comparison that settled it.
+
+`auth-server/tools/nl-forms/audit_nlsc_vs_source.py` reports both directions
+(DROPPED = a source widget with no field near it; EXTRA = a shipped field with
+no source widget). Matching is positional, not by name, because the build
+reseats every widget and does not carry names into the JSON.
+
+Result over all 62 forms: **10 DROPPED, 136 EXTRA**. All 136 EXTRA are the two
+flat forms (Settlement Brief 131, Undertaking 5), which have no source widgets
+by definition -- so **zero invented fields anywhere in the 60 widget forms**.
+
+### Two more systematic instruments, both derived from the same source widgets
+- **Horizontal geometry (issue class 4, and class 1 horizontally).** Every
+  shipped text field's left and right edge compared against its matched source
+  widget: **0 fields deviate by more than 6pt**, corpus-wide. Class 4 is clear
+  for NLSC; there is no "too narrow for its blank" case to find.
+- **Vertical seating (issue class 9).** Same comparison on the box bottom:
+  n=2601, median 0.00, and 2547 of 2601 within +/-2pt of the government's own
+  widget bottom. The handful of outliers were each adjudicated:
+  * NLSC_F35_03A p2 (-12.61) and the two "Email Address" fields on F4_04A p4 /
+    F5_06A p4 (-4.0/-4.3) are session 4's own deliberate, evidence-backed
+    re-seats (moving a field onto its printed rule, and off a printed note it
+    was overprinting). The government widget was the mis-seated one there.
+  * The eight +5 to +7.6 cases (F17_03A p4, F28_02A p4, F27_02A p4, F31_02A p5,
+    F5_06A p3, F6_02A p5, F34_02A p11/p12, ORDER_SUPPORT_TEMPLATE p9) were
+    measured against their printed rules: every one sits **0.74-0.82pt above its
+    rule**, i.e. correctly seated. The government's widget was simply taller
+    (15-19pt against the 13.3pt standard) and the build's re-seat improved on
+    it. Not defects.
+  Class 9 is clear for the 60 widget forms.
+- **Checkbox seating (issue class 2)** is already gated: `verify_nl.py` fails any
+  checkbox covering no printed ink, NLSC has no `INK_EXEMPT` entries (only
+  NLPC_FORM4/FORM6), and it reports zero findings.
+
+### FIX: six government widgets the build dropped
+`restore_nlsc_dropped_widgets.py`. Of the 10 DROPPED, six are real losses:
+- **NLSC_F10_04A p2 (4).** The entire signing jurat -- "SWORN TO or AFFIRMED at
+  ___, this ___ day of ___, 20___" -- rendered with four bare underscore runs
+  and no boxes, while every other NLSC form carrying this block fields it. The
+  government has four widgets sitting exactly on those four runs (their rects
+  match the four UNCOVERED runs `audit_anchors.py` reports on that page to
+  within 0.2pt).
+- **NLSC_F23_01A p3 (2).** The same block in its "DATED at" spelling, shipped
+  half-fielded: the day and year survived the build, the place and month did
+  not. The two survivors give the repair its own check -- the restored fields
+  sit on the same printed rule, so they must come out at the same y=658.20, and
+  they do.
+Geometry is not chosen: each field goes through the exact transform the build
+applied to its siblings, using the build's own shared module
+(`tools/acroform_seat.py`): x = widget.x0, width = widget.width * SCALE,
+height = STD_LINE * SCALE = 19.95, y = widget.y1 - STD_LINE, then re-seated by
+`page_geom.seat_rule`. These particular blanks are typed underscore runs rather
+than drawn rules, so `seat_rule` finds nothing; where the row already carries
+surviving fields the script adopts their y, because they sit on the one
+underscore baseline the row prints and are better evidence than the government
+rectangle -- which is not always self-consistent (F23_01A's "DATED at" widget
+bottom is 0.58pt above its three row-mates' even though all four blanks share a
+single baseline).
+5861 -> 5867. Zero findings before/after, idempotent (second run adds 0), both
+pages re-rendered and re-inspected: the jurats now match their correct sibling
+forms (F23_02A p5, F23_05A p5) exactly.
+
+### Deliberately NOT restored, with evidence (the other 4 DROPPED)
+- `NLSC_F4_03A p9 "Check this box to dec_2"`, rect y 796.0-802.3 on a 792pt
+  page: the widget lies **entirely below the sheet**.
+  `acroform_seat.drop_offpage_fields` removed it correctly; restoring it would
+  put an unreachable control off the printed page.
+- `NLSC_F4_03A p19 "the Lawyer for22"`, `NLSC_F4_04A p17 "the Lawyer for22"`,
+  `NLSC_F4_04A p18 "the Lawyer for222"`: each sits on the printed "Signature of
+  Applicant" / "Signature of Co-Applicant" rule. Signature rules are left bare
+  throughout the whole NB/NL corpus, so these stay bare. (Note this is the same
+  judgement as the NLEPO_006/007/008/010 item, inverted: there, pre-existing
+  signature fields were left in place rather than deleted; here, absent ones are
+  left absent. Both times: do not churn signature lines.)
+
+### FOR COURT USE ONLY triage (carried over from the session-4 handoff, confirmed)
+Of 326 uncovered underscore runs, 256 are the "Filed at ___, Newfoundland and
+Labrador, this ___ day of ___, 20___" box plus its Registry Clerk rule, repeated
+on every form's first page, and ~25 more are the HEARING DATE / Location /
+Address / Date / Time panels. Every one of these panels is headed **FOR COURT
+USE ONLY**, so they are correctly bare (same rationale as NLEPO_011: the court
+fills them after filing/scheduling). Spot-confirmed by reading the panels on
+F16_03A p2, F17_03A p3, F18_03A p3/p4, F19_02A p3, F23_01A p3, F26_03A p2.
+The remaining non-panel runs were each opened; the only two real gaps in the set
+were F10_04A p2 and F23_01A p3, both fixed above.
+
+## NLSC (62 forms, 352 pages) -- IN PROGRESS -- page-by-page ledger below.
