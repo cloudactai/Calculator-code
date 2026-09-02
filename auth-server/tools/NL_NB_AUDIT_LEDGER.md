@@ -1024,7 +1024,7 @@ it without excluding underscores.
 - **ORDER_OTHER_THAN_SUPPORT_TEMPLATE** p3-p6: OK. Form COMPLETE.
 - **ORDER_FOAEAA_ESTABLISH_OR_VARY_SUPPORT** p4, p5, p8: OK. The 70-field and
   74-field federal-tax-form tables are fully and correctly fielded.
-- **F38_04A** p2: FIX (applicant bind, above); p1 OK.
+- **F38_04A** p2: FIX (applicant bind, above). p1 was NOT opened this session.
 
 ## NLSC (62 forms, 352 pages) -- STILL IN PROGRESS at end of session 6
 
@@ -1046,14 +1046,16 @@ rather than by sampling:
 | binds (new) | 0 | every bind read against its printed caption (above) |
 | backgrounds (new) | 0 | all 144 NL+NB sources re-flattened and diffed (above) |
 
-**The visual page-by-page sweep is the only thing still outstanding.** It stands
-at roughly 205 of 352 pages. What remains, and it is genuinely only this:
+**The visual page-by-page sweep is the only thing still outstanding.** Counted
+exactly: **208 of 352 pages have been opened as a render and read; 144 have
+not** (127 of those carry fields, 17 are instruction sheets classified by their
+own printed text but never opened as an image). What remains:
 
 - **F28_02A** p3, p4, p5
 - **F29_02A** p3, p4, p5, p6
 - **F31_02A** p3, p4, p5
 - **F34_02B** p2-p8
-- **F38_04A** p3-p9
+- **F38_04A** p1, p3-p9
 - **ORDER_FOAEAA_ESTABLISH_OR_VARY_SUPPORT** p2, p3, p6, p7, p9, p10, p11
 - **F4_03A** p3-p20   (18)
 - **F4_04A** p2-p20   (19)
