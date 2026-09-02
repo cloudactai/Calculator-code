@@ -106,8 +106,18 @@ def bind_for_role_left(left_text):
 
 
 def bind_for_caption(left_text):
-    """The bind for a box from the caption printed to its left."""
-    text = normalise(left_text)
+    """The bind for a box from the caption printed to its left.
+
+    Underscores are dropped here and nowhere else. A run of them is the blank
+    itself rather than part of the caption, and three Provincial Court forms
+    emit it glued to the word that names the box ("No.____________"), hiding
+    that word from a caption match their sixteen siblings make. Roles are read
+    by a different path and are deliberately left alone: on the protection
+    orders a party row prints two blanks ("BETWEEN ___ Applicant ___"), and
+    stripping underscores there starts matching the second blank -- the date of
+    birth -- as if it were the name.
+    """
+    text = normalise(re.sub(r"_{2,}", " ", left_text or ""))
     for pattern, bind in CAPTION_LEFT:
         if pattern.match(text):
             return bind

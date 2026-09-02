@@ -62,8 +62,12 @@ def words_beside(words, box, side):
             picked.append((wx0, text))
         elif side == "left" and 0 <= x0 - wx1 <= REACH:
             picked.append((wx0, text))
+        elif side == "left-glued" and (
+                0 <= x0 - wx1 <= REACH
+                or (wx0 < x0 <= wx1 and x0 - wx0 <= REACH and "__" in text)):
+            picked.append((wx0, text))
     picked.sort()
-    if side == "left":
+    if side.startswith("left"):
         # Nearest run of words on the left, in reading order.
         return " ".join(t for _, t in picked)
     return " ".join(t for _, t in picked)
@@ -137,7 +141,11 @@ def wanted_binds(doc_id):
                     bind = nl_binds.bind_for_role(
                         role_line_beside(words, box))
                 if not bind:
-                    bind = nl_binds.bind_for_caption(left)
+                    # The caption lookup, and only it, also reads a word that
+                    # starts left of the box but runs into it -- that is a
+                    # caption glued to its own underscore run.
+                    bind = nl_binds.bind_for_caption(
+                        words_beside(words, box, "left-glued"))
                 if bind:
                     out[field["id"]] = bind
     finally:
@@ -175,8 +183,9 @@ def rebind(doc_id, apply_changes):
         # 2-space files, and imposing either one rewrites every line of the
         # ones that use the other, burying a two-line bind change in a
         # thousand-line reformat.
+        indent = indent_of(path)   # before the open() below truncates it
         with open(path, "w") as fh:
-            json.dump(mapping, fh, indent=indent_of(path))
+            json.dump(mapping, fh, indent=indent)
     return added
 
 
