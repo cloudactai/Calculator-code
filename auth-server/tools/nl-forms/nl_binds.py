@@ -55,8 +55,18 @@ ROLE_STOP = re.compile(r"\b(second|co-?applicant|co-?respondent|lawyer|solicitor
                        r"counsel|applicant's|respondent's)\b")
 
 
+# Newfoundland draws its option squares with a symbol font, so a tick box in
+# front of a role word extracts as a Unicode private-use character (U+F0A8 for
+# the hollow square) rather than as nothing at all. It is decoration exactly
+# like the brackets stripped beside it -- the printed page reads "☐ APPLICANT"
+# -- but left in place it stops "^applicant$" matching on eight forms whose
+# style of cause is otherwise identical to the forty-two that do bind.
+PRIVATE_USE = re.compile(r"[\ue000-\uf8ff]")
+
+
 def normalise(text):
-    text = re.sub(r"[\[\]]", " ", (text or "").replace("’", "'"))
+    text = PRIVATE_USE.sub(" ", text or "")
+    text = re.sub(r"[\[\]]", " ", text.replace("’", "'"))
     return re.sub(r"\s+", " ", text).strip().lower().rstrip(":.")
 
 
