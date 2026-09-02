@@ -950,3 +950,74 @@ mapping JSON is never opened, so no field moved. Asserted in the script and
 confirmed by re-render. `bc_pipeline.flatten_background` itself is deliberately
 left alone: it is shared by eight provinces and no other page in scope is
 affected.
+
+### NLSC page-by-page ledger, session 6 (in progress)
+Every page below was opened as a fresh `render_review.py --views combined` PNG
+and read. Forms carried over from the session-5 handoff as already reviewed are
+not repeated here.
+
+- **F27_02A** p1, p2: OK (both are instruction sheets -- this form carries two,
+  "How to Request" and "How to Respond"). p5: OK. Form COMPLETE.
+- **F34_02A** p2-p7, p9-p13: OK. Form COMPLETE (p1/p8 were already done).
+  * p4 "Reason or further details:" prints at the very bottom with no box --
+    checked against the source: the government's last widget on that page ends
+    18pt above the caption, and the answer box is the first field on p5. Correct.
+  * p6 "Support Enforcement" renders a bare tick glyph where every sibling
+    section has a field. The government publishes exactly three checkboxes on
+    that page and we ship exactly three; the glyph is printed, not a control.
+  * p9 "commencing in 20___" year blank is unfielded. The government's whole
+    page carries one widget, the checkbox. Correctly absent.
+  * p11 "Duration (if applicable)" field covers less than half its printed rule
+    (201.6-351.6 against a rule running to 532.7). The government's own widget
+    is x 201.6-351.6 -- identical. A government quirk, reproduced faithfully.
+- **F16A_03A** p1-p6, **F16A_03B** p1-p3, **F16A_03C** p1-p3, **F16A_04A** p1-p7,
+  **F16A_04B** p1-p3, **F16A_04C** p1-p4: OK. All six forms COMPLETE (26 pages).
+  The 64-row federal-tax-form tables on 03A p3 / 04A p4 are fully and correctly
+  fielded, every row's checkbox and "Year(s) requested" cell.
+  * **F16A_04A p6 (ANNEX)**: LEFT. The "(Name of person against whom a support
+    provision is sought or is to be varied)" rule is bare here while the
+    identical ANNEX on F16A_03A p5 fields it. Not our defect: the government's
+    ex parte annex publishes 5 widgets and the inter partes annex 6, and the
+    missing one is exactly this box. Adding it would invent against ground
+    truth, which is the F25_03A "Divorce:" lesson inverted. Documented.
+- **F34_02C** p1, **F40_04A** p1, **F4A_01A** p1, **F6_04A** p1,
+  **F6_06A** p1-p2, **F4_04B** p2, **F7_02A** p2-p3, **F8_03A** p3,
+  **F8_04A** p3, **NOTICE_OF_CHANGE_OF_LAWYER** p1,
+  **NOTICE_OF_INTENTION_TO_ACT_IN_PERSON** p1,
+  **NOTICE_OF_REPRESENTATION_BY_A_LAWYER** p1,
+  **REQUEST_FOR_CERTIFICATE_OF_DIVORCE** p1,
+  **REQUEST_FOR_EARLIER_DATE_OF_EFFECT_FOR_A** p1,
+  **SETTLEMENT_CONFERENCE_SHORT_NOTICE_LIST** p1-p3,
+  **ORDER_BLANK** p1-p3: OK. All COMPLETE.
+  * F6_06A p2 fields its FOR COURT USE ONLY panel (clerk's certification and
+    date). That runs against the corpus convention of leaving those panels bare
+    -- but the government fields this one, and 0 EXTRA/0 DROPPED confirms we
+    match it exactly. NLSC is internally inconsistent here; we follow the
+    government form by form rather than imposing a rule.
+  * REQUEST_FOR_CERTIFICATE_OF_DIVORCE p1 "Court File No. (if known)" is
+    unbound -- see the bind section above for why.
+- **SUBPOENA** p1: FIX (background re-flattened, above). Re-rendered and
+  re-read: the header and footer now read in full and no field moved. The
+  "DATED at ___ ... this ___ day of ___" block and the Registrar rule at the
+  foot are correctly bare -- the government publishes no widget below y=600 on
+  this page; the Registrar issues and dates it. Form COMPLETE.
+- **ORDER_SUPPORT_TEMPLATE** p2-p6, p8, p9: OK. Form COMPLETE (p1 instructions,
+  p7/p10 already done). p4's "To be paid:" field stops short of its printed
+  rule, matching the government widget exactly -- same quirk as F34_02A p11.
+- **ORDER_FOAEAA_ENFORCE_SUPPORT** p2-p4, **ORDER_FOAEAA_ENFORCE_PARENTING_OR_CONTACT**
+  p2-p4: OK. Both COMPLETE. (The printed "1. 1." double numbering on the
+  parenting form's p3 is in the government's own page.)
+- **ORDER_OTHER_THAN_SUPPORT_TEMPLATE** p2: OK.
+
+### Systematic result: caption overlap (issue class 1) is zero for NLSC
+Measured properly for the first time on this batch: for every non-checkbox
+field, every printed character whose baseline falls in the 14pt band above the
+field's top, restricted to alphanumerics and compared against the character's
+own ink box. **0 fields intrude even 0.5pt into a printed letter body**, on any
+of the 352 pages. The "line struck through the caption" look that recurs
+throughout these renders is the field's top border resting exactly on the
+caption's baseline, which is what a box seated on its own rule must look like.
+An earlier run that included punctuation reported 356 hits over 2pt; every one
+was an underscore character -- the field's own printed blank, whose ink sits
+below the baseline by definition. Do not re-open this class, and do not measure
+it without excluding underscores.
