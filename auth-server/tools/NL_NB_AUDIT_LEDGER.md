@@ -814,3 +814,139 @@ The remaining non-panel runs were each opened; the only two real gaps in the set
 were F10_04A p2 and F23_01A p3, both fixed above.
 
 ## NLSC (62 forms, 352 pages) -- IN PROGRESS -- page-by-page ledger below.
+
+## Session 6 (2026-09-02): NLSC page-by-page sweep + corpus-wide bind and
+## background work
+
+Baseline confirmed exact on pickup: verify_nl 96/413/5867/106 zero findings;
+verify_nb 48/242/4047/79 zero findings; `npm run forms:validate-export` passes;
+working tree clean on branch nl-nb-form-push-20260901 at 7f5f864.
+
+### CLOSED: the two detector backlogs the session-5 handoff left open
+`audit_drawn_rules.py` (2339 hits) had never been worked through and
+`audit_pixel_rules.py` had not been run on NLSC at all. Both are now triaged to
+zero, and not by sampling.
+
+Ran the pixel audit over all 62 NLSC forms (944 hits), then cross-referenced
+**every** hit from both detectors against the government's own AcroForm widget
+layer in `_incoming_nl/<DOCID>_source.pdf`. The test that settles a hit is
+whether a government widget *sits on* that rule -- its bottom edge within 4pt
+and sharing >40% of the rule's length:
+
+* **0 of 3283 hits** have a government widget seated on them. Not one uncovered
+  rule anywhere in the 60 widget forms is a blank the government fields.
+* The 59 hits in the two flat forms (SETTLEMENT_CONFERENCE_BRIEF 56,
+  UNDERTAKING 3, counting both detectors) all fall in the header band
+  (y 111-210): the coat of arms and the FOR COURT USE ONLY panel.
+
+A loose first cut (any widget crossing the rule vertically) reported 201
+"suspects"; every one is a ruled table cell whose widget sits *inside* the
+border rather than on it. That is the same conclusion session 5 reached by
+sampling F10_02A's 181 hits, now established for the whole list.
+`audit_nlsc_vs_source.py` re-run and unchanged: **4 DROPPED** (the four
+adjudicated in session 5 -- one off-page, three on signature rules) and 136
+EXTRA, all in the two flat forms. Zero invented, zero missing.
+
+### Correction to session 5's class-6 note
+The handoff said 61 zero-field pages, "all page-1 instruction sheets except
+four". There are **24** non-page-1 zero-field pages, and the correct count of
+substantive ones is **five**, not four. Classified all 61 by their own printed
+text: 56 carry "Instructions" or "REMOVE THIS PAGE BEFORE FILING" in the page
+body (NLSC forms routinely carry two instruction sheets, not one). The five
+substantive ones: F34_02A p8 and ORDER_SUPPORT_TEMPLATE p7 (printed
+Recalculation notices), ORDER_OTHER_THAN_SUPPORT_TEMPLATE p7 and
+ORDER_SUPPORT_TEMPLATE p10 (FOR COURT USE ONLY "Order Issued at" panels), and
+the one session 5 missed -- **F18_03A p4**, a FOR COURT USE ONLY / HEARING DATE
+panel. Checked against the source: the government publishes **zero widgets** on
+that page, so it is correctly bare.
+
+### FIX: the bind class, audited corpus-wide for the first time
+The handoff named "a bind naming the wrong column" as a defect the detectors
+cannot see. Nothing had ever checked the binds against the printed page, so
+every bind in the NL corpus was read against the words printed beside its box.
+Four separate defects came out of it; all fixes went through the project's own
+binder, `rebind_nl_forms.py`, which writes only the `bind` key and asserts every
+other key byte-identical first. **Before each apply, the changed matcher was
+required to reproduce every pre-existing bind exactly** -- that check is what
+caught the over-reach described below.
+
+1. **`rebind_nl_forms.py` had never been re-run after sessions 3 and 5 added
+   fields**, so four party-name boxes shipped unbound (NLEPO_001's summary
+   table, SETTLEMENT_CONFERENCE_BRIEF's style of cause). Running it exposed a
+   **wrong-column bug**: it reads the role word to the RIGHT of a box first, but
+   NLEPO captions its party boxes on the LEFT, and NLEPO_001's table prints
+   "APPLICANT: [box] RESPONDENT: [box]" on one row -- so the applicant's box
+   took `respondent.fullLegalName`. Left is now read first for NLEPO_ docs, as
+   `nl_binds.py`'s own documented convention for that set requires. 106 -> 110.
+2. **A symbol-font tick glyph blocked eight styles of cause.** Newfoundland
+   draws its option squares in a symbol font, so a box printed in front of a
+   role word extracts as U+F0A8; the page reads "[] APPLICANT" but the text
+   reads "APPLICANT", which the anchored `^applicant$` cannot match.
+   Eight forms otherwise identical to the forty-two that bind shipped with both
+   party boxes unbound: F34_02A, F34_02B, ORDER_BLANK, the three
+   ORDER_FOAEAA_* and both ORDER_*_TEMPLATE. `normalise()` already strips
+   brackets as decoration; private-use glyphs now go with them. 110 -> 126,
+   each verified against its own printed line.
+3. **F38_04A p2** shipped with RESPONDENT bound and APPLICANT not, on a page
+   whose own p1 and p7 bind both -- the government sets the label 11.6pt above
+   the box there. Added a fallback that accepts the nearest printed line to the
+   right within one line-height, guarded three ways (13pt window against ~36pt
+   row pitch; refuses when two lines are nearly equally close; still passes
+   through ROLE_STOP). 126 -> 127. The guard earns its keep: F4A_01A and the
+   three NOTICE_OF_* forms also print APPLICANT a line above their box, but
+   their box's OWN line reads "CO-APPLICANT", and the fallback correctly
+   declines all eight rather than choosing between the roles.
+4. **A caption glued to its own blank** hid three Provincial Court binds.
+   NLPC_FORM5, SCHEDULE_B and SUPPORTING_AFFIDAVIT emit one word,
+   "No.____________________", that starts left of the box and ends inside it, so
+   the caption degraded to "court file" while sixteen siblings read
+   "court file no." and bind. The caption reader -- and only it -- now accepts
+   such a word and strips the underscores. 127 -> 130.
+
+   **An earlier, broader version of this was wrong and was reverted.** Stripping
+   underscores inside `normalise()` for every path proposed 36 further binds
+   across nine NLEPO forms: those pages print two blanks per party row
+   ("BETWEEN ___ Applicant ___"), and with the underscores gone the reader began
+   matching the SECOND blank -- the date of birth -- as the party's name. Kept
+   strictly to the caption path.
+
+**Left unbound deliberately, with evidence** (each needs a decision, not a
+measurement): the six "APPLICANT or CO-APPLICANT" rows on F26_02A, F26_03A and
+F40_04A, and the eight rows on F4A_01A, NOTICE_OF_CHANGE_OF_LAWYER,
+NOTICE_OF_INTENTION_TO_ACT_IN_PERSON and NOTICE_OF_REPRESENTATION_BY_A_LAWYER
+whose own line reads "CO-APPLICANT" -- `ROLE_STOP` blocks co-applicant on
+purpose, and which of the two roles a co-applicant box holds is not something
+the printed page decides. Also NLSC_REQUEST_FOR_CERTIFICATE_OF_DIVORCE p1
+"Court File No. (if known)": the caption is right but "Court" sits 94pt to the
+box's left, just past the binder's 90pt REACH, and widening that corpus-wide for
+one field is not a trade worth making.
+
+Also fixed in the binder: it wrote JSON at `indent=1` regardless of the file's
+own format, so a two-line bind change rewrote every line of a 2-space file. It
+now preserves each file's indent -- and the first attempt at that had the indent
+read *after* `open(path, "w")` had already truncated the file, which is why
+NLPC_SUPPORTING_AFFIDAVIT briefly reformatted. Both corrected; diffs are now the
+bind lines only.
+
+### FIX: NLSC_SUBPOENA shipped with its header and footer truncated
+Found by reading the rendered page -- no detector in `tools/review` looks at the
+printed page's own text. `bc_pipeline.flatten_background` saves the
+widget-stripped source with `clean=True`, asking MuPDF to rewrite every content
+stream. On this one page the rewrite re-emits four runs a character at a time
+with the wrong advance widths, so each overruns and the tail is dropped:
+
+    shipped:  Form 46.23A(ru        Court File No.
+              Rules of the Supre    Page 1     Form Last Updated: F
+    source:   Form 46.23A(rule 46.23(1))   Court File No. __________
+              Rules of the Supreme Court, 1986   Page 1 of 1
+              Form Last Updated: February 21, 2018
+
+Scope settled by measurement rather than assumption: **all 144 staged NL and NB
+sources were re-flattened without `clean` and diffed against what shipped**, and
+this is the only page in either province that lost any text.
+`fix_nlsc_subpoena_background.py` re-flattens this one file without `clean` and
+touches nothing else -- same page count, same 612x792 box, zero widgets, and the
+mapping JSON is never opened, so no field moved. Asserted in the script and
+confirmed by re-render. `bc_pipeline.flatten_background` itself is deliberately
+left alone: it is shared by eight provinces and no other page in scope is
+affected.
