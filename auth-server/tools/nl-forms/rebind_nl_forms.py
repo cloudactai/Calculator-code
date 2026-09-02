@@ -35,6 +35,14 @@ REACH = 90.0
 LINE_FRAC = 0.5
 
 
+def indent_of(path):
+    """The indent the file on disk already uses, defaulting to 1."""
+    with open(path) as fh:
+        fh.readline()
+        second = fh.readline()
+    return (len(second) - len(second.lstrip(" "))) or 1
+
+
 def rect_of(field):
     return (field["x"], field["y"],
             field["x"] + field["width"] / 1.5,
@@ -126,8 +134,12 @@ def rebind(doc_id, apply_changes):
                 "%s: %s changed on %s" % (doc_id, key, old.get("id")))
 
     if apply_changes:
+        # Keep the file's own indent -- the NL export is a mix of 1- and
+        # 2-space files, and imposing either one rewrites every line of the
+        # ones that use the other, burying a two-line bind change in a
+        # thousand-line reformat.
         with open(path, "w") as fh:
-            json.dump(mapping, fh, indent=2)
+            json.dump(mapping, fh, indent=indent_of(path))
     return added
 
 
