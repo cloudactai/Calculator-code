@@ -191,15 +191,20 @@ FILLS = [
     (3, 705.5, "Employer:", 0, 539.64, "Respondent employment -- Name of Employer"),
     (3, 723.7, "(month/day/year):", 0, 539.64, "Respondent employment -- since"),
     (3, 742.6, "Achieved:", 0, 539.64, "Respondent employment -- Level of Education"),
-
-    (2, 592.2, "parties", 0, 550.44, "Relationship of the parties"),
-    (2, 647.7, "marriage", 0, 451.66, "Place of marriage"),
 ]
 
 # Whole ruled cells to fill: (page, x0, y0, x1, y1, note)
 CELLS = [
     (2, 206.09, 431.83, 539.64, 457.51, "Applicant's Full Name"),
     (2, 206.09, 475.99, 539.64, 501.67, "Respondent's Full Name"),
+    # Two-column ruled rows: the answer belongs in the right-hand cell, not
+    # inline after the label. Placing these with the FILLS rule ran the
+    # relationship field straight over the printed "(eg. married)" and started
+    # the marriage-place field inside the label column -- corrected here and,
+    # for the fields that already shipped, by
+    # fix_nlsc_settlement_brief_cells.py.
+    (2, 264.89, 576.31, 550.44, 594.94, "Relationship of the parties"),
+    (2, 264.89, 631.90, 451.66, 650.38, "Place of marriage"),
 ]
 
 # Children's tables on p3 -- every empty cell in the two 2-column grids.
