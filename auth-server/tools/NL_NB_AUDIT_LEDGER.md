@@ -1021,3 +1021,90 @@ An earlier run that included punctuation reported 356 hits over 2pt; every one
 was an underscore character -- the field's own printed blank, whose ink sits
 below the baseline by definition. Do not re-open this class, and do not measure
 it without excluding underscores.
+- **ORDER_OTHER_THAN_SUPPORT_TEMPLATE** p3-p6: OK. Form COMPLETE.
+- **ORDER_FOAEAA_ESTABLISH_OR_VARY_SUPPORT** p4, p5, p8: OK. The 70-field and
+  74-field federal-tax-form tables are fully and correctly fielded.
+- **F38_04A** p2: FIX (applicant bind, above); p1 OK.
+
+## NLSC (62 forms, 352 pages) -- STILL IN PROGRESS at end of session 6
+
+### Where session 6 left off, exactly
+
+**All nine issue classes are now closed for NLSC corpus-wide**, by measurement
+rather than by sampling:
+| Class | Status | Evidence |
+| --- | --- | --- |
+| 1 caption overlap | **0** | per-character baseline scan, all 352 pages (above) |
+| 2 checkbox seating | 0 | verify_nl gate, no INK_EXEMPT in NLSC |
+| 3 narrative prompts | 0 | session 5, 79 candidates resolved |
+| 4 too narrow | 0 | every text field vs its government widget, +/-6pt |
+| 5 signature rules | 0 | caption scan |
+| 6 blank pages | 0 | all 61 classified (5 substantive, corrected this session) |
+| 7 missing/invented | 0 | source-widget audit: 4 DROPPED all adjudicated, 0 EXTRA |
+| 8 stacked duplicates | 0 | audit_fields overlap check |
+| 9 seating | 0 | every field's bottom vs its government widget |
+| binds (new) | 0 | every bind read against its printed caption (above) |
+| backgrounds (new) | 0 | all 144 NL+NB sources re-flattened and diffed (above) |
+
+**The visual page-by-page sweep is the only thing still outstanding.** It stands
+at roughly 205 of 352 pages. What remains, and it is genuinely only this:
+
+- **F28_02A** p3, p4, p5
+- **F29_02A** p3, p4, p5, p6
+- **F31_02A** p3, p4, p5
+- **F34_02B** p2-p8
+- **F38_04A** p3-p9
+- **ORDER_FOAEAA_ESTABLISH_OR_VARY_SUPPORT** p2, p3, p6, p7, p9, p10, p11
+- **F4_03A** p3-p20   (18)
+- **F4_04A** p2-p20   (19)
+- **F5_05A** p3-p22   (20)
+- **F5_06A** p2-p22   (21)
+- **F6_02A** p4-p20   (17)
+
+The last five are the Originating Application family and its variants -- the
+largest forms in the province and structurally near-identical to one another,
+which is the reason to read them side by side rather than in isolation.
+
+All 352 renders are current under `form-template-export/_review/`; the ten forms
+this session changed were re-rendered after the change. Re-render anything you
+touch.
+
+**What the sweep is looking for now.** Every mechanical class is closed and the
+60 widget forms are provably faithful to the government's own layout, so a
+detector cannot help here. Read for what only reading catches: a table correct
+field-by-field but wrong as a set, a bind naming the wrong column (the pattern
+that produced four fixes this session -- check any form whose style of cause is
+unusual), and printed text that is wrong on the page (the Subpoena defect, which
+no tool in `tools/review` looks for). Established false positives that must NOT
+be re-investigated: the render's generic "Jordan A. Whitfield" sample
+overflowing narrow date/amount fields; a field's top border sitting on the
+caption's baseline (measured at 0pt intrusion corpus-wide); and a field that
+stops short of a printed rule where the government's own widget does the same
+(F34_02A p11, ORDER_SUPPORT_TEMPLATE p4).
+
+### Session 6 verifier state
+verify_nl.py: **96 templates, 413 pages, 5867 fields, 130 binds, zero findings**
+(5867 unchanged all session -- no field was added, moved or deleted; 106 -> 130
+binds across four fixes).
+verify_nb.py: **48 templates, 242 pages, 4047 fields, 79 binds, zero findings**
+(untouched all session).
+`npm run forms:validate-export`: passes.
+Every repair script re-run with `--check` after applying: all report nothing to
+change.
+
+### Unresolved items carried forward (all documented, none accidental)
+1. **14 party-name boxes deliberately unbound** -- the "APPLICANT or
+   CO-APPLICANT" rows on F26_02A, F26_03A, F40_04A, and the rows whose own line
+   reads "CO-APPLICANT" on F4A_01A, NOTICE_OF_CHANGE_OF_LAWYER,
+   NOTICE_OF_INTENTION_TO_ACT_IN_PERSON, NOTICE_OF_REPRESENTATION_BY_A_LAWYER.
+   Needs a decision on co-applicant semantics, not a measurement.
+2. **NLSC_REQUEST_FOR_CERTIFICATE_OF_DIVORCE p1 "Court File No. (if known)"** --
+   unbound; "Court" sits 94pt left, past the binder's 90pt REACH.
+3. **F16A_04A p6** -- the government's ex parte ANNEX omits a box its inter
+   partes twin has. Faithful to source; flagged, not invented.
+4. **F4_03A p9/p19, F4_04A p17/p18** -- the four DROPPED widgets from session 5,
+   still correctly absent (one off-page, three on signature rules).
+5. **`bc_pipeline.flatten_background` still passes `clean=True`** -- the root
+   cause of the Subpoena defect. Left alone deliberately: shared by eight
+   provinces, all of which would need re-verifying. No other page in NL or NB is
+   affected (measured). Worth fixing when someone owns a cross-province pass.
