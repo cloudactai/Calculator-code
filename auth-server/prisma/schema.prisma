@@ -15,24 +15,24 @@ datasource db {
 }
 
 model User {
-  id                         String    @id @default(uuid())
-  email                      String    @unique
-  name                       String?
-  jobTitle                   String?
-  profilePic                 String?   // optional base64 data URL for an avatar
-  passwordHash               String
+  id           String  @id @default(uuid())
+  email        String  @unique
+  name         String?
+  jobTitle     String?
+  profilePic   String? // optional base64 data URL for an avatar
+  passwordHash String
 
   // Personal profile fields edited on the Profile page.
-  firstName                  String?
-  lastName                   String?
-  phoneNumber                String?
-  description                String?   // the free-text "Job Title" on the profile page
-  signature                  String?   // optional base64 data URL for a signature image
+  firstName       String?
+  lastName        String?
+  phoneNumber     String?
+  description     String? // the free-text "Job Title" on the profile page
+  signature       String? // optional base64 data URL for a signature image
   // Mailing address (kept separate from the hard-coded calculator region so
   // editing it here never affects family-law calculations).
-  street                     String?
-  addressProvince            String?
-  country                    String?
+  street          String?
+  addressProvince String?
+  country         String?
 
   // Email verification
   emailVerifiedAt            DateTime?
@@ -40,11 +40,11 @@ model User {
   emailVerificationExpiresAt DateTime?
 
   // Password reset
-  resetPasswordTokenHash     String?
-  resetPasswordExpiresAt     DateTime?
+  resetPasswordTokenHash String?
+  resetPasswordExpiresAt DateTime?
 
-  createdAt                  DateTime  @default(now())
-  updatedAt                  DateTime  @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   matters                    Matter[]
   savedCalculations          SavedCalculation[]
@@ -72,7 +72,7 @@ model LawyerContact {
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
-  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
 }
@@ -126,7 +126,7 @@ model MatterRecord {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  matter    Matter   @relation(fields: [matterId], references: [id], onDelete: Cascade)
+  matter Matter @relation(fields: [matterId], references: [id], onDelete: Cascade)
 
   @@unique([matterId, dataType])
 }
@@ -151,8 +151,8 @@ model SavedCalculation {
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 
-  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  matter         Matter?  @relation("MatterCalculations", fields: [matterDbId], references: [id], onDelete: SetNull)
+  user   User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  matter Matter? @relation("MatterCalculations", fields: [matterDbId], references: [id], onDelete: SetNull)
 
   @@unique([userId, label])
   @@index([userId])
@@ -180,7 +180,7 @@ model FormTemplate {
 }
 
 model FormTemplateVersion {
-  id              Int                   @id @default(autoincrement())
+  id              Int                  @id @default(autoincrement())
   templateId      Int
   version         Int
   pdfBytes        Bytes?
@@ -190,9 +190,9 @@ model FormTemplateVersion {
   pdfChecksum     String?
   mappingChecksum String?
   effectiveDate   DateTime?
-  active          Boolean               @default(true)
-  createdAt       DateTime              @default(now())
-  template        FormTemplate          @relation(fields: [templateId], references: [id], onDelete: Cascade)
+  active          Boolean              @default(true)
+  createdAt       DateTime             @default(now())
+  template        FormTemplate         @relation(fields: [templateId], references: [id], onDelete: Cascade)
   documents       MatterFormDocument[]
 
   @@unique([templateId, version])
@@ -200,65 +200,65 @@ model FormTemplateVersion {
 }
 
 model MatterFolder {
-  id              Int                   @id @default(autoincrement())
+  id              Int                       @id @default(autoincrement())
   matterId        Int
   title           String
   normalizedTitle String
   type            String?
-  createdAt       DateTime              @default(now())
-  updatedAt       DateTime              @updatedAt
-  matter              Matter                @relation(fields: [matterId], references: [id], onDelete: Cascade)
-  formDocuments       MatterFormDocument[]
-  agreementDocuments  MatterAgreementDocument[]
+  createdAt       DateTime                  @default(now())
+  updatedAt       DateTime                  @updatedAt
+  matter          Matter                    @relation(fields: [matterId], references: [id], onDelete: Cascade)
+  formDocuments   MatterFormDocument[]
+  agreementDocuments MatterAgreementDocument[]
 
   @@unique([matterId, normalizedTitle])
   @@index([matterId])
 }
 
 model MatterFormDocument {
-  id                Int                 @id @default(autoincrement())
-  matterId          Int
-  folderId          Int?
-  templateVersionId Int
-  displayName       String
-  status            String              @default("OPEN")
-  fieldValues       Json                @default("{}")
-  fieldProvenance   Json                @default("{}")
-  generatedPdf      Bytes?
-  generatedAt       DateTime?
-  generatedPdfRevision Int              @default(0)
-  revision          Int                 @default(1)
-  createdAt         DateTime            @default(now())
-  updatedAt         DateTime            @updatedAt
-  matter            Matter              @relation(fields: [matterId], references: [id], onDelete: Cascade)
-  folder            MatterFolder?       @relation(fields: [folderId], references: [id], onDelete: SetNull)
-  templateVersion   FormTemplateVersion @relation(fields: [templateVersionId], references: [id], onDelete: Restrict)
-  pdfRevisions      MatterFormPdfRevision[]
+  id                   Int                     @id @default(autoincrement())
+  matterId             Int
+  folderId             Int?
+  templateVersionId    Int
+  displayName          String
+  status               String                  @default("OPEN")
+  fieldValues          Json                    @default("{}")
+  fieldProvenance      Json                    @default("{}")
+  generatedPdf         Bytes?
+  generatedAt          DateTime?
+  generatedPdfRevision Int                     @default(0)
+  revision             Int                     @default(1)
+  createdAt            DateTime                @default(now())
+  updatedAt            DateTime                @updatedAt
+  matter               Matter                  @relation(fields: [matterId], references: [id], onDelete: Cascade)
+  folder               MatterFolder?           @relation(fields: [folderId], references: [id], onDelete: SetNull)
+  templateVersion      FormTemplateVersion     @relation(fields: [templateVersionId], references: [id], onDelete: Restrict)
+  pdfRevisions         MatterFormPdfRevision[]
 
   @@index([matterId, folderId])
 }
 
 model MatterFormPdfRevision {
-  id          Int                 @id @default(autoincrement())
-  documentId  Int
-  revision    Int
-  checksum    String
-  pdf         Bytes
-  complete    Boolean             @default(true)
-  createdAt   DateTime            @default(now())
-  document    MatterFormDocument  @relation(fields: [documentId], references: [id], onDelete: Cascade)
-  chunks      MatterFormPdfChunk[]
+  id         Int                  @id @default(autoincrement())
+  documentId Int
+  revision   Int
+  checksum   String
+  pdf        Bytes
+  complete   Boolean              @default(true)
+  createdAt  DateTime             @default(now())
+  document   MatterFormDocument   @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  chunks     MatterFormPdfChunk[]
 
   @@unique([documentId, revision])
   @@index([documentId, createdAt])
 }
 
 model MatterFormPdfChunk {
-  id         Int                    @id @default(autoincrement())
+  id         Int                   @id @default(autoincrement())
   revisionId Int
   position   Int
   pdf        Bytes
-  revision   MatterFormPdfRevision  @relation(fields: [revisionId], references: [id], onDelete: Cascade)
+  revision   MatterFormPdfRevision @relation(fields: [revisionId], references: [id], onDelete: Cascade)
 
   @@unique([revisionId, position])
   @@index([revisionId, position])
@@ -291,20 +291,20 @@ model TaxConstant {
 // input/output data (so the report can be regenerated) and the PDF bytes
 // (for instant download without re-running the calculation).
 model MatterCalculationReport {
-  id               Int      @id @default(autoincrement())
-  userId           String
-  matterId         Int
-  calculationType  String   // "child_support", "spousal_support"
-  taxYear          String?
-  label            String?  // user-friendly name, e.g. "Smith v Jones - Jan 2026"
-  inputData        Json     // calculation inputs (incomes, children, provinces, etc.)
-  resultData       Json     // calculation outputs (amounts, scenario, net payer, etc.)
-  pdfBytes         Bytes?   // the generated PDF report
-  pdfFilename      String?  // original filename for download headers
-  createdAt        DateTime @default(now())
+  id              Int      @id @default(autoincrement())
+  userId          String
+  matterId        Int
+  calculationType String // "child_support", "spousal_support"
+  taxYear         String?
+  label           String? // user-friendly name, e.g. "Smith v Jones - Jan 2026"
+  inputData       Json // calculation inputs (incomes, children, provinces, etc.)
+  resultData      Json // calculation outputs (amounts, scenario, net payer, etc.)
+  pdfBytes        Bytes? // the generated PDF report
+  pdfFilename     String? // original filename for download headers
+  createdAt       DateTime @default(now())
 
-  user             User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  matter           Matter   @relation(fields: [matterId], references: [id], onDelete: Cascade)
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  matter Matter @relation(fields: [matterId], references: [id], onDelete: Cascade)
 
   @@index([userId])
   @@index([matterId])
@@ -337,15 +337,28 @@ model ComputationResult {
 // A drafted agreement (Draft Agreements task). One row per (matter,
 // agreementType) — the chat resumes across visits, so there is exactly one
 // in-progress conversation per agreement type rather than a new row each time.
+//
+// `answers` is the chat-collected fields the agreement chat has gathered so
+// far, keyed by section (see cloudact-ui .../agreementSections.js) — the
+// source of truth for "what the chat already knows". `transcript` is the
+// display-only bubble log rendered as history on resume. Neither is replayed
+// to the model as literal prior turns: buildAgreementContextMessage() derives
+// a fresh primer from live matter data + `answers` on every open, the same
+// reasoning documented in auth-server/src/utils/changeLog.js for why Update
+// Information never keeps its transcript either.
+//
+// Reset Chat (cloudact-ui AgreementChatPanel.jsx) clears `transcript` and
+// `answers` on this row only — never MatterRecord, which this chat never
+// writes to, and never `pdfBytes` once a PDF has been generated on purpose.
 model MatterAgreementDocument {
   id            Int       @id @default(autoincrement())
   userId        String
   matterId      Int
   folderId      Int?
-  agreementType String
+  agreementType String // "separation_agreement" — see AGREEMENT_TYPES registry
   answers       Json      @default("{}")
   transcript    Json      @default("[]")
-  status        String    @default("draft")
+  status        String    @default("draft") // "draft" | "final"
   revision      Int       @default(1)
   pdfBytes      Bytes?
   pdfFilename   String?
@@ -361,3 +374,4 @@ model MatterAgreementDocument {
   @@index([userId])
   @@index([matterId])
 }
+

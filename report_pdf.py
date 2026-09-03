@@ -727,6 +727,23 @@ def _build_terms_of_use_page():
 </div>"""
 
 
+def render_html_to_pdf_bytes(html: str) -> bytes:
+    """
+    Render an already-built HTML string to PDF bytes via xhtml2pdf.
+
+    Used by the Draft Agreements export (POST /agreement-pdf): the browser
+    renders SeparationAgreementDocument.jsx, serializes that HTML with its
+    styles inlined, and this function hands it to the same xhtml2pdf engine
+    the calculation reports use — no second templating system, and the PDF
+    matches what the lawyer saw in the preview pane.
+    """
+    buffer = BytesIO()
+    pisa_status = pisa.CreatePDF(html, dest=buffer)
+    if pisa_status.err:
+        print(f"[report_pdf] xhtml2pdf errors (agreement export): {pisa_status.err}", flush=True)
+    return buffer.getvalue()
+
+
 def generate_unified_report(data: dict) -> str:
     """Generate a unified PDF report (child, spousal, or both)."""
     return generate_spousal_support_report(data)
