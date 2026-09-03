@@ -30,9 +30,15 @@ almost every other feature is reached by opening a matter first.
 | Child support chat panel          | [cloudact-ui/src/components/MatterWorkflow/ChildSupportChatPanel.jsx](cloudact-ui/src/components/MatterWorkflow/ChildSupportChatPanel.jsx)              |
 | Spousal support chat panel        | [cloudact-ui/src/components/MatterWorkflow/SpousalSupportChatPanel.jsx](cloudact-ui/src/components/MatterWorkflow/SpousalSupportChatPanel.jsx)          |
 | Profile summary + documents       | [cloudact-ui/src/components/MatterWorkflow/ProfileSummaryPanel.jsx](cloudact-ui/src/components/MatterWorkflow/ProfileSummaryPanel.jsx)                  |
+| Agreement-type chooser            | [cloudact-ui/src/components/MatterWorkflow/AgreementTypeList.jsx](cloudact-ui/src/components/MatterWorkflow/AgreementTypeList.jsx)                      |
+| Agreement chat + live preview     | [cloudact-ui/src/components/MatterWorkflow/AgreementChatPanel.jsx](cloudact-ui/src/components/MatterWorkflow/AgreementChatPanel.jsx)                    |
+| Live Separation Agreement doc     | [cloudact-ui/src/components/MatterWorkflow/SeparationAgreementDocument.jsx](cloudact-ui/src/components/MatterWorkflow/SeparationAgreementDocument.jsx)  |
+| Agreement data resolver / context | [cloudact-ui/src/components/MatterWorkflow/agreementResolver.js](cloudact-ui/src/components/MatterWorkflow/agreementResolver.js), [agreementContext.js](cloudact-ui/src/components/MatterWorkflow/agreementContext.js), [agreementSections.js](cloudact-ui/src/components/MatterWorkflow/agreementSections.js) |
+| Agreement-type registry           | [cloudact-ui/src/components/MatterWorkflow/agreementTypes.js](cloudact-ui/src/components/MatterWorkflow/agreementTypes.js)                              |
 | Shared chat/context styling       | [cloudact-ui/src/components/MatterWorkflow/MatterWorkflow.css](cloudact-ui/src/components/MatterWorkflow/MatterWorkflow.css)                            |
 | Stored-intake context builder     | [cloudact-ui/src/components/MatterWorkflow/matterIntakeContext.js](cloudact-ui/src/components/MatterWorkflow/matterIntakeContext.js)                    |
 | API service (forms/folders/tasks) | [cloudact-ui/src/services/formsService.js](cloudact-ui/src/services/formsService.js)                                                                    |
+| API service (agreements)          | [cloudact-ui/src/services/agreementsService.js](cloudact-ui/src/services/agreementsService.js)                                                          |
 | Routes                            | [cloudact-ui/src/routes/Routes.jsx](cloudact-ui/src/routes/Routes.jsx), [cloudact-ui/src/routes/Routes.types.ts](cloudact-ui/src/routes/Routes.types.ts) |
 
 Routes involved:
@@ -99,6 +105,8 @@ routing. This keeps the whole matter workflow on one screen with a persistent he
 | `support_type_choice`                 | Child vs Spousal support                  |
 | `child_support` / `spousal_support` | The respective AI chat panels             |
 | `update_information`                  | AI chat that edits values already on file |
+| `agreement_choice`                    | Draft Agreements type chooser (registry)  |
+| `agreement_chat`                      | Agreement chat + live document (split pane) |
 | `profile_summary`                     | "View Information and Documents" screen   |
 
 The header (client name + matter number) is rendered in every view. In a chat view
@@ -134,6 +142,13 @@ different from the database.
 - **update_information** → marks the task in progress, re-reads the full matter record
   (`getMatterData`), and shows `update_information`, the AI chat that changes values
   already on file. This task is never marked completed; see the note further down.
+- **draft_agreements** ("DRAFT AGREEMENTS") → marks the task in progress and shows
+  `agreement_choice`, a chooser rendered from a small registry (`AGREEMENT_TYPES` in
+  [agreementTypes.js](cloudact-ui/src/components/MatterWorkflow/agreementTypes.js)) —
+  one entry today, Separation Agreement. Picking a type re-reads the full matter record
+  (`getMatterData`, same as update_information) and opens `agreement_chat`. Like
+  update_information this task never auto-completes — an agreement can be revised after
+  a first draft. See "Draft Agreements" below.
 
 ### Loading matter data
 
@@ -255,6 +270,93 @@ The Flask base URL comes from `CALCULATOR_API` in
 
 ---
 
+## Draft Agreements
+
+Drafting an agreement is a different shape of problem than filling in a government
+court form: the document has whole sections that appear or disappear (no children →
+no Children/Child-Support/Parenting blocks at all) and free-text fields of
+unpredictable length. The fixed-coordinate Forms engine ([FORMS.md](FORMS.md)) is
+built for a static background PDF with one field per x/y box — the wrong shape for
+that. Draft Agreements renders the agreement as a **live HTML document that mirrors
+the source docx**, conditionally, and exports it with the same `xhtml2pdf` pipeline
+[report_pdf.py](../report_pdf.py) already uses for the calculation reports — one
+templating system, not two.
+
+**Picking a type.** Starting the task opens `AgreementTypeList.jsx`, cards rendered
+from the `AGREEMENT_TYPES` registry in
+[agreementTypes.js](cloudact-ui/src/components/MatterWorkflow/agreementTypes.js).
+Adding a second agreement type later is one registry entry plus one document
+component and one system prompt — nothing in `SingleMatter.jsx`'s routing, the
+chooser, or the persistence layer needs to change.
+
+**The chat + live preview.** `AgreementChatPanel.jsx` is a split-pane view: the chat
+on the left uses the same `mw-chat-*` shell and classes as the other panels (see
+"The chat panels" above), and `SeparationAgreementDocument.jsx` renders live on the
+right, re-rendering on every answer. Behind the scenes:
+
+- `agreementResolver.buildAgreementData()` merges three sources into one object the
+  document and the chat primer both read from: the matter snapshot (parties, dates,
+  children — from `getMatterData`, same as update_information/intake), the matter's
+  saved calculation reports (child/spousal support amounts, read-only), and the
+  chat-collected `answers` blob.
+- **Two field ledger rows are marked "Database (after calculation finalize)"** with
+  the sheet's own comment "Marc to work on saving of result after calc done" — that
+  save-after-calculation work is a separate, in-flight change to
+  `child_support.py`/`spousal_support.py` and is never read from or written to here.
+  `resolveChildSupportFromReport()` reads the matter's most recent `child_support`
+  calculation report instead (a single deterministic Federal Guidelines figure).
+  Spousal support has no equivalent single figure yet — SSAG always returns a
+  low/mid/high range — so it resolves only in the narrow case where the three
+  scenarios already collapse to one number; otherwise the chat asks, and the answer
+  is stored only in `SpousalSupportFallback`, never in `child_support.py` /
+  `spousal_support.py` or their tables.
+- `agreementOutstandingFields()` lists exactly what the chat still needs to ask,
+  driving both the primer sent to `/agreement-chat` and the panel's own "nothing left
+  to ask" welcome state.
+- The Assets/Debts/Matrimonial-Home sections are chat-collected in full for v1: the
+  matter's saved Assets are recorded by category (land, vehicles, bank accounts…),
+  not by which party kept them or whether they're jointly held — the field ledger's
+  own comments flag this as follow-up work on the Assets intake form, not something
+  this feature invents a heuristic around. The read-only `assetsOnFile`/`debtsOnFile`
+  lists are still shown to the agent so the lawyer confirms ownership instead of
+  retyping type and value from memory.
+
+**Resuming, without replaying a stale primer.** Like update_information, the primer
+is a snapshot that goes stale the moment matter data changes — so the conversation is
+never replayed as literal prior turns. Unlike update_information, the conversation
+*does* resume: `MatterAgreementDocument` (see [DATABASE.html](DATABASE.html)) persists
+`answers` (chat-collected fields, keyed by section — the source of truth for "what
+chat already knows") and `transcript` (the display-only bubble log) per
+`(matter, agreementType)`. On open, `buildAgreementContextMessage()` builds a fresh
+primer from live matter data plus the persisted `answers`, and the persisted
+`transcript` renders above the live conversation as read-only history — so the lawyer
+sees a continuous conversation without the model ever re-consuming stale turns.
+**Reset Chat** clears `transcript` and `answers` on that one row only — never
+`MatterRecord` (this chat never writes there), and never a PDF already generated on
+purpose.
+
+**Export.** "Save Draft" persists `answers` + `transcript` only (cheap, frequent —
+fired after every reply). "Generate PDF" serializes the *already-rendered*
+`SeparationAgreementDocument` HTML (styles inlined via an embedded `<style>` tag, so
+it needs no external stylesheet) and posts it to Flask's `POST /agreement-pdf`, which
+hands it to `xhtml2pdf` and returns the PDF bytes — the same HTML the lawyer already
+reviewed on screen, so the export matches the preview exactly. The frontend then PUTs
+those bytes to `PUT /v1/matters/:id/agreements/:type/pdf`
+([agreementRoutes.js](../auth-server/src/routes/agreementRoutes.js)), which files them
+into a per-matter "Separation Agreements" `MatterFolder` the same way form documents
+are organized, and stores them on `MatterAgreementDocument.pdfBytes`.
+
+**Backend chat endpoint.** `POST /agreement-chat` in [app.py](../app.py) is the same
+bounded Anthropic tool-use loop as `/update-chat`, with its own system prompt scoped
+to only the "Chat AI Agent" ledger rows and a `set_agreement_section` tool (patch
+semantics, like `save_matter_section`) in place of it. It reuses
+`should_nudge_intake_reply` from [intake_chat_guard.py](../intake_chat_guard.py)
+rather than reinventing the "promised to save but didn't call the tool" stall guard.
+Like every chat endpoint here it never touches the database itself — it returns
+patches for the authenticated frontend to merge into `answers` and persist.
+
+---
+
 ## The profile summary ("View Information and Documents")
 
 [ProfileSummaryPanel.jsx](cloudact-ui/src/components/MatterWorkflow/ProfileSummaryPanel.jsx)
@@ -281,11 +383,15 @@ ports the old platform's matter-profile page:
 All matter/forms/folders/task calls go through the shared axios instance
 ([cloudact-ui/src/utils/axios.js](cloudact-ui/src/utils/axios.js)) and are handled by
 the auth-server (see [../auth-server/](../auth-server/)); the conversational endpoints
-(`/chat`, `/intake-chat`, `/update-chat`, `/download-report`) are served by the Flask app
-([../app.py](../app.py)). Matter data (`getSingleMatter`, `getSingleMatterData`,
-`getMatterData`, `createMatter`, `updateMatterData`, `patchMatterIntake`) flows through
-the Redux action/selector modules under
-[cloudact-ui/src/utils/Apis/matters/](cloudact-ui/src/utils/Apis/matters/).
+(`/chat`, `/intake-chat`, `/update-chat`, `/agreement-chat`, `/agreement-pdf`,
+`/download-report`) are served by the Flask app ([../app.py](../app.py)). Matter data
+(`getSingleMatter`, `getSingleMatterData`, `getMatterData`, `createMatter`,
+`updateMatterData`, `patchMatterIntake`) flows through the Redux action/selector
+modules under [cloudact-ui/src/utils/Apis/matters/](cloudact-ui/src/utils/Apis/matters/).
+Draft Agreements persistence (`MatterAgreementDocument` — answers, transcript, PDF)
+goes through `agreementsService.js` and
+[agreementRoutes.js](../auth-server/src/routes/agreementRoutes.js) instead, a sibling
+to `calculationReportsRoutes.js`.
 
 ## Common pitfalls
 
@@ -299,3 +405,12 @@ the Redux action/selector modules under
   a deliberate step in `handleIntakeChoice`, not an oversight.
 - **Header fields (financial year, valuation date) live on the matter row**, so the
   header must be reloaded after an intake save.
+- **Draft Agreements never touches `child_support.py` / `spousal_support.py` or their
+  save-after-calculation work.** It only ever *reads* a matter's saved calculation
+  reports; any support figure it can't find there is asked in chat and stored solely
+  in `MatterAgreementDocument.answers` (the `*Fallback` sections), never in a
+  calculator table.
+- **Draft Agreements' chat transcript is not deleted between visits** — only
+  update_information (and the support panels) start fresh every time. Reset Chat is
+  the only thing that clears an agreement's transcript/answers, and it never touches
+  a PDF already generated on purpose.
