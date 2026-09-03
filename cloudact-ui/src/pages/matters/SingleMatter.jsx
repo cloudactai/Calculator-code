@@ -14,6 +14,9 @@ import MatterIntakeChatPanel from "../../components/MatterWorkflow/MatterIntakeC
 import UpdateInformationChatPanel from "../../components/MatterWorkflow/UpdateInformationChatPanel";
 import ProfileSummaryPanel from "../../components/MatterWorkflow/ProfileSummaryPanel";
 import CalculationPdf from "../../components/Matters/Documents/CalculationPdf";
+import AgreementTypeList from "../../components/MatterWorkflow/AgreementTypeList";
+import AgreementChatPanel from "../../components/MatterWorkflow/AgreementChatPanel";
+import { getAgreementType } from "../../components/MatterWorkflow/agreementTypes";
 
 import {
   getSingleMatter,
@@ -52,7 +55,7 @@ const TASK_DEFS = [
   { id: "draft_divorce_docs", label: "DRAFT DIVORCE APPLICATION DOCUMENTS" },
   { id: "review_forms", label: "REVIEW FORMS" },
   { id: "update_information", label: "UPDATE INFORMATION" },
-  { id: "draft_separation", label: "DRAFT SEPARATION AGREEMENT" },
+  { id: "draft_agreements", label: "DRAFT AGREEMENTS" },
   { id: "file_separation", label: "FILE EXECUTED SEPARATION AGREEMENT" },
   { id: "file_support_order", label: "FILE CHILD AND SPOUSAL SUPPORT ORDER" },
   { id: "draft_divorce_order", label: "DRAFT DIVORCE ORDER" },
@@ -88,6 +91,10 @@ const SingleMatter = () => {
   // Same snapshot shape, loaded separately for Update Information so the two
   // chats can never show each other's stale view of the record.
   const [updateMatterData, setUpdateMatterData] = useState(null);
+  // Draft Agreements: which registry entry was chosen (AgreementTypeList),
+  // and its own fresh snapshot — same reasoning as updateMatterData above.
+  const [selectedAgreementType, setSelectedAgreementType] = useState(null);
+  const [agreementMatterData, setAgreementMatterData] = useState(null);
 
   useEffect(() => {
     let active = true;
@@ -235,6 +242,7 @@ const SingleMatter = () => {
       t.id === "draft_divorce_docs" ||
       t.id === "review_forms" ||
       t.id === "update_information" ||
+      t.id === "draft_agreements" ||
       t.id === "general_query";
 
     return {
@@ -310,9 +318,29 @@ const SingleMatter = () => {
           client_id: matterData?.client_id || "",
         }
       );
+    } else if (taskId === "draft_agreements") {
+      // Recurring work like Update Information — an agreement can be revised
+      // after a first draft, so this never auto-completes.
+      if (taskStatuses.draft_agreements !== "in_progress") {
+        persistTaskStatus("draft_agreements", "in_progress");
+      }
+      setView("agreement_choice");
     } else if (taskId === "general_query") {
       // Future: open general query chat
     }
+  }
+
+  async function handleAgreementTypeChoice(agreementTypeId) {
+    setSelectedAgreementType(agreementTypeId);
+    setAgreementMatterData(null);
+    setView("agreement_chat");
+    const storedMatter = await dispatch(getMatterData(id));
+    setAgreementMatterData(
+      storedMatter || {
+        matter_number: id,
+        client_id: matterData?.client_id || "",
+      }
+    );
   }
 
   async function handleIntakeChoice(choice) {
@@ -443,6 +471,9 @@ const SingleMatter = () => {
     "spousal_support",
     "update_information",
   ].includes(view);
+  // Draft Agreements gets the same viewport lock, but split into a chat pane
+  // and a live document pane instead of one full-width chat column.
+  const isSplitView = view === "agreement_chat";
 
   // Chat panel titles are shown in the page header (the panels no longer render
   // their own header row).
@@ -451,6 +482,7 @@ const SingleMatter = () => {
     child_support: "Child Support Calculator — CloudAct",
     spousal_support: "Spousal Support Calculator — CloudAct",
     update_information: "Update Information — CloudAct",
+    agreement_chat: `${getAgreementType(selectedAgreementType)?.label || "Draft Agreement"} — CloudAct`,
   };
 
   // Client / matter identity — shown in the header in every view.
@@ -474,11 +506,11 @@ const SingleMatter = () => {
       {matterLoading ? (
         <Loader isLoading={matterLoading} />
       ) : (
-        <div className={`single-matter panel trans${isChatView ? " has-chat" : ""}`}>
+        <div className={`single-matter panel trans${isChatView ? " has-chat" : ""}${isSplitView ? " has-split" : ""}`}>
           {/* Matter header. In a chat view this row carries "Back to Tasks" and
               the panel title so the chat card itself needs no header. */}
           <div className="pHead">
-            {isChatView ? (
+            {isChatView || isSplitView ? (
               <>
                 <div className="sm-chat-head">
                   <button
@@ -648,6 +680,29 @@ const SingleMatter = () => {
                     // (valuation date, financial year), so re-read the header.
                     dispatch(getSingleMatter(id));
                   }}
+                />
+              ) : (
+                <Loader isLoading />
+              )
+            )}
+
+            {/* Draft Agreements: pick an agreement type from the registry */}
+            {view === "agreement_choice" && (
+              <AgreementTypeList
+                matterName={matterName}
+                onChoose={handleAgreementTypeChoice}
+                onBack={handleBackToTasks}
+              />
+            )}
+
+            {/* Draft Agreements: split chat + live document */}
+            {view === "agreement_chat" && (
+              agreementMatterData ? (
+                <AgreementChatPanel
+                  matterData={agreementMatterData}
+                  matterId={id}
+                  agreementType={selectedAgreementType}
+                  onBack={handleBackToTasks}
                 />
               ) : (
                 <Loader isLoading />

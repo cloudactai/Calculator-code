@@ -29,7 +29,7 @@ from intake_chat_guard import (
 )
 from spousal_support import calculate_spousal_support_no_children, calculate_spousal_support_with_children, SpousalSupportResult, calculate_spousal_support_iterative
 from tax import ChildInfo as TaxChildInfo
-from report_pdf import REPORTS_DIR
+from report_pdf import REPORTS_DIR, render_html_to_pdf_bytes
 
 CURRENT_YEAR = date.today().year
 
@@ -1578,6 +1578,328 @@ def update_chat():
 
         return jsonify({"error": "Reached iteration limit without a final reply."}), 500
 
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+# ── /agreement-chat ───────────────────────────────────────────────────────────────
+#
+# Draft Agreements (Separation Agreement, v1). Same bounded Anthropic tool-use
+# loop as /update-chat, scoped to ONLY the "Chat AI Agent" rows from the field
+# ledger (Agreements tool /Questions.xlsx, Sheet2) — every "Database" row is
+# resolved by the frontend before the first question and passed in the primer,
+# so this agent never re-asks for a value already on file. Like every other
+# chat endpoint here, it never writes to any database itself: it returns
+# section patches for the authenticated frontend to merge into the matter's
+# MatterAgreementDocument.answers blob.
+#
+# Two ledger rows ("who will pay/receive child support", "amount", and the
+# spousal-support equivalents) are marked "Database (after calculation
+# finalize)" with the comment "Marc to work on saving of result after calc
+# done". That save-path is Marc's in-flight work and is never read from or
+# written to here — this endpoint only ever falls back to asking in chat when
+# the frontend's primer reports those fields as still unresolved, and any
+# answer collected that way is saved solely in this feature's own
+# ChildSupportFallback / SpousalSupportFallback sections.
+
+AGREEMENT_SECTION_NAMES = (
+    "ChildSupport",
+    "ChildSupportFallback",
+    "DecisionMaking",
+    "ParentingTime",
+    "Visitation",
+    "SpousalSupport",
+    "SpousalSupportFallback",
+    "Equalization",
+    "MatrimonialHome",
+    "Assets",
+    "Debts",
+)
+
+AGREEMENT_INTRO = """
+You are the Draft Agreements assistant for CloudAct, a Canadian family-law
+platform. You are helping a lawyer draft a Separation Agreement for one
+matter. The document already exists as a live preview next to this chat —
+your job is only to collect the handful of values that are not already on
+file, so that preview can fill in.
+
+The conversation opens with a message telling you exactly which fields are
+already known (from the matter record, or from an earlier turn in this same
+conversation) and which are still outstanding. NEVER ask about a field marked
+already known. Ask only about the outstanding ones, one topic at a time, in
+whatever order the lawyer wants to work through them.
+
+Your FIRST message must be a short, friendly opener naming what's left to
+cover in a sentence or two — not a numbered form, not every question at once.
+
+For each answer the lawyer gives:
+
+1. Work out which section and field it belongs to (see the shapes below).
+2. In that SAME turn, call the set_agreement_section tool with the smallest
+   patch that captures it — do not describe saving it, actually call the tool.
+3. Then continue to the next outstanding topic, or, once everything outstanding
+   has been answered, say plainly that the agreement now has everything it
+   needs and the lawyer can review the preview and generate the PDF whenever
+   ready. Do not keep asking after that point unless the lawyer raises
+   something new.
+
+Each set_agreement_section call is a PATCH, not a replacement: send only the
+fields you were just told, plus any identity fields needed for a list (e.g. an
+asset's type when adding it to a list of several). Never invent a value, never
+re-ask something already answered, and never save an empty value as though it
+were a real answer — if the lawyer says "skip that" or "not applicable", save
+the section as not-included (e.g. include: false) rather than leaving it half
+filled.
+
+CRITICAL: never end a turn with only a promise to save ("let me record that").
+When you have the answer, EMIT the set_agreement_section tool call in that
+same turn.
+"""
+
+AGREEMENT_SECTION_SHAPES = """
+───────────────────────────────────────────────
+SECTION SHAPES
+───────────────────────────────────────────────
+Use these exact section names and field names. A field not mentioned by the
+lawyer stays unset — never fill one in with a guess.
+
+ChildSupport — only asked if the primer marks child support's payment day as
+outstanding (the payer/receiver/amount themselves come from the matter's
+saved calculation, never asked here). The agreement's own wording is "starting
+on the [day] day of the first month following the date of separation" — ask
+for that day of the month, the same way SpousalSupport's paymentStartDay does,
+not a full calendar date:
+  { "paymentDay": "the day of the month child support payments begin, e.g. '1st'" }
+
+ChildSupportFallback — only asked if the primer marks child support's
+payer/receiver/amount as outstanding (meaning no saved calculation result was
+found for this matter yet):
+  { "payer": "", "recipient": "", "amount": "" }
+
+DecisionMaking:
+  { "responsibility": "who has decision-making responsibility for the children — e.g. 'joint', 'Party 1 sole', 'Party 2 sole', or a description" }
+
+ParentingTime — asked once per party who has a parenting-time schedule to include:
+  {
+    "party1": { "include": true|false, "schedule": "free-text outline of Party 1's parenting time schedule" },
+    "party2": { "include": true|false, "schedule": "free-text outline of Party 2's parenting time schedule" }
+  }
+  Send only the party object(s) you actually just covered — omit the other
+  party's key rather than guessing it should also be true or false.
+
+Visitation:
+  { "include": true|false, "startDate": "date the visiting schedule starts", "schedule": "free-text outline of the visiting schedule" }
+
+SpousalSupport — only asked if the primer marks these as outstanding (payer,
+whether support is included, and the amount come from the matter's saved
+calculation):
+  { "paymentStartDay": "day of the month spousal support payments begin", "recipient": "who will receive spousal support" }
+
+SpousalSupportFallback — only asked if the primer marks spousal support's
+include/amount/payer as outstanding (meaning no saved calculation result was
+found):
+  { "include": true|false, "amount": "", "payer": "" }
+
+Equalization:
+  {
+    "include": true|false,
+    "payer": "who will pay the equalization of net family property",
+    "recipient": "who will receive it",
+    "amount": "the amount",
+    "paymentDate": "when the equalization payment will be made"
+  }
+  If include is false, the other fields can be omitted.
+
+MatrimonialHome — the matter's saved Assets do not yet distinguish "the
+matrimonial home" from any other property on file, so this whole section is
+chat-collected. The primer's assetsOnFile list is given to you as read-only
+reference: if a property on it is obviously the shared home, confirm it with
+the lawyer instead of asking them to redescribe it from scratch:
+  {
+    "hasSharedHome": true|false,
+    "address": "the shared property's address, if hasSharedHome",
+    "sellingOrTransferring": "selling" | "transferring",
+    "saleProceedsSharing": "how sale proceeds will be shared, if selling",
+    "recipientName": "who receives the sale proceeds, if selling",
+    "amount": "the amount, if selling",
+    "transferRecipient": "who receives the home, if transferring",
+    "transferGivingUp": "who is giving up their share, if transferring",
+    "transferDate": "when the home will be transferred, if transferring"
+  }
+  If hasSharedHome is false, the other fields can be omitted. Ask only the
+  sub-fields that match the lawyer's selling/transferring answer — do not ask
+  both branches.
+
+Assets — the matter's saved Assets are recorded by category (land, vehicles,
+bank accounts, etc.), not by which party kept them or whether they're joint,
+so that classification is chat-collected. The primer's assetsOnFile list is
+read-only reference: use it so the lawyer confirms ownership of what's
+already on file rather than retyping type and value from memory.
+  {
+    "party1": { "hasKeptAssets": true|false, "items": [ { "type": "asset type", "value": "asset value" } ] },
+    "party2": { "hasKeptAssets": true|false, "items": [ { "type": "asset type", "value": "asset value" } ] },
+    "joint":  { "hasJointAssets": true|false, "items": [ { "type": "asset type", "value": "asset value" } ] }
+  }
+  Send only the party (or joint) key you just covered, with its own
+  true/false flag and the full item list for that key.
+
+Debts — likewise the matter's saved debts are not marked jointly-held, so
+that classification is chat-collected. The primer's debtsOnFile list is
+read-only reference for the same reason as Assets above:
+  { "hasJointDebts": true|false, "items": [ { "type": "debt type", "amount": "debt amount" } ] }
+  If hasJointDebts is false, items can be omitted.
+"""
+
+AGREEMENT_OUTRO = """
+Do not re-derive or restate values that came from the matter record — those
+are already shown in the primer and belong to the document, not to you. Never
+produce a running summary of the whole agreement; the live preview already
+shows that. Use direct, professional language, and do not open replies with
+filler such as "Absolutely" or "Great question".
+"""
+
+AGREEMENT_SYSTEM = AGREEMENT_INTRO + AGREEMENT_SECTION_SHAPES + AGREEMENT_OUTRO + NUMBERED_CHOICES_RULE
+
+AGREEMENT_SECTION_TOOL = {
+    "name": "set_agreement_section",
+    "description": (
+        "Save one section of the Separation Agreement's chat-collected answers. "
+        "'section' must be one of the exact section names listed in the system "
+        "prompt and 'data' must match that section's documented shape. This is a "
+        "patch: omitted fields keep whatever was saved for them earlier."
+    ),
+    "input_schema": {
+        "type": "object",
+        "required": ["section", "data"],
+        "properties": {
+            "section": {
+                "type": "string",
+                "enum": list(AGREEMENT_SECTION_NAMES),
+                "description": "Which agreement section this data belongs to.",
+            },
+            "data": {
+                "type": "object",
+                "description": "The section payload. Use the exact field names from the system prompt.",
+            },
+        },
+    },
+}
+
+
+@app.route("/agreement-chat", methods=["POST"])
+@require_auth
+def agreement_chat():
+    """Draft Agreements AI agent (Separation Agreement, v1).
+
+    Same message-loop shape as /update-chat: the agent only asks about fields
+    the frontend's primer marks outstanding, and returns what it collected as
+    `saved_sections` patches rather than writing anything itself. The
+    authenticated frontend merges those patches into MatterAgreementDocument's
+    `answers` and persists them via the auth-server agreement routes.
+    """
+    try:
+        body = request.get_json(force=True)
+        messages = body.get("messages", [])
+
+        client = anthropic.Anthropic()  # reads ANTHROPIC_API_KEY from env
+
+        saved_sections = []  # [{ "section": str, "data": object }, ...]
+        nudges = 0
+
+        # Bounded loop, same shape as /update-chat: tool calls are answered by
+        # PRESENCE (not stop_reason) so a max_tokens cut-off never leaves a
+        # tool_use block unpaired and 400s the next request.
+        for _ in range(16):
+
+            response = client.messages.create(
+                model=os.getenv("CLAUDE_MODEL", "claude-sonnet-4-6"),
+                max_tokens=8192,
+                system=AGREEMENT_SYSTEM,
+                tools=[AGREEMENT_SECTION_TOOL],
+                messages=messages,
+            )
+
+            assistant_content = []
+            for block in response.content:
+                if hasattr(block, "model_dump"):
+                    assistant_content.append(block.model_dump())
+                else:
+                    assistant_content.append(block)
+
+            messages.append({"role": "assistant", "content": assistant_content})
+
+            tool_uses = [b for b in assistant_content if b.get("type") == "tool_use"]
+            if tool_uses:
+                tool_results = []
+                for block in tool_uses:
+                    section = block.get("input", {}).get("section")
+                    data = block.get("input", {}).get("data")
+                    saved_sections.append({"section": section, "data": data})
+                    tool_results.append({
+                        "type":        "tool_result",
+                        "tool_use_id": block["id"],
+                        "content":     json.dumps({"status": "saved", "section": section}),
+                    })
+                messages.append({"role": "user", "content": tool_results})
+                continue
+
+            reply = "".join(
+                b["text"] for b in assistant_content if b.get("type") == "text"
+            )
+            if should_nudge_intake_reply(reply) and nudges < 2:
+                nudges += 1
+                messages.append({
+                    "role": "user",
+                    "content": (
+                        "Go ahead now: call the set_agreement_section tool for the "
+                        "answer I just gave — do not just describe what you will "
+                        "do. If you still need to know which section it belongs "
+                        "to, ask that instead."
+                    ),
+                })
+                continue
+            return jsonify({
+                "reply": reply,
+                "messages": messages,
+                "saved_sections": saved_sections,
+            })
+
+        return jsonify({"error": "Reached iteration limit without a final reply."}), 500
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+# ── /agreement-pdf ──────────────────────────────────────────────────────────────
+#
+# Export for Draft Agreements. Takes the already-rendered HTML of
+# SeparationAgreementDocument.jsx (styles inlined by the frontend, same
+# component the browser preview shows) and returns a PDF via xhtml2pdf — the
+# same engine report_pdf.py already uses for the calculation reports, so
+# there is no second templating system to keep in sync with the React
+# component. The frontend then uploads the returned bytes to auth-server's
+# agreement routes for storage.
+
+MAX_AGREEMENT_HTML_BYTES = 2 * 1024 * 1024  # generous for a text-only contract
+
+
+@app.route("/agreement-pdf", methods=["POST"])
+@require_auth
+def agreement_pdf():
+    try:
+        body = request.get_json(force=True)
+        html = body.get("html", "")
+        if not isinstance(html, str) or not html.strip():
+            return jsonify({"error": "html is required."}), 400
+        if len(html.encode("utf-8")) > MAX_AGREEMENT_HTML_BYTES:
+            return jsonify({"error": "html is too large."}), 400
+
+        pdf_bytes = render_html_to_pdf_bytes(html)
+        if not pdf_bytes:
+            return jsonify({"error": "Could not generate the PDF."}), 500
+
+        from flask import Response
+        return Response(pdf_bytes, mimetype="application/pdf")
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
