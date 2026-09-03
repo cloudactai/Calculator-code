@@ -51,11 +51,7 @@ model User {
   calculationReports         MatterCalculationReport[]
   lawyerContacts             LawyerContact[]
   computationResults         ComputationResult[]
-  matters                  Matter[]
-  savedCalculations        SavedCalculation[]
-  calculationReports       MatterCalculationReport[]
-  lawyerContacts           LawyerContact[]
-  matterAgreementDocuments MatterAgreementDocument[]
+  matterAgreementDocuments   MatterAgreementDocument[]
 }
 
 // The user's lawyer address book. Populated from the "Lawyer Addressbook"
@@ -111,14 +107,7 @@ model Matter {
   calculations         SavedCalculation[] @relation("MatterCalculations")
   calculationReports   MatterCalculationReport[]
   computationResults   ComputationResult[]
-  user               User                      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  records            MatterRecord[]
-  folders            MatterFolder[]
-  formDocuments      MatterFormDocument[]
-  taskStates         MatterTaskState[]
-  calculations       SavedCalculation[]        @relation("MatterCalculations")
-  calculationReports MatterCalculationReport[]
-  agreementDocuments MatterAgreementDocument[]
+  agreementDocuments   MatterAgreementDocument[]
 
   @@unique([userId, matterNumber])
   @@index([userId])
@@ -211,15 +200,15 @@ model FormTemplateVersion {
 }
 
 model MatterFolder {
-  id                 Int                       @id @default(autoincrement())
-  matterId           Int
-  title              String
-  normalizedTitle    String
-  type               String?
-  createdAt          DateTime                  @default(now())
-  updatedAt          DateTime                  @updatedAt
-  matter             Matter                    @relation(fields: [matterId], references: [id], onDelete: Cascade)
-  formDocuments      MatterFormDocument[]
+  id              Int                       @id @default(autoincrement())
+  matterId        Int
+  title           String
+  normalizedTitle String
+  type            String?
+  createdAt       DateTime                  @default(now())
+  updatedAt       DateTime                  @updatedAt
+  matter          Matter                    @relation(fields: [matterId], references: [id], onDelete: Cascade)
+  formDocuments   MatterFormDocument[]
   agreementDocuments MatterAgreementDocument[]
 
   @@unique([matterId, normalizedTitle])
@@ -343,6 +332,8 @@ model ComputationResult {
   @@index([userId])
   @@index([matterId])
   @@index([matterId, calculationType])
+}
+
 // A drafted agreement (Draft Agreements task). One row per (matter,
 // agreementType) — the chat resumes across visits, so there is exactly one
 // in-progress conversation per agreement type rather than a new row each time.
@@ -383,3 +374,4 @@ model MatterAgreementDocument {
   @@index([userId])
   @@index([matterId])
 }
+

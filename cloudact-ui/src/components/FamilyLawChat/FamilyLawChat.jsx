@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import Cookies from "js-cookie";
 import { CALCULATOR_API } from "../../config";
+import { getAuthToken } from "../../utils/authToken";
 import "./FamilyLawChat.css";
 
 /**
@@ -158,9 +159,13 @@ export default function FamilyLawChat() {
     const warmTimer = setTimeout(() => setWarming(true), 6000);
 
     try {
+      const token = getAuthToken();
       const res = await fetch(`${CALCULATOR_API}${calc.endpoint}`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          ...(token && { Authorization: `Bearer ${token}` }),
+        },
         body: JSON.stringify({ messages: nextMessages }),
       });
       const data = await res.json();

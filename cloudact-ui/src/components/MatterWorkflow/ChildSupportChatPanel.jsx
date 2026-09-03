@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from "react";
 import { CALCULATOR_API } from "../../config";
 import dataAxios from "../../utils/dataAxios";
 import { fetchRequest } from "../../utils/fetchRequest";
+import { getAuthToken } from "../../utils/authToken";
 import {
   getAllUserInfo,
   getCurrentUserFromCookies,
@@ -440,9 +441,13 @@ export default function ChildSupportChatPanel({
     const warmTimer = setTimeout(() => setWarming(true), 6000);
 
     try {
+      const token = getAuthToken();
       const res = await fetch(`${CALCULATOR_API}/chat`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          ...(token && { Authorization: `Bearer ${token}` }),
+        },
         body: JSON.stringify({ messages: nextMessages }),
       });
       const data = await res.json();
