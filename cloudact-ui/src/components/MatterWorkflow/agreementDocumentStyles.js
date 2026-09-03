@@ -90,6 +90,7 @@ export const AGREEMENT_DOCUMENT_CSS = `
 .agreement-doc h2.ad-heading {
   font-size: 18pt !important;
   font-weight: bold !important;
+  text-transform: uppercase;
   margin: 20pt 0 10pt !important;
 }
 .agreement-doc h3.ad-subheading {

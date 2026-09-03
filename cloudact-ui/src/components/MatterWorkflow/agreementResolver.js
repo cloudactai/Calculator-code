@@ -132,7 +132,14 @@ function resolveChildSupportFromReport(report) {
   const payer = result.net_payer;
   let recipient = "";
   if (!isBlank(p1) && !isBlank(p2)) {
-    recipient = String(p1).trim().toLowerCase() === String(payer).trim().toLowerCase() ? p2 : p1;
+    const norm = (v) => String(v).trim().toLowerCase();
+    // Only ever infer "the other party" when the payer actually IS one of
+    // the two named parties. A stale or mismatched report (e.g. a name
+    // edited on the matter after the calculation ran) must fall back to
+    // chat rather than silently attributing support to whichever party
+    // happens not to be p1.
+    if (norm(p1) === norm(payer)) recipient = p2;
+    else if (norm(p2) === norm(payer)) recipient = p1;
   }
   const amount = result.net_monthly;
   if (isBlank(payer) || isBlank(recipient) || isBlank(amount)) return null;
