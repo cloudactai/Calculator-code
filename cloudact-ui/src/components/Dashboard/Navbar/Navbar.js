@@ -468,15 +468,13 @@ const Navbar = () => {
             />
           )}
 
-          {userRole?.role === Roles.ADMIN && (
-            <NavbarLinkCustom
-              eachLink={{
-                name: "Settings",
-                linkTo: AUTH_ROUTES.SETUP,
-                auth: true,
-              }}
-            />
-          )}
+          <NavbarLinkCustom
+            eachLink={{
+              name: "Settings",
+              linkTo: AUTH_ROUTES.SETUP,
+              auth: true,
+            }}
+          />
 
           <NavbarLinkCustom
             eachLink={{
