@@ -135,18 +135,44 @@ def detect_reflowed_71b(background, doc_id):
                 item.update(compact=True, rule="bottom")
             return item
 
+        # The source heading is deliberately native Word flow.  Its height can
+        # change slightly when LibreOffice updates, so place the remaining
+        # source-created rules relative to the printed ``(full name)`` marker
+        # instead of treating an old y coordinate as a contract.
+        name_mark = page.search_for("(full name)")
+        if len(name_mark) != 1:
+            raise ValueError("PEISC_71B opening-name marker is missing")
+        shift = name_mark[0].y0 - 135.0
+
+        def shifted_mapped(field_id, kind, x0, y0, x1, y1, font_size=7):
+            return mapped(field_id, kind, x0, y0 + shift, x1, y1 + shift,
+                          font_size)
+
         fields = [
-            mapped(1750731700002, "TextField", 163.0, 120.92, 257.0, 130.92),
-            mapped(1750731700003, "TextField", 285.0, 120.92, 457.0, 130.92),
-            mapped(1750731700001, "TextField", 393.2, 143.5, 443.2, 153.5),
-            mapped(1750731700004, "TextField", 149.5, 193.5, 211.5, 203.5),
-            mapped(1750731700005, "TextField", 293.8, 230.92, 513.9, 240.92),
-            mapped(1750731700006, "TextField", 403.8, 253.92, 513.9, 263.92),
-            mapped(1750731700010, "TextArea", 133.8, 291.0, 499.8, 350.4, 9),
-            mapped(1750731700007, "TextField", 133.8, 353.92, 286.8, 363.92),
-            mapped(1750731700008, "TextField", 133.8, 394.92, 268.4, 404.92),
-            mapped(1750731700009, "TextField", 133.8, 419.92, 286.8, 429.92),
+            # The compact, 15pt standard general-heading fields.
+            mapped(1750731700011, "TextField", 286.8, 114.3, 528.8, 129.3, 9),
+            mapped(1750731700012, "TextField", 286.8, 142.3, 528.8, 157.3, 9),
+            mapped(1750731700013, "TextField", 286.8, 170.3, 528.8, 185.3, 9),
+            shifted_mapped(1750731700002, "TextField", 163.0, 120.92, 257.0, 130.92),
+            shifted_mapped(1750731700003, "TextField", 285.0, 120.92, 457.0, 130.92),
+            shifted_mapped(1750731700001, "TextField", 393.2, 143.5, 443.2, 153.5),
+            shifted_mapped(1750731700004, "TextField", 149.5, 193.5, 211.5, 203.5),
+            shifted_mapped(1750731700005, "TextField", 293.8, 230.92, 513.9, 240.92),
+            shifted_mapped(1750731700006, "TextField", 403.8, 253.92, 513.9, 263.92),
+            shifted_mapped(1750731700010, "TextArea", 133.8, 291.0, 499.8, 350.4, 9),
+            shifted_mapped(1750731700007, "TextField", 133.8, 353.92, 286.8, 363.92),
+            shifted_mapped(1750731700008, "TextField", 133.8, 394.92, 268.4, 404.92),
+            shifted_mapped(1750731700009, "TextField", 133.8, 419.92, 286.8, 429.92),
         ]
+        fields[0]["bind"] = "court_info.courtFileNumber"
+        fields[1]["bind"] = "applicant.fullLegalName"
+        fields[2]["bind"] = "respondent.fullLegalName"
+        # These three sit inside complete bordered boxes, unlike the native
+        # answer rules below.  Do not mark them ``rule=bottom``: the filler
+        # would erase the side and top strokes of the printed box.
+        for heading_field in fields[:3]:
+            heading_field.pop("compact", None)
+            heading_field.pop("rule", None)
         audit = {
             "docId": doc_id,
             "pages": 1,
@@ -158,7 +184,7 @@ def detect_reflowed_71b(background, doc_id):
             "widgetNames": [],
             "pageSizes": [[612.0, 792.0]],
             "anchors": {"token": 0, "tick": 0, "underscore": 0,
-                        "cell": 10, "dropped": 2},
+                        "cell": 13, "dropped": 2},
         }
         return fields, audit
     finally:

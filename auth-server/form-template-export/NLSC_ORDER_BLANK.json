@@ -124,7 +124,8 @@
    ],
    "background": "none",
    "border": "none",
-   "page": 1
+   "page": 1,
+   "bind": "applicant.fullLegalName"
   },
   {
    "id": 1750031657008,
@@ -142,7 +143,8 @@
    ],
    "background": "none",
    "border": "none",
-   "page": 1
+   "page": 1,
+   "bind": "respondent.fullLegalName"
   },
   {
    "id": 1750031657009,

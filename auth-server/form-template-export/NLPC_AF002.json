@@ -38,25 +38,6 @@
    "bind": "court_info.courtFileNumber"
   },
   {
-   "id": 1750630925003,
-   "type": "TextField",
-   "x": 283.7,
-   "y": 106.34,
-   "width": 200.34,
-   "height": 19.95,
-   "value": "",
-   "fontSize": 9,
-   "color": [
-    0,
-    0,
-    0
-   ],
-   "background": "none",
-   "border": "none",
-   "page": 1,
-   "bind": "court_info.courtFileNumber"
-  },
-  {
    "id": 1750630925004,
    "type": "TextField",
    "x": 203.64,
@@ -201,155 +182,11 @@
    "page": 1
   },
   {
-   "id": 1750630925012,
-   "type": "TextField",
-   "x": 271.99,
-   "y": 88.1,
-   "width": 228.96,
-   "height": 19.95,
-   "value": "",
-   "fontSize": 9,
-   "color": [
-    0,
-    0,
-    0
-   ],
-   "background": "none",
-   "border": "none",
-   "page": 1
-  },
-  {
-   "id": 1750630925013,
-   "type": "TextArea",
-   "x": 204.19,
-   "y": 194.28,
-   "width": 388.08,
-   "height": 26.28,
-   "value": "",
-   "fontSize": 9,
-   "color": [
-    0,
-    0,
-    0
-   ],
-   "background": "none",
-   "border": "none",
-   "page": 1
-  },
-  {
-   "id": 1750630925014,
-   "type": "TextField",
-   "x": 249.91,
-   "y": 237.38,
-   "width": 304.2,
-   "height": 19.95,
-   "value": "",
-   "fontSize": 9,
-   "color": [
-    0,
-    0,
-    0
-   ],
-   "background": "none",
-   "border": "none",
-   "page": 1
-  },
-  {
-   "id": 1750630925015,
-   "type": "TextField",
-   "x": 252.55,
-   "y": 262.94,
-   "width": 304.2,
-   "height": 19.95,
-   "value": "",
-   "fontSize": 9,
-   "color": [
-    0,
-    0,
-    0
-   ],
-   "background": "none",
-   "border": "none",
-   "page": 1
-  },
-  {
-   "id": 1750630925016,
-   "type": "TextField",
-   "x": 151.39,
-   "y": 377.3,
-   "width": 582.12,
-   "height": 19.95,
-   "value": "",
-   "fontSize": 9,
-   "color": [
-    0,
-    0,
-    0
-   ],
-   "background": "none",
-   "border": "none",
-   "page": 1
-  },
-  {
-   "id": 1750630925017,
-   "type": "TextArea",
-   "x": 162.55,
-   "y": 398.28,
-   "width": 563.04,
-   "height": 24.84,
-   "value": "",
-   "fontSize": 9,
-   "color": [
-    0,
-    0,
-    0
-   ],
-   "background": "none",
-   "border": "none",
-   "page": 1
-  },
-  {
-   "id": 1750630925018,
-   "type": "TextArea",
-   "x": 152.11,
-   "y": 422.64,
-   "width": 582.12,
-   "height": 24.84,
-   "value": "",
-   "fontSize": 9,
-   "color": [
-    0,
-    0,
-    0
-   ],
-   "background": "none",
-   "border": "none",
-   "page": 1
-  },
-  {
-   "id": 1750630925019,
-   "type": "TextArea",
-   "x": 182.23,
-   "y": 458.16,
-   "width": 534.24,
-   "height": 26.28,
-   "value": "",
-   "fontSize": 9,
-   "color": [
-    0,
-    0,
-    0
-   ],
-   "background": "none",
-   "border": "none",
-   "page": 1
-  },
-  {
    "id": 1750630925020,
    "type": "TextArea",
    "x": 306.55,
    "y": 290.54,
-   "width": 225.0,
+   "width": 314.14,
    "height": 33.0,
    "value": "",
    "fontSize": 9,
@@ -360,6 +197,78 @@
    ],
    "background": "none",
    "border": "none",
+   "page": 2
+  },
+  {
+   "fontSize": 9,
+   "color": [
+    0,
+    0,
+    0
+   ],
+   "background": "none",
+   "border": "none",
+   "id": 1750630925021,
+   "type": "TextField",
+   "x": 75.18,
+   "y": 163.7,
+   "width": 231.84,
+   "height": 19.95,
+   "value": "",
+   "page": 2
+  },
+  {
+   "fontSize": 9,
+   "color": [
+    0,
+    0,
+    0
+   ],
+   "background": "none",
+   "border": "none",
+   "id": 1750630925022,
+   "type": "TextField",
+   "x": 91.59,
+   "y": 207.44,
+   "width": 42.85,
+   "height": 19.95,
+   "value": "",
+   "page": 2
+  },
+  {
+   "fontSize": 9,
+   "color": [
+    0,
+    0,
+    0
+   ],
+   "background": "none",
+   "border": "none",
+   "id": 1750630925023,
+   "type": "TextField",
+   "x": 151.47,
+   "y": 207.44,
+   "width": 120.17,
+   "height": 19.95,
+   "value": "",
+   "page": 2
+  },
+  {
+   "fontSize": 9,
+   "color": [
+    0,
+    0,
+    0
+   ],
+   "background": "none",
+   "border": "none",
+   "id": 1750630925024,
+   "type": "TextField",
+   "x": 249.52,
+   "y": 207.44,
+   "width": 25.73,
+   "height": 19.95,
+   "value": "",
    "page": 2
   }
  ]

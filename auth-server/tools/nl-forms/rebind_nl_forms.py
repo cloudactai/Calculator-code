@@ -35,6 +35,14 @@ REACH = 90.0
 LINE_FRAC = 0.5
 
 
+def indent_of(path):
+    """The indent the file on disk already uses, defaulting to 1."""
+    with open(path) as fh:
+        fh.readline()
+        second = fh.readline()
+    return (len(second) - len(second.lstrip(" "))) or 1
+
+
 def rect_of(field):
     return (field["x"], field["y"],
             field["x"] + field["width"] / 1.5,
@@ -54,11 +62,49 @@ def words_beside(words, box, side):
             picked.append((wx0, text))
         elif side == "left" and 0 <= x0 - wx1 <= REACH:
             picked.append((wx0, text))
+        elif side == "left-glued" and (
+                0 <= x0 - wx1 <= REACH
+                or (wx0 < x0 <= wx1 and x0 - wx0 <= REACH and "__" in text)):
+            picked.append((wx0, text))
     picked.sort()
-    if side == "left":
+    if side.startswith("left"):
         # Nearest run of words on the left, in reading order.
         return " ".join(t for _, t in picked)
     return " ".join(t for _, t in picked)
+
+
+# A role word one printed line above the box still labels it. Newfoundland
+# stacks the options for a party ("APPLICANT" over "CO-APPLICANT") and hangs
+# them off the TOP of the box on five forms, so the word that names the party
+# sits about one line-height above the box's centre instead of on it. Party
+# rows are ~36pt apart, so a window of one line cannot reach the row above:
+# the nearest competing role word on those pages is 33pt away. The window is
+# still required to be unambiguous, and the text it finds is passed through
+# bind_for_role, so ROLE_STOP keeps blocking "SECOND APPLICANT" and
+# "APPLICANT or CO-APPLICANT" exactly as before.
+NEAR_LINE = 13.0
+AMBIGUOUS = 15.0
+
+
+def role_line_beside(words, box):
+    """The nearest printed line to the right of a box, within one line of it."""
+    x0, y0, x1, y1 = box
+    middle = (y0 + y1) / 2.0
+    lines = {}
+    for wx0, wy0, wx1, wy1, text in words:
+        if not (0 <= wx0 - x1 <= REACH):
+            continue
+        lines.setdefault(round((wy0 + wy1) / 2.0, 1), []).append((wx0, text))
+    offsets = sorted(lines, key=lambda c: abs(c - middle))
+    near = [c for c in offsets if abs(c - middle) <= NEAR_LINE]
+    if not near:
+        return ""
+    rest = [c for c in offsets if c not in near]
+    if rest and abs(rest[0] - middle) - abs(near[0] - middle) < AMBIGUOUS:
+        # Another printed line is nearly as close; do not guess between them.
+        if len(near) > 1:
+            return ""
+    return " ".join(t for _, t in sorted(lines[near[0]]))
 
 
 def wanted_binds(doc_id):
@@ -78,12 +124,28 @@ def wanted_binds(doc_id):
                 if field["page"] != number or field["type"] == "CheckBox":
                     continue
                 box = rect_of(field)
-                bind = nl_binds.bind_for_role(words_beside(words, box, "right"))
+                left = words_beside(words, box, "left")
+                # The protection-order set captions its party boxes on the
+                # LEFT ("Applicant ______"), so the left word is read first
+                # there. Reading right-first on those forms picks up the NEXT
+                # column's header: NLEPO_001's summary table prints
+                # "APPLICANT: [box] RESPONDENT: [box]" on one row, and the
+                # applicant's box would take the respondent's bind.
+                bind = None
+                if doc_id.startswith("NLEPO_"):
+                    bind = nl_binds.bind_for_role_left(left)
                 if not bind:
-                    left = words_beside(words, box, "left")
-                    bind = nl_binds.bind_for_caption(left)
-                    if not bind and doc_id.startswith("NLEPO_"):
-                        bind = nl_binds.bind_for_role_left(left)
+                    bind = nl_binds.bind_for_role(
+                        words_beside(words, box, "right"))
+                if not bind:
+                    bind = nl_binds.bind_for_role(
+                        role_line_beside(words, box))
+                if not bind:
+                    # The caption lookup, and only it, also reads a word that
+                    # starts left of the box but runs into it -- that is a
+                    # caption glued to its own underscore run.
+                    bind = nl_binds.bind_for_caption(
+                        words_beside(words, box, "left-glued"))
                 if bind:
                     out[field["id"]] = bind
     finally:
@@ -117,8 +179,13 @@ def rebind(doc_id, apply_changes):
                 "%s: %s changed on %s" % (doc_id, key, old.get("id")))
 
     if apply_changes:
+        # Keep the file's own indent -- the NL export is a mix of 1- and
+        # 2-space files, and imposing either one rewrites every line of the
+        # ones that use the other, burying a two-line bind change in a
+        # thousand-line reformat.
+        indent = indent_of(path)   # before the open() below truncates it
         with open(path, "w") as fh:
-            json.dump(mapping, fh, indent=1)
+            json.dump(mapping, fh, indent=indent)
     return added
 
 

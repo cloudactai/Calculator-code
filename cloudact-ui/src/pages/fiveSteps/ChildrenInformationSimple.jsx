@@ -94,36 +94,38 @@ const ChildrenInformationSimple = ({
 
         const numberOfProperties = Object.keys(childrenData).length;
 
-        if (value > 0) {
-            if (value > numberOfProperties) {
-                let newChildrenData = childrenData;
+        // This used to be gated on `value > 0`, so dropping the count back to
+        // 0 left the last child's data sitting in state (and got sent back
+        // to onUpdateFormData unchanged) instead of clearing it — the array
+        // this form saves could keep an entry nobody could see or remove.
+        if (value > numberOfProperties) {
+            let newChildrenData = childrenData;
 
-                for (let i = numberOfProperties; i < value; i++) {
-                    newChildrenData[i] = {
-                        childName: "",
-                        nowLivesWith: "",
-                        dateOfBirth: "",
-                        age: "",
-                        representedByLawyer: "",
-                        lawyerName: "",
-                        lawyerPhone: "",
-                        lawyerAddress: "",
-                        lawyerEmail: "",
-                    };
-                }
-                setChildrenData((prevState) => ({
-                    ...prevState,
-                    ...newChildrenData,
-                }));
-            } else if (value < numberOfProperties) {
-                let newChildrenData = childrenData;
-
-                for (let i = numberOfProperties; i > value; i--) {
-                    delete newChildrenData[i - 1];
-                }
-
-                setChildrenData(newChildrenData);
+            for (let i = numberOfProperties; i < value; i++) {
+                newChildrenData[i] = {
+                    childName: "",
+                    nowLivesWith: "",
+                    dateOfBirth: "",
+                    age: "",
+                    representedByLawyer: "",
+                    lawyerName: "",
+                    lawyerPhone: "",
+                    lawyerAddress: "",
+                    lawyerEmail: "",
+                };
             }
+            setChildrenData((prevState) => ({
+                ...prevState,
+                ...newChildrenData,
+            }));
+        } else if (value < numberOfProperties) {
+            let newChildrenData = childrenData;
+
+            for (let i = numberOfProperties; i > value; i--) {
+                delete newChildrenData[i - 1];
+            }
+
+            setChildrenData(newChildrenData);
         }
     }
 

@@ -873,6 +873,30 @@ python3 ../review/record_pe_round12.py
 
 ## Catalogue, binds, verify
 
+## Thirteenth pass: finishing Form 70A's visible continuations
+
+Form 70A still had two visually broken continuations after the whole-page
+merges.  These are handled in `pei_repaginate.py`, on the final page numbers
+left by the earlier answer-space pass:
+
+* Item 37's question and its 45pt answer area now follow the item 37 heading
+  on page 8.  A clean cut after that area moves the whole item forward and
+  re-bases page 9 at item 38; no table or field is cut.
+* Item 42 now has a real 200pt writing band, rather than a 200pt overlay placed
+  on top of the `TRIAL` content.  Its `TextArea` is 384.1pt wide, from x=122.5
+  to x=506.6, matching the form's text margins.  The `TRIAL`, declaration and
+  certification bands are moved down as vector content, so the control has
+  113pt of clear paper before the next printed text.
+
+The answer band is recorded in `answer_band_shifts.json` and composed by
+`pei_repaginate.shifted()` along with the other reflow translations.  It is
+idempotent:
+
+```
+python3 pei_repaginate.py --only PEISC_70A --check
+python3 pei_repaginate.py --only PEISC_70A
+```
+
 ```
 python3 merge_pei_catalog.py
 python3 rebind_pei_forms.py [--check]
@@ -920,11 +944,13 @@ The source and the shipped background once rendered **pixel-identical on all 64
 pages**, which followed from the build path: `flatten_background` copies a
 LibreOffice render rather than modifying it.
 
-**That invariant no longer holds, and a reviewer should not trust it.** Four
+**That invariant no longer holds, and a reviewer should not trust it.** Five
 passes now rewrite the background itself — `reflow_pei_71b_source.py` (71B),
 `pei_general_heading.py` plus `convert_70a_joint_heading.py` (a style of cause
-on 20 forms), `pei_answer_space.py` (answer space on 18 pages of 11 forms) and
-`pei_inline_name_rules.py` (the Statement of Lawyer's first line on 4 pages).
+on 20 forms), `pei_answer_space.py` (answer space on 18 pages of 11 forms),
+`pei_inline_name_rules.py` (the Statement of Lawyer's first line on 4 forms)
+and `pei_repaginate.py` (continuation-page reflow, including Form 70A's final
+answer band).
 Every one of them reflows the page in bands copied with `show_pdf_page`, so
 nothing is re-typeset and nothing drifts, but the shipped page is no longer the
 source page and the source is no longer the only thing worth reading. On a

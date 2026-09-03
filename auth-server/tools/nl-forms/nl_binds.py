@@ -55,8 +55,18 @@ ROLE_STOP = re.compile(r"\b(second|co-?applicant|co-?respondent|lawyer|solicitor
                        r"counsel|applicant's|respondent's)\b")
 
 
+# Newfoundland draws its option squares with a symbol font, so a tick box in
+# front of a role word extracts as a Unicode private-use character (U+F0A8 for
+# the hollow square) rather than as nothing at all. It is decoration exactly
+# like the brackets stripped beside it -- the printed page reads "☐ APPLICANT"
+# -- but left in place it stops "^applicant$" matching on eight forms whose
+# style of cause is otherwise identical to the forty-two that do bind.
+PRIVATE_USE = re.compile(r"[\ue000-\uf8ff]")
+
+
 def normalise(text):
-    text = re.sub(r"[\[\]]", " ", (text or "").replace("’", "'"))
+    text = PRIVATE_USE.sub(" ", text or "")
+    text = re.sub(r"[\[\]]", " ", text.replace("’", "'"))
     return re.sub(r"\s+", " ", text).strip().lower().rstrip(":.")
 
 
@@ -96,8 +106,18 @@ def bind_for_role_left(left_text):
 
 
 def bind_for_caption(left_text):
-    """The bind for a box from the caption printed to its left."""
-    text = normalise(left_text)
+    """The bind for a box from the caption printed to its left.
+
+    Underscores are dropped here and nowhere else. A run of them is the blank
+    itself rather than part of the caption, and three Provincial Court forms
+    emit it glued to the word that names the box ("No.____________"), hiding
+    that word from a caption match their sixteen siblings make. Roles are read
+    by a different path and are deliberately left alone: on the protection
+    orders a party row prints two blanks ("BETWEEN ___ Applicant ___"), and
+    stripping underscores there starts matching the second blank -- the date of
+    birth -- as if it were the name.
+    """
+    text = normalise(re.sub(r"_{2,}", " ", left_text or ""))
     for pattern, bind in CAPTION_LEFT:
         if pattern.match(text):
             return bind

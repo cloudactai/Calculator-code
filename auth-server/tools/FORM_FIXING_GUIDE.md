@@ -34,6 +34,25 @@ Province directory names: `sk-forms`, `mb-forms`, `bc-forms`, `on-forms`,
   come from `auth-server/tools/bc-forms/acroform_seat.py`.
 - Field IDs come from `bc_pipeline.new_id(doc_id, index)`.
 
+> **⚠️ Every width/height you compute from the PDF must be multiplied by
+> 1.5 before it goes in the JSON.** A pixel-darkness scan, a
+> `get_text('words')` or `get_text('rawdict')` char-box measurement, and a
+> `get_drawings()` line all give you a **true PDF-point** value — that is
+> `width_in_pdf`, not `field["width"]`. Storing it directly (forgetting the
+> `* 1.5`) makes the field render at 2/3 of the size you measured, and the
+> render tool won't show an obvious defect for it (a too-narrow invisible
+> box just leaves extra unused blank space — it can't create the
+> overlap-with-caption look a too-*wide* box does). This has actually
+> happened: a whole session's worth of NLEPO date-field "fixes" were
+> silently undersized this way before being caught and corrected (see
+> `NL_NB_AUDIT_LEDGER.md`, "Session 3 CORRECTION"). Before trusting any new
+> geometry math on a form/province you haven't touched before, sanity-check
+> by taking one **already-correct, untouched** field's stored `width`,
+> dividing by 1.5, and confirming that value against the printed blank it
+> sits on — if your own newly-measured "true width" for a *different* blank
+> on the same page doesn't need the same `* 1.5` before it'd match that
+> field's convention, you have the direction backwards.
+
 ### Field JSON shape
 
 ```json
@@ -220,6 +239,32 @@ When checkboxes overshoot the printed tick glyph:
 1. Measure the ink ratio (character cell vs actual ink) for each font
 2. Apply the ratio to shrink the checkbox to match the ink
 See `seat_ns_checkboxes.py` and `CHECKBOX_ALIGNMENT.md` in `ns-forms/`.
+
+### Seating a field vertically on its printed line (dot-leader / underscore blanks)
+A TextField whose only visual anchor is a printed rule (dotted, dashed, or a
+plain underscore run — not a boxed cell) should sit so its own baseline lands
+on that rule, the way handwriting rests on a line. Reported symptom: the box
+renders visibly *below* the printed line — the rule crosses near the box's
+top instead of its bottom, so the sample text looks like it's floating under
+the line rather than sitting on it. This is a distinct defect from
+horizontal caption-overlap or oversizing (issue class 9 — see
+`NL_NB_AUDIT_LEDGER.md`).
+1. Find the rule's own y via `search_for()` (for a dotted/dashed caption
+   line, the label word's baseline) or a pixel-darkness row scan (for a
+   drawn/underscore rule) — this is the target line the box should rest on.
+2. A field's text is drawn from its **bottom** edge upward (baseline-style),
+   not centered in the box, so the fix is normally to set
+   `field["y"] = rule_y - height/SCALE + small_pad` (a few tenths of a
+   point), not to guess a y offset from the caption's own bounding-box top —
+   captions with descenders (g, j, p, q, y) have a bbox bottom that sits
+   below the visible line, which will overshoot if used directly.
+3. Re-render and compare the box's bottom edge against the rule pixel-for-
+   pixel before trusting the fix — this class is easy to overcorrect (box
+   now floats *above* the line instead of below it).
+This has been observed (not yet root-caused/fixed) on at least one NB
+dot-leader field ("Name of solicitor:") — check for it on every
+underscore-run/dot-leader field going forward, not just the form it was
+first reported on.
 
 ---
 
