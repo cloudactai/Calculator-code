@@ -184,7 +184,7 @@ const Routes = () => {
       </Route>
 
       <Route path={AUTH_ROUTES.SUPERADMINTAXCONSTANTS}>
-        <AuthUser usersAuth={[...rl_adm, Roles.SUPERADMIN]} sidAccess={true}>
+        <AuthUser usersAuth={[...rl_all, Roles.SUPERADMIN]} sidAccess={true}>
           <SuperAdminTaxConstants />
         </AuthUser>
       </Route>
@@ -364,21 +364,9 @@ const Routes = () => {
       </Route>
 
       <Route path={AUTH_ROUTES.SETUP}>
-        {userInfo &&
-        getCurrentUserFromCookies() !== null &&
-        getCurrentUserFromCookies().role === Roles.ADMIN &&
-        !clioConnectedOrNot() &&
-        !intuitConnectedOrNot() ? (
-          <Redirect to={AUTH_ROUTES.SETUPWIZARD} />
-        ) : userInfo &&
-          getCurrentUserFromCookies() !== null &&
-          getCurrentUserFromCookies().role === Roles.ADMIN &&
-          clioConnectedOrNot() &&
-          intuitConnectedOrNot() ? (
+        <AuthUser usersAuth={rl_all} sidAccess={true}>
           <Setup userInfo={userInfo} />
-        ) : (
-          <Redirect to={UN_AUTH_ROUTES.SIGNIN} />
-        )}
+        </AuthUser>
       </Route>
 
       {/* Two-step setup wizard (ported from Report-Generation): step 2 first

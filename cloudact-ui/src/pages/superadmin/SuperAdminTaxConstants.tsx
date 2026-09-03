@@ -6,6 +6,8 @@ import Loader from "../../components/Loader";
 import { AUTH_ROUTES } from "../../routes/Routes.types";
 import { RootState } from "./superadmininterface";
 import axios from "../../utils/axios";
+import { getCurrentUserFromCookies } from "../../utils/helpers";
+import { Roles } from "../../routes/Role.types";
 
 interface BracketRow {
   From: number;
@@ -122,6 +124,8 @@ function formatValue(value: number): string {
 const SuperAdminTaxConstants: React.FC = () => {
   const { userInfo } = useSelector((state: RootState) => state.userLogin);
   const history = useHistory();
+  const currentUser = getCurrentUserFromCookies();
+  const isAdmin = currentUser?.role === Roles.ADMIN || currentUser?.role === Roles.SUPERADMIN;
 
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -330,7 +334,7 @@ const SuperAdminTaxConstants: React.FC = () => {
               ))}
             </select>
 
-            {showNewYearInput ? (
+            {isAdmin && (showNewYearInput ? (
               <div style={{ display: "flex", gap: "4px", alignItems: "center" }}>
                 <input
                   type="number"
@@ -360,7 +364,7 @@ const SuperAdminTaxConstants: React.FC = () => {
               >
                 + New Year
               </button>
-            )}
+            ))}
 
             <button
               className="btn btnPrimary"
@@ -372,6 +376,16 @@ const SuperAdminTaxConstants: React.FC = () => {
           </div>
         </div>
 
+        {!isAdmin && (
+          <div
+            className="alert alert-info mx-3 mt-2 mb-0"
+            role="alert"
+            style={{ fontSize: "13px" }}
+          >
+            You are viewing tax constants in read-only mode. Only administrators can make changes.
+          </div>
+        )}
+
         {saveMessage && (
           <div
             className={`alert ${saveMessage.type === "success" ? "alert-success" : "alert-danger"} mx-3 mt-2 mb-0`}
@@ -381,7 +395,7 @@ const SuperAdminTaxConstants: React.FC = () => {
           </div>
         )}
 
-        {hasChanges && (
+        {isAdmin && hasChanges && (
           <div
             className="mx-3 mt-2 p-2 d-flex justify-content-between align-items-center"
             style={{
@@ -470,6 +484,7 @@ const SuperAdminTaxConstants: React.FC = () => {
                                   value={val}
                                   step="any"
                                   onChange={(e) => handleValueChange(key, e.target.value)}
+                                  disabled={!isAdmin}
                                   style={{ maxWidth: "160px" }}
                                 />
                               </td>
@@ -531,7 +546,7 @@ const SuperAdminTaxConstants: React.FC = () => {
                           {fields.map((field) => (
                             <th key={field}>{field}</th>
                           ))}
-                          <th style={{ width: "60px" }}></th>
+                          {isAdmin && <th style={{ width: "60px" }}></th>}
                         </tr>
                       </thead>
                       <tbody>
@@ -548,29 +563,34 @@ const SuperAdminTaxConstants: React.FC = () => {
                                   onChange={(e) =>
                                     handleBracketChange(bracketKey, rowIdx, field, e.target.value)
                                   }
+                                  disabled={!isAdmin}
                                   style={{ maxWidth: "140px" }}
                                 />
                               </td>
                             ))}
-                            <td>
-                              <button
-                                className="btn btn-outline-danger btn-sm"
-                                onClick={() => removeBracketRow(bracketKey, rowIdx)}
-                                title="Remove row"
-                              >
-                                x
-                              </button>
-                            </td>
+                            {isAdmin && (
+                              <td>
+                                <button
+                                  className="btn btn-outline-danger btn-sm"
+                                  onClick={() => removeBracketRow(bracketKey, rowIdx)}
+                                  title="Remove row"
+                                >
+                                  x
+                                </button>
+                              </td>
+                            )}
                           </tr>
                         ))}
                       </tbody>
                     </table>
-                    <button
-                      className="btn btn-outline-primary btn-sm mt-1 mb-2"
-                      onClick={() => addBracketRow(bracketKey)}
-                    >
-                      + Add Row
-                    </button>
+                    {isAdmin && (
+                      <button
+                        className="btn btn-outline-primary btn-sm mt-1 mb-2"
+                        onClick={() => addBracketRow(bracketKey)}
+                      >
+                        + Add Row
+                      </button>
+                    )}
                   </div>
                 )}
               </div>
@@ -578,7 +598,7 @@ const SuperAdminTaxConstants: React.FC = () => {
           })}
         </div>
 
-        {hasChanges && (
+        {isAdmin && hasChanges && (
           <div className="p-3 d-flex justify-content-end" style={{ gap: "8px" }}>
             <button className="btn btn-outline-secondary rounded-pill" onClick={handleDiscard}>
               Discard Changes
