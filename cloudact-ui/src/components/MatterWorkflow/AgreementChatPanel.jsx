@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 import { CALCULATOR_API } from "../../config";
+import { getAuthToken } from "../../utils/authToken";
 import { agreementsService } from "../../services/agreementsService";
 import { getAgreementType } from "./agreementTypes";
 import {
@@ -35,6 +36,15 @@ import "./MatterWorkflow.css";
  *   agreementType – string, e.g. "separation_agreement"
  *   onBack        – () => void
  */
+
+/** Flask's /agreement-chat and /agreement-pdf are guarded by the same
+ * require_auth decorator as /update-chat, decoding the same JWT_SECRET the
+ * auth-server signs its tokens with (userId claim) — so the lawyer's
+ * existing session token authenticates here too, once it's actually sent. */
+function authHeaders() {
+  const token = getAuthToken();
+  return token ? { Authorization: `Bearer ${token}` } : {};
+}
 
 function renderText(text) {
   const escaped = String(text)
@@ -171,7 +181,7 @@ export default function AgreementChatPanel({
     try {
       const res = await fetch(`${CALCULATOR_API}/agreement-chat`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", ...authHeaders() },
         body: JSON.stringify({ messages: nextMessages }),
       });
       const data = await res.json();
@@ -236,7 +246,7 @@ export default function AgreementChatPanel({
       const html = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>Separation Agreement</title></head><body>${previewRef.current.innerHTML}</body></html>`;
       const res = await fetch(`${CALCULATOR_API}/agreement-pdf`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", ...authHeaders() },
         body: JSON.stringify({ html }),
       });
       if (!res.ok) {
