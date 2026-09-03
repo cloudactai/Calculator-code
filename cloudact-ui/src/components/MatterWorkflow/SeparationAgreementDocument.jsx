@@ -415,7 +415,7 @@ export default function SeparationAgreementDocument({ agreementData }) {
         Each Party acknowledges their rights and obligations under the Family Law Act relating to
         the equalization of net family property.
       </p>
-      {d.equalization.include ? (
+      {d.equalization.include === true && (
         <p className="ad-p">
           The Parties agree that an equalization payment shall be made.{" "}
           <Fill value={d.equalization.payer} placeholder="[payor]" /> shall pay{" "}
@@ -424,7 +424,8 @@ export default function SeparationAgreementDocument({ agreementData }) {
           <Fill value={formatDate(d.equalization.paymentDate)} placeholder="[payment date]" />, in
           full satisfaction of the equalization of net family property under the Family Law Act.
         </p>
-      ) : (
+      )}
+      {d.equalization.include === false && (
         <>
           <p className="ad-p">
             Each Party waives any right to equalization of net family property under the Family
@@ -435,6 +436,9 @@ export default function SeparationAgreementDocument({ agreementData }) {
             rights being waived and agrees that this waiver is final.
           </p>
         </>
+      )}
+      {d.equalization.include !== true && d.equalization.include !== false && (
+        <p className="ad-empty-note">[whether equalization applies is not yet answered]</p>
       )}
 
       <h2 className="ad-heading">Debts and Liabilities</h2>
