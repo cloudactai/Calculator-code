@@ -72,6 +72,17 @@ export const AGREEMENT_DOCUMENT_CSS = `
   color: #b45309;
   font-style: italic;
 }
+.agreement-doc .ad-blank {
+  display: inline-block;
+  border-bottom: 1px solid #333;
+  min-width: 40px;
+}
+.agreement-doc .ad-schedule-label {
+  font-weight: bold;
+  text-transform: uppercase;
+  font-size: 11.5px;
+  letter-spacing: 0.5px;
+}
 .agreement-doc .ad-empty-note {
   color: #6b7280;
   font-style: italic;

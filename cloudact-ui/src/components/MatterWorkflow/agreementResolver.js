@@ -193,7 +193,11 @@ export function buildAgreementData({
       payer: childSupportResolved?.payer || a.ChildSupportFallback.payer || "",
       recipient: childSupportResolved?.recipient || a.ChildSupportFallback.recipient || "",
       amount: childSupportResolved?.amount ?? a.ChildSupportFallback.amount ?? "",
-      paymentDate: a.ChildSupport.paymentDate || "",
+      // Day of the month, matching the agreement's own "starting on the
+      // [day] day of the first month following the date of separation"
+      // wording — the same shape as spousalSupport.paymentStartDay below,
+      // not a full calendar date.
+      paymentDay: a.ChildSupport.paymentDay || "",
     },
 
     decisionMaking: {
@@ -284,8 +288,8 @@ export function agreementOutstandingFields(agreementData) {
   if (agreementData.hasChildren) {
     push(
       "childSupport",
-      agreementData.childSupport.resolved ? "Date child support payments begin" : "Who pays/receives child support, the amount, and the payment start date",
-      !!agreementData.childSupport.paymentDate &&
+      agreementData.childSupport.resolved ? "Day of the month child support payments begin" : "Who pays/receives child support, the amount, and the payment day",
+      !!agreementData.childSupport.paymentDay &&
         !isBlank(agreementData.childSupport.payer) &&
         !isBlank(agreementData.childSupport.recipient) &&
         !isBlank(agreementData.childSupport.amount)
