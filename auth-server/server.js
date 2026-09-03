@@ -20,6 +20,7 @@ const mattersRoutes = require("./src/routes/mattersRoutes");
 const calculatorDataRoutes = require("./src/routes/calculatorDataRoutes");
 const formsRoutes = require("./src/routes/formsRoutes");
 const calculationReportsRoutes = require("./src/routes/calculationReportsRoutes");
+const computationResultsRoutes = require("./src/routes/computationResultsRoutes");
 const lawyerContactsRoutes = require("./src/routes/lawyerContactsRoutes");
 
 const app = express();
@@ -79,6 +80,7 @@ app.use("/v1", calculatorDataRoutes);
 app.use("/v1", formsRoutes);
 app.use("/v1", mattersRoutes);
 app.use("/v1", calculationReportsRoutes);
+app.use("/v1", computationResultsRoutes);
 app.use("/v1", lawyerContactsRoutes);
 app.get("/api/health", (req, res) => res.json({ status: "ok" }));
 

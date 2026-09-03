@@ -50,6 +50,7 @@ model User {
   savedCalculations          SavedCalculation[]
   calculationReports         MatterCalculationReport[]
   lawyerContacts             LawyerContact[]
+  computationResults         ComputationResult[]
 }
 
 // The user's lawyer address book. Populated from the "Lawyer Addressbook"
@@ -104,6 +105,7 @@ model Matter {
   taskStates           MatterTaskState[]
   calculations         SavedCalculation[] @relation("MatterCalculations")
   calculationReports   MatterCalculationReport[]
+  computationResults   ComputationResult[]
 
   @@unique([userId, matterNumber])
   @@index([userId])
@@ -303,4 +305,28 @@ model MatterCalculationReport {
 
   @@index([userId])
   @@index([matterId])
+}
+
+// Final computation results stored when a calculation is marked as done.
+// Separate from MatterCalculationReport so completed results can be queried
+// independently of the full report history.
+model ComputationResult {
+  id               Int      @id @default(autoincrement())
+  userId           String
+  matterId         Int
+  calculationType  String   // "child_support", "spousal_support"
+  status           String   @default("completed") // "completed", "draft"
+  inputSummary     Json     // key inputs: parties, incomes, children, provinces
+  resultSummary    Json     // key outputs: amounts, scenario, net payer
+  notes            String?  // optional user notes
+  completedAt      DateTime @default(now())
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  user             User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  matter           Matter   @relation(fields: [matterId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([matterId])
+  @@index([matterId, calculationType])
 }

@@ -464,6 +464,11 @@
   opacity: 50%;
 }
 
+.statusBadge.statusBadge--completed {
+  background-color: #4caf50;
+  color: #fff;
+}
+
 /* The Custom Checkbox */
 .custom-checkbox {
   display: block;

@@ -13,6 +13,7 @@ import SpousalSupportChatPanel from "../../components/MatterWorkflow/SpousalSupp
 import MatterIntakeChatPanel from "../../components/MatterWorkflow/MatterIntakeChatPanel";
 import UpdateInformationChatPanel from "../../components/MatterWorkflow/UpdateInformationChatPanel";
 import ProfileSummaryPanel from "../../components/MatterWorkflow/ProfileSummaryPanel";
+import CalculationPdf from "../../components/Matters/Documents/CalculationPdf";
 
 import {
   getSingleMatter,
@@ -72,6 +73,7 @@ const SingleMatter = () => {
   const [view, setView] = useState("tasks"); // tasks | intake_choice | intake_chat | support_choice | child_support | spousal_support
   const [matterData, setMatterData] = useState(null);
   const [taskStatuses, setTaskStatuses] = useState(initialTaskStatuses);
+  const [togglingStatus, setTogglingStatus] = useState(false);
 
   // Aggregated matter data for the chat context
   const [fullMatterData, setFullMatterData] = useState(null);
@@ -382,6 +384,42 @@ const SingleMatter = () => {
     setView("profile_summary");
   }
 
+  async function handleToggleMatterStatus() {
+    if (!matterData || togglingStatus) return;
+    const currentStatus = matterData.status ?? 0;
+    const newStatus = currentStatus === 1 ? 0 : 1;
+    setTogglingStatus(true);
+    try {
+      await dataAxios.patch(`update_matter_status/${id}`, { status: newStatus });
+
+      // When marking as done, save computation results from the latest calc report
+      if (newStatus === 1 && latestCalcReport) {
+        const fullState = latestCalcReport.inputData?._fullState;
+        await dataAxios.post(`matters/${id}/computation-results`, {
+          calculationType: latestCalcReport.calculationType || "child_support",
+          status: "completed",
+          inputSummary: {
+            party1_name: latestCalcReport.inputData?.party1_name,
+            party2_name: latestCalcReport.inputData?.party2_name,
+            party1_income: latestCalcReport.inputData?.party1_income,
+            party2_income: latestCalcReport.inputData?.party2_income,
+            children: latestCalcReport.inputData?.children,
+            party1_province: fullState?.background?.party1Province,
+            party2_province: fullState?.background?.party2Province,
+          },
+          resultSummary: latestCalcReport.resultData || {},
+        }).catch((err) => console.warn("Failed to save computation result:", err));
+      }
+
+      setMatterData((prev) => ({ ...prev, status: newStatus }));
+      dispatch(getSingleMatter(id));
+    } catch (err) {
+      console.error("Failed to toggle matter status:", err);
+    } finally {
+      setTogglingStatus(false);
+    }
+  }
+
   // Cleanup on unmount
   useEffect(() => {
     return () => {
@@ -525,11 +563,17 @@ const SingleMatter = () => {
 
             {/* Task list view (default) */}
             {view === "tasks" && (
-              <MatterTaskList
-                tasks={tasks}
-                onStart={handleTaskStart}
-                onViewInfo={handleViewInformation}
-              />
+              <>
+                <MatterTaskList
+                  tasks={tasks}
+                  onStart={handleTaskStart}
+                  onViewInfo={handleViewInformation}
+                  onViewCalcResults={() => setView("calculation_results")}
+                  matterStatus={matterData?.status ?? 0}
+                  onToggleStatus={handleToggleMatterStatus}
+                  togglingStatus={togglingStatus}
+                />
+              </>
             )}
 
             {/* View Information and Documents: profile summary + folders */}
@@ -539,6 +583,27 @@ const SingleMatter = () => {
                 matterData={matterData}
                 onBack={handleBackToTasks}
               />
+            )}
+
+            {/* Calculation Results view */}
+            {view === "calculation_results" && (
+              <div className="mw-calc-results">
+                <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "16px" }}>
+                  <button
+                    type="button"
+                    className="mw-chat-panel__back"
+                    onClick={handleBackToTasks}
+                  >
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M19 12H5" />
+                      <path d="M12 19l-7-7 7-7" />
+                    </svg>
+                    Back to Tasks
+                  </button>
+                  <h3 style={{ margin: 0, fontSize: "18px", fontWeight: 600 }}>Calculation Results</h3>
+                </div>
+                <CalculationPdf matterId={id} />
+              </div>
             )}
 
             {/* Matter Intake choice: AI or Manual */}
