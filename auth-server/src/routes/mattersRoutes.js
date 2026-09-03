@@ -569,6 +569,29 @@ router.get("/get_single_matter/:sid/:matter_id", async (req, res) => {
   }
 });
 
+// ── Update matter status (0 = open, 1 = completed) ────────────────────────
+router.patch("/update_matter_status/:matter_id", async (req, res) => {
+  try {
+    const matter = await findMatter(req.user.id, req.params.matter_id);
+    if (!matter) return res.status(404).json(errorBody("Matter not found."));
+
+    const newStatus = Number(req.body?.status);
+    if (![0, 1].includes(newStatus)) {
+      return res.status(400).json(errorBody("Status must be 0 (open) or 1 (completed).", 400));
+    }
+
+    const updated = await prisma.matter.update({
+      where: { id: matter.id },
+      data: { status: newStatus },
+    });
+
+    return res.json(ok(matterRow(updated)));
+  } catch (err) {
+    console.log("PATCH /v1/update_matter_status failed:", err?.message || err);
+    return res.status(500).json(errorBody("Could not update matter status.", 500));
+  }
+});
+
 router.post("/save_matter/:sid/:matter_id", async (req, res) => {
   try {
     const info = req.body?.data;

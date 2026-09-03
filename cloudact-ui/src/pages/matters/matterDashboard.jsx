@@ -354,10 +354,10 @@ const MatterDashboard = () => {
                         </td>
                         <td>
                           <div
-                            className="statusBadge statusBadge text-decoration-none"
+                            className={`statusBadge text-decoration-none${item.status === 1 ? " statusBadge--completed" : ""}`}
                             onClick={() => handleOpenMatter(item)}
                           >
-                            Open
+                            {item.status === 1 ? "Completed" : "Open"}
                           </div>
                         </td>
                       </tr>

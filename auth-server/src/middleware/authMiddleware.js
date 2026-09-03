@@ -42,11 +42,21 @@ function getCookieToken(req, names = [AUTH_COOKIE_NAME, ACCESS_COOKIE_NAME]) {
   return null;
 }
 
+const DEV_BYPASS_USER_ID = process.env.DEV_BYPASS_USER_ID || null;
+
 function authMiddleware(req, res, next) {
   const token = getAuthToken(req) || getCookieToken(req);
   if (!token) {
     return res.status(401).json({ error: "Missing auth token" });
   }
+
+  // Local dev bypass: accept the fake token the frontend seeds in dev mode.
+  if (token === "dev-bypass-token" && DEV_BYPASS_USER_ID) {
+    req.user = { id: DEV_BYPASS_USER_ID, userId: DEV_BYPASS_USER_ID };
+    req.userId = DEV_BYPASS_USER_ID;
+    return next();
+  }
+
   try {
     const payload = jwt.verify(token, process.env.JWT_SECRET);
     req.user = { id: payload.userId, userId: payload.userId };
