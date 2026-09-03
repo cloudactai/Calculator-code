@@ -70,9 +70,8 @@ export default function SeparationAgreementDocument({ agreementData }) {
       <h1 className="ad-title">SEPARATION AGREEMENT</h1>
 
       <p className="ad-p">
-        This Separation Agreement (the &ldquo;Agreement&rdquo;) is entered into on the{" "}
-        <span className="ad-blank">____</span> day of <span className="ad-blank">________</span>,{" "}
-        <span className="ad-blank">____</span> (year).
+        This Separation Agreement (the &ldquo;Agreement&rdquo;) is entered into on{" "}
+        {formatDate(new Date())}.
       </p>
 
       <div className="ad-between">BETWEEN:</div>
@@ -92,7 +91,7 @@ export default function SeparationAgreementDocument({ agreementData }) {
       </div>
 
       <h2 className="ad-heading">Background</h2>
-      <h3 className="ad-subheading">Relationship</h3>
+      <h3 className="ad-subheading">A. Relationship:</h3>
       <p className="ad-p">
         <Fill value={p1Name} /> and <Fill value={p2Name} /> (referred to collectively as the
         &ldquo;Parties&rdquo;, and individually as a &ldquo;Party&rdquo;) were legally married
@@ -101,18 +100,18 @@ export default function SeparationAgreementDocument({ agreementData }) {
         chosen to separate and live independently, pursuant to the terms set forth in this
         Agreement.
       </p>
-      <h3 className="ad-subheading">B. Full Disclosure</h3>
+      <h3 className="ad-subheading">B. Full Disclosure:</h3>
       <p className="ad-p">
         Each Party declares that they have provided complete, accurate, and honest disclosure
         regarding all pertinent financial matters relevant to this Agreement.
       </p>
-      <h3 className="ad-subheading">C. Purpose</h3>
+      <h3 className="ad-subheading">C. Purpose:</h3>
       <p className="ad-p">
         This Agreement is intended to address and resolve the issues set out herein. It may be
         incorporated into a divorce judgment, unless superseded by a later written agreement
         signed by both Parties.
       </p>
-      <h3 className="ad-subheading">D. Voluntary Consent</h3>
+      <h3 className="ad-subheading">D. Voluntary Consent:</h3>
       <p className="ad-p">
         Each Party affirms that they are entering into this Agreement of their own free will,
         without any duress, coercion, or undue pressure, and that they are of sound mind and
