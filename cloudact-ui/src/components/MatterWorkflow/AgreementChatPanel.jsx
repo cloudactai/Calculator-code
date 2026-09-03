@@ -379,39 +379,42 @@ export default function AgreementChatPanel({
       </div>
 
       <div className="mw-agreement-panel__preview">
-        <div className="mw-agreement-panel__preview-toolbar">
-          {saving && <span className="mw-agreement-panel__status">Saving draft…</span>}
-          <button
-            type="button"
-            className="mw-chip"
-            onClick={handleSaveDraft}
-            disabled={saving}
-          >
-            Save Draft
-          </button>
-          <button
-            type="button"
-            className="mw-save-btn"
-            onClick={handleGeneratePdf}
-            disabled={pdfBusy}
-          >
-            {pdfBusy ? "Generating…" : "Generate PDF"}
-          </button>
-          {hasPdf && (
-            <button
-              type="button"
-              className="mw-download-btn"
-              onClick={handleDownloadPdf}
-              disabled={downloadBusy}
-            >
-              {downloadBusy ? "Downloading…" : "Download PDF"}
-            </button>
-          )}
-        </div>
-        {pdfError && <div className="mw-agreement-panel__pdf-error">{pdfError}</div>}
         <div className="mw-agreement-panel__preview-scroll">
           <div ref={previewRef}>
             <SeparationAgreementDocument agreementData={agreementData} />
+          </div>
+        </div>
+
+        <div className="mw-agreement-panel__toolbar-float">
+          {pdfError && <div className="mw-agreement-panel__pdf-error">{pdfError}</div>}
+          {saving && <span className="mw-agreement-panel__status">Saving draft…</span>}
+          <div className="mw-agreement-panel__toolbar-buttons">
+            <button
+              type="button"
+              className="mw-chip"
+              onClick={handleSaveDraft}
+              disabled={saving}
+            >
+              Save Draft
+            </button>
+            <button
+              type="button"
+              className="mw-save-btn"
+              onClick={handleGeneratePdf}
+              disabled={pdfBusy}
+            >
+              {pdfBusy ? "Generating…" : "Generate PDF"}
+            </button>
+            {hasPdf && (
+              <button
+                type="button"
+                className="mw-download-btn"
+                onClick={handleDownloadPdf}
+                disabled={downloadBusy}
+              >
+                {downloadBusy ? "Downloading…" : "Download PDF"}
+              </button>
+            )}
           </div>
         </div>
       </div>
