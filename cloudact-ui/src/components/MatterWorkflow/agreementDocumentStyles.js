@@ -3,21 +3,30 @@
  * string, used both places, so the exported PDF is the same HTML/CSS the
  * lawyer already reviewed on screen (report_pdf.py's xhtml2pdf pattern).
  *
- * Every text property below is !important. That's not defensive styling
- * for its own sake — cloudact-ui's global src/index.css resets font-family
- * on literally every element ("*, *::after, *::before { font-family:
- * "Nunito", sans-serif !important; }") and zeroes every <p>'s margin-bottom
- * the same way ("p { margin-bottom: 0 !important; }"). A plain rule here
- * loses to those regardless of selector specificity, so this document has
- * to out-rank !important with !important, not just a more specific selector.
+ * Self-contained on purpose: this same string ends up in two very different
+ * surroundings. Live, it renders inside the app, whose global src/index.css
+ * resets margin/padding/font-family on literally every element ("*, *::after,
+ * *::before { margin:0; padding:0; font-family: "Nunito", sans-serif
+ * !important; }"). Exported, AgreementChatPanel.jsx serializes only this
+ * <style> block plus the rendered markup into a standalone HTML document for
+ * Flask's /agreement-pdf — none of the app's global CSS travels with it, so
+ * xhtml2pdf falls back to its own default heading/paragraph margins. Without
+ * its own zeroing reset here, those defaults would stack on top of this
+ * file's explicit margins in the PDF while the live preview (reset by the
+ * app's CSS first) looked fine — which is exactly the "huge gaps between
+ * every heading" bug this file's first version had. Every text property is
+ * also !important so a plain rule here can't lose to the app's own
+ * !important resets when this same CSS renders inside the live app.
  *
  * Deliberately conservative CSS otherwise: no flexbox/grid and no custom
- * properties. xhtml2pdf (used server-side for the PDF export) renders a
- * CSS2.1-ish subset, so anything fancier would look right in the browser and
- * wrong in the exported PDF. Block layout only, no tables.
+ * properties. xhtml2pdf renders a CSS2.1-ish subset, so anything fancier
+ * would look right in the browser and wrong in the exported PDF. Block
+ * layout only, no tables.
  */
 export const AGREEMENT_DOCUMENT_CSS = `
 .agreement-doc, .agreement-doc * {
+  margin: 0 !important;
+  padding: 0 !important;
   font-family: 'Times New Roman', Times, serif !important;
 }
 .agreement-doc {
