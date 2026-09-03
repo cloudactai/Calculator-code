@@ -82,7 +82,7 @@ export default function SeparationAgreementDocument({ agreementData }) {
         <p className="ad-party"><Fill value={d.party1.address} placeholder="[Party 1 address]" /></p>
       </div>
 
-      <div className="ad-between">AND</div>
+      <div className="ad-and">AND</div>
       <div className="ad-party-block">
         <p className="ad-party">
           <strong><Fill value={p2Name} placeholder="[Party 2 name]" /></strong>
