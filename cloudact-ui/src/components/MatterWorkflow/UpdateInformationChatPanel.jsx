@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import { useDispatch } from "react-redux";
 import { CALCULATOR_API } from "../../config";
+import { getAuthToken } from "../../utils/authToken";
 import { patchMatterIntake } from "../../utils/Apis/matters/saveMatterInformation/saveMattersActions";
 import refreshIcon from "../../assets/images/refresh-icon.png";
 import { getCurrentUserFromCookies } from "../../utils/helpers";
@@ -211,9 +212,13 @@ export default function UpdateInformationChatPanel({
     const warmTimer = setTimeout(() => setWarming(true), 6000);
 
     try {
+      const token = getAuthToken();
       const res = await fetch(`${CALCULATOR_API}/update-chat`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          ...(token && { Authorization: `Bearer ${token}` }),
+        },
         body: JSON.stringify({ messages: nextMessages }),
       });
       const data = await res.json();

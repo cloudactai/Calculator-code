@@ -51,6 +51,7 @@ model User {
   calculationReports         MatterCalculationReport[]
   lawyerContacts             LawyerContact[]
   computationResults         ComputationResult[]
+  matterAgreementDocuments   MatterAgreementDocument[]
 }
 
 // The user's lawyer address book. Populated from the "Lawyer Addressbook"
@@ -106,6 +107,7 @@ model Matter {
   calculations         SavedCalculation[] @relation("MatterCalculations")
   calculationReports   MatterCalculationReport[]
   computationResults   ComputationResult[]
+  agreementDocuments   MatterAgreementDocument[]
 
   @@unique([userId, matterNumber])
   @@index([userId])
@@ -205,8 +207,9 @@ model MatterFolder {
   type            String?
   createdAt       DateTime              @default(now())
   updatedAt       DateTime              @updatedAt
-  matter          Matter                @relation(fields: [matterId], references: [id], onDelete: Cascade)
-  formDocuments   MatterFormDocument[]
+  matter              Matter                @relation(fields: [matterId], references: [id], onDelete: Cascade)
+  formDocuments       MatterFormDocument[]
+  agreementDocuments  MatterAgreementDocument[]
 
   @@unique([matterId, normalizedTitle])
   @@index([matterId])
@@ -329,4 +332,32 @@ model ComputationResult {
   @@index([userId])
   @@index([matterId])
   @@index([matterId, calculationType])
+}
+
+// A drafted agreement (Draft Agreements task). One row per (matter,
+// agreementType) — the chat resumes across visits, so there is exactly one
+// in-progress conversation per agreement type rather than a new row each time.
+model MatterAgreementDocument {
+  id            Int       @id @default(autoincrement())
+  userId        String
+  matterId      Int
+  folderId      Int?
+  agreementType String
+  answers       Json      @default("{}")
+  transcript    Json      @default("[]")
+  status        String    @default("draft")
+  revision      Int       @default(1)
+  pdfBytes      Bytes?
+  pdfFilename   String?
+  generatedAt   DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  user   User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  matter Matter        @relation(fields: [matterId], references: [id], onDelete: Cascade)
+  folder MatterFolder? @relation(fields: [folderId], references: [id], onDelete: SetNull)
+
+  @@unique([matterId, agreementType])
+  @@index([userId])
+  @@index([matterId])
 }
