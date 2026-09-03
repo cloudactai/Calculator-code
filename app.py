@@ -1663,10 +1663,13 @@ SECTION SHAPES
 Use these exact section names and field names. A field not mentioned by the
 lawyer stays unset — never fill one in with a guess.
 
-ChildSupport — only asked if the primer marks child support's payment date as
+ChildSupport — only asked if the primer marks child support's payment day as
 outstanding (the payer/receiver/amount themselves come from the matter's
-saved calculation, never asked here):
-  { "paymentDate": "the date child support payments will begin, as the lawyer said it" }
+saved calculation, never asked here). The agreement's own wording is "starting
+on the [day] day of the first month following the date of separation" — ask
+for that day of the month, the same way SpousalSupport's paymentStartDay does,
+not a full calendar date:
+  { "paymentDay": "the day of the month child support payments begin, e.g. '1st'" }
 
 ChildSupportFallback — only asked if the primer marks child support's
 payer/receiver/amount as outstanding (meaning no saved calculation result was
