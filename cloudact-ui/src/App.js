@@ -91,7 +91,7 @@ function App() {
         <Routes />
       </Router>
 
-      <FamilyLawChat />
+      {/* <FamilyLawChat /> */}
 
       <UnauthorizedModal
         show={showUnauthorizedModal}
