@@ -464,6 +464,7 @@ const SingleMatter = () => {
       "selectedCalculatorMatterNumber",
       JSON.stringify(id)
     );
+    localStorage.setItem("viewOnlyCalcResults", "true");
     history.push("/calculator");
   }
 
