@@ -11,6 +11,7 @@ import { replaceLastThreeChars } from "../../../utils/helpers";
 import { formulaForChildSupport } from "../../../utils/helpers/calculator/taxCalculationFormula";
 import { formatNumberInThousands } from "../../../utils/helpers/Formatting";
 import dataAxios from "../../../utils/dataAxios";
+import { formsService } from "../../../services/formsService";
 //@ts-ignore
 import html2pdf from "html2pdf.js";
 
@@ -1024,6 +1025,32 @@ const Screen4 = ({
         pdfFilename,
       });
       toast.success("Calculation saved to matter.");
+
+      formsService.setTaskState(storedMatterId, "child_spousal_support", "completed")
+        .catch((err) => console.warn("Failed to mark task as completed:", err));
+
+      dataAxios.post(`matters/${storedMatterId}/computation-results`, {
+        calculationType,
+        status: "completed",
+        inputSummary: {
+          party1_name: screen1.background.party1FirstName,
+          party2_name: screen1.background.party2FirstName,
+          party1_income: screen2.totalIncomeParty1,
+          party2_income: screen2.totalIncomeParty2,
+          children: screen1.aboutTheChildren,
+          party1_province: screen1.background.party1province,
+          party2_province: screen1.background.party2province,
+        },
+        resultSummary: {
+          childSupport: screen2.childSupport,
+          spousalSupport: screen2.spousalSupport,
+          childSupportGreater: childSupportGreater(),
+          spousalSupportLow: spousalSupportLowGreater(),
+          spousalSupportMid: spousalSupportMedGreater(),
+          spousalSupportHigh: spousalSupportHighGreater(),
+          supportGivenTo: determineSupportGivenTo(),
+        },
+      }).catch((err) => console.warn("Failed to save computation result:", err));
     } catch (err) {
       console.warn("[ManualCalc] Failed to save report:", err);
       toast.error("Failed to save calculation. Please try again.");

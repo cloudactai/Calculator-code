@@ -283,6 +283,9 @@ const SingleMatter = () => {
       // T1 upload → AI extraction → review → saves into THIS matter's intake.
       history.push(AUTH_ROUTES.T1_UPLOAD, { matterNumber: id });
     } else if (taskId === "child_spousal_support") {
+      if (taskStatuses.child_spousal_support === "completed") {
+        return;
+      }
       if (taskStatuses.child_spousal_support === "not_started") {
         persistTaskStatus("child_spousal_support", "in_progress");
       }
@@ -444,6 +447,28 @@ const SingleMatter = () => {
       console.error("Failed to toggle matter status:", err);
     } finally {
       setTogglingStatus(false);
+    }
+  }
+
+  async function handleMarkTaskDone(taskId) {
+    persistTaskStatus(taskId, "completed");
+
+    if (taskId === "child_spousal_support" && latestCalcReport) {
+      const fullState = latestCalcReport.inputData?._fullState;
+      dataAxios.post(`matters/${id}/computation-results`, {
+        calculationType: latestCalcReport.calculationType || "child_support",
+        status: "completed",
+        inputSummary: {
+          party1_name: latestCalcReport.inputData?.party1_name,
+          party2_name: latestCalcReport.inputData?.party2_name,
+          party1_income: latestCalcReport.inputData?.party1_income,
+          party2_income: latestCalcReport.inputData?.party2_income,
+          children: latestCalcReport.inputData?.children,
+          party1_province: fullState?.background?.party1Province,
+          party2_province: fullState?.background?.party2Province,
+        },
+        resultSummary: latestCalcReport.resultData || {},
+      }).catch((err) => console.warn("Failed to save computation result:", err));
     }
   }
 
@@ -619,6 +644,7 @@ const SingleMatter = () => {
                 <MatterTaskList
                   tasks={tasks}
                   onStart={handleTaskStart}
+                  onMarkTaskDone={handleMarkTaskDone}
                   onViewInfo={handleViewInformation}
                   onViewCalcResults={handleViewCalcResults}
                   matterStatus={matterData?.status ?? 0}
