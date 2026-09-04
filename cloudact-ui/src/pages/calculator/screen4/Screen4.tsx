@@ -11,6 +11,7 @@ import { replaceLastThreeChars } from "../../../utils/helpers";
 import { formulaForChildSupport } from "../../../utils/helpers/calculator/taxCalculationFormula";
 import { formatNumberInThousands } from "../../../utils/helpers/Formatting";
 import dataAxios from "../../../utils/dataAxios";
+import { formsService } from "../../../services/formsService";
 //@ts-ignore
 import html2pdf from "html2pdf.js";
 
@@ -1024,6 +1025,9 @@ const Screen4 = ({
         pdfFilename,
       });
       toast.success("Calculation saved to matter.");
+
+      formsService.setTaskState(storedMatterId, "child_spousal_support", "completed")
+        .catch((err) => console.warn("Failed to mark task as completed:", err));
     } catch (err) {
       console.warn("[ManualCalc] Failed to save report:", err);
       toast.error("Failed to save calculation. Please try again.");

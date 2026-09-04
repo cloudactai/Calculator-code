@@ -9,6 +9,7 @@ import { apiCalculatorById } from "../../../utils/Apis/calculator/Calculator_val
 import { replaceLastThreeChars } from "../../../utils/helpers";
 import { formulaForChildSupport } from "../../../utils/helpers/calculator/taxCalculationFormula";
 import { formatNumberInThousands } from "../../../utils/helpers/Formatting";
+import { formsService } from "../../../services/formsService";
 
 import {
   backgroundState,
@@ -1013,6 +1014,13 @@ const Screen4 = ({
                 changeReportIncompleteToComplete(
                   getCalculatorIdFromQuery(query)
                 );
+                try {
+                  const mid = JSON.parse(localStorage.getItem('selectedCalculatorMatterNumber') || '""');
+                  if (mid) {
+                    formsService.setTaskState(mid, "child_spousal_support", "completed")
+                      .catch((err) => console.warn("Failed to mark task as completed:", err));
+                  }
+                } catch { /* ignore */ }
               }}
               className="btn btnPrimary rounded-pill"
             >

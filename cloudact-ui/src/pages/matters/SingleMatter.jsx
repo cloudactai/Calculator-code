@@ -283,6 +283,9 @@ const SingleMatter = () => {
       // T1 upload → AI extraction → review → saves into THIS matter's intake.
       history.push(AUTH_ROUTES.T1_UPLOAD, { matterNumber: id });
     } else if (taskId === "child_spousal_support") {
+      if (taskStatuses.child_spousal_support === "completed") {
+        return;
+      }
       if (taskStatuses.child_spousal_support === "not_started") {
         persistTaskStatus("child_spousal_support", "in_progress");
       }
@@ -445,6 +448,10 @@ const SingleMatter = () => {
     } finally {
       setTogglingStatus(false);
     }
+  }
+
+  function handleMarkTaskDone(taskId) {
+    persistTaskStatus(taskId, "completed");
   }
 
   function handleViewCalcResults() {
@@ -619,6 +626,7 @@ const SingleMatter = () => {
                 <MatterTaskList
                   tasks={tasks}
                   onStart={handleTaskStart}
+                  onMarkTaskDone={handleMarkTaskDone}
                   onViewInfo={handleViewInformation}
                   onViewCalcResults={handleViewCalcResults}
                   matterStatus={matterData?.status ?? 0}

@@ -22,7 +22,7 @@ const STATUS_CLASSES = {
   completed: "mw-status--completed",
 };
 
-export default function MatterTaskList({ tasks, onStart, onViewInfo, onViewCalcResults, matterStatus, onToggleStatus, togglingStatus }) {
+export default function MatterTaskList({ tasks, onStart, onMarkTaskDone, onViewInfo, onViewCalcResults, matterStatus, onToggleStatus, togglingStatus }) {
   const [docsHover, setDocsHover] = useState(false);
   const [calcHover, setCalcHover] = useState(false);
   const [statusHover, setStatusHover] = useState(false);
@@ -168,22 +168,41 @@ export default function MatterTaskList({ tasks, onStart, onViewInfo, onViewCalcR
               {t.label}
             </div>
 
-            <div className="mw-task-list__cell mw-task-list__cell--action">
-              <button
-                className={`mw-action-btn${
-                  t.disabled ? " mw-action-btn--disabled" : ""
-                }${t.status === "in_progress" ? " mw-action-btn--resume" : ""}`}
-                disabled={t.disabled}
-                onClick={() => onStart(t.id)}
-              >
-                {t.disabled
-                  ? "Disabled"
-                  : t.status === "in_progress"
-                  ? "Resume"
-                  : t.status === "completed"
-                  ? "View"
-                  : "Start"}
-              </button>
+            <div className="mw-task-list__cell mw-task-list__cell--action" style={{ display: "flex", gap: "8px", alignItems: "center" }}>
+              {t.status === "completed" && t.id === "child_spousal_support" ? (
+                <span style={{ color: "#4caf50", fontWeight: 600, fontSize: "13px" }}>Completed</span>
+              ) : (
+                <button
+                  className={`mw-action-btn${
+                    t.disabled ? " mw-action-btn--disabled" : ""
+                  }${t.status === "in_progress" ? " mw-action-btn--resume" : ""}`}
+                  disabled={t.disabled}
+                  onClick={() => onStart(t.id)}
+                >
+                  {t.disabled
+                    ? "Disabled"
+                    : t.status === "in_progress"
+                    ? "Resume"
+                    : t.status === "completed"
+                    ? "View"
+                    : "Start"}
+                </button>
+              )}
+              {onMarkTaskDone && t.status === "in_progress" && t.id === "child_spousal_support" && (
+                <button
+                  className="mw-action-btn"
+                  style={{
+                    background: "#4caf50",
+                    color: "#fff",
+                    border: "none",
+                    fontSize: "12px",
+                    padding: "4px 12px",
+                  }}
+                  onClick={() => onMarkTaskDone(t.id)}
+                >
+                  Mark as Done
+                </button>
+              )}
             </div>
 
             <div className="mw-task-list__cell mw-task-list__cell--status">
