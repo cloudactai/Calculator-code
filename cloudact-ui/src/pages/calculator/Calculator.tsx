@@ -1052,9 +1052,11 @@ const Calculator = () => {
         }
       }
 
-      // Jump to step 2 (income screen) so user sees populated data
-      setCalculatorState((prev) => ({ ...prev, currentFormNumber: 2 }));
-      console.log("[Calculator] Restored state from viewCalculationData");
+      // Jump to step 3 (result screen) if we have full state with support data,
+      // otherwise step 2 (income screen) so user sees populated data.
+      const hasResults = full?.supportQuantum || saved.resultData;
+      setCalculatorState((prev) => ({ ...prev, currentFormNumber: hasResults ? 3 : 2 }));
+      console.log("[Calculator] Restored state from viewCalculationData, jumping to step", hasResults ? 3 : 2);
     } catch (err) {
       console.warn("[Calculator] Failed to restore viewCalculationData:", err);
     }
