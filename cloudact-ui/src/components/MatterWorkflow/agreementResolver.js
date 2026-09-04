@@ -127,8 +127,8 @@ export async function fetchAgreementCalcReports(matterId) {
 function resolveChildSupportFromReport(report) {
   const result = report?.resultData;
   if (!result || isBlank(result.net_payer)) return null;
-  const p1 = result.party1_name;
-  const p2 = result.party2_name;
+  const p1 = result.party1_name || report?.inputData?.party1_name;
+  const p2 = result.party2_name || report?.inputData?.party2_name;
   const payer = result.net_payer;
   let recipient = "";
   if (!isBlank(p1) && !isBlank(p2)) {
