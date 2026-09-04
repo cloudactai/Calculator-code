@@ -1580,6 +1580,20 @@ const Screen4 = ({
           Back
         </button>
         <div className="d-flex align-items-center">
+          {(() => {
+            try {
+              const mid = JSON.parse(localStorage.getItem('selectedCalculatorMatterNumber') || '""');
+              if (mid) return (
+                <button
+                  className="btn btnPrimary rounded-pill me-3"
+                  onClick={() => history.push(`/single-matter/${mid}`)}
+                >
+                  Back to Matter
+                </button>
+              );
+            } catch { /* ignore */ }
+            return null;
+          })()}
           <button
             className="btn btnPrimary rounded-pill me-3"
             onClick={() => {
