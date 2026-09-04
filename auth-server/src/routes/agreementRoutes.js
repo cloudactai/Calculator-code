@@ -5,6 +5,7 @@
 // row is read back and updated across visits instead of creating a new report
 // each time.
 //
+// GET    /v1/matters/:matter_id/agreements                          – list generated agreements (Documents folder view)
 // GET    /v1/matters/:matter_id/agreements/:agreement_type          – load for resume (answers + transcript)
 // PUT    /v1/matters/:matter_id/agreements/:agreement_type          – save draft (answers + transcript)
 // POST   /v1/matters/:matter_id/agreements/:agreement_type/reset    – clear transcript + answers only
@@ -15,6 +16,11 @@ const crypto = require("crypto");
 const express = require("express");
 const prisma = require("../../prismaClient");
 const { authMiddleware } = require("../middleware/authMiddleware");
+const {
+  agreementDto,
+  agreementFolderDto,
+  DEFAULT_PDF_FILENAME,
+} = require("../utils/agreementDocument");
 
 const router = express.Router();
 router.use(authMiddleware);
@@ -50,20 +56,44 @@ function validAgreementType(value) {
   return KNOWN_AGREEMENT_TYPES.has(String(value || ""));
 }
 
-function dto(row) {
-  if (!row) return null;
-  return {
-    id: row.id,
-    agreementType: row.agreementType,
-    answers: row.answers ?? {},
-    transcript: row.transcript ?? [],
-    status: row.status,
-    revision: row.revision,
-    hasPdf: !!row.pdfBytes,
-    generatedAt: row.generatedAt,
-    updatedAt: row.updatedAt,
-  };
-}
+// ── List this matter's generated agreements ─────────────────────────────────
+// What makes a generated agreement visible in the matter's Documents folder:
+// the folder view lists MatterFormDocument rows, which an agreement is not, so
+// without this route a PDF filed into "Separation Agreements" sat in the
+// database with nothing able to show it. Drafts that have never been generated
+// have no folder and are excluded — only a real PDF is a document.
+router.get("/matters/:matter_id/agreements", async (req, res) => {
+  const matter = await matterForUser(req.user.id, req.params.matter_id);
+  if (!matter) return res.status(404).json(errorBody("Matter not found."));
+
+  const { folderId } = req.query;
+  let folderFilter = {};
+  if (folderId !== undefined && folderId !== "") {
+    const asNumber = Number(folderId);
+    if (!Number.isInteger(asNumber) || asNumber <= 0) {
+      return res.status(400).json(errorBody("folderId must be a positive integer.", 400));
+    }
+    folderFilter = { folderId: asNumber };
+  }
+
+  const rows = await prisma.matterAgreementDocument.findMany({
+    where: { matterId: matter.id, generatedAt: { not: null }, ...folderFilter },
+    select: {
+      id: true,
+      matterId: true,
+      folderId: true,
+      agreementType: true,
+      pdfFilename: true,
+      status: true,
+      revision: true,
+      generatedAt: true,
+      createdAt: true,
+      updatedAt: true,
+    },
+    orderBy: { updatedAt: "desc" },
+  });
+  return res.json(ok(rows.map(agreementFolderDto)));
+});
 
 // ── Load for resume ─────────────────────────────────────────────────────────
 router.get("/matters/:matter_id/agreements/:agreement_type", async (req, res) => {
@@ -76,7 +106,7 @@ router.get("/matters/:matter_id/agreements/:agreement_type", async (req, res) =>
   const row = await prisma.matterAgreementDocument.findUnique({
     where: { matterId_agreementType: { matterId: matter.id, agreementType: req.params.agreement_type } },
   });
-  return res.json(ok(dto(row)));
+  return res.json(ok(agreementDto(row)));
 });
 
 // ── Save draft (answers + transcript only — never the PDF) ─────────────────
@@ -111,7 +141,7 @@ router.put("/matters/:matter_id/agreements/:agreement_type", async (req, res) =>
       revision: { increment: 1 },
     },
   });
-  return res.status(201).json(ok(dto(row)));
+  return res.status(201).json(ok(agreementDto(row)));
 });
 
 // ── Reset Chat: clears transcript + answers on this row only ───────────────
@@ -139,7 +169,7 @@ router.post("/matters/:matter_id/agreements/:agreement_type/reset", async (req, 
       revision: { increment: 1 },
     },
   });
-  return res.json(ok(dto(row)));
+  return res.json(ok(agreementDto(row)));
 });
 
 // ── Save the generated PDF ──────────────────────────────────────────────────
@@ -164,7 +194,7 @@ router.put(
       return res.status(400).json(errorBody("A PDF under 20 MB is required.", 400));
     }
 
-    const filename = String(req.query.filename || req.body?.filename || "separation_agreement.pdf");
+    const filename = String(req.query.filename || DEFAULT_PDF_FILENAME);
     const checksum = crypto.createHash("sha256").update(pdf).digest("hex");
 
     const folder = await prisma.matterFolder.upsert({
@@ -193,7 +223,7 @@ router.put(
       },
     });
 
-    return res.json(ok({ ...dto(row), checksum }));
+    return res.json(ok({ ...agreementDto(row), checksum }));
   }
 );
 
@@ -214,7 +244,7 @@ router.get("/matters/:matter_id/agreements/:agreement_type/pdf", async (req, res
   res.setHeader("Content-Type", "application/pdf");
   res.setHeader(
     "Content-Disposition",
-    `attachment; filename="${row.pdfFilename || "separation_agreement.pdf"}"`
+    `attachment; filename="${row.pdfFilename || DEFAULT_PDF_FILENAME}"`
   );
   return res.send(row.pdfBytes);
 });

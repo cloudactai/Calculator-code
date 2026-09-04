@@ -356,10 +356,24 @@ those bytes to `PUT /v1/matters/:id/agreements/:type/pdf`
 into a per-matter "Separation Agreements" `MatterFolder` the same way form documents
 are organized, and stores them on `MatterAgreementDocument.pdfBytes`.
 
+**Where it lands in Documents.** A folder holds two unrelated tables:
+`MatterFormDocument` (listed by `GET /v1/matters/:id/forms`) and
+`MatterAgreementDocument` (listed by `GET /v1/matters/:id/agreements`, which takes the
+same optional `folderId` and returns only rows that have actually been generated, in
+the folder table's key shape — `agreementFolderDto()` in
+[agreementDocument.js](../auth-server/src/utils/agreementDocument.js)). The folder view
+in [Folders.jsx](../cloudact-ui/src/components/Matters/Folders.jsx) asks for both and
+renders them in one table; agreements get a Download button rather than
+Open/Rename/Delete, since a generated agreement is edited through the chat, not the
+form filler. Listing forms alone is what previously made the "Separation Agreements"
+folder read as empty immediately after generating into it.
+
 **Tests.** The feature ships with its own suites, worth running before touching it:
 `SeparationAgreementDocument.test.jsx` (the conditional sections and the clause text),
 `agreementResolver.test.js` (which source wins for each field), `agreementSections.test.js`,
-`AgreementTypeList.test.jsx` and `AgreementChatPanel.test.jsx` on the frontend, plus
+`AgreementTypeList.test.jsx`, `AgreementChatPanel.test.jsx` and
+`Matters/Folders.test.jsx` (the folder listing shows generated agreements) on the
+frontend, `auth-server/src/utils/agreementDocument.test.js` (`npm test` there), plus
 [test_agreement_endpoints.py](../test_agreement_endpoints.py) against Flask. The document
 suite is what caught two real bugs that a read-through had passed over. Note the CRA
 `resetMocks` default when adding to them: a mock's implementation is cleared between tests,

@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from "react";
 import { CALCULATOR_API } from "../../config";
 import { getAuthToken } from "../../utils/authToken";
 import { agreementsService } from "../../services/agreementsService";
+import { downloadBlob } from "../../utils/downloadBlob";
 import { getAgreementType } from "./agreementTypes";
 import {
   applyAgreementPatches,
@@ -270,14 +271,7 @@ export default function AgreementChatPanel({
     try {
       const res = await agreementsService.downloadAgreementPdf(matterId, agreementType);
       const blob = new Blob([res.data], { type: "application/pdf" });
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement("a");
-      link.href = url;
-      link.download = `${agreementType}_${matterId}.pdf`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      URL.revokeObjectURL(url);
+      downloadBlob(blob, `${agreementType}_${matterId}.pdf`);
     } catch (error) {
       console.error("Could not download the agreement PDF.", error);
     } finally {

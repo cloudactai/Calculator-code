@@ -5,12 +5,24 @@ import AllFolders from './Folders/AllFolders';
 import GeneralModal from './Modals/GeneralModal';
 import CalculationPDf from './Documents/CalculationPdf';
 import { formsService } from '../../services/formsService';
+import { agreementsService } from '../../services/agreementsService';
+import { downloadBlob } from '../../utils/downloadBlob';
 
-function MatterFormsList({ matterNumber, folderId }) {
+// A folder holds two different kinds of document: form documents
+// (MatterFormDocument, listed by formsService) and generated agreements
+// (MatterAgreementDocument, listed by agreementsService). They live in
+// separate tables and separate routes, so both have to be asked for — listing
+// forms alone is what made the "Separation Agreements" folder read as empty
+// right after a separation agreement was generated into it.
+const LOAD_FAILED = Symbol('load failed');
+
+export function MatterFormsList({ matterNumber, folderId }) {
     const history = useHistory();
     const [documents, setDocuments] = useState([]);
+    const [agreements, setAgreements] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
+    const [downloadingId, setDownloadingId] = useState(null);
 
     const renameDocument = async (document) => {
         const name = window.prompt('Form name', document.file_name);
@@ -33,27 +45,70 @@ function MatterFormsList({ matterNumber, folderId }) {
         }
     };
 
+    const downloadAgreement = async (agreement) => {
+        setDownloadingId(agreement.id);
+        try {
+            const response = await agreementsService.downloadAgreementPdf(matterNumber, agreement.agreement_type);
+            downloadBlob(new Blob([response.data], { type: 'application/pdf' }), agreement.file_name);
+        } catch {
+            setError('Could not download this agreement.');
+        } finally {
+            setDownloadingId(null);
+        }
+    };
+
     useEffect(() => {
         let active = true;
         setLoading(true);
-        formsService.listDocuments(matterNumber, folderId)
-            .then((result) => active && setDocuments(result))
-            .catch(() => active && setError('Could not load forms in this folder.'))
+        setError('');
+        Promise.all([
+            formsService.listDocuments(matterNumber, folderId).catch(() => LOAD_FAILED),
+            agreementsService.listAgreements(matterNumber, folderId).catch(() => LOAD_FAILED),
+        ])
+            .then(([forms, generatedAgreements]) => {
+                if (!active) return;
+                if (forms === LOAD_FAILED && generatedAgreements === LOAD_FAILED) {
+                    setError('Could not load this folder.');
+                }
+                setDocuments(forms === LOAD_FAILED ? [] : (forms || []));
+                setAgreements(
+                    generatedAgreements === LOAD_FAILED
+                        ? []
+                        : (generatedAgreements || []).filter((agreement) => agreement.has_pdf)
+                );
+            })
             .finally(() => active && setLoading(false));
         return () => { active = false; };
     }, [matterNumber, folderId]);
 
-    if (loading) return <div className="description">Loading forms…</div>;
-    if (error) return <div className="description text-danger" role="alert">{error}</div>;
-    if (!documents.length) return <div className="description">No forms have been created in this folder yet.</div>;
+    if (loading) return <div className="description">Loading documents…</div>;
+    if (error && !documents.length && !agreements.length) return <div className="description text-danger" role="alert">{error}</div>;
+    if (!documents.length && !agreements.length) return <div className="description">Nothing has been created in this folder yet.</div>;
 
     return (
         <div className="documents-table mt-3">
+            {error && <div className="description text-danger" role="alert">{error}</div>}
             <table className="table reports-table reports-table-primary">
-                <thead><tr><th>Form</th><th>Status</th><th>Updated</th><th /></tr></thead>
+                <thead><tr><th>Document</th><th>Status</th><th>Updated</th><th /></tr></thead>
                 <tbody>
+                    {agreements.map((agreement) => (
+                        <tr key={`agreement-${agreement.id}`}>
+                            <td>{agreement.file_name}</td>
+                            <td>{String(agreement.status || '').replace(/_/g, ' ')}</td>
+                            <td>{new Date(agreement.updated).toLocaleDateString()}</td>
+                            <td className="d-flex gap-2">
+                                <button
+                                    className="btn btnPrimary rounded-pill"
+                                    onClick={() => downloadAgreement(agreement)}
+                                    disabled={downloadingId === agreement.id}
+                                >
+                                    {downloadingId === agreement.id ? 'Downloading…' : 'Download'}
+                                </button>
+                            </td>
+                        </tr>
+                    ))}
                     {documents.map((document) => (
-                        <tr key={document.id}>
+                        <tr key={`form-${document.id}`}>
                             <td>{document.file_name}</td>
                             <td>{document.status.replace(/_/g, ' ')}</td>
                             <td>{new Date(document.updated).toLocaleDateString()}</td>
@@ -219,7 +274,9 @@ function FolderStructure({ matter_id, matterData }) {
                 <div className="info">
                   <div className="breadcrumbs"> {currentFolder.title} </div>{" "}
                   <div className="description">
-                    Forms created for this matter are saved here.
+                    {currentFolder.type === "agreements"
+                      ? "Agreements generated for this matter are saved here."
+                      : "Forms created for this matter are saved here."}
                   </div>{" "}
                 </div>
                 <MatterFormsList

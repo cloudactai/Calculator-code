@@ -7,6 +7,14 @@ const body = (response) => response.data?.data ?? response.data;
  * agreementRoutes.js). Shaped like formsService.js.
  */
 export const agreementsService = {
+  /** Generated agreements filed in this matter's Documents folders. Without
+   * a folderId it lists every generated agreement for the matter. */
+  listAgreements: async (matterNumber, folderId) =>
+    body(
+      await axios.get(`/matters/${encodeURIComponent(matterNumber)}/agreements`, {
+        params: folderId ? { folderId } : undefined,
+      })
+    ),
   getAgreement: async (matterNumber, agreementType) =>
     body(await axios.get(`/matters/${encodeURIComponent(matterNumber)}/agreements/${encodeURIComponent(agreementType)}`)),
   saveAgreementDraft: async (matterNumber, agreementType, { answers, transcript }) =>
