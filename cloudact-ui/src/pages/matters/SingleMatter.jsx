@@ -450,8 +450,26 @@ const SingleMatter = () => {
     }
   }
 
-  function handleMarkTaskDone(taskId) {
+  async function handleMarkTaskDone(taskId) {
     persistTaskStatus(taskId, "completed");
+
+    if (taskId === "child_spousal_support" && latestCalcReport) {
+      const fullState = latestCalcReport.inputData?._fullState;
+      dataAxios.post(`matters/${id}/computation-results`, {
+        calculationType: latestCalcReport.calculationType || "child_support",
+        status: "completed",
+        inputSummary: {
+          party1_name: latestCalcReport.inputData?.party1_name,
+          party2_name: latestCalcReport.inputData?.party2_name,
+          party1_income: latestCalcReport.inputData?.party1_income,
+          party2_income: latestCalcReport.inputData?.party2_income,
+          children: latestCalcReport.inputData?.children,
+          party1_province: fullState?.background?.party1Province,
+          party2_province: fullState?.background?.party2Province,
+        },
+        resultSummary: latestCalcReport.resultData || {},
+      }).catch((err) => console.warn("Failed to save computation result:", err));
+    }
   }
 
   function handleViewCalcResults() {
