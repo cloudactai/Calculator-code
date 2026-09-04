@@ -45,6 +45,17 @@ stalls, a PDF that fails to generate, or a "Save to Matter" that does not persis
 | Shared chat/context styling | [MatterWorkflow.css](../cloudact-ui/src/components/MatterWorkflow/MatterWorkflow.css) |
 | Context builder for stored intake | [matterIntakeContext.js](../cloudact-ui/src/components/MatterWorkflow/matterIntakeContext.js) |
 
+**Persistence & saved results ([auth-server/src/routes/](../auth-server/src/routes/), [cloudact-ui/src/](../cloudact-ui/src/))**
+
+| Piece | File |
+| --- | --- |
+| Calculation report API (save, list, download, delete) | [calculationReportsRoutes.js](../auth-server/src/routes/calculationReportsRoutes.js) |
+| Computation result API (save on task/matter completion) | [computationResultsRoutes.js](../auth-server/src/routes/computationResultsRoutes.js) |
+| Database schema (`MatterCalculationReport`, `ComputationResult`) | [schema.prisma](../auth-server/prisma/schema.prisma) |
+| Saved reports list + PDF regeneration (documents tab) | [CalculationPdf.jsx](../cloudact-ui/src/components/Matters/Documents/CalculationPdf.jsx) |
+| Saved reports list (task-list view) | [CalculationResultsPanel.jsx](../cloudact-ui/src/components/MatterWorkflow/CalculationResultsPanel.jsx) |
+| Task/matter completion + view-results logic | [SingleMatter.jsx](../cloudact-ui/src/pages/matters/SingleMatter.jsx) |
+
 ---
 
 ## Background
@@ -381,6 +392,152 @@ button. The `pdf_base64` field contains the raw PDF bytes as a base64 string, wh
 **Save to Matter** button sends to the auth-server database as an attachment on the
 matter record, so the report is permanently associated with the matter and retrievable
 later without regeneration.
+
+---
+
+## Saved calculations & completing a calculation
+
+When the user clicks **Save to Matter** in a calculator chat panel or the form
+workflow, the frontend persists the full calculation to the auth-server database.
+When the user marks the "CALCULATE CHILD & SPOUSAL SUPPORT" task as done (or marks
+the entire matter as done), a summarised **computation result** is saved alongside
+it. Together these two tables — `MatterCalculationReport` and `ComputationResult`
+— form the persistence layer for calculations.
+
+### Where it lives
+
+| Piece | File |
+| --- | --- |
+| Calculation report routes (CRUD + PDF download) | [auth-server/src/routes/calculationReportsRoutes.js](../auth-server/src/routes/calculationReportsRoutes.js) |
+| Computation result routes (CRUD) | [auth-server/src/routes/computationResultsRoutes.js](../auth-server/src/routes/computationResultsRoutes.js) |
+| Prisma models | [auth-server/prisma/schema.prisma](../auth-server/prisma/schema.prisma) — `MatterCalculationReport` and `ComputationResult` |
+| Save-to-matter logic (child support) | [ChildSupportChatPanel.jsx](../cloudact-ui/src/components/MatterWorkflow/ChildSupportChatPanel.jsx) — `saveToMatter()` |
+| Save-to-matter logic (spousal support) | [SpousalSupportChatPanel.jsx](../cloudact-ui/src/components/MatterWorkflow/SpousalSupportChatPanel.jsx) — `saveToMatter()` |
+| Task completion + computation result | [SingleMatter.jsx](../cloudact-ui/src/pages/matters/SingleMatter.jsx) — `handleMarkTaskDone()`, `handleToggleMatterStatus()` |
+| Saved reports list (documents tab) | [CalculationPdf.jsx](../cloudact-ui/src/components/Matters/Documents/CalculationPdf.jsx) |
+| Saved reports list (task-list view) | [CalculationResultsPanel.jsx](../cloudact-ui/src/components/MatterWorkflow/CalculationResultsPanel.jsx) |
+| Derived-field normaliser | [auth-server/src/utils/derivedFields.js](../auth-server/src/utils/derivedFields.js) |
+
+### Database models
+
+**`MatterCalculationReport`** stores every saved calculation run. One matter can
+have many reports (the user may re-run with different inputs). Key columns:
+
+| Column | Purpose |
+| --- | --- |
+| `calculationType` | `"child_support"` or `"spousal_support"` |
+| `inputData` (JSON) | Full calculation inputs. Contains `_calcResult` (the raw AI tool result) and `_fullState` (the manual-calculator-shaped object used for PDF rendering and view-results). Also stores top-level `party1_name`, `party1_income`, `party2_name`, `party2_income`, `children`. |
+| `resultData` (JSON) | Calculation outputs: `scenario`, `party1_monthly`, `party2_monthly`, `net_payer`, `net_monthly`, `net_annual`, and for spousal: `spousal_low_monthly` / `mid` / `high`, INDI breakdowns, duration. |
+| `pdfBytes` | The generated PDF as raw bytes (stored in Postgres, excluded from list queries). |
+| `label` | User-friendly name, e.g. "Smith v Jones - Child Support". |
+| `taxYear` | Optional tax year the calculation was run for. |
+
+**`ComputationResult`** stores the finalised result when the calculation task is
+marked done. It is a lightweight summary — no PDF, no full state — designed for
+querying completed calculations across matters (e.g. the dashboard's "Completed
+Calculations" count).
+
+| Column | Purpose |
+| --- | --- |
+| `calculationType` | `"child_support"` or `"spousal_support"` |
+| `status` | `"completed"` or `"draft"` |
+| `inputSummary` (JSON) | Key inputs: party names, incomes, children, provinces |
+| `resultSummary` (JSON) | Key outputs: amounts, scenario, net payer |
+| `notes` | Optional user notes (updatable via PATCH) |
+| `completedAt` | When the computation was finalised |
+
+### What "Save to Matter" does
+
+When the user clicks **Save to Matter** in a chat panel, `saveToMatter()` runs a
+sequence of writes:
+
+1. **Saves the calculation report** — `POST /v1/matters/:id/reports` with
+   `inputData` (including `_calcResult` and `_fullState`), `resultData`, and the
+   base64-encoded PDF. This is the primary persistence record.
+
+2. **Writes back matter sections** — the chat panel also updates the matter's own
+   database sections so the calculation's party names, incomes, children, and
+   relationship dates are reflected in the matter record (used by forms, agreements,
+   and other tools). Specifically:
+   - **Background** — party names, DOBs, provinces (merged with existing rows)
+   - **Children** — names, DOBs, custody arrangements
+   - **Relationship** — marriage and separation dates
+   - **Income & Benefits** — employment income rows for both parties (benefits preserved)
+   - **Calculator state** — a `calculatorState` blob so the manual calculator can restore the
+     same inputs if the user switches to it later
+
+3. **Sets `savedToMatter` state** — disables the button and shows "Saved to Matter".
+
+### What "Complete Calculation" does
+
+There is no separate "Complete Calculation" button — completion happens through the
+task lifecycle:
+
+- **Marking the task done** (`handleMarkTaskDone("child_spousal_support")` in
+  [SingleMatter.jsx](../cloudact-ui/src/pages/matters/SingleMatter.jsx)):
+  persists the task status as `"completed"` and, if a `latestCalcReport` exists,
+  saves a `ComputationResult` via
+  `POST /v1/matters/:id/computation-results` with the `inputSummary` and
+  `resultSummary` extracted from the latest report.
+
+- **Marking the matter as done** (`handleToggleMatterStatus()`): same
+  `ComputationResult` write, triggered when the user toggles the matter to
+  status 1 (done). This covers the case where the user completes the matter
+  without explicitly marking the individual task.
+
+- **`onComplete` callback** (`handleChildSupportComplete()`): called by the
+  child support chat panel when the AI generates a result. This marks the task
+  as `"completed"` and returns to the task list. It does **not** create a
+  `ComputationResult` — that only happens when the user explicitly marks the
+  task or matter done.
+
+### Viewing saved results
+
+Saved calculation reports surface in three places:
+
+1. **Documents tab** — `CalculationPdf.jsx` (under
+   [Matters/Documents/](../cloudact-ui/src/components/Matters/Documents/))
+   lists all `MatterCalculationReport` rows for the matter. Each row has
+   **Download PDF** (regenerates the PDF client-side using `html2pdf.js` and the
+   `CalculationReport.tsx` component, from either `_fullState` or a
+   `_calcResult`-to-`_fullState` conversion) and **Delete**.
+
+2. **Task-list "View Results"** — `handleViewCalcResults()` in `SingleMatter.jsx`
+   passes the latest report's `inputData` and `resultData` through
+   `localStorage` keys (`viewCalculationData`, `selectedCalculatorMatterNumber`,
+   `viewOnlyCalcResults`) and navigates to `/calculator`, where the manual
+   calculator hydrates from those keys and renders the result screen (Screen 4)
+   in read-only mode.
+
+3. **`CalculationResultsPanel.jsx`** — a simpler list view (used from the
+   task-list area) with a **View Results** button that uses the same
+   `localStorage` bridge to navigate to `/calculator`.
+
+### Latest-report pre-fill
+
+On mount, `SingleMatter.jsx` fetches
+`GET /v1/matters/:id/reports/latest` to load the most recent
+`MatterCalculationReport`. This `latestCalcReport` is used for:
+
+- The computation-result write on task/matter completion (see above).
+- The **View Results** button in the task header area.
+- Future: pre-filling the chat with the previous calculation's inputs when the
+  user re-opens the support chat.
+
+### Auth-server API endpoints
+
+| Endpoint | Method | Description |
+| --- | --- | --- |
+| `/v1/matters/:id/reports` | POST | Save a new calculation report (with optional `pdfBase64`). Requires `calculationType`, `inputData`, `resultData`. |
+| `/v1/matters/:id/reports` | GET | List all reports for a matter (excludes `pdfBytes` for performance). |
+| `/v1/matters/:id/reports/latest` | GET | Get the most recent report for pre-fill / view-results. |
+| `/v1/reports/:id/pdf` | GET | Download a report's stored PDF. |
+| `/v1/reports/:id` | DELETE | Delete a report. |
+| `/v1/matters/:id/computation-results` | POST | Save a computation result on task/matter completion. Requires `calculationType`, `inputSummary`, `resultSummary`. |
+| `/v1/matters/:id/computation-results` | GET | List computation results for a matter. |
+| `/v1/computation-results/:id` | GET | Get a single computation result. |
+| `/v1/computation-results/:id` | PATCH | Update notes or status on a computation result. |
+| `/v1/computation-results/:id` | DELETE | Delete a computation result. |
 
 ---
 

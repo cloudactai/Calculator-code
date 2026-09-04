@@ -1021,6 +1021,19 @@ const Screen4 = ({
           supportGivenTo: determineSupportGivenTo(),
           lumpsumReport: screen2.lumpsumReport || null,
           insurenceReport: screen2.insurenceReport || null,
+          party1_name: screen1.background.party1FirstName,
+          party2_name: screen1.background.party2FirstName,
+          net_payer: determineSupportGivenTo() === screen1.background.party1FirstName
+            ? screen1.background.party2FirstName
+            : screen1.background.party1FirstName,
+          net_monthly: Math.round(childSupportGreater() / 12),
+          net_annual: childSupportGreater(),
+          payor: screen2.spousalSupport.givenTo === screen1.background.party1FirstName
+            ? screen1.background.party2FirstName
+            : screen1.background.party1FirstName,
+          monthly_low: spousalSupportLowGreater(),
+          monthly_mid: spousalSupportMedGreater(),
+          monthly_high: spousalSupportHighGreater(),
         },
         pdfFilename,
       });
