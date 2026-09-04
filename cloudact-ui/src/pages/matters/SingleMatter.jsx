@@ -13,7 +13,6 @@ import SpousalSupportChatPanel from "../../components/MatterWorkflow/SpousalSupp
 import MatterIntakeChatPanel from "../../components/MatterWorkflow/MatterIntakeChatPanel";
 import UpdateInformationChatPanel from "../../components/MatterWorkflow/UpdateInformationChatPanel";
 import ProfileSummaryPanel from "../../components/MatterWorkflow/ProfileSummaryPanel";
-import CalculationResultsPanel from "../../components/MatterWorkflow/CalculationResultsPanel";
 import AgreementTypeList from "../../components/MatterWorkflow/AgreementTypeList";
 import AgreementChatPanel from "../../components/MatterWorkflow/AgreementChatPanel";
 import { getAgreementType } from "../../components/MatterWorkflow/agreementTypes";
@@ -448,6 +447,26 @@ const SingleMatter = () => {
     }
   }
 
+  function handleViewCalcResults() {
+    if (!latestCalcReport) {
+      alert("No calculation results saved for this matter yet.");
+      return;
+    }
+    localStorage.setItem(
+      "viewCalculationData",
+      JSON.stringify({
+        inputData: latestCalcReport.inputData,
+        resultData: latestCalcReport.resultData,
+        calculationType: latestCalcReport.calculationType,
+      })
+    );
+    localStorage.setItem(
+      "selectedCalculatorMatterNumber",
+      JSON.stringify(id)
+    );
+    history.push("/calculator");
+  }
+
   // Cleanup on unmount
   useEffect(() => {
     return () => {
@@ -600,7 +619,7 @@ const SingleMatter = () => {
                   tasks={tasks}
                   onStart={handleTaskStart}
                   onViewInfo={handleViewInformation}
-                  onViewCalcResults={() => setView("calculation_results")}
+                  onViewCalcResults={handleViewCalcResults}
                   matterStatus={matterData?.status ?? 0}
                   onToggleStatus={handleToggleMatterStatus}
                   togglingStatus={togglingStatus}
@@ -617,26 +636,6 @@ const SingleMatter = () => {
               />
             )}
 
-            {/* Calculation Results view */}
-            {view === "calculation_results" && (
-              <div className="mw-calc-results">
-                <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "16px" }}>
-                  <button
-                    type="button"
-                    className="mw-chat-panel__back"
-                    onClick={handleBackToTasks}
-                  >
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M19 12H5" />
-                      <path d="M12 19l-7-7 7-7" />
-                    </svg>
-                    Back to Tasks
-                  </button>
-                  <h3 style={{ margin: 0, fontSize: "18px", fontWeight: 600 }}>Calculation Results</h3>
-                </div>
-                <CalculationResultsPanel matterId={id} onBack={handleBackToTasks} />
-              </div>
-            )}
 
             {/* Matter Intake choice: AI or Manual */}
             {view === "intake_choice" && (
