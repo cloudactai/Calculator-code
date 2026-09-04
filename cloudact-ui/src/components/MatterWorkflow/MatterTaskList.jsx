@@ -22,7 +22,7 @@ const STATUS_CLASSES = {
   completed: "mw-status--completed",
 };
 
-export default function MatterTaskList({ tasks, onStart, onMarkTaskDone, onViewInfo, onViewCalcResults, matterStatus, onToggleStatus, togglingStatus }) {
+export default function MatterTaskList({ tasks, onStart, onMarkTaskDone, onViewInfo, onViewCalcResults, matterStatus, onToggleStatus, togglingStatus, hasCompletedCalculation }) {
   const [docsHover, setDocsHover] = useState(false);
   const [calcHover, setCalcHover] = useState(false);
   const [statusHover, setStatusHover] = useState(false);
@@ -32,7 +32,7 @@ export default function MatterTaskList({ tasks, onStart, onMarkTaskDone, onViewI
       <div className="mw-task-list__header">
         <h2 className="mw-task-list__title">Task List</h2>
         <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
-          {onToggleStatus && (
+          {onToggleStatus && (hasCompletedCalculation || isCompleted) && (
             <button
               type="button"
               onClick={onToggleStatus}
@@ -188,7 +188,7 @@ export default function MatterTaskList({ tasks, onStart, onMarkTaskDone, onViewI
                     : "Start"}
                 </button>
               )}
-              {onMarkTaskDone && t.status === "in_progress" && t.id === "child_spousal_support" && (
+              {onMarkTaskDone && t.status === "in_progress" && t.id === "child_spousal_support" && hasCompletedCalculation && (
                 <button
                   className="mw-action-btn"
                   style={{

@@ -650,6 +650,7 @@ const SingleMatter = () => {
                   matterStatus={matterData?.status ?? 0}
                   onToggleStatus={handleToggleMatterStatus}
                   togglingStatus={togglingStatus}
+                  hasCompletedCalculation={!!latestCalcReport?.resultData}
                 />
               </>
             )}
