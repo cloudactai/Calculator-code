@@ -270,6 +270,14 @@ const BaseCalculationTasks = ({
     }
   };
 
+  const onMarkAsDone = async (id: number) => {
+    const data = await apiCalculatorById.edit_value(id, { status: "DONE" });
+
+    if (data) {
+      window.location.reload();
+    }
+  };
+
   return data.map((e, index: number) => {
     return (
       <tr key={index} style={{ cursor: "pointer" }}>
@@ -301,11 +309,16 @@ const BaseCalculationTasks = ({
             })
           }
         >
-          <span>{e.status}</span>
+          <span className={e.status === "INPROGRESS" ? "blueColor" : e.status === "DONE" ? "greenColor" : ""}>
+            {e.status === "INPROGRESS" ? "In Progress" : e.status === "DONE" ? "Done" : e.status}
+          </span>
         </td>
         <td className="actions">
             <button className="blueColor" onClick={() => setEditModal((prev) => ({ ...prev, show: true, idToChange: e.id, label: e.label, description: e.description,}))}><i className="fa-solid fa-pen-to-square"></i> Edit</button>
             <button className="redColor" onClick={() => onDeleteCalculatorValues(e.id)}><i className="fa-solid fa-trash-can"></i> Delete{" "}</button>{" "}
+            {e.status !== "DONE" && (
+              <button className="greenColor" onClick={() => onMarkAsDone(e.id)}><i className="fa-solid fa-check"></i> Mark as Done</button>
+            )}
         </td>
       </tr>
     );
