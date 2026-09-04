@@ -282,6 +282,16 @@ the source docx**, conditionally, and exports it with the same `xhtml2pdf` pipel
 [report_pdf.py](../report_pdf.py) already uses for the calculation reports — one
 templating system, not two.
 
+**The source of truth is the lawyer's own document.** Two files ship in the
+repository's `Agreements tool/` folder and are what the feature is measured against:
+`Separation Agreement (1).docx`, the precedent the live preview reproduces **verbatim** —
+same clause text, same ALL-CAPS headings, and the exported PDF matches its page size,
+margins and font sizes — and `Questions.xlsx`, the field ledger saying, for every blank in
+that precedent, where its value comes from (matter data, a calculation, or the chat) and
+who owns the gap where it does not come from anywhere yet. When a clause looks wrong,
+compare it against the docx before changing the component; when a value is missing, check
+which source the ledger assigns it to.
+
 **Picking a type.** Starting the task opens `AgreementTypeList.jsx`, cards rendered
 from the `AGREEMENT_TYPES` registry in
 [agreementTypes.js](cloudact-ui/src/components/MatterWorkflow/agreementTypes.js).
@@ -345,6 +355,15 @@ those bytes to `PUT /v1/matters/:id/agreements/:type/pdf`
 ([agreementRoutes.js](../auth-server/src/routes/agreementRoutes.js)), which files them
 into a per-matter "Separation Agreements" `MatterFolder` the same way form documents
 are organized, and stores them on `MatterAgreementDocument.pdfBytes`.
+
+**Tests.** The feature ships with its own suites, worth running before touching it:
+`SeparationAgreementDocument.test.jsx` (the conditional sections and the clause text),
+`agreementResolver.test.js` (which source wins for each field), `agreementSections.test.js`,
+`AgreementTypeList.test.jsx` and `AgreementChatPanel.test.jsx` on the frontend, plus
+[test_agreement_endpoints.py](../test_agreement_endpoints.py) against Flask. The document
+suite is what caught two real bugs that a read-through had passed over. Note the CRA
+`resetMocks` default when adding to them: a mock's implementation is cleared between tests,
+so set it inside each test rather than once at the top of the file.
 
 **Backend chat endpoint.** `POST /agreement-chat` in [app.py](../app.py) is the same
 bounded Anthropic tool-use loop as `/update-chat`, with its own system prompt scoped

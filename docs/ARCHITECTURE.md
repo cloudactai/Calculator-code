@@ -42,14 +42,14 @@ flowchart TD
     end
 
     subgraph AWS["AWS RDS — PostgreSQL"]
-      DB[(matters, forms, folders,<br/>users, tasks)]
+      DB[(matters, forms, folders,<br/>agreements, users, tasks)]
     end
 
     Graph[[Microsoft Graph<br/>email sending]]
 
     User --> UI
     UI -->|REACT_APP_API_BASE_URL<br/>login, matters, forms, folders| AUTH
-    UI -->|CALCULATOR_API<br/>/chat, /intake-chat, /update-chat, /download-report| FLASK
+    UI -->|CALCULATOR_API<br/>/chat, /intake-chat, /update-chat,<br/>/agreement-chat, /agreement-pdf, /download-report| FLASK
     AUTH -->|DATABASE_URL Prisma/pg over SSL| DB
     AUTH -->|EMAIL_MICROSOFT_*| Graph
 ```
@@ -127,10 +127,11 @@ Two more that are **not** set here but exist as optional overrides in `config.ts
 The Python service ([app.py](../app.py), started with `web: gunicorn app:app` via
 [Procfile](../Procfile)). It handles every conversational feature and every generated
 PDF: the child and spousal support calculators, the matter-intake agent, the
-update-information agent, and the downloadable reports. It is **stateless** and calls
-only Anthropic; it does **not** touch the database (all saving is done by the frontend
-calling the auth-server). That is why even the update agent returns its changes as
-patches for the frontend to write, rather than saving them itself. From the screenshot:
+update-information agent, the **agreement-drafting agent**, and the downloadable reports.
+It is **stateless** and calls only Anthropic; it does **not** touch the database (all
+saving is done by the frontend calling the auth-server). That is why even the update agent
+returns its changes as patches for the frontend to write, rather than saving them itself.
+From the screenshot:
 
 - **Service name:** `Calculator-code` · **Type:** Web Service · **Runtime:** Python 3 ·
   **Instance:** **Free**.
@@ -145,6 +146,12 @@ patches for the frontend to write, rather than saving them itself. From the scre
 |---|---|
 | `ANTHROPIC_API_KEY` | Credential for the Anthropic API. Every chat and report call uses it. If it is missing, expired, or over quota, **all** AI features fail: chat replies return errors and reports do not generate. |
 | `CLAUDE_MODEL` | Which Claude model to call. Read in `app.py` as `os.getenv("CLAUDE_MODEL", "claude-sonnet-4-6")` — so if unset it defaults to `claude-sonnet-4-6`. Set it here to pin/upgrade the model without a code change. |
+
+> **`/agreement-pdf` is the one endpoint that renders someone else's HTML.** Draft
+> Agreements shows the lawyer a live HTML document, then posts *that same markup* here to be
+> turned into a PDF by `xhtml2pdf` — the same library [report_pdf.py](../report_pdf.py) uses
+> for the calculation reports — so the export matches what was on screen. Flask returns the
+> bytes and keeps nothing; the frontend is what files them (see the request-flow note below).
 
 > **Free-instance cold starts.** A Free Render web service goes to sleep when idle and
 > takes roughly 30–60 seconds to start again. That is why the chat panels show
@@ -166,7 +173,10 @@ reads and writes the database. It serves two groups of routes:
   `/api/me`, logout. Sessions are JWTs in a cross-domain cookie.
 - `/v1/*` — the app data: matters, forms, folders, task states, form-template PDFs
   (everything [cloudact-ui/src/services/formsService.js](../cloudact-ui/src/services/formsService.js)
-  and the matter Redux actions call).
+  and the matter Redux actions call), plus the newer sibling routers —
+  `agreementRoutes.js` (a drafted agreement's answers, transcript and generated PDF),
+  `calculationReportsRoutes.js`, `computationResultsRoutes.js` and
+  `lawyerContactsRoutes.js`.
 
 From the screenshot: **Service ID** `srv-d939g4vavr4c73bma26g`, name
 `Calculator-code-auth`. Its **start command** runs migrations then boots:
@@ -273,6 +283,11 @@ is useful for running one-off Prisma commands against the live database.
   chain.
 - **Ask the AI / download a support report** → browser → `CALCULATOR_API` (Flask on
   Render) → Anthropic → PDF/text back. **No database involved.**
+- **Generate an agreement PDF** → two hops, in that order: browser → `CALCULATOR_API`
+  `POST /agreement-pdf` (HTML in, PDF bytes out, nothing stored) → browser →
+  `REACT_APP_API_BASE_URL` `PUT /v1/matters/:id/agreements/:type/pdf` → **AWS RDS**. If a
+  draft renders on screen but never appears in the matter's folder, it is the second hop
+  that failed, not the first.
 - **Sign up / reset password** → auth-server writes the user + calls **Microsoft
   Graph** to email the link (whose base is `FRONTEND_URL`).
 

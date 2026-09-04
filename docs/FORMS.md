@@ -6,6 +6,12 @@ exported as completed PDFs. It is reached from a matter's task list
 ("DRAFT DIVORCE APPLICATION DOCUMENTS") and produces the physical documents a lawyer
 files with the court.
 
+> **Not every document is a form.** The engine described here fills a *fixed government
+> page*: a static background PDF with one field per x/y box. A drafted agreement has no such
+> page — whole sections appear or disappear and its text is of unpredictable length — so
+> **Draft Agreements** is a separate feature with its own renderer and its own storage. See
+> "Draft Agreements" in [MATTERS.md](MATTERS.md).
+
 > **Origin.** Like the rest of `cloudact-ui/`, the forms pages were taken from
 > `cloudact-frontend-main`, the UI for the main CloudAct SaaS platform. The original app
 > carried a large **client-side** prefill and binding engine that mapped matter data into
@@ -176,7 +182,8 @@ This is the most likely source of confusion for anyone new to the file:
   prefilled values (`fieldValues`). The editor just overlays values onto the mapping and
   lets the user tweak/save. The forms are **image-based PDFs** with an overlay coordinate
   convention; the mapping is produced by a server-side extract-from-AcroForm / vector
-  pipeline. (See the project's forms-migration and prefill-plan notes for the full
+  pipeline. (See "Prefill" and "Field placement" below for how a value
+  reaches a box and how a box is checked, and the project's forms-migration notes for the full
   mapping pipeline and per-form status — the catalogue holds **138 Ontario,
   213 BC, 121 Saskatchewan, 140 Manitoba, 102 Nova Scotia, 96 Newfoundland and
   Labrador, 48 New Brunswick and 34 Prince Edward Island** templates -- 892 in
@@ -277,6 +284,161 @@ This is the most likely source of confusion for anyone new to the file:
 If you're adding a form or fixing a field position, the fix almost always belongs in the
 **template/mapping on the backend**, not in this React code.
 
+## Prefill — where a field's value comes from
+
+Every field in a mapping JSON may carry a **`bind`**: a dotted path — or a comma-separated
+list of paths, joined with `", "` — into a **prefill vocabulary** the server assembles per
+matter. A field with no `bind` is simply an empty box for the lawyer to type in.
+
+`buildPrefillData(matter, userId)` in
+[auth-server/src/routes/formsRoutes.js](../auth-server/src/routes/formsRoutes.js) builds
+that vocabulary, from three sources and nothing else:
+
+| Source | What it contributes |
+| --- | --- |
+| The matter's `MatterRecord` rows | everything intake collected — parties, children, court, relationship, employment, income, expenses, assets, debts. The same rows the AI and manual intakes both write, so a form fills identically either way (see [MATTERS.md](MATTERS.md)). |
+| The signed-in `User` profile | the **lawyer's** own name, address, phone and email — what a form asks about the filing solicitor, which is not matter data. |
+| The matter's completed `SavedCalculation` runs | the child- and spousal-support figures, most recent first. |
+
+[formPrefillCompat.js](../auth-server/src/utils/formPrefillCompat.js)'s
+`buildLegacyPrefill` rebuilds the **old platform's** vocabulary from those same records and
+is spread over the modern object. That is why binds written against the legacy names still
+resolve: both vocabularies are present at once. The layer also derives what nothing stores —
+a monthly income from a yearly figure, an age from a date of birth.
+
+`prefillFields()`
+([formPrefillResolver.js](../auth-server/src/utils/formPrefillResolver.js)) then walks
+`mapping.staticFields`, resolves each `bind`, and returns two maps: the `fieldValues`, and a
+**`fieldProvenance`** marking every filled field `"prefill"`. A `PATCH` marks the fields it
+carries `"manual"`. That single flag is what makes the next point safe.
+
+**Prefill re-runs on every read (since 2026-09-01).** It used to run exactly once, at
+document creation — so anything entered or corrected *afterwards* (a date of birth, the
+court, the opposing lawyer, an expense) never reached a document that already existed, and
+the only way to pick it up was to delete the form and create it again. `refreshUnmanualFields()`
+now re-resolves, on every `GET /matters/:m/forms/:id`, every bound field whose provenance is
+not `"manual"`. So an open form catches up with the matter, a value the user typed by hand is
+never overwritten, and a field with no bind is never touched.
+
+**One caveat worth knowing:** `handleSave` posts *every* field on the page, not only the ones
+that changed, so the first **Save Document** marks the whole document `"manual"` and it stops
+catching up from then on. Before that first save it refreshes on every open. If a form is
+reported as "not picking up the new address", check whether it has been saved.
+
+### How much is bound, per province
+
+Binds are added by each province's own `rebind_*` script, which writes back only the `bind`
+key and asserts every other key is unchanged — so re-binding never moves a reviewed box.
+Coverage is deliberately uneven: Ontario, the first province and the one whose forms are
+filed most, is bound field-by-field; the rest carry the general heading, the parties and the
+lawyers, which is what almost every form asks for on page 1.
+
+| | Templates | Fields | Binds | Templates with ≥1 bind |
+|---|---|---|---|---|
+| Ontario | 138 | 9,789 | 1,988 | 134 |
+| British Columbia | 213 | 8,657 | 403 | 196 |
+| Manitoba | 140 | 8,125 | 394 | 81 |
+| Saskatchewan | 121 | 6,531 | 137 | 54 |
+| Newfoundland and Labrador | 96 | 5,867 | 130 | 72 |
+| Nova Scotia | 102 | 4,572 | 104 | 61 |
+| New Brunswick | 48 | 4,047 | 79 | 39 |
+| Prince Edward Island | 34 | 1,267 | 79 | 27 |
+| **Total** | **892** | **48,855** | **3,314** | **664** |
+
+Some blanks stay unbound on purpose, because a value would be worse than the empty box: BC's
+registry line (the vocabulary holds a court, not a registry), the payor/recipient panels on
+Ontario Forms 26D/30A/30B/31 (the payor is not reliably the respondent), second-party rows on
+any panel (a matter has one applicant and one respondent), and the 14 "APPLICANT or
+CO-APPLICANT" boxes in Newfoundland, which need a decision on co-applicant semantics rather
+than a measurement. `auth-server/form-template-export/PREFILL_PLAN.md` is the running record.
+
+**A bind is a claim about the data, and can be wrong in a way no coordinate check sees.**
+The September 2026 pass over Ontario's financial statements is the cautionary example: every
+asset table on Form 13 pages 4–5 was bound to the same generic `assets[0..2]`, so all ten
+tables rendered the same three rows; Form 13.1's page-8 "value on date of marriage" table was
+summing *today's* values; and its item 22 summed 2 of the 7 asset categories, understating
+Part 9's Net Family Property. All three produced a well-placed, plausible, wrong number. When
+a form has one table per asset subtype, each table must be bound to its own collection.
+
+---
+
+## Field placement, and how a form gets reviewed
+
+A mapping JSON is the whole of a form's placement, and its coordinate convention has one trap
+in it:
+
+- **`x`, `y`** are raw **PDF points**, origin at the **top-left** of the page.
+- **`width`, `height`** are PDF points **multiplied by 1.5** (`SCALE` in
+  `auth-server/tools/bc-forms/acroform_seat.py`). Anything measured off the page — a pixel
+  scan, a `get_text('words')` box, a `get_drawings()` rule — is a true PDF point value and
+  must be multiplied by 1.5 before it is stored.
+
+Forgetting that multiplication renders the field at two-thirds of the size measured, and a
+render **will not look obviously wrong**: a too-narrow invisible box just leaves unused
+whitespace, where only a too-*wide* box produces the overlap-with-caption look reviewers
+watch for. A whole session of Newfoundland EPO date-field "fixes" shipped silently undersized
+this way before being caught.
+[auth-server/tools/FORM_FIXING_GUIDE.md](../auth-server/tools/FORM_FIXING_GUIDE.md) is the
+full guide, including the sanity check to run before trusting new geometry math on a province
+you have not touched before.
+
+### The review loop
+
+Automated gates are necessary and not sufficient — both prairie READMEs record batches whose
+real defects were invisible to every gate, because no gate was asking that question. So each
+page is **read twice** ([tools/review/review_ledger.py](../auth-server/tools/review/review_ledger.py)):
+
+1. **Pass 1 — the overlay against the government's own page.** Is there a field on everything
+   that can be written on; is anything sitting on printed text or on a signature line; is each
+   field the right type and extent?
+2. **Pass 2 — the filled render.** Does a real value land on the line, fit its box and wrap
+   where it should; does a tick land inside its square?
+
+The result of each pass is written to `tools/review/ledger.json`, one row per page, with
+whatever was corrected in between. `review_ledger.py --check` is the gate over it: one row per
+page of every template in scope, both passes `pass`, and the ledger's page total equal to the
+catalogue's. A row cannot be marked reviewed by the tool — it is recorded from the reviewer's
+own notes after the renders in `_review/<docId>/` have actually been opened, which is the one
+part of this no script can do. The ledger currently holds **290 pages across 95 templates**
+(the Saskatchewan, Manitoba and PEI batches).
+
+The mechanical loop around that reading: render with `tools/review/render_review.py` into the
+gitignored `form-template-export/_review/<DOCID>/`, fix in the JSON through a per-province
+repair script (each idempotent, each with a `--check` mode), **re-render anything you touch**,
+then re-run the province verifier (`tools/nl-forms/verify_nl.py`, `tools/nb-forms/verify_nb.py`,
+and their siblings) and `npm run forms:validate-export`.
+
+### Where the sweep stands
+
+The Atlantic set has since had a complete page-by-page audit
+([auth-server/tools/NL_NB_AUDIT_LEDGER.md](../auth-server/tools/NL_NB_AUDIT_LEDGER.md) is the
+per-page record, `OK` / `FIX` / `LEFT` per page):
+
+| | Templates | Pages | Fields | Binds | Verifier |
+|---|---|---|---|---|---|
+| Newfoundland and Labrador | 96 | 413 | 5,867 | 130 | `verify_nl.py` — zero findings |
+| New Brunswick | 48 | 242 | 4,047 | 79 | `verify_nb.py` — zero findings |
+
+Every mechanical class is now closed, which changes what the sweep is *for*. A detector cannot
+find what is left, so read for the things only reading catches: a table correct field-by-field
+but wrong as a set, a bind naming the wrong column (the pattern behind four of the last
+session's fixes — suspect any form whose style of cause is unusual), and printed text that is
+wrong on the page (the `NLSC_SUBPOENA` header and footer, lost to the background flatten,
+which no tool in `tools/review` looks for).
+
+**Three false positives are established and must not be re-investigated:** the render's generic
+"Jordan A. Whitfield" sample overflowing a narrow date or amount field; a field's top border
+sitting on the caption's baseline (measured at 0pt intrusion corpus-wide); and a field that
+stops short of a printed rule where the government's own widget stops there too.
+
+Known, deliberate, carried forward: the 14 unbound co-applicant boxes above;
+`NLSC_REQUEST_FOR_CERTIFICATE_OF_DIVORCE`'s "Court File No. (if known)", whose caption sits
+94pt away, past the binder's 90pt reach; `F16A_04A` p6, where the government's ex parte annex
+omits a box its inter partes twin has (faithful to source, flagged, not invented); and
+`bc_pipeline.flatten_background` still passing `clean=True` — the root cause of the Subpoena
+defect, left alone because it is shared by all eight provinces and every one would need
+re-verifying. No other NL or NB page is affected by it (measured).
+
 ---
 
 ## The API surface
@@ -325,3 +487,17 @@ bootstraps the form templates. The template PDF blobs are fetched separately at
   URL.
 - **The province determines the catalogue**, and the province comes from the matter
   context, so a matter with no province shows no forms.
+- **`width` and `height` in a mapping JSON are PDF points × 1.5; `x` and `y` are not.**
+  Storing a measured width without that factor renders the box at two-thirds size, and the
+  render does not look obviously wrong. See "Field placement" above.
+- **Prefill is re-applied on every GET, not only at creation.** What protects a value the
+  lawyer typed is `fieldProvenance[fieldId] === "manual"`. Because **Save Document** posts
+  every field, one save marks the entire document manual and it stops refreshing — that is
+  the answer to "why didn't this form pick up the change?", and the thing to keep in mind
+  before altering how saving records provenance.
+- **A `Date` field's input takes an ISO value, not the printed one.** `PDFViewer` round-trips
+  through ISO and builds the `Date` from local year/month/day components; parsing a picked
+  date as UTC and reading it back with local getters shifted every date a day west of UTC.
+- **A bind can be well-placed and still wrong.** A table bound to a generic collection, or a
+  total that misses categories, renders perfectly and reports a false number — the Form 13 /
+  13.1 failures above. Check what a bind *means*, not just where it lands.

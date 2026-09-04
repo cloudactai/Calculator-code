@@ -21,6 +21,7 @@
     --d-matters: #0f766e;
     --d-calc: #7c3aed;
     --d-forms: #1d4ed8;
+    --d-agree: #be123c;
 
     --mono: ui-monospace, "SF Mono", "SFMono-Regular", Menlo, Consolas, "Liberation Mono", monospace;
     --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
@@ -45,6 +46,7 @@
       --d-matters: #2dd4bf;
       --d-calc: #a78bfa;
       --d-forms: #60a5fa;
+      --d-agree: #fb7185;
     }
   }
 
@@ -305,16 +307,16 @@
   <p class="lede">
     One Postgres database, reached through Prisma from the auth-server
     (<code>calculator-code-auth</code>). It holds everything the app persists —
-    accounts, matters, saved calculator runs, and the whole forms engine. There
-    is no second store: matters and calculator data live side by side in the same
-    tables.
+    accounts, matters, saved calculator runs, the whole forms engine, and the
+    drafted agreements. There is no second store: matters, calculator and agreement
+    data live side by side in the same tables.
   </p>
 
   <div class="stats">
-    <div class="stat"><div class="stat__n">11</div><div class="stat__l">tables</div></div>
-    <div class="stat"><div class="stat__n">~124</div><div class="stat__l">columns</div></div>
+    <div class="stat"><div class="stat__n">16</div><div class="stat__l">tables</div></div>
+    <div class="stat"><div class="stat__n">177</div><div class="stat__l">columns</div></div>
     <div class="stat"><div class="stat__n">1</div><div class="stat__l">Postgres database</div></div>
-    <div class="stat"><div class="stat__n">4</div><div class="stat__l">domains</div></div>
+    <div class="stat"><div class="stat__n">5</div><div class="stat__l">domains</div></div>
   </div>
 
   <div class="callout">
@@ -348,6 +350,9 @@
           <span class="node"><span class="dot" style="background:var(--d-matters)"></span>MatterTaskState</span>
           <span class="node"><span class="dot" style="background:var(--d-forms)"></span>MatterFolder</span>
           <span class="node"><span class="dot" style="background:var(--d-forms)"></span>MatterFormDocument</span>
+          <span class="node"><span class="dot" style="background:var(--d-calc)"></span>MatterCalculationReport</span>
+          <span class="node"><span class="dot" style="background:var(--d-calc)"></span>ComputationResult</span>
+          <span class="node"><span class="dot" style="background:var(--d-agree)"></span>MatterAgreementDocument</span>
         </span>
       </div>
       <div class="rel">
@@ -387,6 +392,7 @@
     <div><span class="swatch" style="background:var(--d-matters)"></span> matters</div>
     <div><span class="swatch" style="background:var(--d-calc)"></span> calculator</div>
     <div><span class="swatch" style="background:var(--d-forms)"></span> forms</div>
+    <div><span class="swatch" style="background:var(--d-agree)"></span> agreements</div>
   </div>
 
   <!-- ── Tables by domain ─────────────────────────────── -->
@@ -397,8 +403,8 @@
     <div class="domain__head">
       <span class="swatch" style="background:var(--d-identity)"></span>
       <h2 class="domain__name">Identity</h2>
-      <p class="domain__desc">Who's signed in — credentials, profile, and account-lifecycle tokens.</p>
-      <span class="domain__count">1 table</span>
+      <p class="domain__desc">Who's signed in — credentials, profile, account-lifecycle tokens, and the user's saved lawyer contacts.</p>
+      <span class="domain__count">2 tables</span>
     </div>
     <div class="cards">
       <article class="card" style="--dhue:var(--d-identity)">
@@ -427,7 +433,27 @@
           <li class="col"><span class="col__name">createdAt</span><span class="col__type">DateTime</span></li>
           <li class="col"><span class="col__name">updatedAt</span><span class="col__type">DateTime</span></li>
         </ul>
-        <div class="card__rel"><b>owns →</b> Matter, SavedCalculation</div>
+        <div class="card__rel"><b>owns →</b> Matter, SavedCalculation, LawyerContact, MatterCalculationReport, ComputationResult, MatterAgreementDocument</div>
+      </article>
+
+      <article class="card" style="--dhue:var(--d-identity)">
+        <div class="card__head"><h3 class="card__name">LawyerContact</h3><span class="card__meta">12 fields</span></div>
+        <p class="card__desc">The user's own address book of solicitors — reused to fill the lawyer boxes on court forms instead of retyping them per matter.</p>
+        <ul class="cols">
+          <li class="col"><span class="col__name">id</span><span class="col__type">Int</span><span class="col__spacer"></span><span class="badge badge--pk">PK</span></li>
+          <li class="col"><span class="col__name">userId</span><span class="col__type">String</span><span class="col__spacer"></span><span class="col__fk">→ User</span><span class="badge badge--fk">FK</span></li>
+          <li class="col"><span class="col__name">name</span><span class="col__type">String</span></li>
+          <li class="col"><span class="col__name">address</span><span class="col__type">String<span class="opt">?</span></span></li>
+          <li class="col"><span class="col__name">municipality</span><span class="col__type">String<span class="opt">?</span></span></li>
+          <li class="col"><span class="col__name">province</span><span class="col__type">String<span class="opt">?</span></span></li>
+          <li class="col"><span class="col__name">postalCode</span><span class="col__type">String<span class="opt">?</span></span></li>
+          <li class="col"><span class="col__name">phone</span><span class="col__type">String<span class="opt">?</span></span></li>
+          <li class="col"><span class="col__name">email</span><span class="col__type">String<span class="opt">?</span></span></li>
+          <li class="col"><span class="col__name">memberOfFirm</span><span class="col__type">Boolean</span><span class="col__spacer"></span><span class="col__dflt">= true</span></li>
+          <li class="col"><span class="col__name">createdAt</span><span class="col__type">DateTime</span></li>
+          <li class="col"><span class="col__name">updatedAt</span><span class="col__type">DateTime</span></li>
+        </ul>
+        <div class="card__rel"><b>index</b> (userId)</div>
       </article>
     </div>
   </section>
@@ -501,8 +527,8 @@
     <div class="domain__head">
       <span class="swatch" style="background:var(--d-calc)"></span>
       <h2 class="domain__name">Calculator</h2>
-      <p class="domain__desc">Saved calculator runs — this is the "calculator information" store, already here.</p>
-      <span class="domain__count">1 table</span>
+      <p class="domain__desc">Saved calculator runs, the reports generated from them, and the tax constants they read — this is the "calculator information" store, already here.</p>
+      <span class="domain__count">4 tables</span>
     </div>
     <div class="cards">
       <article class="card" style="--dhue:var(--d-calc)">
@@ -527,6 +553,57 @@
           <li class="col"><span class="col__name">updatedAt</span><span class="col__type">DateTime</span></li>
         </ul>
         <div class="card__rel"><b>unique</b> (userId, label) &nbsp;·&nbsp; matter link is optional (SetNull)</div>
+      </article>
+
+      <article class="card" style="--dhue:var(--d-calc)">
+        <div class="card__head"><h3 class="card__name">MatterCalculationReport</h3><span class="card__meta">11 fields</span></div>
+        <p class="card__desc">A saved child- or spousal-support report: the inputs (so it can be re-run), the outputs, and the generated PDF for instant download. This is what Draft Agreements reads a support figure from.</p>
+        <ul class="cols">
+          <li class="col"><span class="col__name">id</span><span class="col__type">Int</span><span class="col__spacer"></span><span class="badge badge--pk">PK</span></li>
+          <li class="col"><span class="col__name">userId</span><span class="col__type">String</span><span class="col__spacer"></span><span class="col__fk">→ User</span><span class="badge badge--fk">FK</span></li>
+          <li class="col"><span class="col__name">matterId</span><span class="col__type">Int</span><span class="col__spacer"></span><span class="col__fk">→ Matter</span><span class="badge badge--fk">FK</span></li>
+          <li class="col"><span class="col__name">calculationType</span><span class="col__type">String</span></li>
+          <li class="col"><span class="col__name">taxYear</span><span class="col__type">String<span class="opt">?</span></span></li>
+          <li class="col"><span class="col__name">label</span><span class="col__type">String<span class="opt">?</span></span></li>
+          <li class="col"><span class="col__name">inputData</span><span class="col__type">Json</span></li>
+          <li class="col"><span class="col__name">resultData</span><span class="col__type">Json</span></li>
+          <li class="col"><span class="col__name">pdfBytes</span><span class="col__type">Bytes<span class="opt">?</span></span></li>
+          <li class="col"><span class="col__name">pdfFilename</span><span class="col__type">String<span class="opt">?</span></span></li>
+          <li class="col"><span class="col__name">createdAt</span><span class="col__type">DateTime</span></li>
+        </ul>
+        <div class="card__rel"><b>index</b> (userId), (matterId)</div>
+      </article>
+
+      <article class="card" style="--dhue:var(--d-calc)">
+        <div class="card__head"><h3 class="card__name">ComputationResult</h3><span class="card__meta">11 fields</span></div>
+        <p class="card__desc">The final result of a calculation marked done — kept apart from the full report history so completed figures can be queried on their own.</p>
+        <ul class="cols">
+          <li class="col"><span class="col__name">id</span><span class="col__type">Int</span><span class="col__spacer"></span><span class="badge badge--pk">PK</span></li>
+          <li class="col"><span class="col__name">userId</span><span class="col__type">String</span><span class="col__spacer"></span><span class="col__fk">→ User</span><span class="badge badge--fk">FK</span></li>
+          <li class="col"><span class="col__name">matterId</span><span class="col__type">Int</span><span class="col__spacer"></span><span class="col__fk">→ Matter</span><span class="badge badge--fk">FK</span></li>
+          <li class="col"><span class="col__name">calculationType</span><span class="col__type">String</span></li>
+          <li class="col"><span class="col__name">status</span><span class="col__type">String</span><span class="col__spacer"></span><span class="col__dflt">= "completed"</span></li>
+          <li class="col"><span class="col__name">inputSummary</span><span class="col__type">Json</span></li>
+          <li class="col"><span class="col__name">resultSummary</span><span class="col__type">Json</span></li>
+          <li class="col"><span class="col__name">notes</span><span class="col__type">String<span class="opt">?</span></span></li>
+          <li class="col"><span class="col__name">completedAt</span><span class="col__type">DateTime</span></li>
+          <li class="col"><span class="col__name">createdAt</span><span class="col__type">DateTime</span></li>
+          <li class="col"><span class="col__name">updatedAt</span><span class="col__type">DateTime</span></li>
+        </ul>
+        <div class="card__rel"><b>index</b> (userId), (matterId), (matterId, calculationType)</div>
+      </article>
+
+      <article class="card" style="--dhue:var(--d-calc)">
+        <div class="card__head"><h3 class="card__name">TaxConstant</h3><span class="card__meta">5 fields</span></div>
+        <p class="card__desc">One year's tax constants, seeded on boot by <code>scripts/seed-tax-constants.js</code> — the rates the calculators read.</p>
+        <ul class="cols">
+          <li class="col"><span class="col__name">id</span><span class="col__type">Int</span><span class="col__spacer"></span><span class="badge badge--pk">PK</span></li>
+          <li class="col"><span class="col__name">year</span><span class="col__type">Int</span><span class="col__spacer"></span><span class="badge badge--uk">UK</span></li>
+          <li class="col"><span class="col__name">data</span><span class="col__type">Json</span></li>
+          <li class="col"><span class="col__name">createdAt</span><span class="col__type">DateTime</span></li>
+          <li class="col"><span class="col__name">updatedAt</span><span class="col__type">DateTime</span></li>
+        </ul>
+        <div class="card__rel"><b>unique</b> (year)</div>
       </article>
     </div>
   </section>
@@ -648,8 +725,41 @@
     </div>
   </section>
 
+  <!-- AGREEMENTS -->
+  <section class="domain">
+    <div class="domain__head">
+      <span class="swatch" style="background:var(--d-agree)"></span>
+      <h2 class="domain__name">Agreements</h2>
+      <p class="domain__desc">Drafted agreements — the chat's collected answers, its transcript, and the generated PDF. Separate from the forms engine because an agreement has no fixed government page to fill.</p>
+      <span class="domain__count">1 table</span>
+    </div>
+    <div class="cards">
+      <article class="card" style="--dhue:var(--d-agree)">
+        <div class="card__head"><h3 class="card__name">MatterAgreementDocument</h3><span class="card__meta">14 fields</span></div>
+        <p class="card__desc">One drafted agreement — one row per (matter, agreement type), so the chat resumes across visits instead of starting a new row. <code>answers</code> is what the chat has collected, keyed by section, and is the source of truth for what it already knows; <code>transcript</code> is the display-only bubble log shown as history on resume. Neither is replayed to the model as prior turns — a fresh primer is derived from live matter data plus <code>answers</code> on every open.</p>
+        <ul class="cols">
+          <li class="col"><span class="col__name">id</span><span class="col__type">Int</span><span class="col__spacer"></span><span class="badge badge--pk">PK</span></li>
+          <li class="col"><span class="col__name">userId</span><span class="col__type">String</span><span class="col__spacer"></span><span class="col__fk">→ User</span><span class="badge badge--fk">FK</span></li>
+          <li class="col"><span class="col__name">matterId</span><span class="col__type">Int</span><span class="col__spacer"></span><span class="col__fk">→ Matter</span><span class="badge badge--fk">FK</span></li>
+          <li class="col"><span class="col__name">folderId</span><span class="col__type">Int<span class="opt">?</span></span><span class="col__spacer"></span><span class="col__fk">→ MatterFolder</span><span class="badge badge--fk">FK</span></li>
+          <li class="col"><span class="col__name">agreementType</span><span class="col__type">String</span></li>
+          <li class="col"><span class="col__name">answers</span><span class="col__type">Json</span><span class="col__spacer"></span><span class="col__dflt">= {}</span></li>
+          <li class="col"><span class="col__name">transcript</span><span class="col__type">Json</span><span class="col__spacer"></span><span class="col__dflt">= []</span></li>
+          <li class="col"><span class="col__name">status</span><span class="col__type">String</span><span class="col__spacer"></span><span class="col__dflt">= "draft"</span></li>
+          <li class="col"><span class="col__name">revision</span><span class="col__type">Int</span><span class="col__spacer"></span><span class="col__dflt">= 1</span></li>
+          <li class="col"><span class="col__name">pdfBytes</span><span class="col__type">Bytes<span class="opt">?</span></span></li>
+          <li class="col"><span class="col__name">pdfFilename</span><span class="col__type">String<span class="opt">?</span></span></li>
+          <li class="col"><span class="col__name">generatedAt</span><span class="col__type">DateTime<span class="opt">?</span></span></li>
+          <li class="col"><span class="col__name">createdAt</span><span class="col__type">DateTime</span></li>
+          <li class="col"><span class="col__name">updatedAt</span><span class="col__type">DateTime</span></li>
+        </ul>
+        <div class="card__rel"><b>unique</b> (matterId, agreementType) &nbsp;·&nbsp; filed into a "Separation Agreements" MatterFolder (SetNull)</div>
+      </article>
+    </div>
+  </section>
+
   <p class="foot">
-    <b>Source of truth:</b> <code>auth-server/prisma/schema.prisma</code>, deployed through 9 tracked migrations
+    <b>Source of truth:</b> <code>auth-server/prisma/schema.prisma</code>, deployed through 13 tracked migrations
     (<code>prisma migrate deploy</code> runs on every release). To add a table, add a Prisma model and a
     migration — it lands in <b>this same database</b>, no console access required.
   </p>
