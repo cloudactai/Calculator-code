@@ -1590,6 +1590,7 @@ const Screen4 = ({
                   className="btn btnPrimary rounded-pill me-3"
                   onClick={() => {
                     localStorage.removeItem('viewOnlyCalcResults');
+                    localStorage.removeItem('viewCalculationData');
                     history.push(`/single-matter/${mid}`);
                   }}
                 >

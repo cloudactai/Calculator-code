@@ -1003,7 +1003,8 @@ const Calculator = () => {
   useEffect(() => {
     const raw = localStorage.getItem("viewCalculationData");
     if (!raw) return;
-    localStorage.removeItem("viewCalculationData");
+    const isViewOnly = localStorage.getItem("viewOnlyCalcResults") === "true";
+    if (!isViewOnly) localStorage.removeItem("viewCalculationData");
 
     try {
       const saved = JSON.parse(raw);
