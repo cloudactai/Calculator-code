@@ -1,6 +1,23 @@
 import axios from "../utils/axios";
 
-const body = (response) => response.data?.data ?? response.data;
+// agreementRoutes.js wraps every JSON reply in the legacy envelope
+// `{ data: { code, status, body } }` (matching mattersRoutes/calculationReports),
+// where formsRoutes.js replies with a plain `{ data }`. Unwrapping only the
+// outer `data` therefore hands callers `{ code, status, body }` instead of the
+// payload — which is what silently emptied the Documents folder listing and
+// stopped a saved draft from resuming. Peel the envelope when it is one.
+const isLegacyEnvelope = (payload) =>
+  !!payload &&
+  typeof payload === "object" &&
+  !Array.isArray(payload) &&
+  "body" in payload &&
+  "code" in payload &&
+  "status" in payload;
+
+const body = (response) => {
+  const payload = response.data?.data ?? response.data;
+  return isLegacyEnvelope(payload) ? payload.body : payload;
+};
 
 /**
  * Client for the Draft Agreements persistence routes (auth-server

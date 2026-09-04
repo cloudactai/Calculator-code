@@ -368,6 +368,14 @@ Open/Rename/Delete, since a generated agreement is edited through the chat, not 
 form filler. Listing forms alone is what previously made the "Separation Agreements"
 folder read as empty immediately after generating into it.
 
+> **Response envelope.** `agreementRoutes.js` replies in the legacy
+> `{ data: { code, status, body } }` shape (like `mattersRoutes.js`), not
+> `formsRoutes.js`'s plain `{ data }`. `agreementsService.js` therefore unwraps
+> *two* levels — peeling only the outer `data` hands callers `{ code, status, body }`,
+> which reads as an empty folder and as a draft with no saved answers, with no error
+> anywhere. `agreementsService.test.js` pins this against the real service with only
+> `axios` mocked; component tests that mock the service itself cannot catch it.
+
 **Tests.** The feature ships with its own suites, worth running before touching it:
 `SeparationAgreementDocument.test.jsx` (the conditional sections and the clause text),
 `agreementResolver.test.js` (which source wins for each field), `agreementSections.test.js`,

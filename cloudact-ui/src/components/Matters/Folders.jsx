@@ -16,6 +16,11 @@ import { downloadBlob } from '../../utils/downloadBlob';
 // right after a separation agreement was generated into it.
 const LOAD_FAILED = Symbol('load failed');
 
+// A listing that came back as anything but an array (a failed request, or a
+// response envelope a service forgot to unwrap) is treated as "nothing here"
+// rather than thrown from inside the render path.
+const asList = (value) => (Array.isArray(value) ? value : []);
+
 export function MatterFormsList({ matterNumber, folderId }) {
     const history = useHistory();
     const [documents, setDocuments] = useState([]);
@@ -62,20 +67,31 @@ export function MatterFormsList({ matterNumber, folderId }) {
         setLoading(true);
         setError('');
         Promise.all([
-            formsService.listDocuments(matterNumber, folderId).catch(() => LOAD_FAILED),
-            agreementsService.listAgreements(matterNumber, folderId).catch(() => LOAD_FAILED),
+            formsService.listDocuments(matterNumber, folderId).catch((cause) => {
+                console.error('Could not load the forms in this folder.', cause);
+                return LOAD_FAILED;
+            }),
+            agreementsService.listAgreements(matterNumber, folderId).catch((cause) => {
+                console.error('Could not load the generated agreements in this folder.', cause);
+                return LOAD_FAILED;
+            }),
         ])
             .then(([forms, generatedAgreements]) => {
                 if (!active) return;
-                if (forms === LOAD_FAILED && generatedAgreements === LOAD_FAILED) {
+                const formsFailed = forms === LOAD_FAILED;
+                const agreementsFailed = generatedAgreements === LOAD_FAILED;
+                if (formsFailed && agreementsFailed) {
                     setError('Could not load this folder.');
+                } else if (agreementsFailed) {
+                    // Say so rather than showing an empty folder: a generated
+                    // agreement that cannot be listed looks exactly like one
+                    // that was never generated.
+                    setError('Generated agreements could not be loaded.');
+                } else if (formsFailed) {
+                    setError('Forms in this folder could not be loaded.');
                 }
-                setDocuments(forms === LOAD_FAILED ? [] : (forms || []));
-                setAgreements(
-                    generatedAgreements === LOAD_FAILED
-                        ? []
-                        : (generatedAgreements || []).filter((agreement) => agreement.has_pdf)
-                );
+                setDocuments(asList(forms));
+                setAgreements(asList(generatedAgreements).filter((agreement) => agreement.has_pdf));
             })
             .finally(() => active && setLoading(false));
         return () => { active = false; };

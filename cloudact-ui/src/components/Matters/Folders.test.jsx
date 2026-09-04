@@ -113,6 +113,26 @@ test("a draft with no generated PDF is not listed as a document", async () => {
   expect(await screen.findByText(/Nothing has been created in this folder yet/)).toBeInTheDocument();
 });
 
+test("a listing that is not an array empties the folder instead of breaking it", async () => {
+  // What a service returning an unwrapped response envelope looks like here.
+  formsService.listDocuments.mockResolvedValue([FORM]);
+  agreementsService.listAgreements.mockResolvedValue({ code: 200, status: "success", body: [AGREEMENT] });
+
+  renderList();
+
+  expect(await screen.findByText("Form 13.1.pdf")).toBeInTheDocument();
+  expect(screen.queryByText("separation_agreement_M-2026-01.pdf")).not.toBeInTheDocument();
+});
+
+test("says so when the agreements could not be loaded, rather than looking empty", async () => {
+  formsService.listDocuments.mockResolvedValue([FORM]);
+  agreementsService.listAgreements.mockRejectedValue(new Error("boom"));
+
+  renderList();
+
+  expect(await screen.findByRole("alert")).toHaveTextContent("Generated agreements could not be loaded.");
+});
+
 test("forms still list when the agreements request fails", async () => {
   formsService.listDocuments.mockResolvedValue([FORM]);
   agreementsService.listAgreements.mockRejectedValue(new Error("boom"));
