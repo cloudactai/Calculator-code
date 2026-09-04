@@ -1,10 +1,7 @@
 import axios from "axios";
 import { getAuthToken } from "./authToken";
 import { DATA_API_BASE } from "./dataAxios";
-
-const shouldShowUnauthorizedModal = (error) => {
-  return error.config?.showUnauthorizedModal === true;
-};
+import { AUTH_FLAG, reportIfSessionExpired } from "./sessionExpiry";
 
 const instance = axios.create({
   // Points at the auth-server (Postgres), same as dataAxios — the legacy
@@ -24,8 +21,10 @@ instance.interceptors.request.use(
 
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
+      config[AUTH_FLAG] = true;
     } else {
       delete config.headers.Authorization;
+      config[AUTH_FLAG] = false;
     }
 
     return config;
@@ -40,13 +39,7 @@ instance.interceptors.response.use(
     return response;
   },
   function (error) {
-    if (
-      error.response &&
-      error.response.status === 401 &&
-      shouldShowUnauthorizedModal(error)
-    ) {
-      window.dispatchEvent(new CustomEvent('unauthorized'));
-    }
+    reportIfSessionExpired(error);
     return Promise.reject(error);
   }
 );
