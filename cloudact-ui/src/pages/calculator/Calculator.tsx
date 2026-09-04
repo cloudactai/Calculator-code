@@ -1004,7 +1004,7 @@ const Calculator = () => {
     const raw = localStorage.getItem("viewCalculationData");
     if (!raw) return;
     const isViewOnly = localStorage.getItem("viewOnlyCalcResults") === "true";
-    if (!isViewOnly) localStorage.removeItem("viewCalculationData");
+    localStorage.removeItem("viewCalculationData");
 
     try {
       const saved = JSON.parse(raw);
