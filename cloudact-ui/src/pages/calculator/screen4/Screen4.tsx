@@ -1567,18 +1567,20 @@ const Screen4 = ({
 
 
       <div className="btnGroup mb-4">
-        <button
-          className="btn btnPrimary rounded-pill"
-          onClick={() =>
-            history.push(
-              `${AUTH_ROUTES.CALCULATOR}?id=${getCalculatorIdFromQuery(
-                  query
-                )}&step=2`
-            )
-          }
-        >
-          Back
-        </button>
+        {!localStorage.getItem('viewOnlyCalcResults') && (
+          <button
+            className="btn btnPrimary rounded-pill"
+            onClick={() =>
+              history.push(
+                `${AUTH_ROUTES.CALCULATOR}?id=${getCalculatorIdFromQuery(
+                    query
+                  )}&step=2`
+              )
+            }
+          >
+            Back
+          </button>
+        )}
         <div className="d-flex align-items-center">
           {(() => {
             try {
@@ -1586,7 +1588,10 @@ const Screen4 = ({
               if (mid) return (
                 <button
                   className="btn btnPrimary rounded-pill me-3"
-                  onClick={() => history.push(`/single-matter/${mid}`)}
+                  onClick={() => {
+                    localStorage.removeItem('viewOnlyCalcResults');
+                    history.push(`/single-matter/${mid}`);
+                  }}
                 >
                   Back to Matter
                 </button>
@@ -1594,22 +1599,26 @@ const Screen4 = ({
             } catch { /* ignore */ }
             return null;
           })()}
-          <button
-            className="btn btnPrimary rounded-pill me-3"
-            onClick={() => {
-              history.push("/home");
-            }}
-          >
-            Home Page
-          </button>
-          <button
-            className="btn btnPrimary rounded-pill me-3"
-            onClick={saveCalculation}
-            disabled={saving}
-          >
-            <i className="fa-solid fa-save" style={{ marginRight: "6px" }}></i>
-            {saving ? "Saving…" : "Save To Matter"}
-          </button>
+          {!localStorage.getItem('viewOnlyCalcResults') && (
+            <>
+              <button
+                className="btn btnPrimary rounded-pill me-3"
+                onClick={() => {
+                  history.push("/home");
+                }}
+              >
+                Home Page
+              </button>
+              <button
+                className="btn btnPrimary rounded-pill me-3"
+                onClick={saveCalculation}
+                disabled={saving}
+              >
+                <i className="fa-solid fa-save" style={{ marginRight: "6px" }}></i>
+                {saving ? "Saving…" : "Save To Matter"}
+              </button>
+            </>
+          )}
           <button
             className="btn"
             style={{
