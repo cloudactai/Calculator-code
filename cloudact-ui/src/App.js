@@ -5,6 +5,7 @@ import 'react-datetime/css/react-datetime.css';
 import { Toaster } from 'react-hot-toast'; 
 import UnauthorizedModal from './components/UnauthorizedModal'; // Adjust path as needed
 import axios from '../src/utils/axios'; // Import axios to make API calls
+import { AUTH_API_BASE } from './utils/dataAxios';
 import Cookies from 'js-cookie';
 import FamilyLawChat from './components/FamilyLawChat/FamilyLawChat';
 import "flatpickr/dist/flatpickr.css";
@@ -42,21 +43,25 @@ function App() {
   const handleCloseModal = () => setShowUnauthorizedModal(false);
 
   const handleConfirm = async () => {
+    // The local session is already dead, so clearing it must not depend on the
+    // server call succeeding. Asking the server to drop its cookies is a
+    // courtesy; landing the user on the sign-in page is the point. This used to
+    // gate the redirect on a `status === 'success'` body that /logout never
+    // returns (it answers `{ ok: true }`), which left the user on a broken page
+    // with their cookies already cleared and no way forward.
+    cookies_name.forEach(cookie => Cookies.remove(cookie, { path: '/' }));
+    localStorage.clear();
+
     try {
-      cookies_name.forEach(cookie => Cookies.remove(cookie, { path: '/' }));
-      localStorage.clear();
-      const response = await axios.post('/logout');
-      
-      if (response.data && response.data.status === 'success') {
-        console.log('Logout successful');
-        window.location.replace('/signIn'); 
-      } else {
-        console.error('Logout failed:', response.data.message);
-      }
+      await axios.post('/logout', null, {
+        baseURL: AUTH_API_BASE,
+        skipUnauthorizedModal: true,
+      });
     } catch (error) {
       console.error('Error during logout request:', error);
     } finally {
-      handleCloseModal(); 
+      handleCloseModal();
+      window.location.replace('/signIn');
     }
   };
 

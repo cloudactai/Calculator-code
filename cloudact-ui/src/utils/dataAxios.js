@@ -1,5 +1,6 @@
 import axios from "axios";
 import { getAuthToken } from "./authToken";
+import { AUTH_FLAG, reportIfSessionExpired } from "./sessionExpiry";
 
 const DEFAULT_PRODUCTION_DATA_API =
   "https://calculator-code-auth.onrender.com/v1";
@@ -38,6 +39,11 @@ const dataApiBase = resolveDataApiBase();
 // never the retired law-firm /v1 backend.
 export const DATA_API_BASE = dataApiBase;
 
+// The auth routes (login, logout) are mounted at /api on the same host, while
+// the data routes sit at /v1. Callers that need an auth route must say so
+// explicitly, or they end up posting to /v1/logout — which does not exist.
+export const AUTH_API_BASE = `${dataApiBase.replace(/\/v1$/, "")}/api`;
+
 const instance = axios.create({
   baseURL: dataApiBase,
   withCredentials: true,
@@ -60,13 +66,27 @@ instance.interceptors.request.use(
 
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
+      config[AUTH_FLAG] = true;
     } else {
       delete config.headers.Authorization;
+      config[AUTH_FLAG] = false;
     }
 
     return config;
   },
   function (error) {
+    return Promise.reject(error);
+  }
+);
+
+// This client had no response interceptor at all, so an expired session failed
+// the calculator, matters and dashboard calls just as silently as the forms.
+instance.interceptors.response.use(
+  function (response) {
+    return response;
+  },
+  function (error) {
+    reportIfSessionExpired(error);
     return Promise.reject(error);
   }
 );

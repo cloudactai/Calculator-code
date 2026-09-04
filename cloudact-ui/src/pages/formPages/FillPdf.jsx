@@ -23,8 +23,12 @@ import { ensureMinimumTextFieldHeights } from "./textFieldGeometry";
 import Loader from "../../components/Loader";
 import axios from "../../utils/axios";
 import { formsService } from "../../services/formsService";
+import { isUnauthorized } from "../../utils/sessionExpiry";
 
 pdfjs.GlobalWorkerOptions.workerSrc = `${process.env.PUBLIC_URL || ""}/pdf.worker.min.mjs`;
+
+const SESSION_EXPIRED_MESSAGE =
+  "Your session has expired, so this form could not be loaded. Sign in again to continue — nothing is wrong with the form itself.";
 
 const FillPdf = ({ currentUserRole }) => {
   const location = useLocation();
@@ -105,12 +109,16 @@ const FillPdf = ({ currentUserRole }) => {
         setForms(savedForms);
         setActiveForm(selectedForm);
       })
-      .catch(() => {
+      .catch((error) => {
         if (!active) return;
-        setLoadError("Could not load this saved form. Return to the matter and try again.");
+        setLoadError(isUnauthorized(error)
+          ? SESSION_EXPIRED_MESSAGE
+          : "Could not load this saved form. Return to the matter and try again.");
         setIsLoading(false);
         setIsFormLoading(false);
-        toast.error("Could not load this saved form.");
+        toast.error(isUnauthorized(error)
+          ? "Your session has expired."
+          : "Could not load this saved form.");
       });
     return () => { active = false; };
   }, [routeMatterNumber, routeDocumentId]);
@@ -171,10 +179,17 @@ const FillPdf = ({ currentUserRole }) => {
       setPdfUrl(pdfUrl);
     } catch (error) {
       console.error("Error fetching the PDF:", error);
-      setLoadError("Could not load this form's PDF. Return to the matter and try again.");
+      // An expired session fails this call for every form in every province.
+      // Blaming the PDF sends people hunting for a broken template instead of
+      // signing back in, so say which one it actually is.
+      setLoadError(isUnauthorized(error)
+        ? SESSION_EXPIRED_MESSAGE
+        : "Could not load this form's PDF. Return to the matter and try again.");
       setIsLoading(false);
       setIsFormLoading(false);
-      toast.error("Could not load this form's PDF.");
+      toast.error(isUnauthorized(error)
+        ? "Your session has expired."
+        : "Could not load this form's PDF.");
     }
   };
 
