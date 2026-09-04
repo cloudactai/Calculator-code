@@ -13,7 +13,7 @@ import SpousalSupportChatPanel from "../../components/MatterWorkflow/SpousalSupp
 import MatterIntakeChatPanel from "../../components/MatterWorkflow/MatterIntakeChatPanel";
 import UpdateInformationChatPanel from "../../components/MatterWorkflow/UpdateInformationChatPanel";
 import ProfileSummaryPanel from "../../components/MatterWorkflow/ProfileSummaryPanel";
-import CalculationPdf from "../../components/Matters/Documents/CalculationPdf";
+import CalculationResultsPanel from "../../components/MatterWorkflow/CalculationResultsPanel";
 import AgreementTypeList from "../../components/MatterWorkflow/AgreementTypeList";
 import AgreementChatPanel from "../../components/MatterWorkflow/AgreementChatPanel";
 import { getAgreementType } from "../../components/MatterWorkflow/agreementTypes";
@@ -634,7 +634,7 @@ const SingleMatter = () => {
                   </button>
                   <h3 style={{ margin: 0, fontSize: "18px", fontWeight: 600 }}>Calculation Results</h3>
                 </div>
-                <CalculationPdf matterId={id} />
+                <CalculationResultsPanel matterId={id} onBack={handleBackToTasks} />
               </div>
             )}
 

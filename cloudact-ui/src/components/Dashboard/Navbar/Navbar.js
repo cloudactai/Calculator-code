@@ -229,7 +229,6 @@ const Navbar = () => {
             {userRole?.role == Roles.SUPERADMIN &&
               navLinksInfoSuperAdmin_1.map((e) => Render_link(e))}
             {navLinkHome.map((e) => Render_link(e))}
-            {navLinkTaxConstants.map((e) => Render_link(e))}
             {!TRIMMED_SIDEBAR
               ? navLinksInfo_1.map((e) => Render_link(e))
               : null}
